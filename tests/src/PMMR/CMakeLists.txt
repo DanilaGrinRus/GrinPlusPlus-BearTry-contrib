@@ -3,6 +3,7 @@ list_append_parent(
     ${CMAKE_CURRENT_LIST_DIR}
     "Test_MMRUtil.cpp"
     "Test_BitmapAssembly.cpp"
+    "Test_PibdDownload.cpp"
     "Test_Segment.cpp"
     "Test_SegmentGenerator.cpp"
     "Test_PruneList.cpp"
