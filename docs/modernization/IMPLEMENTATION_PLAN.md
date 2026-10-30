@@ -50,10 +50,10 @@ MMR-позиции, `SegmentIdentifier`, `SegmentProof`, `Segment<T>` с
 pruned-сегменты), сообщения 21–28. Готов ядровый слой загрузки: `BitmapSegmentAssembler` (фаза 1),
 `PibdTreeAssembler<T>`, `PibdDownload` (фазы, запросы, дубликаты), `PibdSession`
 (адаптер сообщений 21–28, гейт PIBD_HIST_1), `PibdScheduler` (in-flight лимит,
-таймауты, повторы, fallback-таймер 660 с) и `PibdSnapshot` (desegmenter-ядро:
-листья по индексам, пересборка kernel-дерева, сверка pruned-множеств).
-Следующий шаг — запись снапшота в файловый PMMR (prune shifts, атомарная
-активация), затем проводка в `MessageProcessor`/`StateSyncer`, resume и serving.
+таймауты, повторы, fallback-таймер 660 с) `PibdSnapshot` (листья по индексам, pruned-хеши) и `PibdTreeRebuilder`
+(пересборка корня прореженного дерева — та же арифметика, что пойдёт в hash-файлы).
+Следующий шаг — запись снапшота в файловый PMMR в staging-каталог с последующей
+атомарной активацией, затем проводка в `MessageProcessor`/`StateSyncer`, resume и serving.
 
 1. Сообщения 21–28 (уже в `MessageTypes`): `SegmentRequest{block_hash, identifier}`,
    `SegmentResponse<T>`, `OutputSegmentResponse`, `OutputBitmapSegmentResponse`,

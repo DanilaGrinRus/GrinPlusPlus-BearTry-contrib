@@ -71,8 +71,8 @@ pwsh tools/build/build.ps1 -Target Tests
 ```
 | Артефакт | Размер | SHA-256 |
 |---|---|---|
-| `bin/Release/Release/GrinNode.exe` | 7 225 344 | `0FB78C3C1EF5645C75382B0AE5200C4AF15450C2DD10FA3FFFD6618D3F114578` |
-| `bin/Release/Release/Tests.exe` | 8 200 704 | `0A36D5B7D040C378881DD5382F2C7D29A021B052580505C52D14D47B4D262BBB` |
+| `bin/Release/Release/GrinNode.exe` | 7 225 344 | `B08F68CBC365E6CA3DAF268E1358D2A4464CCC93F7FFA619F6386F45F6AC36F7` |
+| `bin/Release/Release/Tests.exe` | 8 221 696 | `EFB57B9FA86A44796C95C9E40E7E42324B442F001FE7A08B0C329418F41B4DA1` |
 
 Сборка идёт с `/W4 /WX` (проектные флаги не ослаблены). Потребовались только
 конфигурационные правки: `NOMINMAX`, идемпотентная установка `/W4 /WX`,
@@ -83,7 +83,7 @@ pwsh tools/build/build.ps1 -Target Tests
 ```
 $env:HOMEDRIVE='C:'; $env:HOMEPATH='\DHW\.tmp\testhome'   # изоляция данных тестов
 bin\Release\Release\Tests.exe --reporter compact
-→ Passed all 125 test cases with 1430 assertions.
+→ Passed all 126 test cases with 1438 assertions.
 ```
 В набор входят новые `Test_ByteBuffer`, `Test_P2PCompat` и `Test_Segment`
 (16 кейсов PIBD-проводного слоя: MMR-позиции, `SegmentIdentifier`, `SegmentProof`,
@@ -261,9 +261,32 @@ leaf index ↔ PMMR position и отсутствие индекса у внут�
 Честное ограничение: снапшот пока **не пишется** в файловый PMMR (prune shifts,
 атомарная активация) — это следующий шаг; живой interop не проверялся.
 
-Осталось по G-09: запись снапшота в файловый PMMR с prune shifts и атомарной
-активацией, проводка `PibdSession`/`PibdScheduler` в `MessageProcessor`/`StateSyncer`,
-resume между рестартами, серверная выдача сегментов и включение `PIBD_HIST`.
+## E19. PIBD: пересборка прореженного дерева — PASS (unit)
+
+Сегменты теперь сохраняют **все внутренние хеши** (`(position, hash)`), а не только
+листья: именно ими представлены прореженные поддеревья. `PibdSnapshot` несёт эти
+хеши для трёх деревьев, `PibdTreeRebuilder` (`ComputePrunedTreeRoot`) пересобирает
+корень по правилам Rust: лист с данными → `hash(index ‖ data)`; оба ребёнка
+прорежены → хеш берётся из сегмента (pruned root); один ребёнок прорежен →
+используется сохранённый хеш ребёнка; иначе — обычный parent hash; в конце пики
+собираются bagging-ом. Это ровно та арифметика, которую затем нужно записать в
+hash-файлы PMMR.
+
+`BuildSnapshot` проверяет **все три дерева** этим пересчётом (корни outputs,
+rangeproofs и kernels сверяются с горизонтом), а не только kernel-дерево.
+
+Тесты (`Test_PibdSnapshot.cpp`, +1 кейс): с хешами корень воспроизводится точно;
+без хешей пересборка падает (`MissingHash`), а не выдумывает корень; подмена всех
+сохранённых хешей даёт другой корень.
+
+**Найдено компилятором/тестами:** `std::map::operator[]` требовал default-ctor у
+`RangeProof` (заменено на `insert_or_assign`); первая версия теста на подмену
+ожидала исключение, тогда как подмена корректно даёт *другой* корень.
+
+Осталось по G-09: запись снапшота в файловый PMMR (prune shifts, стейджинг и
+атомарная активация — но не поверх рабочей БД), проводка `PibdSession`/
+`PibdScheduler` в `MessageProcessor`/`StateSyncer`, resume между рестартами,
+серверная выдача сегментов и включение `PIBD_HIST`.
 
 ---
 
@@ -276,7 +299,7 @@ resume между рестартами, серверная выдача сегм
 | Проводной формат capabilities/ID/лимитов | PASS (compile-check) |
 | Сборка зависимостей (offline, static CRT) | PASS |
 | Сборка `GrinNode.exe` + `Tests.exe` (`/W4 /WX`) | PASS |
-| Полный набор тестов (125 / 1430) | PASS |
+| Полный набор тестов (126 / 1438) | PASS |
 | PIBD проводной слой (модели + сообщения 21–28) | PASS (unit) |
 | PIBD верификация сегментов (`Root`/`Validate`/proof, bitmap→chunk) | PASS (unit) |
 | PIBD генерация сегментов и обратная сборка дерева | PASS (unit) |
@@ -285,6 +308,7 @@ resume между рестартами, серверная выдача сегм
 | PIBD оркестрация загрузки (bitmap → три дерева) | PASS (unit) |
 | PIBD сессия и планировщик (таймауты/повторы/fallback) | PASS (unit) |
 | PIBD desegmenter-ядро (снапшот, пересборка kernel-дерева) | PASS (unit) |
+| PIBD пересборка прореженного дерева (pruned-хеши) | PASS (unit) |
 | Smoke-запуск ноды (floonet) | PASS |
 | Живая синхронизация с Rust v5.5.2 | NOT RUN |
 | PIBD desegmenter/planner/resume/serving | NOT IMPLEMENTED |
