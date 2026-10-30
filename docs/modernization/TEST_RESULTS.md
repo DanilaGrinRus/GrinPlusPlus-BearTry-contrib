@@ -71,8 +71,8 @@ pwsh tools/build/build.ps1 -Target Tests
 ```
 | Артефакт | Размер | SHA-256 |
 |---|---|---|
-| `bin/Release/Release/GrinNode.exe` | 7 225 344 | `C358B96F4643B4566F1EEE5DF0636ED1309E96FEF9B313FCF34A59B29A248403` |
-| `bin/Release/Release/Tests.exe` | 7 895 040 | `1D20A7AC831365E791A263A70EC36A9BF753FF21DD6A404D5E170F95E7833F5E` |
+| `bin/Release/Release/GrinNode.exe` | 7 225 344 | `7B083723C406B71751BE5F8013A4B9B062C1F8C02520E21FC698B691FAC232D0` |
+| `bin/Release/Release/Tests.exe` | 7 922 688 | `8F6B7E2DB2B38208BF41F74FCA66E634B82ED78845F0FE8875E3E478448A1A27` |
 
 Сборка идёт с `/W4 /WX` (проектные флаги не ослаблены). Потребовались только
 конфигурационные правки: `NOMINMAX`, идемпотентная установка `/W4 /WX`,
@@ -83,7 +83,7 @@ pwsh tools/build/build.ps1 -Target Tests
 ```
 $env:HOMEDRIVE='C:'; $env:HOMEPATH='\DHW\.tmp\testhome'   # изоляция данных тестов
 bin\Release\Release\Tests.exe --reporter compact
-→ Passed all 101 test cases with 674 assertions.
+→ Passed all 106 test cases with 806 assertions.
 ```
 В набор входят новые `Test_ByteBuffer`, `Test_P2PCompat` и `Test_Segment`
 (16 кейсов PIBD-проводного слоя: MMR-позиции, `SegmentIdentifier`, `SegmentProof`,
@@ -139,7 +139,25 @@ GrinNode.exe --floonet --headless --no-wallet   # с изолированным 
 `MMRHashUtil`, поэтому тесты проверяют сборку дерева и логику proof, а не сами
 blake2b-примитивы.
 
-Осталось по G-09: desegmenter (применение сегментов к PMMR с prune shifts),
+## E13. PIBD: генерация сегментов и обратная сборка — PASS (unit)
+
+Добавлены `InMemoryPmmr<T>` (постордерное дерево с хешами листьев/родителей,
+bagging пиков) и `SegmentGenerator<T>` (порт `Segment::from_pmmr` +
+`SegmentProof::generate`). Тесты (`Test_SegmentGenerator.cpp`, 5 кейсов):
+
+* генерация сегментов для 7 размеров дерева (1..13 листьев) × высот 0..3,
+  все индексы сегментов проходят `Validate` против корня дерева (цикл даёт
+  100+ проверок);
+* полная пересборка дерева из всех сегментов даёт тот же корень и покрывает
+  каждый лист ровно один раз;
+* подменённый лист отвергается, несуществующий сегмент отвергается, форма
+  MMR проверяется отдельно (`size = 2N - popcount(N)`).
+
+**Найдено тестом:** первая версия `InMemoryPmmr` считала размер как
+`insertion_to_pmmr_index(N-1)+1` (это позиция последнего листа, а не размер);
+тест на 4 листах поймал ошибку до попадания в основной код.
+
+Осталось по G-09: bitmap-aware `Root` (pruned leaves), desegmenter с prune shifts,
 планировщик загрузки (horizon, in-flight, retry, resume), серверная выдача
 сегментов и включение `PIBD_HIST`.
 
@@ -154,9 +172,10 @@ blake2b-примитивы.
 | Проводной формат capabilities/ID/лимитов | PASS (compile-check) |
 | Сборка зависимостей (offline, static CRT) | PASS |
 | Сборка `GrinNode.exe` + `Tests.exe` (`/W4 /WX`) | PASS |
-| Полный набор тестов (101 / 674) | PASS |
+| Полный набор тестов (106 / 806) | PASS |
 | PIBD проводной слой (модели + сообщения 21–28) | PASS (unit) |
 | PIBD верификация сегментов (`Root`/`Validate`/proof, bitmap→chunk) | PASS (unit) |
+| PIBD генерация сегментов и обратная сборка дерева | PASS (unit) |
 | Smoke-запуск ноды (floonet) | PASS |
 | Живая синхронизация с Rust v5.5.2 | NOT RUN |
 | PIBD desegmenter/planner/resume/serving | NOT IMPLEMENTED |
