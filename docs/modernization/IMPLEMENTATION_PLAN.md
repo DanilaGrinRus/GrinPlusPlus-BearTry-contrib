@@ -57,9 +57,12 @@ pruned-сегменты), сообщения 21–28. Готов ядровый 
 файловых PMMR — тоже (`PibdSegmentService`, цикл serve→download проверен).
 G-26 закрыт, `PibdSync` связывает download → snapshot → staging → активацию в
 один сервис со статусами и падением в legacy; модель корней сверена с эталоном Rust
-5.5.2 (E26) и исправлена. Следующий шаг — проводка `PibdSync` в `MessageProcessor`
-(маршрутизация 22/24/26/28) и `StateSyncer` (запуск при наличии PIBD-пира),
-`Recover` при старте, затем resume и `PIBD_HIST`.
+5.5.2 (E26) и исправлена. Проводка выполнена: `MessageProcessor` маршрутизирует
+сегментные ответы в `PibdSync`, `StateSyncer` запускает PIBD при наличии
+`PIBD_HIST_1`-пира, закрывает txhashset, активирует staging и валидирует набор, при
+сбое откатывается на txhashset.zip; `Recover` вызывается при старте. Следующий шаг —
+живой interop с локальной Rust-нодой v5.5.2 (floonet), затем серверная выдача +
+`PIBD_HIST`, resume и PIHD.
 
 1. Сообщения 21–28 (уже в `MessageTypes`): `SegmentRequest{block_hash, identifier}`,
    `SegmentResponse<T>`, `OutputSegmentResponse`, `OutputBitmapSegmentResponse`,

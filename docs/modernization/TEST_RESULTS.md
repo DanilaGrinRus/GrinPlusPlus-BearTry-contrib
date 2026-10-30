@@ -71,8 +71,8 @@ pwsh tools/build/build.ps1 -Target Tests
 ```
 | Артефакт | Размер | SHA-256 |
 |---|---|---|
-| `bin/Release/Release/GrinNode.exe` | 7 225 344 | `3B38B794A668819C9C5228459BC1371B633338509E635D5CF2E1DE2D4724D4D2` |
-| `bin/Release/Release/Tests.exe` | 8 401 920 | `6C014CB2804BFCF723B5DE2C86329D3AF6DC880F3DC12F89E92B90012A109BC0` |
+| `bin/Release/Release/GrinNode.exe` | 7 438 848 | `4A3A97B2DA2336D41DA74CB20BDFB0FFDEFC546D6219EF3F30F29B5B61FBB862` |
+| `bin/Release/Release/Tests.exe` | 8 407 552 | `620C185765270E03540927A7BC2AA25082243569527BDC095816EBDBE79F34E6` |
 
 Сборка идёт с `/W4 /WX` (проектные флаги не ослаблены). Потребовались только
 конфигурационные правки: `NOMINMAX`, идемпотентная установка `/W4 /WX`,
@@ -451,8 +451,40 @@ write → serve → download → validate → rebuild по настоящим ф
 [segmenter.rs](https://docs.rs/grin_chain/5.5.2/src/grin_chain/txhashset/segmenter.rs.html).
 Крейты сохранены локально в `.toolchain/reference` (вне git).
 
-Осталось по G-09: проводка `PibdSync` в `MessageProcessor`/`StateSyncer` + `Recover`
-при старте, resume между рестартами, `PIBD_HIST` и живой interop.
+## E27. Проводка PIBD в ноду + smoke-старт — PASS (build/smoke)
+
+Сделано:
+
+* `MessageProcessor` принимает `PibdSync`: ответы 22/24/26/28 десериализуются и
+  передаются в сервис, если синхронизация активна; запросы 21/23/25/27
+  логируются и игнорируются (serving ещё не рекламируется, соединение не рвётся);
+* `StateSyncer` при наличии пира с `PIBD_HIST_1` запускает PIBD от candidate tip
+  (корни и размеры MMR из заголовка), шлёт запросы этому пиру, по завершении
+  закрывает открытый txhashset (иначе Windows не даст переименовать каталог с
+  mmap-файлами), активирует staging и валидирует новый набор через
+  `BlockChain::ProcessExistingTxHashSet`; при любом сбое — возврат к
+  txhashset.zip с паузой PIBD на 120 минут;
+* `P2PServer::Create` создаёт `PibdSync` (live = `TXHASHSET`, staging =
+  `pibd_staging` рядом) и передаёт его в `Seeder` (MessageProcessor) и `Syncer`
+  (StateSyncer); `DefaultNodeClient::Create` вызывает `PibdActivation::Recover`
+  до открытия чейна;
+* `BlockChain` получил `ProcessExistingTxHashSet`, `CloseTxHashSet`,
+  `OpenTxHashSet`; `TxHashSetProcessor` умеет валидировать и устанавливать уже
+  лежащий на диске набор (без распаковки zip).
+
+Smoke (`--floonet --no-wallet --headless`, изолированный HOME): нода стартует,
+поднимает node server, поток SYNC работает; ошибок PIBD/activation в логе нет.
+Локальный порт REST 13413 занят запущенной Rust-нодой (`grin 5.5.2`,
+`C:\DHW\resources\node\grin.exe`), поэтому smoke шёл с `REST_API_PORT=13415`.
+Floonet-seed-пиры за 12 секунд не ответили — **пиров не было, живой PIBD не
+проверялся**. Бинарник Rust-ноды v5.5.2 доступен локально — это база для
+следующего раунда (изолированный floonet-инстанс + interop).
+
+Полный набор: **134 кейса / 1540 проверок PASS**. Артефакты: `GrinNode.exe`
+`4A3A97B2…`, `Tests.exe` `620C1857…`.
+
+Осталось по G-09: живой interop с Rust v5.5.2, серверная выдача сегментов +
+`PIBD_HIST` в `ADVERTISED`, resume между рестартами, PIHD.
 
 ---
 
