@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Core/Exceptions/DeserializationException.h>
+#include <Core/Serialization/ByteBuffer.h>
 #include <Core/Serialization/Serializer.h>
 
 #include <cstdint>

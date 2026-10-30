@@ -117,6 +117,36 @@ public:
 		);
 	}
 
+	// Build a bitmap segment from the equivalent PMMR segment of bitmap chunks.
+	// Inverse of ToSegment; used when serving bitmap segments.
+	static BitmapSegment FromSegment(const Segment<BitmapChunk>& segment)
+	{
+		const std::vector<BitmapChunk>& chunks = segment.GetLeafData();
+		const size_t numChunks = chunks.size();
+		std::vector<BitmapBlock> blocks;
+		blocks.reserve((numChunks + BitmapBlock::MAX_CHUNKS - 1) / BitmapBlock::MAX_CHUNKS);
+
+		size_t chunksLeft = numChunks;
+		while (chunksLeft > 0) {
+			const size_t inBlock = (chunksLeft < BitmapBlock::MAX_CHUNKS) ? chunksLeft : BitmapBlock::MAX_CHUNKS;
+			blocks.emplace_back(inBlock);
+			chunksLeft -= inBlock;
+		}
+
+		for (size_t chunkIdx = 0; chunkIdx < numChunks; ++chunkIdx) {
+			const BitmapChunk& chunk = chunks[chunkIdx];
+			BitmapBlock& block = blocks[chunkIdx / BitmapBlock::MAX_CHUNKS];
+			const size_t bitOffset = (chunkIdx % BitmapBlock::MAX_CHUNKS) * BitmapChunk::LEN_BITS;
+			for (size_t bit = 0; bit < BitmapChunk::LEN_BITS; ++bit) {
+				if (chunk.Get(bit)) {
+					block.Set(bitOffset + bit, true);
+				}
+			}
+		}
+
+		return BitmapSegment(segment.GetIdentifier(), std::move(blocks), segment.GetProof());
+	}
+
 	void Serialize(Serializer& serializer) const final
 	{
 		if (m_blocks.size() > 0xFFFF) {
