@@ -73,6 +73,46 @@ bool TxHashSetProcessor::ProcessTxHashSet(const Hash& blockHash, const fs::path&
 	return true;
 }
 
+bool TxHashSetProcessor::ProcessExistingTxHashSet(const Hash& blockHash, SyncStatus& syncStatus)
+{
+	auto pHeader = m_pChainState->Read()->GetBlockHeaderByHash(blockHash);
+	if (pHeader == nullptr) {
+		LOG_ERROR_F("Header not found for hash {}.", blockHash);
+		return false;
+	}
+
+	// 1. Close the existing txhashset and open the activated files.
+	m_pChainState->Write()->GetTxHashSetManager()->Close();
+	ITxHashSetPtr pTxHashSet = m_pChainState->Write()->GetTxHashSetManager()->Open(pHeader);
+	if (pTxHashSet == nullptr) {
+		LOG_ERROR("Failed to open the activated txhashset.");
+		return false;
+	}
+
+	// 2. Validate the entire txhashset against the horizon header.
+	auto pBlockSums = pTxHashSet->ValidateTxHashSet(*pHeader, m_blockChain, syncStatus);
+	if (pBlockSums == nullptr) {
+		LOG_ERROR("Validation of the activated txhashset failed.");
+		return false;
+	}
+
+	// 3. Store block sums and output positions, then install the txhashset.
+	auto pChainStateBatch = m_pChainState->BatchWrite();
+	pChainStateBatch->GetBlockDB()->AddBlockSums(pHeader->GetHash(), *pBlockSums);
+	pTxHashSet->SaveOutputPositions(
+		pChainStateBatch->GetChainStore()->GetCandidateChain(), pChainStateBatch->GetBlockDB());
+	pChainStateBatch->GetTxHashSetManager()->SetTxHashSet(pTxHashSet);
+
+	// 4. Update the confirmed chain to the horizon.
+	if (!UpdateConfirmedChain(pChainStateBatch, *pHeader)) {
+		LOG_ERROR("Failed to update the confirmed chain for the activated txhashset.");
+		pChainStateBatch->GetTxHashSetManager()->Close();
+		return false;
+	}
+
+	pChainStateBatch->Commit();
+	return true;
+}
 bool TxHashSetProcessor::UpdateConfirmedChain(Writer<ChainState> pLockedState, const BlockHeader& blockHeader)
 {
 	std::shared_ptr<Chain> pCandidateChain = pLockedState->GetChainStore()->GetCandidateChain();

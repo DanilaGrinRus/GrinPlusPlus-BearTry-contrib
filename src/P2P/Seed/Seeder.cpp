@@ -31,14 +31,16 @@ std::unique_ptr<Seeder> Seeder::Create(
     Locked<PeerManager> peerManager,
     const IBlockChain::Ptr& pBlockChain,
     std::shared_ptr<Pipeline> pPipeline,
-    SyncStatusConstPtr pSyncStatus)
+    SyncStatusConstPtr pSyncStatus,
+    std::shared_ptr<PibdSync> pPibdSync)
 {
     auto pMessageProcessor = std::make_shared<MessageProcessor>(
         connectionManager,
         peerManager,
         pBlockChain,
         pPipeline,
-        pSyncStatus
+        pSyncStatus,
+        pPibdSync
     );
     std::unique_ptr<Seeder> pSeeder(new Seeder(
         connectionManager,

@@ -2,6 +2,8 @@
 
 #include "Seed/Seeder.h"
 #include "Pipeline/Pipeline.h"
+#include "PIBD/PibdSync.h"
+#include <Common/Util/FileUtil.h>
 #include "Sync/Syncer.h"
 #include "Messages/TransactionKernelMessage.h"
 
@@ -66,13 +68,19 @@ std::shared_ptr<P2PServer> P2PServer::Create(
 		pSyncStatus
 	);
 
+	// PIBD state sync service (download -> desegmenter -> activation).
+	const fs::path txHashSetPath = config.GetTxHashSetPath();
+	const fs::path pibdStagingPath = txHashSetPath.parent_path() / "pibd_staging";
+	std::shared_ptr<PibdSync> pPibdSync = std::make_shared<PibdSync>(txHashSetPath, pibdStagingPath);
+
 	// Seeder
 	std::unique_ptr<Seeder> pSeeder = Seeder::Create(
 		*pConnectionManager,
 		*peerManager,
 		pBlockChain,
 		pPipeline,
-		pSyncStatus
+		pSyncStatus,
+		pPibdSync
 	);
 
 	// Syncer
@@ -80,7 +88,8 @@ std::shared_ptr<P2PServer> P2PServer::Create(
 		pConnectionManager,
 		pBlockChain,
 		pPipeline,
-		pSyncStatus
+		pSyncStatus,
+		pPibdSync
 	);
 
 	// Dandelion

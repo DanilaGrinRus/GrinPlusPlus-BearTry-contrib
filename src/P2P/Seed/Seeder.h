@@ -25,7 +25,8 @@ public:
 		Locked<PeerManager> peerManager,
 		const IBlockChain::Ptr& pBlockChain,
 		std::shared_ptr<Pipeline> pPipeline,
-		SyncStatusConstPtr pSyncStatus
+		SyncStatusConstPtr pSyncStatus,
+		std::shared_ptr<PibdSync> pPibdSync = nullptr
 	);
 	~Seeder();
 

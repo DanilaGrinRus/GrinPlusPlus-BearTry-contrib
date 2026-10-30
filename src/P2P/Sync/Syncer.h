@@ -10,6 +10,7 @@
 
 // Forward Declarations
 class SyncStatus;
+class PibdSync;
 
 class Syncer
 {
@@ -18,7 +19,8 @@ public:
 		std::weak_ptr<ConnectionManager> pConnectionManager,
 		const IBlockChain::Ptr& pBlockChain,
 		std::shared_ptr<Pipeline> pPipeline,
-		SyncStatusPtr pSyncStatus
+		SyncStatusPtr pSyncStatus,
+		std::shared_ptr<PibdSync> pPibdSync
 	);
 	~Syncer();
 
@@ -27,7 +29,8 @@ private:
 		std::weak_ptr<ConnectionManager> pConnectionManager,
 		const IBlockChain::Ptr& pBlockChain,
 		std::shared_ptr<Pipeline> pPipeline,
-		SyncStatusPtr pSyncStatus
+		SyncStatusPtr pSyncStatus,
+		std::shared_ptr<PibdSync> pPibdSync
 	);
 
 	static void Thread_Sync(Syncer& syncer);
@@ -37,6 +40,7 @@ private:
 	IBlockChain::Ptr m_pBlockChain;
 	std::shared_ptr<Pipeline> m_pPipeline;
 	SyncStatusPtr m_pSyncStatus;
+	std::shared_ptr<PibdSync> m_pPibdSync;
 
 	std::atomic<bool> m_terminate;
 	std::thread m_syncThread;

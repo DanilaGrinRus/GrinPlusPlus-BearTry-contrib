@@ -53,6 +53,18 @@ public:
 
 	virtual fs::path SnapshotTxHashSet(BlockHeaderPtr pBlockHeader) = 0;
 	virtual EBlockChainStatus ProcessTransactionHashSet(const Hash& blockHash, const fs::path& path, SyncStatus& syncStatus) = 0;
+
+	//
+	// Validates and installs a txhashset that is already on disk (PIBD path).
+	// The files must have been activated at the configured txhashset path.
+	//
+	virtual EBlockChainStatus ProcessExistingTxHashSet(const Hash& blockHash, SyncStatus& syncStatus) = 0;
+
+	// Closes the open txhashset so its files can be renamed during activation.
+	virtual void CloseTxHashSet() = 0;
+
+	// Re-opens the txhashset from the configured path at the confirmed tip.
+	virtual void OpenTxHashSet() = 0;
 	virtual EBlockChainStatus AddTransaction(TransactionPtr pTransaction, const EPoolType poolType) = 0;
 	virtual TransactionPtr GetTransactionByKernelHash(const Hash& kernelHash) const = 0;
 

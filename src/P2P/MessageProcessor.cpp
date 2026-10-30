@@ -20,6 +20,11 @@
 #include "Messages/CompactBlockMessage.h"
 #include "Messages/GetCompactBlockMessage.h"
 
+// PIBD Messages
+#include "Messages/SegmentRequestMessage.h"
+#include "Messages/SegmentResponseMessage.h"
+#include "PIBD/PibdSync.h"
+
 // Transaction Messages
 #include "Messages/TransactionMessage.h"
 #include "Messages/StemTransactionMessage.h"
@@ -50,12 +55,14 @@ MessageProcessor::MessageProcessor(
 	Locked<PeerManager> peerManager,
 	const IBlockChain::Ptr& pBlockChain,
 	const std::shared_ptr<Pipeline>& pPipeline,
-	SyncStatusConstPtr pSyncStatus)
+	SyncStatusConstPtr pSyncStatus,
+	std::shared_ptr<PibdSync> pPibdSync)
 	: m_connectionManager(connectionManager),
 	m_peerManager(peerManager),
 	m_pBlockChain(pBlockChain),
 	m_pPipeline(pPipeline),
-	m_pSyncStatus(pSyncStatus)
+	m_pSyncStatus(pSyncStatus),
+	m_pPibdSync(std::move(pPibdSync))
 {
 
 }
@@ -138,7 +145,40 @@ void MessageProcessor::ProcessMessageInternal(const std::shared_ptr<Connection>&
 			pConnection->UpdateTotals(pongMessage.GetTotalDifficulty(), pongMessage.GetHeight());
 			break;
 		}
-		case GetPeerAddrs:
+		case OutputBitmapSegment:
+		case OutputSegment:
+		case RangeProofSegment:
+		case KernelSegment:
+		{
+			if (m_pPibdSync == nullptr || !m_pPibdSync->IsActive()) {
+				LOG_DEBUG_F(
+					"Ignoring {} from {}: no PIBD sync in progress",
+					MessageTypes::ToString(header.GetMessageType()),
+					pConnection);
+				break;
+			}
+
+			const SegmentResponseMessage segmentResponse =
+				SegmentResponseMessage::Deserialize(byteBuffer, header.GetMessageType());
+			if (!m_pPibdSync->OnResponse(segmentResponse, std::chrono::steady_clock::now())) {
+				LOG_DEBUG_F("PIBD response from {} was not applied", pConnection);
+			}
+
+			break;
+		}
+		case GetOutputBitmapSegment:
+		case GetOutputSegment:
+		case GetRangeProofSegment:
+		case GetKernelSegment:
+		{
+			// Serving PIBD segments is not advertised yet; ignore the request instead
+			// of tearing the connection down.
+			LOG_DEBUG_F(
+				"Ignoring PIBD request {} from {}: serving is not enabled",
+				MessageTypes::ToString(header.GetMessageType()),
+				pConnection);
+			break;
+		}		case GetPeerAddrs:
 		{
 			const GetPeerAddressesMessage getPeerAddressesMessage = GetPeerAddressesMessage::Deserialize(byteBuffer);
 			const Capabilities capabilities = getPeerAddressesMessage.GetCapabilities();

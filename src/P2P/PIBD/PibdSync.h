@@ -46,6 +46,15 @@ public:
 	{
 	}
 
+	// Reset to idle so a later attempt can start again.
+	void Reset()
+	{
+		std::lock_guard<std::mutex> lock(m_mutex);
+		m_scheduler.reset();
+		m_status = EStatus::Idle;
+		m_error.clear();
+	}
+
 	bool IsActive() const
 	{
 		std::lock_guard<std::mutex> lock(m_mutex);

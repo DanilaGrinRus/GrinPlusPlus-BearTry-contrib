@@ -1,14 +1,30 @@
 #include "StateSyncer.h"
 #include "../Messages/TxHashSetRequestMessage.h"
+#include "../PIBD/PibdSync.h"
 
 #include <Consensus.h>
 #include <Common/Logger.h>
 #include <Core/Global.h>
+#include <P2P/Capabilities.h>
+#include <P2P/ConnectedPeer.h>
+#include <P2P/Peer.h>
+#include <P2P/SyncStatus.h>
 
 bool StateSyncer::SyncState(SyncStatus& syncStatus)
 {
 	if (IsStateSyncDue(syncStatus))
 	{
+		// Prefer PIBD when a capable peer is connected. On success the state is
+		// installed and block sync may proceed; otherwise use txhashset.zip.
+		const EPibdResult pibd = TryPibd(syncStatus);
+		if (pibd == EPibdResult::InProgress) {
+			return true;
+		}
+
+		if (pibd == EPibdResult::Completed) {
+			return false;
+		}
+
 		syncStatus.UpdateStatus(ESyncStatus::SYNCING_TXHASHSET);
 		RequestState(syncStatus);
 
@@ -113,4 +129,154 @@ bool StateSyncer::RequestState(const SyncStatus& syncStatus)
 	}
 
 	return m_pPeer != nullptr;
+}
+
+StateSyncer::EPibdResult StateSyncer::TryPibd(SyncStatus& syncStatus)
+{
+	if (m_pPibdSync == nullptr) {
+		return EPibdResult::NotAttempted;
+	}
+
+	if (std::chrono::system_clock::now() < m_pibdDisabledUntil) {
+		return EPibdResult::NotAttempted;
+	}
+
+	const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+	const PibdSync::EStatus status = m_pPibdSync->GetStatus();
+
+	if (status == PibdSync::EStatus::Failed) {
+		LOG_WARNING_F("PIBD failed: {}. Falling back to txhashset.zip", m_pPibdSync->GetError());
+		m_pPibdSync->Reset();
+		DisablePibd();
+		return EPibdResult::NotAttempted;
+	}
+
+	if (status == PibdSync::EStatus::Idle) {
+		if (FindPibdPeer() == nullptr) {
+			LOG_DEBUG("No PIBD-capable peer connected; using txhashset.zip");
+			return EPibdResult::NotAttempted;
+		}
+
+		const BlockHeaderPtr pTip = m_pBlockChain->GetTipBlockHeader(EChainType::CANDIDATE);
+		if (pTip == nullptr) {
+			return EPibdResult::NotAttempted;
+		}
+
+		PibdDownload::Horizon horizon;
+		horizon.BlockHash = pTip->GetHash();
+		horizon.Height = pTip->GetHeight();
+		horizon.OutputMmrSize = pTip->GetOutputMMRSize();
+		horizon.KernelMmrSize = pTip->GetKernelMMRSize();
+		horizon.OutputRoot = pTip->GetOutputRoot();
+		horizon.RangeProofRoot = pTip->GetRangeProofRoot();
+		horizon.KernelRoot = pTip->GetKernelRoot();
+
+		if (!m_pPibdSync->Start(horizon, now)) {
+			return EPibdResult::NotAttempted;
+		}
+
+		LOG_INFO_F("Starting PIBD state sync at height {}.", horizon.Height);
+		syncStatus.UpdateStatus(ESyncStatus::SYNCING_TXHASHSET);
+		SendPibdRequests(now);
+		return EPibdResult::InProgress;
+	}
+
+	if (status == PibdSync::EStatus::Downloading) {
+		SendPibdRequests(now);
+
+		const PibdSync::EStatus updated = m_pPibdSync->GetStatus();
+		if (updated == PibdSync::EStatus::Failed) {
+			LOG_WARNING_F("PIBD failed: {}. Falling back to txhashset.zip", m_pPibdSync->GetError());
+			m_pPibdSync->Reset();
+			DisablePibd();
+			return EPibdResult::NotAttempted;
+		}
+
+		if (updated != PibdSync::EStatus::Completed) {
+			return EPibdResult::InProgress;
+		}
+	}
+
+	// Completed: release the open txhashset files, write staging, activate
+	// atomically and then install and validate the new state.
+	m_pBlockChain->CloseTxHashSet();
+	if (!m_pPibdSync->TryComplete()) {
+		m_pBlockChain->OpenTxHashSet();
+		LOG_WARNING_F(
+			"PIBD write/activation failed: {}. Falling back to txhashset.zip",
+			m_pPibdSync->GetError());
+		m_pPibdSync->Reset();
+		DisablePibd();
+		return EPibdResult::NotAttempted;
+	}
+
+	const BlockHeaderPtr pTip = m_pBlockChain->GetTipBlockHeader(EChainType::CANDIDATE);
+	const EBlockChainStatus chainStatus =
+		m_pBlockChain->ProcessExistingTxHashSet(pTip->GetHash(), syncStatus);
+	m_pPibdSync->Reset();
+
+	if (chainStatus == EBlockChainStatus::SUCCESS) {
+		LOG_INFO("PIBD state sync completed and validated.");
+		return EPibdResult::Completed;
+	}
+
+	LOG_WARNING("PIBD state failed chain validation; falling back to txhashset.zip");
+	DisablePibd();
+	return EPibdResult::NotAttempted;
+}
+
+void StateSyncer::DisablePibd()
+{
+	// Do not immediately retry PIBD; let the legacy state sync have a full attempt.
+	m_pibdDisabledUntil = std::chrono::system_clock::now() + std::chrono::minutes(120);
+	LOG_INFO("PIBD disabled for 120 minutes after a failure.");
+}
+
+void StateSyncer::SendPibdRequests(const std::chrono::steady_clock::time_point now)
+{
+	if (m_pPibdSync == nullptr) {
+		return;
+	}
+
+	ConnectionManagerPtr pConnectionManager = m_pConnectionManager.lock();
+	if (pConnectionManager == nullptr) {
+		return;
+	}
+
+	const PeerPtr pPeer = FindPibdPeer();
+	if (pPeer == nullptr) {
+		return;
+	}
+
+	for (const IMessagePtr& pMessage : m_pPibdSync->TakeRequests(now)) {
+		pConnectionManager->SendMessageToPeer(*pMessage, pPeer);
+	}
+}
+
+PeerPtr StateSyncer::FindPibdPeer() const
+{
+	ConnectionManagerPtr pConnectionManager = m_pConnectionManager.lock();
+	if (pConnectionManager == nullptr) {
+		return nullptr;
+	}
+
+	PeerPtr pBestPeer = nullptr;
+	uint64_t bestHeight = 0;
+	for (ConnectedPeer connectedPeer : pConnectionManager->GetConnectedPeers()) {
+		PeerPtr pPeer = connectedPeer.GetPeer();
+		if (pPeer == nullptr) {
+			continue;
+		}
+
+		if (!pPeer->GetCapabilities().HasCapability(Capabilities::PIBD_HIST_1)) {
+			continue;
+		}
+
+		if (pBestPeer == nullptr || connectedPeer.GetHeight() > bestHeight) {
+			pBestPeer = pPeer;
+			bestHeight = connectedPeer.GetHeight();
+		}
+	}
+
+	return pBestPeer;
 }

@@ -43,6 +43,9 @@ public:
 
 	fs::path SnapshotTxHashSet(BlockHeaderPtr pBlockHeader) final;
 	EBlockChainStatus ProcessTransactionHashSet(const Hash& blockHash, const fs::path& path, SyncStatus& syncStatus) final;
+	EBlockChainStatus ProcessExistingTxHashSet(const Hash& blockHash, SyncStatus& syncStatus) final;
+	void CloseTxHashSet() final;
+	void OpenTxHashSet() final;
 	EBlockChainStatus AddTransaction(TransactionPtr pTransaction, const EPoolType poolType) final;
 	TransactionPtr GetTransactionByKernelHash(const Hash& kernelHash) const final;
 

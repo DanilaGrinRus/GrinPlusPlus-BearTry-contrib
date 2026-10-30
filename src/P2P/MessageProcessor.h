@@ -6,6 +6,7 @@
 #include <BlockChain/BlockChain.h>
 #include <P2P/ConnectedPeer.h>
 #include <memory>
+#include <chrono>
 
 // Forward Declarations
 class ConnectionManager;
@@ -14,6 +15,7 @@ class RawMessage;
 class Pipeline;
 class TxHashSetArchiveMessage;
 class TxHashSetRequestMessage;
+class PibdSync;
 
 class MessageProcessor
 {
@@ -34,7 +36,8 @@ public:
 		Locked<PeerManager> peerManager,
 		const IBlockChain::Ptr& pBlockChain,
 		const std::shared_ptr<Pipeline>& pipeline,
-		SyncStatusConstPtr pSyncStatus
+		SyncStatusConstPtr pSyncStatus,
+		std::shared_ptr<PibdSync> pPibdSync = nullptr
 	);
 
 	void ProcessMessage(const std::shared_ptr<Connection>& pConnection, const RawMessage& rawMessage);
@@ -47,4 +50,5 @@ private:
 	IBlockChain::Ptr m_pBlockChain;
 	std::shared_ptr<Pipeline> m_pPipeline;
 	SyncStatusConstPtr m_pSyncStatus;
+	std::shared_ptr<PibdSync> m_pPibdSync;
 };

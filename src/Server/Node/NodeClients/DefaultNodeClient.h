@@ -9,6 +9,7 @@
 #include <Database/BlockDb.h>
 #include <PMMR/TxHashSetManager.h>
 #include <TxPool/TransactionPool.h>
+#include "../../../P2P/PIBD/PibdActivation.h"
 
 class DefaultNodeClient : public INodeClient
 {
@@ -30,6 +31,10 @@ public:
 
 	static std::shared_ptr<DefaultNodeClient> Create(const Context::Ptr& pContext)
 	{
+		// Settle an activation that was interrupted by a crash before the chain
+		// opens the txhashset files.
+		PibdActivation::Recover(pContext->GetConfig().GetTxHashSetPath());
+
 		auto pDatabase = DatabaseAPI::OpenDatabase(pContext->GetConfig());
 		auto pTxHashSetManager = std::make_shared<TxHashSetManager>(pContext->GetConfig());
 		auto pLockedTxHashSetManager = std::make_shared<Locked<TxHashSetManager>>(pTxHashSetManager);

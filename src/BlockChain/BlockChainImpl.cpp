@@ -202,6 +202,33 @@ EBlockChainStatus BlockChain::ProcessTransactionHashSet(const Hash& blockHash, c
 	return EBlockChainStatus::INVALID;
 }
 
+void BlockChain::CloseTxHashSet()
+{
+	m_pChainState->Write()->GetTxHashSetManager()->Close();
+}
+
+void BlockChain::OpenTxHashSet()
+{
+	const BlockHeaderPtr pTip = GetTipBlockHeader(EChainType::CONFIRMED);
+	if (pTip != nullptr) {
+		m_pChainState->Write()->GetTxHashSetManager()->Open(pTip);
+	}
+}
+EBlockChainStatus BlockChain::ProcessExistingTxHashSet(const Hash& blockHash, SyncStatus& syncStatus)
+{
+	try {
+		const bool success = TxHashSetProcessor(Global::GetConfig(), *this, m_pChainState)
+			.ProcessExistingTxHashSet(blockHash, syncStatus);
+		if (success) {
+			return EBlockChainStatus::SUCCESS;
+		}
+	}
+	catch (std::exception& e) {
+		LOG_ERROR_F("Failed to process the existing TxHashSet: {}", e.what());
+	}
+
+	return EBlockChainStatus::INVALID;
+}
 EBlockChainStatus BlockChain::AddTransaction(TransactionPtr pTransaction, const EPoolType poolType)
 {
 	try

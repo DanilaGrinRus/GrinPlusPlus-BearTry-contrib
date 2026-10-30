@@ -20,6 +20,10 @@ public:
 
 	bool ProcessTxHashSet(const Hash& blockHash, const fs::path& path, SyncStatus& syncStatus);
 
+	// Validates and installs a txhashset that is already on disk at the configured
+	// path (PIBD writes and activates the files before calling this).
+	bool ProcessExistingTxHashSet(const Hash& blockHash, SyncStatus& syncStatus);
+
 private:
 	bool UpdateConfirmedChain(Writer<ChainState> pLockedState, const BlockHeader& blockHeader);
 
