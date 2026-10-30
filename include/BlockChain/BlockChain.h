@@ -24,6 +24,7 @@
 class Config;
 class IBlockDB;
 class TxHashSetManager;
+class ITxHashSet;
 class ITransactionPool;
 class SyncStatus;
 class FullBlock;
@@ -65,6 +66,9 @@ public:
 
 	// Re-opens the txhashset from the configured path at the confirmed tip.
 	virtual void OpenTxHashSet() = 0;
+
+	// Currently installed txhashset (nullptr when none is open).
+	virtual std::shared_ptr<ITxHashSet> GetTxHashSet() = 0;
 	virtual EBlockChainStatus AddTransaction(TransactionPtr pTransaction, const EPoolType poolType) = 0;
 	virtual TransactionPtr GetTransactionByKernelHash(const Hash& kernelHash) const = 0;
 

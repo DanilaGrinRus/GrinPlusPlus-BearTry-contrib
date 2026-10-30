@@ -46,6 +46,7 @@ public:
 	EBlockChainStatus ProcessExistingTxHashSet(const Hash& blockHash, SyncStatus& syncStatus) final;
 	void CloseTxHashSet() final;
 	void OpenTxHashSet() final;
+	std::shared_ptr<ITxHashSet> GetTxHashSet() final;
 	EBlockChainStatus AddTransaction(TransactionPtr pTransaction, const EPoolType poolType) final;
 	TransactionPtr GetTransactionByKernelHash(const Hash& kernelHash) const final;
 

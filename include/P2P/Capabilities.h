@@ -40,11 +40,10 @@ public:
 		FAST_SYNC_NODE = (TXHASHET_HIST | PEER_LIST),
 		ARCHIVE_NODE = (HEADER_HIST | TXHASHET_HIST | PEER_LIST),
 
-		// Capabilities this node advertises today. PIBD_HIST / PIBD_HIST_1 and
-		// BLOCK_HIST stay off until the corresponding serving paths exist:
-		// advertising them would make Grin 5.5.2 peers expect segment/archival
-		// service that Grin++ cannot provide yet.
-		ADVERTISED = FAST_SYNC_NODE
+		// Capabilities this node advertises today. PIBD serving is implemented
+		// (bitmap, output, rangeproof and kernel segments), so both PIBD bits are
+		// advertised; BLOCK_HIST stays off until archival serving exists.
+		ADVERTISED = (FAST_SYNC_NODE | PIBD_HIST | PIBD_HIST_1),
 	};
 
 	Capabilities(const uint32_t value)

@@ -23,7 +23,9 @@
 // PIBD Messages
 #include "Messages/SegmentRequestMessage.h"
 #include "Messages/SegmentResponseMessage.h"
+#include "PIBD/PibdSegmentService.h"
 #include "PIBD/PibdSync.h"
+#include "../PMMR/TxHashSetImpl.h"
 
 // Transaction Messages
 #include "Messages/TransactionMessage.h"
@@ -171,12 +173,63 @@ void MessageProcessor::ProcessMessageInternal(const std::shared_ptr<Connection>&
 		case GetRangeProofSegment:
 		case GetKernelSegment:
 		{
-			// Serving PIBD segments is not advertised yet; ignore the request instead
-			// of tearing the connection down.
-			LOG_DEBUG_F(
-				"Ignoring PIBD request {} from {}: serving is not enabled",
-				MessageTypes::ToString(header.GetMessageType()),
-				pConnection);
+			// Serve PIBD segments from the current txhashset. Only the flushed
+			// header of the installed state can be served; requests for another
+			// horizon are ignored.
+			try {
+				const SegmentRequestMessage request =
+					SegmentRequestMessage::Deserialize(byteBuffer, header.GetMessageType());
+
+				const ITxHashSetPtr pTxHashSet = m_pBlockChain->GetTxHashSet();
+				const std::shared_ptr<TxHashSet> pState =
+					std::dynamic_pointer_cast<TxHashSet>(pTxHashSet);
+				if (pState == nullptr) {
+					LOG_DEBUG_F("Cannot serve {}: no txhashset is open", MessageTypes::ToString(header.GetMessageType()));
+					break;
+				}
+
+				const BlockHeaderPtr pFlushedHeader = pState->GetFlushedBlockHeader();
+				if (pFlushedHeader == nullptr || pFlushedHeader->GetHash() != request.GetBlockHash()) {
+					LOG_DEBUG_F(
+						"Ignoring {} from {}: requested horizon is not our flushed state",
+						MessageTypes::ToString(header.GetMessageType()),
+						pConnection);
+					break;
+				}
+
+				PibdSegmentService service(
+					pState->GetOutputPMMR(), pState->GetRangeProofPMMR(), pState->GetKernelMMR());
+				const Hash& blockHash = request.GetBlockHash();
+				const SegmentIdentifier& identifier = request.GetIdentifier();
+				switch (header.GetMessageType()) {
+					case GetOutputBitmapSegment:
+						pConnection->SendAsync(SegmentResponseMessage::CreateOutputBitmap(
+							blockHash, service.GetBitmapSegment(identifier), service.GetOutputMmrRoot()));
+						break;
+					case GetOutputSegment:
+						pConnection->SendAsync(SegmentResponseMessage::CreateOutputs(
+							blockHash, service.GetOutputSegment(identifier), service.GetBitmapMmrRoot()));
+						break;
+					case GetRangeProofSegment:
+						pConnection->SendAsync(SegmentResponseMessage::CreateRangeProofs(
+							blockHash, service.GetRangeProofSegment(identifier)));
+						break;
+					case GetKernelSegment:
+						pConnection->SendAsync(SegmentResponseMessage::CreateKernels(
+							blockHash, service.GetKernelSegment(identifier)));
+						break;
+					default:
+						break;
+				}
+			}
+			catch (const std::exception& e) {
+				LOG_WARNING_F(
+					"Failed to serve {} from {}: {}",
+					MessageTypes::ToString(header.GetMessageType()),
+					pConnection,
+					e.what());
+			}
+
 			break;
 		}		case GetPeerAddrs:
 		{

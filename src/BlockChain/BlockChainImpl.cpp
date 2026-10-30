@@ -202,6 +202,10 @@ EBlockChainStatus BlockChain::ProcessTransactionHashSet(const Hash& blockHash, c
 	return EBlockChainStatus::INVALID;
 }
 
+std::shared_ptr<ITxHashSet> BlockChain::GetTxHashSet()
+{
+	return m_pChainState->Write()->GetTxHashSetManager()->GetTxHashSet();
+}
 void BlockChain::CloseTxHashSet()
 {
 	m_pChainState->Write()->GetTxHashSetManager()->Close();

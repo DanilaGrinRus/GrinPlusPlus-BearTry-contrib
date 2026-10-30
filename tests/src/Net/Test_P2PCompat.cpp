@@ -16,10 +16,11 @@ TEST_CASE("Capabilities::WireFormat")
 	REQUIRE((uint32_t)Capabilities::BLOCK_HIST == 0x20);
 	REQUIRE((uint32_t)Capabilities::PIBD_HIST_1 == 0x40);
 
-	// PIBD is not implemented yet: advertising it would make Grin 5.5.2 peers
-	// expect segment serving that does not exist.
-	REQUIRE(!Capabilities(Capabilities::ADVERTISED).HasCapability(Capabilities::PIBD_HIST));
-	REQUIRE(!Capabilities(Capabilities::ADVERTISED).HasCapability(Capabilities::PIBD_HIST_1));
+	// PIBD serving is implemented, so both PIBD bits are advertised; peers may
+	// request bitmap/output/rangeproof/kernel segments from us at our flushed state.
+	REQUIRE(Capabilities(Capabilities::ADVERTISED).HasCapability(Capabilities::PIBD_HIST));
+	REQUIRE(Capabilities(Capabilities::ADVERTISED).HasCapability(Capabilities::PIBD_HIST_1));
+	REQUIRE(!Capabilities(Capabilities::ADVERTISED).HasCapability(Capabilities::BLOCK_HIST));
 }
 
 TEST_CASE("MessageTypes::PibdIds")
