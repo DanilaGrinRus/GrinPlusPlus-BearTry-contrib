@@ -71,8 +71,8 @@ pwsh tools/build/build.ps1 -Target Tests
 ```
 | Артефакт | Размер | SHA-256 |
 |---|---|---|
-| `bin/Release/Release/GrinNode.exe` | 7 225 344 | `1C71E6D83E9B5275D03C23B27E67884ED27F14D585DCC367AD69174216F86BA8` |
-| `bin/Release/Release/Tests.exe` | 8 158 208 | `22BEF6E20A15B47B498612FE26B46C4F50E1BC8F7F729EF88E18184684FF0A7C` |
+| `bin/Release/Release/GrinNode.exe` | 7 225 344 | `0FB78C3C1EF5645C75382B0AE5200C4AF15450C2DD10FA3FFFD6618D3F114578` |
+| `bin/Release/Release/Tests.exe` | 8 200 704 | `0A36D5B7D040C378881DD5382F2C7D29A021B052580505C52D14D47B4D262BBB` |
 
 Сборка идёт с `/W4 /WX` (проектные флаги не ослаблены). Потребовались только
 конфигурационные правки: `NOMINMAX`, идемпотентная установка `/W4 /WX`,
@@ -83,7 +83,7 @@ pwsh tools/build/build.ps1 -Target Tests
 ```
 $env:HOMEDRIVE='C:'; $env:HOMEPATH='\DHW\.tmp\testhome'   # изоляция данных тестов
 bin\Release\Release\Tests.exe --reporter compact
-→ Passed all 123 test cases with 967 assertions.
+→ Passed all 125 test cases with 1430 assertions.
 ```
 В набор входят новые `Test_ByteBuffer`, `Test_P2PCompat` и `Test_Segment`
 (16 кейсов PIBD-проводного слоя: MMR-позиции, `SegmentIdentifier`, `SegmentProof`,
@@ -239,9 +239,31 @@ in-flight запросов, таймаут сегмента (20 с), повто�
 * таймаут: повтор того же сегмента (attempt 2), затем отказ после лимита;
 * отсутствие прогресса 660 с → fail с причиной (сигнал для txhashset.zip fallback).
 
-Осталось по G-09: desegmenter с prune shifts и записью в файловый PMMR, проводка
-`PibdSession`/`PibdScheduler` в `MessageProcessor`/`StateSyncer`, resume между
-рестартами, серверная выдача сегментов и включение `PIBD_HIST`.
+## E18. PIBD: desegmenter-ядро (снапшот состояния) — PASS (unit)
+
+`BuildSnapshot(download)` превращает завершённую загрузку в состояние, пригодное
+для применения: листья с 0-based leaf index (обратная функция
+`MMRUtil::PmmrLeafToInsertionIndex`), битмап, размеры MMR и метаданные горизонта.
+Сборка перепроверяет то, что можно проверить по самим листьям:
+
+* **kernel-дерево пересобирается полностью** (ядра не прореживаются) и его корень
+  сверяется с корнем горизонта;
+* число ядер должно совпадать с `GetNumLeaves(kernelMmrSize)`;
+* множества leaf index у outputs и rangeproofs обязаны совпадать (одинаковый
+  битмап → одинаковое прореживание);
+* неполная загрузка → исключение (никакого частичного состояния).
+
+Тесты (`Test_PibdSnapshot.cpp`, 2 кейса): полный поток 120 выходов / 8 ядер,
+битмап {0,70}; проверены leaf index, сортировка, `expectedOutputs < numOutputs`,
+совпадение множеств, пересборка kernel-корня; отдельный цикл проверяет инверсию
+leaf index ↔ PMMR position и отсутствие индекса у внутренних узлов.
+
+Честное ограничение: снапшот пока **не пишется** в файловый PMMR (prune shifts,
+атомарная активация) — это следующий шаг; живой interop не проверялся.
+
+Осталось по G-09: запись снапшота в файловый PMMR с prune shifts и атомарной
+активацией, проводка `PibdSession`/`PibdScheduler` в `MessageProcessor`/`StateSyncer`,
+resume между рестартами, серверная выдача сегментов и включение `PIBD_HIST`.
 
 ---
 
@@ -254,7 +276,7 @@ in-flight запросов, таймаут сегмента (20 с), повто�
 | Проводной формат capabilities/ID/лимитов | PASS (compile-check) |
 | Сборка зависимостей (offline, static CRT) | PASS |
 | Сборка `GrinNode.exe` + `Tests.exe` (`/W4 /WX`) | PASS |
-| Полный набор тестов (123 / 967) | PASS |
+| Полный набор тестов (125 / 1430) | PASS |
 | PIBD проводной слой (модели + сообщения 21–28) | PASS (unit) |
 | PIBD верификация сегментов (`Root`/`Validate`/proof, bitmap→chunk) | PASS (unit) |
 | PIBD генерация сегментов и обратная сборка дерева | PASS (unit) |
@@ -262,6 +284,7 @@ in-flight запросов, таймаут сегмента (20 с), повто�
 | PIBD фаза 1: сборка output-битмапа | PASS (unit) |
 | PIBD оркестрация загрузки (bitmap → три дерева) | PASS (unit) |
 | PIBD сессия и планировщик (таймауты/повторы/fallback) | PASS (unit) |
+| PIBD desegmenter-ядро (снапшот, пересборка kernel-дерева) | PASS (unit) |
 | Smoke-запуск ноды (floonet) | PASS |
 | Живая синхронизация с Rust v5.5.2 | NOT RUN |
 | PIBD desegmenter/planner/resume/serving | NOT IMPLEMENTED |
