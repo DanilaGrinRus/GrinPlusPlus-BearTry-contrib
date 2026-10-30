@@ -332,3 +332,7 @@ cmake_install.cmake
 CMakeSettings.json
 
 output/
+
+# Project build helpers (the generic 'build/' rule above would hide them)
+!tools/build/
+
