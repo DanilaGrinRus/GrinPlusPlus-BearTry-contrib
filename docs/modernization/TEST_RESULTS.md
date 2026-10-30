@@ -71,8 +71,8 @@ pwsh tools/build/build.ps1 -Target Tests
 ```
 | Артефакт | Размер | SHA-256 |
 |---|---|---|
-| `bin/Release/Release/GrinNode.exe` | 7 225 344 | `51B64D1087B548C620B057786747DA400823F71539FCCC40964A8F6F90F91C1F` |
-| `bin/Release/Release/Tests.exe` | 7 747 584 | `15DDDA418204343A29EC445550082ADA642EF9249A3E4D2DA87FAB1AF1948EE3` |
+| `bin/Release/Release/GrinNode.exe` | 7 225 344 | `A66125C33C3EBCD4B40360C9A35A473738C37DEB7D62E01C32D17D13CE1DB0F4` |
+| `bin/Release/Release/Tests.exe` | 7 856 640 | `6BD54A96C337363984153A024665B00974BB0E7DB77DAA788283A443BC68A9E8` |
 
 Сборка идёт с `/W4 /WX` (проектные флаги не ослаблены). Потребовались только
 конфигурационные правки: `NOMINMAX`, идемпотентная установка `/W4 /WX`,
@@ -83,9 +83,11 @@ pwsh tools/build/build.ps1 -Target Tests
 ```
 $env:HOMEDRIVE='C:'; $env:HOMEPATH='\DHW\.tmp\testhome'   # изоляция данных тестов
 bin\Release\Release\Tests.exe --reporter compact
-→ Passed all 80 test cases with 558 assertions.
+→ Passed all 96 test cases with 656 assertions.
 ```
-В набор входят новые `Test_ByteBuffer` и `Test_P2PCompat` (7 кейсов / 35 проверок).
+В набор входят новые `Test_ByteBuffer`, `Test_P2PCompat` и `Test_Segment`
+(16 кейсов PIBD-проводного слоя: MMR-позиции, `SegmentIdentifier`, `SegmentProof`,
+`Segment<T>`, `BitmapBlock`/`BitmapSegment`, сообщения 21–28).
 
 Важно: тесты пишут в `%HOMEDRIVE%%HOMEPATH%\.GrinPP\AUTOMATED_TESTING`. Без
 изолированного HOME запуск падает (`create_directories: Access is denied` для
@@ -112,6 +114,26 @@ GrinNode.exe --floonet --headless --no-wallet   # с изолированным 
 
 Требуют сборки Rust-ноды и отдельного стенда; запланированы в Фазах 5-6.
 
+## E12. PIBD: проводной слой — PASS (unit)
+
+Реализовано и покрыто тестами (`tests/src/PMMR/Test_Segment.cpp`, 16 кейсов):
+
+* `MMRUtil`: `PeakMapHeight`, `InsertionToPmmrIndex`, `GetNumLeaves`,
+  `BintreePostorderHeight`, `IsLeaf`, `IsLeftSibling`, `FamilyBranch`,
+  `BintreeLeftmost/Rightmost` — порт `core/src/core/pmmr/pmmr.rs`.
+* `SegmentIdentifier` (height u8 + idx u64; height > 32 отвергается — защита от
+  сдвига, которого нет в Rust; 9/11/13 — рабочие высоты).
+* `SegmentProof` (count ≤ 1 000 000 и count ≤ remaining/32).
+* `Segment<T>` (позиции на проводе 1-based, строго возрастающие; лимиты из Rust).
+* `BitmapBlock` (режимы Raw/Positive/Negative, chunk-count ≤ 16, индексы < n_bits)
+  и `BitmapSegment` (height ≤ 13, ≥1 блок, полные промежуточные блоки, checked offset).
+* Сообщения 21–28 (`SegmentRequestMessage`, `SegmentResponseMessage`) с round-trip
+  для всех четырёх типов ответов.
+
+Осталось по G-09: `Segment::root/first_unpruned_parent/validate`,
+`BitmapSegment → Segment<BitmapChunk>`, desegmenter, планировщик загрузки, resume,
+серверная выдача сегментов и включение `PIBD_HIST`.
+
 ---
 
 ## Сводка
@@ -123,7 +145,9 @@ GrinNode.exe --floonet --headless --no-wallet   # с изолированным 
 | Проводной формат capabilities/ID/лимитов | PASS (compile-check) |
 | Сборка зависимостей (offline, static CRT) | PASS |
 | Сборка `GrinNode.exe` + `Tests.exe` (`/W4 /WX`) | PASS |
-| Полный набор тестов (80 / 558) | PASS |
+| Полный набор тестов (96 / 656) | PASS |
+| PIBD проводной слой (модели + сообщения 21–28) | PASS (unit) |
 | Smoke-запуск ноды (floonet) | PASS |
 | Живая синхронизация с Rust v5.5.2 | NOT RUN |
-| PIBD / PIHD | NOT IMPLEMENTED |
+| PIBD verify/desegmenter/planner/serving | NOT IMPLEMENTED |
+| PIHD | NOT IMPLEMENTED |
