@@ -60,9 +60,10 @@ G-26 закрыт, `PibdSync` связывает download → snapshot → stagi
 5.5.2 (E26) и исправлена. Проводка выполнена: `MessageProcessor` маршрутизирует
 сегментные ответы в `PibdSync`, `StateSyncer` запускает PIBD при наличии
 `PIBD_HIST_1`-пира, закрывает txhashset, активирует staging и валидирует набор, при
-сбое откатывается на txhashset.zip; `Recover` вызывается при старте. Следующий шаг —
-живой interop с локальной Rust-нодой v5.5.2 (floonet), затем серверная выдача +
-`PIBD_HIST`, resume и PIHD.
+сбое откатывается на txhashset.zip; `Recover` вызывается при старте. Серверная выдача сегментов подключена (запросы 21/23/25/27 обслуживаются из
+текущего txhashset), `PIBD_HIST`/`PIBD_HIST_1` рекламируются, `MIN_SYNC_PEERS`
+конфигурируем. Следующий шаг — живой interop: наш узел с `MIN_SYNC_PEERS=1`,
+Rust-нода v5.5.2 подключается к нему (`--seed 127.0.0.1:13414`), затем resume и PIHD.
 
 1. Сообщения 21–28 (уже в `MessageTypes`): `SegmentRequest{block_hash, identifier}`,
    `SegmentResponse<T>`, `OutputSegmentResponse`, `OutputBitmapSegmentResponse`,

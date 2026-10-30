@@ -71,8 +71,8 @@ pwsh tools/build/build.ps1 -Target Tests
 ```
 | Артефакт | Размер | SHA-256 |
 |---|---|---|
-| `bin/Release/Release/GrinNode.exe` | 7 438 848 | `4A3A97B2DA2336D41DA74CB20BDFB0FFDEFC546D6219EF3F30F29B5B61FBB862` |
-| `bin/Release/Release/Tests.exe` | 8 407 552 | `620C185765270E03540927A7BC2AA25082243569527BDC095816EBDBE79F34E6` |
+| `bin/Release/Release/GrinNode.exe` | 7 473 152 | `B215676C52A71AB74A28539417F7A351EEECC7791E7C3888781BDDCADA6B7DDE` |
+| `bin/Release/Release/Tests.exe` | 8 408 064 | `EED571A5F16AFD7F00DCBD4D88B19F3C7E9D3EE435BE54143CAB3A95904530CA` |
 
 Сборка идёт с `/W4 /WX` (проектные флаги не ослаблены). Потребовались только
 конфигурационные правки: `NOMINMAX`, идемпотентная установка `/W4 /WX`,
@@ -83,7 +83,7 @@ pwsh tools/build/build.ps1 -Target Tests
 ```
 $env:HOMEDRIVE='C:'; $env:HOMEPATH='\DHW\.tmp\testhome'   # изоляция данных тестов
 bin\Release\Release\Tests.exe --reporter compact
-→ Passed all 134 test cases with 1540 assertions.
+→ Passed all 134 test cases with 1541 assertions.
 ```
 В набор входят новые `Test_ByteBuffer`, `Test_P2PCompat` и `Test_Segment`
 (16 кейсов PIBD-проводного слоя: MMR-позиции, `SegmentIdentifier`, `SegmentProof`,
@@ -483,8 +483,33 @@ Floonet-seed-пиры за 12 секунд не ответили — **пиро�
 Полный набор: **134 кейса / 1540 проверок PASS**. Артефакты: `GrinNode.exe`
 `4A3A97B2…`, `Tests.exe` `620C1857…`.
 
-Осталось по G-09: живой interop с Rust v5.5.2, серверная выдача сегментов +
-`PIBD_HIST` в `ADVERTISED`, resume между рестартами, PIHD.
+## E28. PIBD serving в ноде + реклама возможностей — PASS (build/smoke)
+
+* `MessageProcessor` теперь **обслуживает** запросы 21/23/25/27: выбирает текущий
+  `TxHashSet`, проверяет, что запрошенный `block_hash` совпадает с нашим
+  `GetFlushedBlockHeader()`, и отдаёт сегменты через `PibdSegmentService`
+  (bitmap несёт output-PMMR root, output — bitmap root). Ошибки обслуживания
+  логируются, соединение не рвётся.
+* `Capabilities::ADVERTISED` включает `PIBD_HIST | PIBD_HIST_1`
+  (`BLOCK_HIST` по-прежнему выключен — archival serving нет). Тест
+  `Test_P2PCompat` обновлён под это и фиксирует отсутствие `BLOCK_HIST`.
+* `BlockChain::GetTxHashSet()` добавлен для доступа к установленному состоянию.
+* `MIN_SYNC_PEERS` теперь читается из `P2P`-конфига (по умолчанию 3) — без этого
+  interop с одним локальным пиром невозможен: поток SYNC ждёт минимум пиров.
+
+**Попытка живого interop (раунд 18):** запущена эталонная Rust-нода v5.5.2
+(`C:\DHW\resources\node\grin.exe`) в режиме `--testnet server -p 13424 -a 13416 run`.
+Она использовала **существующий** `%USERPROFILE%\.grin\test` (каталог создан
+ранее, не нами), синхронизировала заголовки (header PMMR ~13 МБ) и начала
+скачивать txhashset (~140 МБ), после чего была остановлена. Данные не удалялись и
+не переносились. Живой PIBD **не проверялся**: для запуска нужен наш узел с
+`MIN_SYNC_PEERS=1` и подключение Rust-ноды к нашему listener'у
+(`--seed 127.0.0.1:13414`) — это следующий шаг.
+
+Полный набор: **134 кейса / 1541 проверка PASS**. Артефакты: `GrinNode.exe`
+`B215676C…`, `Tests.exe` `EED571A5…`.
+
+Осталось по G-09: живой interop с Rust v5.5.2, resume между рестартами, PIHD.
 
 ---
 
@@ -497,7 +522,7 @@ Floonet-seed-пиры за 12 секунд не ответили — **пиро�
 | Проводной формат capabilities/ID/лимитов | PASS (compile-check) |
 | Сборка зависимостей (offline, static CRT) | PASS |
 | Сборка `GrinNode.exe` + `Tests.exe` (`/W4 /WX`) | PASS |
-| Полный набор тестов (134 / 1540) | PASS |
+| Полный набор тестов (134 / 1541) | PASS |
 | PIBD проводной слой (модели + сообщения 21–28) | PASS (unit) |
 | PIBD верификация сегментов (`Root`/`Validate`/proof, bitmap→chunk) | PASS (unit) |
 | PIBD генерация сегментов и обратная сборка дерева | PASS (unit) |
