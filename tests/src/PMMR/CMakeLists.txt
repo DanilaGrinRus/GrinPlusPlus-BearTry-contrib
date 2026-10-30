@@ -8,6 +8,7 @@ list_append_parent(
     "Test_PibdScheduler.cpp"
     "Test_PibdSnapshot.cpp"
     "Test_PibdStateWriter.cpp"
+    "Test_PibdActivation.cpp"
     "Test_Segment.cpp"
     "Test_SegmentGenerator.cpp"
     "Test_PruneList.cpp"

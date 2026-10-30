@@ -1,5 +1,6 @@
 #pragma once
 
+#include "PibdActivation.h"
 #include "PibdSnapshot.h"
 
 #include <Core/File/BitmapFile.h>
@@ -73,6 +74,9 @@ public:
 		if (kernels.Root != snapshot.KernelRoot) {
 			throw SegmentException(ESegmentError::Mismatch, "Written kernel root does not match the horizon");
 		}
+
+		// Only now is the staging directory complete enough to be activated.
+		PibdActivation::WriteCompleteMarker(txHashSetDir, snapshot.BlockHash, snapshot.Height);
 	}
 
 private:
