@@ -71,8 +71,8 @@ pwsh tools/build/build.ps1 -Target Tests
 ```
 | Артефакт | Размер | SHA-256 |
 |---|---|---|
-| `bin/Release/Release/GrinNode.exe` | 7 225 344 | `793E1DC24D92B7B6D7E7FD31BC2DC0CA3DD934C0D6D8171E13B303ACA9EC356B` |
-| `bin/Release/Release/Tests.exe` | 8 034 816 | `7B21B7BDBA546D6A254729BF08966FA3017D4382AB1BAF4F7C65EA1578693A65` |
+| `bin/Release/Release/GrinNode.exe` | 7 225 344 | `1C71E6D83E9B5275D03C23B27E67884ED27F14D585DCC367AD69174216F86BA8` |
+| `bin/Release/Release/Tests.exe` | 8 158 208 | `22BEF6E20A15B47B498612FE26B46C4F50E1BC8F7F729EF88E18184684FF0A7C` |
 
 Сборка идёт с `/W4 /WX` (проектные флаги не ослаблены). Потребовались только
 конфигурационные правки: `NOMINMAX`, идемпотентная установка `/W4 /WX`,
@@ -83,7 +83,7 @@ pwsh tools/build/build.ps1 -Target Tests
 ```
 $env:HOMEDRIVE='C:'; $env:HOMEPATH='\DHW\.tmp\testhome'   # изоляция данных тестов
 bin\Release\Release\Tests.exe --reporter compact
-→ Passed all 115 test cases with 894 assertions.
+→ Passed all 123 test cases with 967 assertions.
 ```
 В набор входят новые `Test_ByteBuffer`, `Test_P2PCompat` и `Test_Segment`
 (16 кейсов PIBD-проводного слоя: MMR-позиции, `SegmentIdentifier`, `SegmentProof`,
@@ -221,9 +221,27 @@ bagging пиков) и `SegmentGenerator<T>` (порт `Segment::from_pmmr` +
 они относятся к сетевому слою (следующий шаг). Живой interop с Rust-нодой
 по-прежнему NOT RUN.
 
-Осталось по G-09: desegmenter с prune shifts и записью в файловый PMMR,
-таймауты/retry/resume в сетевом слое, fallback на txhashset.zip, серверная выдача
-сегментов и включение `PIBD_HIST`.
+## E17. PIBD: сессия и планировщик с таймаутами — PASS (unit)
+
+`PibdSession` — транспортный адаптер: гейт по `PIBD_HIST_1` (одного `PIBD_HIST`
+недостаточно), построение запросов 21/23/25/27, маршрутизация ответов 22/24/26/28
+в нужное дерево, отсечение ответов чужого horizon. `PibdScheduler` — лимит
+in-flight запросов, таймаут сегмента (20 с), повтор до N раз, счётчик суммарных
+запросов и fallback-таймер (660 с без прогресса). Время инъектируется, поэтому
+поведение детерминировано в тестах.
+
+Тесты (`Test_PibdSession.cpp`, `Test_PibdScheduler.cpp`, 5 кейсов):
+
+* capability-гейт: `PIBD_HIST`/`FAST_SYNC_NODE` → false, `PIBD_HIST_1` → true;
+* сквозной поток сообщений: bitmap → output/rangeproof/kernel, ответы чужого
+  horizon игнорируются, tampered kernel отвергается, затем корректный принимается;
+* лимит in-flight: при `MaxInFlight=1` второй вызов не отправляет ничего;
+* таймаут: повтор того же сегмента (attempt 2), затем отказ после лимита;
+* отсутствие прогресса 660 с → fail с причиной (сигнал для txhashset.zip fallback).
+
+Осталось по G-09: desegmenter с prune shifts и записью в файловый PMMR, проводка
+`PibdSession`/`PibdScheduler` в `MessageProcessor`/`StateSyncer`, resume между
+рестартами, серверная выдача сегментов и включение `PIBD_HIST`.
 
 ---
 
@@ -236,13 +254,14 @@ bagging пиков) и `SegmentGenerator<T>` (порт `Segment::from_pmmr` +
 | Проводной формат capabilities/ID/лимитов | PASS (compile-check) |
 | Сборка зависимостей (offline, static CRT) | PASS |
 | Сборка `GrinNode.exe` + `Tests.exe` (`/W4 /WX`) | PASS |
-| Полный набор тестов (115 / 894) | PASS |
+| Полный набор тестов (123 / 967) | PASS |
 | PIBD проводной слой (модели + сообщения 21–28) | PASS (unit) |
 | PIBD верификация сегментов (`Root`/`Validate`/proof, bitmap→chunk) | PASS (unit) |
 | PIBD генерация сегментов и обратная сборка дерева | PASS (unit) |
 | PIBD pruned-сегменты и bitmap-aware верификация | PASS (unit) |
 | PIBD фаза 1: сборка output-битмапа | PASS (unit) |
 | PIBD оркестрация загрузки (bitmap → три дерева) | PASS (unit) |
+| PIBD сессия и планировщик (таймауты/повторы/fallback) | PASS (unit) |
 | Smoke-запуск ноды (floonet) | PASS |
 | Живая синхронизация с Rust v5.5.2 | NOT RUN |
 | PIBD desegmenter/planner/resume/serving | NOT IMPLEMENTED |
