@@ -71,8 +71,8 @@ pwsh tools/build/build.ps1 -Target Tests
 ```
 | Артефакт | Размер | SHA-256 |
 |---|---|---|
-| `bin/Release/Release/GrinNode.exe` | 7 225 344 | `7227093718DD7A977212969D352FA878384B8313E06E4F79034A12069E5C861D` |
-| `bin/Release/Release/Tests.exe` | 8 352 256 | `B2BF3C23CF7005D3B34EBA111A10C6CB14BEDE1887F699192772AE7908F409F1` |
+| `bin/Release/Release/GrinNode.exe` | 7 225 344 | `241BA8709AE34B52DB7CC9890BBA3E102B6613F85C6C30DA25DD5307B310EC27` |
+| `bin/Release/Release/Tests.exe` | 8 386 560 | `7984459E862F800D0C1037358D71D19E88180585E9246C59341F6801AD7649B7` |
 
 Сборка идёт с `/W4 /WX` (проектные флаги не ослаблены). Потребовались только
 конфигурационные правки: `NOMINMAX`, идемпотентная установка `/W4 /WX`,
@@ -83,7 +83,7 @@ pwsh tools/build/build.ps1 -Target Tests
 ```
 $env:HOMEDRIVE='C:'; $env:HOMEPATH='\DHW\.tmp\testhome'   # изоляция данных тестов
 bin\Release\Release\Tests.exe --reporter compact
-→ Passed all 132 test cases with 1504 assertions.
+→ Passed all 134 test cases with 1536 assertions.
 ```
 В набор входят новые `Test_ByteBuffer`, `Test_P2PCompat` и `Test_Segment`
 (16 кейсов PIBD-проводного слоя: MMR-позиции, `SegmentIdentifier`, `SegmentProof`,
@@ -402,8 +402,31 @@ write → serve → download → validate → rebuild по настоящим ф
 Полный набор: **132 кейса / 1504 проверки PASS**. `GrinNode.exe` собирается с
 `/W4 /WX`.
 
-Осталось по G-09: проводка `PibdSession`/`PibdScheduler`/активации в
-`MessageProcessor`/`StateSyncer`, resume между рестартами и включение `PIBD_HIST`.
+## E25. PIBD: сервис полного цикла (`PibdSync`) — PASS (unit)
+
+`PibdSync` связывает готовые части в один сервис: `Start(horizon)` → `TakeRequests`
+(через `PibdScheduler` с таймаутами) → `OnResponse` (валидация и учёт) → по
+завершении `TryComplete()` = `BuildSnapshot` → `PibdStateWriter::Write` (staging) →
+`PibdActivation::Activate`. Статусы: Idle/Downloading/Completed/Activated/Failed;
+любая ошибка (плохой сегмент, сбой записи/активации) переводит в Failed и
+**не трогает** рабочее состояние — это сигнал для legacy-загрузки txhashset.zip.
+
+Тесты (`Test_PibdSync.cpp`, 2 кейса): полный цикл — загрузка идёт по реальным
+запросам-сообщениям, ответы генерируются по типу запроса, затем запись+активация,
+корни по активированным файлам сверяются с горизонтом, старое состояние исчезает;
+невалидный bitmap-сегмент (подменённые биты) → Failed, `TryComplete` = false,
+рабочий каталог цел.
+
+Полный набор: **134 кейса / 1536 проверок PASS**. `GrinNode.exe` собирается с
+`/W4 /WX`.
+
+**Честная граница:** сервис проверен как модуль; в процесс ноды он **не включён** —
+`MessageProcessor` пока не маршрутизирует 22/24/26/28 в `PibdSync`, `StateSyncer`
+не запускает его, `Recover` при старте не вызывается, `PIBD_HIST` в `ADVERTISED`
+не включён. Живой interop с Rust-нодой не проверялся.
+
+Осталось по G-09: проводка `PibdSync` в `MessageProcessor`/`StateSyncer` + `Recover`
+при старте, resume между рестартами, `PIBD_HIST` и живой interop.
 
 ---
 
@@ -416,7 +439,7 @@ write → serve → download → validate → rebuild по настоящим ф
 | Проводной формат capabilities/ID/лимитов | PASS (compile-check) |
 | Сборка зависимостей (offline, static CRT) | PASS |
 | Сборка `GrinNode.exe` + `Tests.exe` (`/W4 /WX`) | PASS |
-| Полный набор тестов (132 / 1504) | PASS |
+| Полный набор тестов (134 / 1536) | PASS |
 | PIBD проводной слой (модели + сообщения 21–28) | PASS (unit) |
 | PIBD верификация сегментов (`Root`/`Validate`/proof, bitmap→chunk) | PASS (unit) |
 | PIBD генерация сегментов и обратная сборка дерева | PASS (unit) |
@@ -429,6 +452,7 @@ write → serve → download → validate → rebuild по настоящим ф
 | PIBD запись состояния в файловый PMMR (staging) | PASS (unit) |
 | PIBD атомарная активация и восстановление | PASS (unit) |
 | PIBD выдача сегментов из файловых PMMR (прореженная) | PASS (unit) |
+| PIBD сервис полного цикла (`PibdSync`) | PASS (unit) |
 | Smoke-запуск ноды (floonet) | PASS |
 | Живая синхронизация с Rust v5.5.2 | NOT RUN |
 | PIBD desegmenter/planner/resume/serving | NOT IMPLEMENTED |
