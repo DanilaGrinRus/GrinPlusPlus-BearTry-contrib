@@ -63,8 +63,9 @@ public:
 			txHashSetDir / "kernel", snapshot.KernelMmrSize, snapshot.Kernels,
 			snapshot.KernelHashes, nullptr, "kernel");
 
-		if (outputs.Root != snapshot.OutputRoot) {
-			throw SegmentException(ESegmentError::Mismatch, "Written output root does not match the horizon");
+		if (outputs.Root != snapshot.OutputMmrRoot) {
+			throw SegmentException(
+				ESegmentError::Mismatch, "Written output root does not match the carried output root");
 		}
 
 		if (rangeProofs.Root != snapshot.RangeProofRoot) {

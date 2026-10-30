@@ -98,22 +98,21 @@ namespace
 		horizon.Height = 4242;
 		horizon.OutputMmrSize = outputs.GetSize();
 		horizon.KernelMmrSize = kernels.GetSize();
-		horizon.OutputRoot = outputs.GetRoot();
+		horizon.OutputRoot = MMRHashUtil::HashParentWithIndex(outputs.GetRoot(), bitmapMmr.GetRoot(), outputs.GetSize());
 		horizon.RangeProofRoot = rangeProofs.GetRoot();
 		horizon.KernelRoot = kernels.GetRoot();
-		horizon.BitmapRoot = bitmapMmr.GetRoot();
-
+		
 		PibdSession session(horizon);
 		REQUIRE(session.AcceptResponse(SegmentResponseMessage::CreateOutputBitmap(
 			horizon.BlockHash,
 			BitmapSegment::FromSegment(SegmentGenerator<BitmapChunk>::Generate(
 				bitmapMmr, SegmentIdentifier(PibdParams::BITMAP_SEGMENT_HEIGHT, 0))),
-			horizon.OutputRoot)));
+			outputs.GetRoot())));
 		REQUIRE(session.AcceptResponse(SegmentResponseMessage::CreateOutputs(
 			horizon.BlockHash,
 			SegmentGenerator<OutputIdentifier>::Generate(
 				outputs, SegmentIdentifier(PibdParams::OUTPUT_SEGMENT_HEIGHT, 0), &bitmap),
-			horizon.OutputRoot)));
+			outputs.GetRoot())));
 		REQUIRE(session.AcceptResponse(SegmentResponseMessage::CreateRangeProofs(
 			horizon.BlockHash,
 			SegmentGenerator<RangeProof>::Generate(
@@ -143,7 +142,7 @@ TEST_CASE("PibdStateWriter::WritesVerifiablePmmrFiles")
 	const fs::path outputDir = dir / "output";
 	std::shared_ptr<HashFile> pOutputHash = HashFile::Load(outputDir / "pmmr_hash.bin");
 	std::shared_ptr<const PruneList> pOutputPrune = PruneList::Load(outputDir / "pmmr_prun.bin");
-	REQUIRE(MMRHashUtil::Root(pOutputHash, snapshot.OutputMmrSize, pOutputPrune) == snapshot.OutputRoot);
+	REQUIRE(MMRHashUtil::Root(pOutputHash, snapshot.OutputMmrSize, pOutputPrune) == snapshot.OutputMmrRoot);
 
 	std::shared_ptr<DataFile<PibdStateWriter::OUTPUT_LEAF_SIZE>> pOutputData =
 		DataFile<PibdStateWriter::OUTPUT_LEAF_SIZE>::Load(outputDir / "pmmr_data.bin");

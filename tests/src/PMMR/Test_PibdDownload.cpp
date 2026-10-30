@@ -5,6 +5,7 @@
 #include <Core/Serialization/Serializer.h>
 #include <P2P/PIBD/PibdDownload.h>
 #include <P2P/PIBD/PibdParams.h>
+#include <PMMR/Common/MMRHashUtil.h>
 #include <PMMR/Common/MMRUtil.h>
 #include <PMMR/Models/BitmapChunk.h>
 #include <PMMR/Models/BitmapSegment.h>
@@ -92,11 +93,10 @@ TEST_CASE("PibdDownload::FullFlow")
 	horizon.Height = 1000;
 	horizon.OutputMmrSize = outputs.GetSize();
 	horizon.KernelMmrSize = kernels.GetSize();
-	horizon.OutputRoot = outputs.GetRoot();
+	horizon.OutputRoot = MMRHashUtil::HashParentWithIndex(outputs.GetRoot(), bitmapMmr.GetRoot(), outputs.GetSize());
 	horizon.RangeProofRoot = rangeProofs.GetRoot();
 	horizon.KernelRoot = kernels.GetRoot();
-	horizon.BitmapRoot = bitmapMmr.GetRoot();
-
+	
 	TestDownload download(horizon);
 	REQUIRE(download.GetPhase() == TestDownload::EPhase::Bitmap);
 	REQUIRE(download.GetRequiredCount() == 1);   // bitmap only, trees not created yet
@@ -109,7 +109,7 @@ TEST_CASE("PibdDownload::FullFlow")
 
 	const Segment<BitmapChunk> bitmapSegmentPmmr = SegmentGenerator<BitmapChunk>::Generate(
 		bitmapMmr, SegmentIdentifier(PibdParams::BITMAP_SEGMENT_HEIGHT, 0));
-	REQUIRE(download.AcceptBitmapSegment(BitmapSegment::FromSegment(bitmapSegmentPmmr)));
+	REQUIRE(download.AcceptBitmapSegment(BitmapSegment::FromSegment(bitmapSegmentPmmr), outputs.GetRoot()));
 	REQUIRE(download.GetPhase() == TestDownload::EPhase::Trees);
 	REQUIRE(download.GetOutputBitmap().Contains(0));
 	REQUIRE(download.GetOutputBitmap().Contains(100));
@@ -175,11 +175,10 @@ TEST_CASE("PibdDownload::RejectsSegmentsOutOfOrder")
 	TestDownload::Horizon horizon;
 	horizon.OutputMmrSize = outputs.GetSize();
 	horizon.KernelMmrSize = kernels.GetSize();
-	horizon.OutputRoot = outputs.GetRoot();
+	horizon.OutputRoot = MMRHashUtil::HashParentWithIndex(outputs.GetRoot(), bitmapMmr.GetRoot(), outputs.GetSize());
 	horizon.RangeProofRoot = outputs.GetRoot();
 	horizon.KernelRoot = kernels.GetRoot();
-	horizon.BitmapRoot = bitmapMmr.GetRoot();
-
+	
 	TestDownload download(horizon);
 
 	// Output segments are not accepted before the bitmap is assembled.
@@ -189,12 +188,12 @@ TEST_CASE("PibdDownload::RejectsSegmentsOutOfOrder")
 
 	// Wrong bitmap root: the segment is rejected and the phase does not advance.
 	TestDownload::Horizon badHorizon = horizon;
-	badHorizon.BitmapRoot = HASH::ZERO;
+	badHorizon.OutputRoot = HASH::ZERO;
 	TestDownload badDownload(badHorizon);
 	const Segment<BitmapChunk> bitmapSegment = SegmentGenerator<BitmapChunk>::Generate(
 		bitmapMmr, SegmentIdentifier(PibdParams::BITMAP_SEGMENT_HEIGHT, 0));
 	REQUIRE_THROWS_AS(
-		badDownload.AcceptBitmapSegment(BitmapSegment::FromSegment(bitmapSegment)), SegmentException);
+		badDownload.AcceptBitmapSegment(BitmapSegment::FromSegment(bitmapSegment), outputs.GetRoot()), SegmentException);
 	REQUIRE(badDownload.GetPhase() == TestDownload::EPhase::Bitmap);
 }
 
@@ -213,18 +212,17 @@ TEST_CASE("PibdDownload::DuplicatesAndMismatchedTrees")
 	TestDownload::Horizon horizon;
 	horizon.OutputMmrSize = outputs.GetSize();
 	horizon.KernelMmrSize = kernels.GetSize();
-	horizon.OutputRoot = outputs.GetRoot();
+	horizon.OutputRoot = MMRHashUtil::HashParentWithIndex(outputs.GetRoot(), bitmapMmr.GetRoot(), outputs.GetSize());
 	horizon.RangeProofRoot = outputs.GetRoot();
 	horizon.KernelRoot = kernels.GetRoot();
-	horizon.BitmapRoot = bitmapMmr.GetRoot();
-
+	
 	TestDownload download(horizon);
 	const BitmapSegment bitmapSegment = BitmapSegment::FromSegment(
 		SegmentGenerator<BitmapChunk>::Generate(
 			bitmapMmr, SegmentIdentifier(PibdParams::BITMAP_SEGMENT_HEIGHT, 0)));
 
-	REQUIRE(download.AcceptBitmapSegment(bitmapSegment));
-	REQUIRE(!download.AcceptBitmapSegment(bitmapSegment));   // late duplicate
+	REQUIRE(download.AcceptBitmapSegment(bitmapSegment, outputs.GetRoot()));
+	REQUIRE(!download.AcceptBitmapSegment(bitmapSegment, outputs.GetRoot()));   // late duplicate
 	REQUIRE(download.GetPhase() == TestDownload::EPhase::Trees);
 
 	// A pruned output segment validates and the duplicate is ignored.
@@ -239,7 +237,7 @@ TEST_CASE("PibdDownload::DuplicatesAndMismatchedTrees")
 	const Segment<PibdLeaf> unprunedOutput = SegmentGenerator<PibdLeaf>::Generate(
 		outputs, SegmentIdentifier(PibdParams::OUTPUT_SEGMENT_HEIGHT, 0));
 	TestDownload unprunedDownload(horizon);
-	REQUIRE(unprunedDownload.AcceptBitmapSegment(bitmapSegment));
+	REQUIRE(unprunedDownload.AcceptBitmapSegment(bitmapSegment, outputs.GetRoot()));
 	REQUIRE_THROWS_AS(unprunedDownload.AcceptOutputSegment(unprunedOutput), SegmentException);
 
 	// A kernel segment fed as an output segment is rejected by the proof check,
@@ -247,7 +245,7 @@ TEST_CASE("PibdDownload::DuplicatesAndMismatchedTrees")
 	const Segment<PibdLeaf> kernelSegment = SegmentGenerator<PibdLeaf>::Generate(
 		kernels, SegmentIdentifier(PibdParams::OUTPUT_SEGMENT_HEIGHT, 0));
 	TestDownload mismatchedDownload(horizon);
-	REQUIRE(mismatchedDownload.AcceptBitmapSegment(bitmapSegment));
+	REQUIRE(mismatchedDownload.AcceptBitmapSegment(bitmapSegment, outputs.GetRoot()));
 	REQUIRE_THROWS_AS(mismatchedDownload.AcceptOutputSegment(kernelSegment), SegmentException);
 
 	// Request cap is honoured.

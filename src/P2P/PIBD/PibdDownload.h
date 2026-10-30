@@ -65,15 +65,15 @@ public:
 		uint64_t Height = 0;
 		uint64_t OutputMmrSize = 0;   // also the rangeproof MMR size (one proof per output)
 		uint64_t KernelMmrSize = 0;
+		// Header output_root: H(output_mmr_size || output_pmmr_root || bitmap_root).
 		Hash OutputRoot;
 		Hash RangeProofRoot;
 		Hash KernelRoot;
-		Hash BitmapRoot;
 	};
 
 	explicit PibdDownloadT(Horizon horizon)
 		: m_horizon(std::move(horizon)),
-		m_bitmap(m_horizon.OutputMmrSize, m_horizon.BitmapRoot),
+		m_bitmap(m_horizon.OutputMmrSize, m_horizon.OutputRoot),
 		m_phase(EPhase::Bitmap)
 	{
 	}
@@ -111,6 +111,8 @@ public:
 
 		return m_bitmapObject.value();
 	}
+
+	const Hash& GetOutputMmrRoot() const { return m_outputMmrRoot; }
 
 	size_t GetReceivedCount() const
 	{
@@ -187,20 +189,27 @@ public:
 	}
 
 	// Returns false for a late/duplicate bitmap segment, true when newly accepted.
-	bool AcceptBitmapSegment(const BitmapSegment& segment)
+	// `outputMmrRoot` is carried by the bitmap response and authenticated here
+	// against the header output root together with the bitmap accumulator root.
+	bool AcceptBitmapSegment(const BitmapSegment& segment, const Hash& outputMmrRoot)
 	{
 		if (m_phase != EPhase::Bitmap) {
 			return false;
 		}
 
-		const bool accepted = m_bitmap.Accept(segment);
+		const bool accepted = m_bitmap.Accept(segment, outputMmrRoot);
 		if (m_bitmap.IsComplete()) {
 			m_bitmapObject = m_bitmap.BuildBitmap();
+			m_outputMmrRoot = m_bitmap.GetOutputMmrRoot();
+			const Hash bitmapMmrRoot = m_bitmap.BuildBitmapMmrRoot();
 			m_outputs = std::make_unique<PibdTreeAssembler<TOutput>>(
 				m_horizon.OutputMmrSize,
 				m_horizon.OutputRoot,
 				PibdParams::OUTPUT_SEGMENT_HEIGHT,
-				&m_bitmapObject.value());
+				&m_bitmapObject.value(),
+				bitmapMmrRoot,
+				m_horizon.OutputMmrSize,
+				false);
 			m_rangeProofs = std::make_unique<PibdTreeAssembler<TRangeProof>>(
 				m_horizon.OutputMmrSize,
 				m_horizon.RangeProofRoot,
@@ -258,6 +267,7 @@ private:
 
 	Horizon m_horizon;
 	BitmapSegmentAssembler m_bitmap;
+	Hash m_outputMmrRoot;
 	std::optional<VectorSegmentBitmap> m_bitmapObject;
 	std::unique_ptr<PibdTreeAssembler<TOutput>> m_outputs;
 	std::unique_ptr<PibdTreeAssembler<TRangeProof>> m_rangeProofs;

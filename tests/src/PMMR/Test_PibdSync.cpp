@@ -92,11 +92,10 @@ namespace
 			Horizon.Height = 321;
 			Horizon.OutputMmrSize = Outputs.GetSize();
 			Horizon.KernelMmrSize = Kernels.GetSize();
-			Horizon.OutputRoot = Outputs.GetRoot();
+			Horizon.OutputRoot = MMRHashUtil::HashParentWithIndex(Outputs.GetRoot(), BitmapMmr.GetRoot(), Outputs.GetSize());
 			Horizon.RangeProofRoot = RangeProofs.GetRoot();
 			Horizon.KernelRoot = Kernels.GetRoot();
-			Horizon.BitmapRoot = BitmapMmr.GetRoot();
-		}
+					}
 
 		static InMemoryPmmr<BitmapChunk> MakeBitmapMmr()
 		{
@@ -115,13 +114,13 @@ namespace
 					BitmapSegment::FromSegment(SegmentGenerator<BitmapChunk>::Generate(
 						fixture.BitmapMmr,
 						SegmentIdentifier(PibdParams::BITMAP_SEGMENT_HEIGHT, 0))),
-					fixture.Horizon.OutputRoot));
+					fixture.Outputs.GetRoot()));
 			case MessageTypes::GetOutputSegment:
 				return std::make_shared<SegmentResponseMessage>(SegmentResponseMessage::CreateOutputs(
 					request.GetBlockHash(),
 					SegmentGenerator<OutputIdentifier>::Generate(
 						fixture.Outputs, request.GetIdentifier(), &fixture.Bitmap),
-					fixture.Horizon.OutputRoot));
+					fixture.Outputs.GetRoot()));
 			case MessageTypes::GetRangeProofSegment:
 				return std::make_shared<SegmentResponseMessage>(SegmentResponseMessage::CreateRangeProofs(
 					request.GetBlockHash(),
@@ -184,7 +183,7 @@ TEST_CASE("PibdSync::DownloadsWritesAndActivates")
 	// Write + activate, then verify the live state from its files.
 	REQUIRE(sync.TryComplete());
 	REQUIRE(sync.GetStatus() == PibdSync::EStatus::Activated);
-	REQUIRE(RootOf(root / "live" / "output", fixture.Horizon.OutputMmrSize) == fixture.Horizon.OutputRoot);
+	REQUIRE(RootOf(root / "live" / "output", fixture.Horizon.OutputMmrSize) == fixture.Outputs.GetRoot());
 	REQUIRE(RootOf(root / "live" / "kernel", fixture.Horizon.KernelMmrSize) == fixture.Horizon.KernelRoot);
 	REQUIRE(!FileUtil::Exists(root / "live" / "old_state.txt"));
 
@@ -224,7 +223,7 @@ TEST_CASE("PibdSync::BadSegmentFailsWithoutTouchingLiveState")
 		valid.GetProof());
 
 	const SegmentResponseMessage badResponse = SegmentResponseMessage::CreateOutputBitmap(
-		pRequest->GetBlockHash(), tampered, fixture.Horizon.OutputRoot);
+		pRequest->GetBlockHash(), tampered, fixture.Outputs.GetRoot());
 
 	REQUIRE(!sync.OnResponse(badResponse, start));
 	REQUIRE(sync.GetStatus() == PibdSync::EStatus::Failed);

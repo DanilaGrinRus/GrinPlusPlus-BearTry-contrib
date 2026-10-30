@@ -43,6 +43,12 @@ public:
 	uint64_t GetOutputMmrSize() const noexcept { return m_pOutputPMMR->GetSize(); }
 	uint64_t GetKernelMmrSize() const noexcept { return m_pKernelMMR->GetSize(); }
 
+	// Output PMMR root carried by bitmap segments; the header output_root commits
+	// to it together with the bitmap accumulator root.
+	Hash GetOutputMmrRoot() const { return m_pOutputPMMR->Root(m_pOutputPMMR->GetSize()); }
+
+	Hash GetBitmapMmrRoot() const { return BuildBitmapMmr().GetRoot(); }
+
 	// Unspent outputs, one bit per output leaf index.
 	VectorSegmentBitmap GetOutputBitmap() const
 	{

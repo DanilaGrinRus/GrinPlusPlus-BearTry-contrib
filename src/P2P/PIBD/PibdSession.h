@@ -144,7 +144,13 @@ public:
 					throw SegmentException(ESegmentError::Mismatch, "OutputBitmapSegment without a bitmap segment payload");
 				}
 
-				return m_download.AcceptBitmapSegment(*segment);
+				const std::optional<Hash>& outputMmrRoot = message.GetExtraRoot();
+				if (!outputMmrRoot.has_value()) {
+					throw SegmentException(
+						ESegmentError::Mismatch, "OutputBitmapSegment without the output root");
+				}
+
+				return m_download.AcceptBitmapSegment(*segment, outputMmrRoot.value());
 			}
 			case MessageTypes::OutputSegment:
 			{

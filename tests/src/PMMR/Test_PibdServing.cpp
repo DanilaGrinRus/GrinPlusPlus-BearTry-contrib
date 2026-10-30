@@ -100,22 +100,21 @@ namespace
 		horizon.Height = 999;
 		horizon.OutputMmrSize = outputs.GetSize();
 		horizon.KernelMmrSize = kernels.GetSize();
-		horizon.OutputRoot = outputs.GetRoot();
+		horizon.OutputRoot = MMRHashUtil::HashParentWithIndex(outputs.GetRoot(), bitmapMmr.GetRoot(), outputs.GetSize());
 		horizon.RangeProofRoot = rangeProofs.GetRoot();
 		horizon.KernelRoot = kernels.GetRoot();
-		horizon.BitmapRoot = bitmapMmr.GetRoot();
-
+		
 		PibdSession session(horizon);
 		REQUIRE(session.AcceptResponse(SegmentResponseMessage::CreateOutputBitmap(
 			horizon.BlockHash,
 			BitmapSegment::FromSegment(SegmentGenerator<BitmapChunk>::Generate(
 				bitmapMmr, SegmentIdentifier(PibdParams::BITMAP_SEGMENT_HEIGHT, 0))),
-			horizon.OutputRoot)));
+			outputs.GetRoot())));
 		REQUIRE(session.AcceptResponse(SegmentResponseMessage::CreateOutputs(
 			horizon.BlockHash,
 			SegmentGenerator<OutputIdentifier>::Generate(
 				outputs, SegmentIdentifier(PibdParams::OUTPUT_SEGMENT_HEIGHT, 0), &bitmap),
-			horizon.OutputRoot)));
+			outputs.GetRoot())));
 		REQUIRE(session.AcceptResponse(SegmentResponseMessage::CreateRangeProofs(
 			horizon.BlockHash,
 			SegmentGenerator<RangeProof>::Generate(
@@ -168,19 +167,18 @@ TEST_CASE("PibdSegmentService::ServesStateThatValidates")
 		h.OutputRoot = written.OutputRoot;
 		h.RangeProofRoot = written.RangeProofRoot;
 		h.KernelRoot = written.KernelRoot;
-		h.BitmapRoot = written.BitmapRoot;
-		return h;
+				return h;
 	}();
 
 	PibdSession downloader(horizon);
 	REQUIRE(downloader.AcceptResponse(SegmentResponseMessage::CreateOutputBitmap(
 		horizon.BlockHash,
 		service.GetBitmapSegment(SegmentIdentifier(PibdParams::BITMAP_SEGMENT_HEIGHT, 0)),
-		horizon.OutputRoot)));
+		written.OutputMmrRoot)));
 	REQUIRE(downloader.AcceptResponse(SegmentResponseMessage::CreateOutputs(
 		horizon.BlockHash,
 		service.GetOutputSegment(SegmentIdentifier(PibdParams::OUTPUT_SEGMENT_HEIGHT, 0)),
-		horizon.OutputRoot)));
+		service.GetBitmapMmrRoot())));
 	REQUIRE(downloader.AcceptResponse(SegmentResponseMessage::CreateRangeProofs(
 		horizon.BlockHash,
 		service.GetRangeProofSegment(SegmentIdentifier(PibdParams::RANGEPROOF_SEGMENT_HEIGHT, 0)))));

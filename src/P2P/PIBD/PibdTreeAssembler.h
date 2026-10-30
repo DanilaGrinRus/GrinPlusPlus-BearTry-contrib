@@ -29,12 +29,18 @@ public:
 		const uint64_t mmrSize,
 		Hash root,
 		const uint8_t segmentHeight,
-		const SegmentBitmap* bitmap
+		const SegmentBitmap* bitmap,
+		std::optional<Hash> otherRoot = std::nullopt,
+		uint64_t hashLastPos = 0,
+		bool otherIsLeft = false
 	)
 		: m_mmrSize(mmrSize),
 		m_root(std::move(root)),
 		m_segmentHeight(segmentHeight),
 		m_bitmap(bitmap),
+		m_otherRoot(std::move(otherRoot)),
+		m_hashLastPos(hashLastPos),
+		m_otherIsLeft(otherIsLeft),
 		m_required(mmrSize == 0 ? 0 : SegmentIdentifier::CountSegmentsRequired(mmrSize, segmentHeight))
 	{
 		m_segments.resize((size_t)m_required);
@@ -103,7 +109,11 @@ public:
 			return false;
 		}
 
-		if (m_bitmap != nullptr) {
+		if (m_bitmap != nullptr && m_otherRoot.has_value()) {
+			// Root is combined with another root before the final comparison.
+			segment.ValidateWithOtherRoot(
+				m_mmrSize, m_bitmap, m_root, m_hashLastPos, m_otherRoot.value(), m_otherIsLeft);
+		} else if (m_bitmap != nullptr) {
 			segment.ValidateWithBitmap(m_mmrSize, *m_bitmap, m_root);
 		} else {
 			segment.Validate(m_mmrSize, m_root);
@@ -189,6 +199,9 @@ private:
 	Hash m_root;
 	uint8_t m_segmentHeight;
 	const SegmentBitmap* m_bitmap;
+	std::optional<Hash> m_otherRoot;
+	uint64_t m_hashLastPos;
+	bool m_otherIsLeft;
 	uint64_t m_required;
 	std::vector<std::optional<std::vector<std::pair<uint64_t, T>>>> m_segments;
 	std::map<uint64_t, Hash> m_storedHashes;

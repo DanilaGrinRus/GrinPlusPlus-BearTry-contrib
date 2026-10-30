@@ -107,11 +107,10 @@ TEST_CASE("PibdSnapshot::BuildsFromCompletedDownload")
 	horizon.Height = 12345;
 	horizon.OutputMmrSize = MmrSizeForLeaves(numOutputs);
 	horizon.KernelMmrSize = MmrSizeForLeaves(numKernels);
-	horizon.OutputRoot = outputs.GetRoot();
+	horizon.OutputRoot = MMRHashUtil::HashParentWithIndex(outputs.GetRoot(), bitmapMmr.GetRoot(), outputs.GetSize());
 	horizon.RangeProofRoot = rangeProofs.GetRoot();
 	horizon.KernelRoot = kernels.GetRoot();
-	horizon.BitmapRoot = bitmapMmr.GetRoot();
-
+	
 	PibdSession session(horizon);
 
 	// An incomplete download has no snapshot.
@@ -121,12 +120,12 @@ TEST_CASE("PibdSnapshot::BuildsFromCompletedDownload")
 		horizon.BlockHash,
 		BitmapSegment::FromSegment(SegmentGenerator<BitmapChunk>::Generate(
 			bitmapMmr, SegmentIdentifier(PibdParams::BITMAP_SEGMENT_HEIGHT, 0))),
-		horizon.OutputRoot)));
+		outputs.GetRoot())));
 	REQUIRE(session.AcceptResponse(SegmentResponseMessage::CreateOutputs(
 		horizon.BlockHash,
 		SegmentGenerator<OutputIdentifier>::Generate(
 			outputs, SegmentIdentifier(PibdParams::OUTPUT_SEGMENT_HEIGHT, 0), &bitmap),
-		horizon.OutputRoot)));
+		outputs.GetRoot())));
 	REQUIRE(session.AcceptResponse(SegmentResponseMessage::CreateRangeProofs(
 		horizon.BlockHash,
 		SegmentGenerator<RangeProof>::Generate(
@@ -205,22 +204,21 @@ TEST_CASE("PibdSnapshot::PrunedTreeNeedsStoredHashes")
 	horizon.BlockHash = Hash::ValueOf(5);
 	horizon.OutputMmrSize = MmrSizeForLeaves(numOutputs);
 	horizon.KernelMmrSize = MmrSizeForLeaves(2);
-	horizon.OutputRoot = outputs.GetRoot();
+	horizon.OutputRoot = MMRHashUtil::HashParentWithIndex(outputs.GetRoot(), bitmapMmr.GetRoot(), outputs.GetSize());
 	horizon.RangeProofRoot = rangeProofs.GetRoot();
 	horizon.KernelRoot = kernels.GetRoot();
-	horizon.BitmapRoot = bitmapMmr.GetRoot();
-
+	
 	PibdSession session(horizon);
 	REQUIRE(session.AcceptResponse(SegmentResponseMessage::CreateOutputBitmap(
 		horizon.BlockHash,
 		BitmapSegment::FromSegment(SegmentGenerator<BitmapChunk>::Generate(
 			bitmapMmr, SegmentIdentifier(PibdParams::BITMAP_SEGMENT_HEIGHT, 0))),
-		horizon.OutputRoot)));
+		outputs.GetRoot())));
 	REQUIRE(session.AcceptResponse(SegmentResponseMessage::CreateOutputs(
 		horizon.BlockHash,
 		SegmentGenerator<OutputIdentifier>::Generate(
 			outputs, SegmentIdentifier(PibdParams::OUTPUT_SEGMENT_HEIGHT, 0), &bitmap),
-		horizon.OutputRoot)));
+		outputs.GetRoot())));
 	REQUIRE(session.AcceptResponse(SegmentResponseMessage::CreateRangeProofs(
 		horizon.BlockHash,
 		SegmentGenerator<RangeProof>::Generate(
@@ -235,7 +233,7 @@ TEST_CASE("PibdSnapshot::PrunedTreeNeedsStoredHashes")
 
 	// With the hashes the root rebuilds exactly.
 	REQUIRE(ComputePrunedTreeRoot(snapshot.OutputMmrSize, snapshot.Outputs, snapshot.OutputHashes)
-		== horizon.OutputRoot);
+		== snapshot.OutputMmrRoot);
 
 	// Without them the rebuild must fail rather than invent a root.
 	const std::map<uint64_t, Hash> noHashes;
@@ -251,5 +249,5 @@ TEST_CASE("PibdSnapshot::PrunedTreeNeedsStoredHashes")
 	}
 
 	REQUIRE(ComputePrunedTreeRoot(snapshot.OutputMmrSize, snapshot.Outputs, tampered)
-		!= horizon.OutputRoot);
+		!= snapshot.OutputMmrRoot);
 }

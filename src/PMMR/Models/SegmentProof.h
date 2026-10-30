@@ -133,6 +133,32 @@ public:
 		return root;
 	}
 
+	// Validate this proof when the final hashing step also includes `otherRoot`
+	// (grin PIBD: header output_root commits to output PMMR root and bitmap root).
+	void ValidateWith(
+		const uint64_t lastPos,
+		const Hash& mmrRoot,
+		const uint64_t segmentFirstPos0,
+		const uint64_t segmentLastPos0,
+		const Hash& segmentRoot,
+		const uint64_t segmentUnprunedPos,
+		const uint64_t hashLastPos,
+		const Hash& otherRoot,
+		const bool otherIsLeft
+	) const
+	{
+		Hash root = ReconstructRoot(
+			lastPos, segmentFirstPos0, segmentLastPos0, segmentRoot, segmentUnprunedPos);
+		root = otherIsLeft
+			? MMRHashUtil::HashParentWithIndex(otherRoot, root, hashLastPos)
+			: MMRHashUtil::HashParentWithIndex(root, otherRoot, hashLastPos);
+
+		if (root != mmrRoot) {
+			throw SegmentException(
+				ESegmentError::Mismatch, "Segment proof does not reconstruct the combined MMR root");
+		}
+	}
+
 	// Validate this proof by equating the reconstructed root with the actual one.
 	void Validate(
 		const uint64_t lastPos,

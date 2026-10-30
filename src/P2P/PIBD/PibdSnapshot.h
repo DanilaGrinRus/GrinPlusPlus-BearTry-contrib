@@ -32,10 +32,11 @@ struct PibdSnapshot
 	uint64_t KernelMmrSize = 0;
 
 	// Horizon roots, kept so a writer can verify what it produced.
+	// Header output_root and the output PMMR root it commits to.
 	Hash OutputRoot;
+	Hash OutputMmrRoot;
 	Hash RangeProofRoot;
 	Hash KernelRoot;
-	Hash BitmapRoot;
 
 	// (leaf index, leaf) sorted by leaf index; only the unpruned leaves.
 	std::vector<std::pair<uint64_t, OutputIdentifier>> Outputs;
@@ -99,9 +100,9 @@ inline PibdSnapshot BuildSnapshot(const PibdDownload& download)
 	snapshot.OutputMmrSize = download.GetHorizon().OutputMmrSize;
 	snapshot.KernelMmrSize = download.GetHorizon().KernelMmrSize;
 	snapshot.OutputRoot = download.GetHorizon().OutputRoot;
+	snapshot.OutputMmrRoot = download.GetOutputMmrRoot();
 	snapshot.RangeProofRoot = download.GetHorizon().RangeProofRoot;
 	snapshot.KernelRoot = download.GetHorizon().KernelRoot;
-	snapshot.BitmapRoot = download.GetHorizon().BitmapRoot;
 	snapshot.Bitmap = download.GetOutputBitmap();
 	snapshot.Outputs = PibdSnapshotDetail::ToLeafIndices(download.GetOutputs().GetLeaves());
 	snapshot.RangeProofs = PibdSnapshotDetail::ToLeafIndices(download.GetRangeProofs().GetLeaves());
@@ -129,7 +130,7 @@ inline PibdSnapshot BuildSnapshot(const PibdDownload& download)
 	}
 
 	if (ComputePrunedTreeRoot(snapshot.OutputMmrSize, snapshot.Outputs, snapshot.OutputHashes)
-		!= download.GetHorizon().OutputRoot) {
+		!= snapshot.OutputMmrRoot) {
 		throw SegmentException(
 			ESegmentError::Mismatch, "Rebuilt output tree root does not match the horizon");
 	}

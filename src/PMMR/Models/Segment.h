@@ -350,6 +350,43 @@ public:
 		m_proof.Validate(mmrSize, mmrRoot, range.first, range.second, segmentRoot.first, segmentRoot.second);
 	}
 
+	// Validate a segment whose tree root is combined with `otherRoot` before the
+	// final comparison (grin PIBD: header output_root commits the output PMMR
+	// root and the bitmap accumulator root).
+	// `bitmap` may be null for a non-pruned tree (bitmap segments).
+	void ValidateWithOtherRoot(
+		const uint64_t mmrSize,
+		const SegmentBitmap* bitmap,
+		const Hash& mmrRoot,
+		const uint64_t hashLastPos,
+		const Hash& otherRoot,
+		const bool otherIsLeft
+	) const
+	{
+		const std::pair<uint64_t, uint64_t> range = m_identifier.SegmentPosRange(mmrSize);
+		Hash segmentRoot;
+		uint64_t segmentUnprunedPos;
+		if (bitmap == nullptr) {
+			segmentRoot = Root(mmrSize);
+			segmentUnprunedPos = range.second + 1;
+		} else {
+			const std::pair<Hash, uint64_t> unpruned = FirstUnprunedParentWithBitmap(mmrSize, *bitmap);
+			segmentRoot = unpruned.first;
+			segmentUnprunedPos = unpruned.second;
+		}
+
+		m_proof.ValidateWith(
+			mmrSize,
+			mmrRoot,
+			range.first,
+			range.second,
+			segmentRoot,
+			segmentUnprunedPos,
+			hashLastPos,
+			otherRoot,
+			otherIsLeft);
+	}
+
 	void Serialize(Serializer& serializer) const final
 	{
 		m_identifier.Serialize(serializer);

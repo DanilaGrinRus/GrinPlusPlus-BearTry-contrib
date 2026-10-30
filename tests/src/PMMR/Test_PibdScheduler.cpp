@@ -96,11 +96,10 @@ namespace
 			Horizon.Height = 7000;
 			Horizon.OutputMmrSize = Outputs.GetSize();
 			Horizon.KernelMmrSize = Kernels.GetSize();
-			Horizon.OutputRoot = Outputs.GetRoot();
+			Horizon.OutputRoot = MMRHashUtil::HashParentWithIndex(Outputs.GetRoot(), BitmapMmr.GetRoot(), Outputs.GetSize());
 			Horizon.RangeProofRoot = RangeProofs.GetRoot();
 			Horizon.KernelRoot = Kernels.GetRoot();
-			Horizon.BitmapRoot = BitmapMmr.GetRoot();
-		}
+					}
 
 		static InMemoryPmmr<BitmapChunk> MakeBitmapMmr()
 		{
@@ -187,7 +186,7 @@ TEST_CASE("PibdScheduler::CompletesThroughMessages")
 	// Bitmap.
 	REQUIRE(scheduler.TakeRequests(start).size() == 1);
 	const SegmentResponseMessage bitmapResponse = SegmentResponseMessage::CreateOutputBitmap(
-		fixture.Horizon.BlockHash, fixture.BitmapResponse(), fixture.Horizon.OutputRoot);
+		fixture.Horizon.BlockHash, fixture.BitmapResponse(), fixture.Outputs.GetRoot());
 	REQUIRE(scheduler.OnResponse(bitmapResponse, start + std::chrono::seconds(1)));
 	REQUIRE(scheduler.GetInFlightCount() == 0);
 
@@ -199,7 +198,7 @@ TEST_CASE("PibdScheduler::CompletesThroughMessages")
 		MessageTypes::GetOutputSegment);
 	REQUIRE(scheduler.OnResponse(
 		SegmentResponseMessage::CreateOutputs(
-			fixture.Horizon.BlockHash, fixture.OutputResponse(), fixture.Horizon.OutputRoot),
+			fixture.Horizon.BlockHash, fixture.OutputResponse(), fixture.BitmapMmr.GetRoot()),
 		start + std::chrono::seconds(3)));
 
 	REQUIRE(scheduler.TakeRequests(start + std::chrono::seconds(3))[0]->GetMessageType() ==
@@ -231,7 +230,7 @@ TEST_CASE("PibdScheduler::TimeoutReissuesTheSameSegment")
 	REQUIRE(scheduler.TakeRequests(start).size() == 1);
 	REQUIRE(scheduler.OnResponse(
 		SegmentResponseMessage::CreateOutputBitmap(
-			fixture.Horizon.BlockHash, fixture.BitmapResponse(), fixture.Horizon.OutputRoot),
+			fixture.Horizon.BlockHash, fixture.BitmapResponse(), fixture.Outputs.GetRoot()),
 		start));
 
 	const std::vector<IMessagePtr> outputRequest = scheduler.TakeRequests(start);
@@ -246,7 +245,7 @@ TEST_CASE("PibdScheduler::TimeoutReissuesTheSameSegment")
 
 	REQUIRE(scheduler.OnResponse(
 		SegmentResponseMessage::CreateOutputs(
-			fixture.Horizon.BlockHash, fixture.OutputResponse(), fixture.Horizon.OutputRoot),
+			fixture.Horizon.BlockHash, fixture.OutputResponse(), fixture.BitmapMmr.GetRoot()),
 		start + std::chrono::seconds(22)));
 	REQUIRE(scheduler.GetInFlightCount() == 0);
 }

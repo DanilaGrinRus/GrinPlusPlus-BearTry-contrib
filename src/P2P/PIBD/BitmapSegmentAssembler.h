@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../PMMR/Models/BitmapChunk.h"
+#include "../../PMMR/Models/InMemoryPmmr.h"
 #include "../../PMMR/Models/BitmapSegment.h"
 #include "../../PMMR/Models/SegmentBitmap.h"
 #include "../../PMMR/Models/SegmentException.h"
@@ -33,11 +34,12 @@ public:
 	static constexpr uint64_t CHUNK_CHUNKS = 1ULL << SEGMENT_HEIGHT;   // chunks per segment
 	static constexpr uint64_t CHUNK_BITS = BitmapChunk::LEN_BITS;
 
-	BitmapSegmentAssembler(const uint64_t outputMmrSize, Hash bitmapRoot)
+	BitmapSegmentAssembler(const uint64_t outputMmrSize, Hash headerOutputRoot)
 		: m_numOutputs(MMRUtil::GetNumLeaves(outputMmrSize)),
 		m_numChunks((m_numOutputs + CHUNK_BITS - 1) / CHUNK_BITS),
 		m_bitmapMmrSize(m_numChunks == 0 ? 0 : 2 * m_numChunks - (uint64_t)BitUtil::CountBitsSet(m_numChunks)),
-		m_bitmapRoot(std::move(bitmapRoot))
+		m_outputMmrSize(outputMmrSize),
+		m_headerOutputRoot(std::move(headerOutputRoot))
 	{
 		const uint64_t required =
 			m_bitmapMmrSize == 0 ? 0 : SegmentIdentifier::CountSegmentsRequired(m_bitmapMmrSize, SEGMENT_HEIGHT);
@@ -84,9 +86,12 @@ public:
 	}
 
 	// Validate and store one bitmap segment.
+	// `outputMmrRoot` is the output PMMR root carried by the response; every bitmap
+	// segment must prove H(output_mmr_size || output_root || bitmap_root) equals the
+	// horizon header output root (grin Segment::validate_with, other_is_left = true).
 	// Returns false when the segment was already received (duplicate), true when
 	// it was newly accepted. Throws SegmentException for an invalid segment.
-	bool Accept(const BitmapSegment& segment)
+	bool Accept(const BitmapSegment& segment, const Hash& outputMmrRoot)
 	{
 		const SegmentIdentifier& identifier = segment.GetIdentifier();
 		if (identifier.GetHeight() != SEGMENT_HEIGHT) {
@@ -120,12 +125,55 @@ public:
 					std::to_string(expectedChunks));
 		}
 
-		pmmrSegment.Validate(m_bitmapMmrSize, m_bitmapRoot);
+		if (m_outputMmrRoot.has_value()) {
+			if (m_outputMmrRoot.value() != outputMmrRoot) {
+				throw SegmentException(
+					ESegmentError::Mismatch, "Bitmap segments carry different output roots");
+			}
+		} else {
+			m_outputMmrRoot = outputMmrRoot;
+		}
+
+		pmmrSegment.ValidateWithOtherRoot(
+			m_bitmapMmrSize,
+			nullptr,
+			m_headerOutputRoot,
+			m_outputMmrSize,
+			outputMmrRoot,
+			true);
+
+		// The combined root is only meaningful if the segment proof reproduces the
+		// bitmap MMR root, which ValidateWithOtherRoot already enforced.
 		m_segments[(size_t)identifier.GetIdx()] = pmmrSegment.GetLeafData();
 		return true;
 	}
 
 	// Assemble the output bitmap; requires IsComplete().
+	const Hash& GetOutputMmrRoot() const
+	{
+		if (!m_outputMmrRoot.has_value()) {
+			throw SegmentException(ESegmentError::NonExistent, "No bitmap segment received yet");
+		}
+
+		return m_outputMmrRoot.value();
+	}
+
+	// Root of the bitmap accumulator MMR assembled from the accepted segments.
+	Hash BuildBitmapMmrRoot() const
+	{
+		if (!IsComplete()) {
+			throw SegmentException(ESegmentError::NonExistent, "Bitmap segments are incomplete");
+		}
+
+		std::vector<BitmapChunk> chunks;
+		for (const std::optional<std::vector<BitmapChunk>>& segment : m_segments) {
+			chunks.insert(chunks.end(), segment->cbegin(), segment->cend());
+		}
+
+		const InMemoryPmmr<BitmapChunk> mmr(std::move(chunks));
+		return mmr.GetRoot();
+	}
+
 	VectorSegmentBitmap BuildBitmap() const
 	{
 		if (!IsComplete()) {
@@ -152,6 +200,8 @@ private:
 	uint64_t m_numOutputs;
 	uint64_t m_numChunks;
 	uint64_t m_bitmapMmrSize;
-	Hash m_bitmapRoot;
+	uint64_t m_outputMmrSize;
+	Hash m_headerOutputRoot;
+	std::optional<Hash> m_outputMmrRoot;
 	std::vector<std::optional<std::vector<BitmapChunk>>> m_segments;
 };

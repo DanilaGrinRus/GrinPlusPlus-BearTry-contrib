@@ -10,6 +10,7 @@
 #include <Crypto/Models/Signature.h>
 #include <P2P/PIBD/PibdParams.h>
 #include <P2P/PIBD/PibdSession.h>
+#include <PMMR/Common/MMRHashUtil.h>
 #include <PMMR/Common/MMRUtil.h>
 #include <PMMR/Models/BitmapChunk.h>
 #include <PMMR/Models/BitmapSegment.h>
@@ -113,10 +114,9 @@ TEST_CASE("PibdSession::EndToEndMessageFlow")
 	horizon.Height = 5000;
 	horizon.OutputMmrSize = MmrSizeForLeaves(numOutputs);
 	horizon.KernelMmrSize = MmrSizeForLeaves(numKernels);
-	horizon.OutputRoot = outputs.GetRoot();
+	horizon.OutputRoot = MMRHashUtil::HashParentWithIndex(outputs.GetRoot(), bitmapMmr.GetRoot(), outputs.GetSize());
 	horizon.RangeProofRoot = rangeProofs.GetRoot();
 	horizon.KernelRoot = kernels.GetRoot();
-	horizon.BitmapRoot = bitmapMmr.GetRoot();
 
 	REQUIRE(horizon.OutputMmrSize == outputs.GetSize());
 	REQUIRE(horizon.KernelMmrSize == kernels.GetSize());
@@ -139,13 +139,13 @@ TEST_CASE("PibdSession::EndToEndMessageFlow")
 	const Segment<BitmapChunk> bitmapSegmentPmmr = SegmentGenerator<BitmapChunk>::Generate(
 		bitmapMmr, SegmentIdentifier(PibdParams::BITMAP_SEGMENT_HEIGHT, 0));
 	const SegmentResponseMessage bitmapResponse = SegmentResponseMessage::CreateOutputBitmap(
-		horizon.BlockHash, BitmapSegment::FromSegment(bitmapSegmentPmmr), horizon.OutputRoot);
+		horizon.BlockHash, BitmapSegment::FromSegment(bitmapSegmentPmmr), outputs.GetRoot());
 	REQUIRE(session.AcceptResponse(bitmapResponse));
 	REQUIRE(session.GetDownload().GetPhase() == PibdDownload::EPhase::Trees);
 
 	// A response for another horizon block is ignored, not applied.
 	const SegmentResponseMessage staleResponse = SegmentResponseMessage::CreateOutputBitmap(
-		HASH::ZERO, BitmapSegment::FromSegment(bitmapSegmentPmmr), horizon.OutputRoot);
+		HASH::ZERO, BitmapSegment::FromSegment(bitmapSegmentPmmr), outputs.GetRoot());
 	REQUIRE(!session.AcceptResponse(staleResponse));
 
 	// 3. Tree request messages (output, rangeproof, kernel).
@@ -163,7 +163,7 @@ TEST_CASE("PibdSession::EndToEndMessageFlow")
 		kernels, SegmentIdentifier(PibdParams::KERNEL_SEGMENT_HEIGHT, 0));
 
 	REQUIRE(session.AcceptResponse(SegmentResponseMessage::CreateOutputs(
-		horizon.BlockHash, outputSegment, horizon.OutputRoot)));
+		horizon.BlockHash, outputSegment, bitmapMmr.GetRoot())));
 	REQUIRE(session.AcceptResponse(SegmentResponseMessage::CreateRangeProofs(
 		horizon.BlockHash, rangeProofSegment)));
 	REQUIRE(session.AcceptResponse(SegmentResponseMessage::CreateKernels(
@@ -191,16 +191,15 @@ TEST_CASE("PibdSession::RejectsMismatchedPayload")
 	horizon.BlockHash = Hash::ValueOf(11);
 	horizon.OutputMmrSize = MmrSizeForLeaves(numOutputs);
 	horizon.KernelMmrSize = MmrSizeForLeaves(2);
-	horizon.OutputRoot = outputs.GetRoot();
+	horizon.OutputRoot = MMRHashUtil::HashParentWithIndex(outputs.GetRoot(), bitmapMmr.GetRoot(), outputs.GetSize());
 	horizon.RangeProofRoot = rangeProofs.GetRoot();
 	horizon.KernelRoot = kernels.GetRoot();
-	horizon.BitmapRoot = bitmapMmr.GetRoot();
 
 	PibdSession session(horizon);
 	const Segment<BitmapChunk> bitmapSegmentPmmr = SegmentGenerator<BitmapChunk>::Generate(
 		bitmapMmr, SegmentIdentifier(PibdParams::BITMAP_SEGMENT_HEIGHT, 0));
 	REQUIRE(session.AcceptResponse(SegmentResponseMessage::CreateOutputBitmap(
-		horizon.BlockHash, BitmapSegment::FromSegment(bitmapSegmentPmmr), horizon.OutputRoot)));
+		horizon.BlockHash, BitmapSegment::FromSegment(bitmapSegmentPmmr), outputs.GetRoot())));
 
 	// A tampered kernel segment (valid shape, wrong leaf data) is routed to the
 	// kernel tree and rejected by the proof check.

@@ -96,22 +96,21 @@ namespace
 		horizon.Height = 777;
 		horizon.OutputMmrSize = outputs.GetSize();
 		horizon.KernelMmrSize = kernels.GetSize();
-		horizon.OutputRoot = outputs.GetRoot();
+		horizon.OutputRoot = MMRHashUtil::HashParentWithIndex(outputs.GetRoot(), bitmapMmr.GetRoot(), outputs.GetSize());
 		horizon.RangeProofRoot = rangeProofs.GetRoot();
 		horizon.KernelRoot = kernels.GetRoot();
-		horizon.BitmapRoot = bitmapMmr.GetRoot();
-
+		
 		PibdSession session(horizon);
 		REQUIRE(session.AcceptResponse(SegmentResponseMessage::CreateOutputBitmap(
 			horizon.BlockHash,
 			BitmapSegment::FromSegment(SegmentGenerator<BitmapChunk>::Generate(
 				bitmapMmr, SegmentIdentifier(PibdParams::BITMAP_SEGMENT_HEIGHT, 0))),
-			horizon.OutputRoot)));
+			outputs.GetRoot())));
 		REQUIRE(session.AcceptResponse(SegmentResponseMessage::CreateOutputs(
 			horizon.BlockHash,
 			SegmentGenerator<OutputIdentifier>::Generate(
 				outputs, SegmentIdentifier(PibdParams::OUTPUT_SEGMENT_HEIGHT, 0), &bitmap),
-			horizon.OutputRoot)));
+			outputs.GetRoot())));
 		REQUIRE(session.AcceptResponse(SegmentResponseMessage::CreateRangeProofs(
 			horizon.BlockHash,
 			SegmentGenerator<RangeProof>::Generate(
@@ -158,7 +157,7 @@ TEST_CASE("PibdActivation::ReplacesLiveStateAtomically")
 
 	// The new state is in place and still verifies from disk.
 	REQUIRE(PibdActivation::IsCompleteState(live));
-	REQUIRE(RootOf(live / "output", snapshot.OutputMmrSize) == snapshot.OutputRoot);
+	REQUIRE(RootOf(live / "output", snapshot.OutputMmrSize) == snapshot.OutputMmrRoot);
 	REQUIRE(RootOf(live / "kernel", snapshot.KernelMmrSize) == snapshot.KernelRoot);
 
 	// The old state, the backup and the marker are gone.

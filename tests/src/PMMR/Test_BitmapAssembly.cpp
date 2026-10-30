@@ -3,6 +3,7 @@
 #include <Common/Util/BitUtil.h>
 #include <Core/Serialization/Serializer.h>
 #include <P2P/PIBD/BitmapSegmentAssembler.h>
+#include <PMMR/Common/MMRHashUtil.h>
 #include <PMMR/Common/MMRUtil.h>
 #include <PMMR/Models/BitmapChunk.h>
 #include <PMMR/Models/BitmapSegment.h>
@@ -74,15 +75,20 @@ TEST_CASE("BitmapSegmentAssembler::SingleSegment")
 	const InMemoryPmmr<BitmapChunk> mmr = MakeBitmapMmr(chunks);
 	const Hash root = mmr.GetRoot();
 
-	BitmapSegmentAssembler assembler(MmrSizeForLeaves(numOutputs), root);
+	// The header output root commits H(output_mmr_size || output_root || bitmap_root).
+	const Hash outputRoot = Hash::ValueOf(3);
+	const Hash headerRoot = MMRHashUtil::HashParentWithIndex(outputRoot, root, MmrSizeForLeaves(numOutputs));
+	BitmapSegmentAssembler assembler(MmrSizeForLeaves(numOutputs), headerRoot);
 	REQUIRE(assembler.GetNumChunks() == 2);
 	REQUIRE(assembler.GetRequiredSegments() == 1);
 	REQUIRE(!assembler.IsComplete());
 
 	const BitmapSegment segment = SegmentFor(mmr, 0);
-	REQUIRE(assembler.Accept(segment));
+	REQUIRE(assembler.Accept(segment, outputRoot));
 	REQUIRE(assembler.IsComplete());
-	REQUIRE(!assembler.Accept(segment));   // duplicate is ignored
+	REQUIRE(assembler.BuildBitmapMmrRoot() == root);
+	REQUIRE(assembler.GetOutputMmrRoot() == outputRoot);
+	REQUIRE(!assembler.Accept(segment, outputRoot));   // duplicate is ignored
 
 	const VectorSegmentBitmap bitmap = assembler.BuildBitmap();
 	REQUIRE(bitmap.Contains(0));
@@ -102,15 +108,22 @@ TEST_CASE("BitmapSegmentAssembler::RejectsInvalidSegments")
 	const Hash root = mmr.GetRoot();
 	const BitmapSegment valid = SegmentFor(mmr, 0);
 
+	const Hash outputRoot = Hash::ValueOf(4);
+	const Hash headerRoot = MMRHashUtil::HashParentWithIndex(outputRoot, root, MmrSizeForLeaves(numOutputs));
+
 	// Wrong horizon root.
 	BitmapSegmentAssembler wrongRoot(MmrSizeForLeaves(numOutputs), HASH::ZERO);
-	REQUIRE_THROWS_AS(wrongRoot.Accept(valid), SegmentException);
+	REQUIRE_THROWS_AS(wrongRoot.Accept(valid, outputRoot), SegmentException);
+
+	// Correct segment but a wrong carried output root: the combined root fails.
+	BitmapSegmentAssembler wrongOutputRoot(MmrSizeForLeaves(numOutputs), headerRoot);
+	REQUIRE_THROWS_AS(wrongOutputRoot.Accept(valid, HASH::ZERO), SegmentException);
 
 	// Wrong segment height.
-	BitmapSegmentAssembler assembler(MmrSizeForLeaves(numOutputs), root);
+	BitmapSegmentAssembler assembler(MmrSizeForLeaves(numOutputs), headerRoot);
 	const Segment<BitmapChunk> wrongHeight = SegmentGenerator<BitmapChunk>::Generate(
 		mmr, SegmentIdentifier(BitmapSegmentAssembler::SEGMENT_HEIGHT + 1, 0));
-	REQUIRE_THROWS_AS(assembler.Accept(BitmapSegment::FromSegment(wrongHeight)), SegmentException);
+	REQUIRE_THROWS_AS(assembler.Accept(BitmapSegment::FromSegment(wrongHeight), outputRoot), SegmentException);
 
 	// Out of range index: relabel the valid segment (generation itself would
 	// refuse to create a segment that does not exist).
@@ -118,7 +131,7 @@ TEST_CASE("BitmapSegmentAssembler::RejectsInvalidSegments")
 		SegmentIdentifier(BitmapSegmentAssembler::SEGMENT_HEIGHT, 1),
 		valid.GetBlocks(),
 		valid.GetProof());
-	REQUIRE_THROWS_AS(assembler.Accept(outOfRange), SegmentException);
+	REQUIRE_THROWS_AS(assembler.Accept(outOfRange, outputRoot), SegmentException);
 
 	// Tampered chunk bits must break the merkle proof.
 	std::vector<BitmapBlock> blocks;
@@ -128,7 +141,7 @@ TEST_CASE("BitmapSegmentAssembler::RejectsInvalidSegments")
 		SegmentIdentifier(BitmapSegmentAssembler::SEGMENT_HEIGHT, 0),
 		std::move(blocks),
 		valid.GetProof());
-	REQUIRE_THROWS_AS(assembler.Accept(tampered), SegmentException);
+	REQUIRE_THROWS_AS(assembler.Accept(tampered, outputRoot), SegmentException);
 }
 
 TEST_CASE("BitmapSegmentAssembler::MultipleSegmentsInReverseOrder")
@@ -144,7 +157,9 @@ TEST_CASE("BitmapSegmentAssembler::MultipleSegmentsInReverseOrder")
 	const InMemoryPmmr<BitmapChunk> mmr = MakeBitmapMmr(chunks);
 	const Hash root = mmr.GetRoot();
 
-	BitmapSegmentAssembler assembler(MmrSizeForLeaves(numOutputs), root);
+	const Hash outputRoot = Hash::ValueOf(5);
+	const Hash headerRoot = MMRHashUtil::HashParentWithIndex(outputRoot, root, MmrSizeForLeaves(numOutputs));
+	BitmapSegmentAssembler assembler(MmrSizeForLeaves(numOutputs), headerRoot);
 	REQUIRE(assembler.GetNumChunks() == numChunks);
 	REQUIRE(assembler.GetRequiredSegments() == 2);
 
@@ -152,15 +167,16 @@ TEST_CASE("BitmapSegmentAssembler::MultipleSegmentsInReverseOrder")
 	const BitmapSegment second = SegmentFor(mmr, 1);
 	const BitmapSegment first = SegmentFor(mmr, 0);
 
-	REQUIRE(assembler.Accept(second));
+	REQUIRE(assembler.Accept(second, outputRoot));
 	REQUIRE(assembler.GetReceivedSegments() == 1);
 	REQUIRE(!assembler.IsComplete());
 	REQUIRE(assembler.GetMissing().size() == 1);
 	REQUIRE(assembler.GetMissing()[0] == SegmentIdentifier(BitmapSegmentAssembler::SEGMENT_HEIGHT, 0));
 
-	REQUIRE(assembler.Accept(first));
+	REQUIRE(assembler.Accept(first, outputRoot));
 	REQUIRE(assembler.IsComplete());
 	REQUIRE(assembler.GetMissing().empty());
+	REQUIRE(assembler.BuildBitmapMmrRoot() == root);
 
 	const VectorSegmentBitmap bitmap = assembler.BuildBitmap();
 	REQUIRE(bitmap.Contains(0));
