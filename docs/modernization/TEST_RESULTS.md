@@ -71,8 +71,8 @@ pwsh tools/build/build.ps1 -Target Tests
 ```
 | Артефакт | Размер | SHA-256 |
 |---|---|---|
-| `bin/Release/Release/GrinNode.exe` | 7 225 344 | `241BA8709AE34B52DB7CC9890BBA3E102B6613F85C6C30DA25DD5307B310EC27` |
-| `bin/Release/Release/Tests.exe` | 8 386 560 | `7984459E862F800D0C1037358D71D19E88180585E9246C59341F6801AD7649B7` |
+| `bin/Release/Release/GrinNode.exe` | 7 225 344 | `3B38B794A668819C9C5228459BC1371B633338509E635D5CF2E1DE2D4724D4D2` |
+| `bin/Release/Release/Tests.exe` | 8 401 920 | `6C014CB2804BFCF723B5DE2C86329D3AF6DC880F3DC12F89E92B90012A109BC0` |
 
 Сборка идёт с `/W4 /WX` (проектные флаги не ослаблены). Потребовались только
 конфигурационные правки: `NOMINMAX`, идемпотентная установка `/W4 /WX`,
@@ -83,7 +83,7 @@ pwsh tools/build/build.ps1 -Target Tests
 ```
 $env:HOMEDRIVE='C:'; $env:HOMEPATH='\DHW\.tmp\testhome'   # изоляция данных тестов
 bin\Release\Release\Tests.exe --reporter compact
-→ Passed all 134 test cases with 1536 assertions.
+→ Passed all 134 test cases with 1540 assertions.
 ```
 В набор входят новые `Test_ByteBuffer`, `Test_P2PCompat` и `Test_Segment`
 (16 кейсов PIBD-проводного слоя: MMR-позиции, `SegmentIdentifier`, `SegmentProof`,
@@ -425,6 +425,32 @@ write → serve → download → validate → rebuild по настоящим ф
 не запускает его, `Recover` при старте не вызывается, `PIBD_HIST` в `ADVERTISED`
 не включён. Живой interop с Rust-нодой не проверялся.
 
+## E26. Сверка с эталоном Rust v5.5.2: исправлена модель корней PIBD — PASS (unit)
+
+По исходникам `grin_core 5.5.2` (`core/src/core/pmmr/segment.rs`) и `grin_chain 5.5.2`
+(`txhashset/desegmenter.rs`, `txhashset/segmenter.rs`) установлено, что модель,
+реализованная ранее, **неверна для реального протокола**:
+
+* `header.output_root = H(output_mmr_size ‖ output_pmmr_root ‖ bitmap_root)` — заголовок
+  коммитит оба корня; отдельного поля bitmap-root в заголовке нет;
+* bitmap-сегмент **несёт output-PMMR root** и проверяется через `validate_with`
+  (other=output root, `other_is_left = true`, индекс = `output_mmr_size`);
+* output-сегмент проверяется через `validate_with` с **локально собранным**
+  bitmap-root (other справа), а не против `output_root` напрямую;
+* rangeproof-сегменты — против `range_proof_root` с bitmap; ядра — против `kernel_root`.
+
+Реализовано: `SegmentProof::ValidateWith`, `Segment::ValidateWithOtherRoot`,
+`BitmapSegmentAssembler` (комбинированная проверка + `GetOutputMmrRoot`/`BuildBitmapMmrRoot`),
+`PibdTreeAssembler` с режимом combined-root, `PibdDownload::Horizon` без bitmap-root,
+`PibdSnapshot::OutputMmrRoot` (аутентифицированный выходной PMMR root), writer сверяет
+записанный output-root с ним; тесты переведены на комбинированную модель (собраны
+`MMRHashUtil::HashParentWithIndex`). Набор: **134 кейса / 1540 проверок PASS**.
+
+Ссылки на эталон: [segment.rs](https://docs.rs/grin_core/5.5.2/src/grin_core/core/pmmr/segment.rs.html),
+[desegmenter.rs](https://docs.rs/grin_chain/5.5.2/src/grin_chain/txhashset/desegmenter.rs.html),
+[segmenter.rs](https://docs.rs/grin_chain/5.5.2/src/grin_chain/txhashset/segmenter.rs.html).
+Крейты сохранены локально в `.toolchain/reference` (вне git).
+
 Осталось по G-09: проводка `PibdSync` в `MessageProcessor`/`StateSyncer` + `Recover`
 при старте, resume между рестартами, `PIBD_HIST` и живой interop.
 
@@ -439,7 +465,7 @@ write → serve → download → validate → rebuild по настоящим ф
 | Проводной формат capabilities/ID/лимитов | PASS (compile-check) |
 | Сборка зависимостей (offline, static CRT) | PASS |
 | Сборка `GrinNode.exe` + `Tests.exe` (`/W4 /WX`) | PASS |
-| Полный набор тестов (134 / 1536) | PASS |
+| Полный набор тестов (134 / 1540) | PASS |
 | PIBD проводной слой (модели + сообщения 21–28) | PASS (unit) |
 | PIBD верификация сегментов (`Root`/`Validate`/proof, bitmap→chunk) | PASS (unit) |
 | PIBD генерация сегментов и обратная сборка дерева | PASS (unit) |
@@ -453,6 +479,7 @@ write → serve → download → validate → rebuild по настоящим ф
 | PIBD атомарная активация и восстановление | PASS (unit) |
 | PIBD выдача сегментов из файловых PMMR (прореженная) | PASS (unit) |
 | PIBD сервис полного цикла (`PibdSync`) | PASS (unit) |
+| PIBD модель корней сверена с Rust v5.5.2 (E26) | PASS (unit) |
 | Smoke-запуск ноды (floonet) | PASS |
 | Живая синхронизация с Rust v5.5.2 | NOT RUN |
 | PIBD desegmenter/planner/resume/serving | NOT IMPLEMENTED |
