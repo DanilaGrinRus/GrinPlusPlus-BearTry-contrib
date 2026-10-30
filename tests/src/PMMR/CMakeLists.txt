@@ -4,6 +4,8 @@ list_append_parent(
     "Test_MMRUtil.cpp"
     "Test_BitmapAssembly.cpp"
     "Test_PibdDownload.cpp"
+    "Test_PibdSession.cpp"
+    "Test_PibdScheduler.cpp"
     "Test_Segment.cpp"
     "Test_SegmentGenerator.cpp"
     "Test_PruneList.cpp"
