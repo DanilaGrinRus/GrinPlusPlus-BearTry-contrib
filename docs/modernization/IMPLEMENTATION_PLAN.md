@@ -42,11 +42,12 @@
 
 ## Фаза 2 — PIBD: клиент + desegmenter (P0)
 
-**Прогресс (раунд 2):** проводной слой готов и покрыт 16 unit-кейсами
-(`src/PMMR/Models/*`, `src/P2P/Messages/Segment*Message.h`): MMR-позиции,
-`SegmentIdentifier`, `SegmentProof`, `Segment<T>`, `BitmapBlock`, `BitmapSegment`,
-сообщения 21–28 с лимитами из Rust. Следующий шаг — верификация сегментов
-(`Segment::root`, `first_unpruned_parent`, `validate`) и desegmenter.
+**Прогресс (раунды 2–3):** проводной слой и верификация готовы и покрыты 21
+unit-кейсом (`src/PMMR/Models/*`, `src/P2P/Messages/Segment*Message.h`): MMR-позиции,
+`SegmentIdentifier`, `SegmentProof` с `ReconstructRoot`/`Validate`, `Segment<T>` с
+`Root`/`FirstUnprunedParent`/`Validate`, `BitmapChunk`/`BitmapBlock`/`BitmapSegment`
+с `ToSegment`, сообщения 21–28. Следующий шаг — desegmenter (применение к PMMR
+с prune shifts) и планировщик загрузки.
 
 1. Сообщения 21–28 (уже в `MessageTypes`): `SegmentRequest{block_hash, identifier}`,
    `SegmentResponse<T>`, `OutputSegmentResponse`, `OutputBitmapSegmentResponse`,

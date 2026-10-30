@@ -71,8 +71,8 @@ pwsh tools/build/build.ps1 -Target Tests
 ```
 | Артефакт | Размер | SHA-256 |
 |---|---|---|
-| `bin/Release/Release/GrinNode.exe` | 7 225 344 | `A66125C33C3EBCD4B40360C9A35A473738C37DEB7D62E01C32D17D13CE1DB0F4` |
-| `bin/Release/Release/Tests.exe` | 7 856 640 | `6BD54A96C337363984153A024665B00974BB0E7DB77DAA788283A443BC68A9E8` |
+| `bin/Release/Release/GrinNode.exe` | 7 225 344 | `C358B96F4643B4566F1EEE5DF0636ED1309E96FEF9B313FCF34A59B29A248403` |
+| `bin/Release/Release/Tests.exe` | 7 895 040 | `1D20A7AC831365E791A263A70EC36A9BF753FF21DD6A404D5E170F95E7833F5E` |
 
 Сборка идёт с `/W4 /WX` (проектные флаги не ослаблены). Потребовались только
 конфигурационные правки: `NOMINMAX`, идемпотентная установка `/W4 /WX`,
@@ -83,7 +83,7 @@ pwsh tools/build/build.ps1 -Target Tests
 ```
 $env:HOMEDRIVE='C:'; $env:HOMEPATH='\DHW\.tmp\testhome'   # изоляция данных тестов
 bin\Release\Release\Tests.exe --reporter compact
-→ Passed all 96 test cases with 656 assertions.
+→ Passed all 101 test cases with 674 assertions.
 ```
 В набор входят новые `Test_ByteBuffer`, `Test_P2PCompat` и `Test_Segment`
 (16 кейсов PIBD-проводного слоя: MMR-позиции, `SegmentIdentifier`, `SegmentProof`,
@@ -114,25 +114,34 @@ GrinNode.exe --floonet --headless --no-wallet   # с изолированным 
 
 Требуют сборки Rust-ноды и отдельного стенда; запланированы в Фазах 5-6.
 
-## E12. PIBD: проводной слой — PASS (unit)
+## E12. PIBD: проводной слой и верификация сегментов — PASS (unit)
 
-Реализовано и покрыто тестами (`tests/src/PMMR/Test_Segment.cpp`, 16 кейсов):
+Реализовано и покрыто тестами (`tests/src/PMMR/Test_Segment.cpp`, 21 кейс):
 
 * `MMRUtil`: `PeakMapHeight`, `InsertionToPmmrIndex`, `GetNumLeaves`,
   `BintreePostorderHeight`, `IsLeaf`, `IsLeftSibling`, `FamilyBranch`,
   `BintreeLeftmost/Rightmost` — порт `core/src/core/pmmr/pmmr.rs`.
 * `SegmentIdentifier` (height u8 + idx u64; height > 32 отвергается — защита от
   сдвига, которого нет в Rust; 9/11/13 — рабочие высоты).
-* `SegmentProof` (count ≤ 1 000 000 и count ≤ remaining/32).
-* `Segment<T>` (позиции на проводе 1-based, строго возрастающие; лимиты из Rust).
-* `BitmapBlock` (режимы Raw/Positive/Negative, chunk-count ≤ 16, индексы < n_bits)
-  и `BitmapSegment` (height ≤ 13, ≥1 блок, полные промежуточные блоки, checked offset).
-* Сообщения 21–28 (`SegmentRequestMessage`, `SegmentResponseMessage`) с round-trip
-  для всех четырёх типов ответов.
+* `SegmentProof`: wire-формат, лимиты и **`ReconstructRoot`/`Validate`** — порт
+  `reconstruct_root`/`validate` (соседние узлы, bagged peaks справа и слева).
+* `Segment<T>`: wire-формат, лимиты, **`Root`**, **`FirstUnprunedParent`**,
+  **`Validate`** для полных и финальных (частичных) сегментов.
+* `BitmapChunk` (1024 бита, LSB-first), `BitmapBlock` (Raw/Positive/Negative,
+  ≤16 чанков), `BitmapSegment` (height ≤ 13, валидация блоков, checked offset) и
+  **`ToSegment()`** — порт `into_segment`, включая перенос битов в чанки.
+* Сообщения 21–28 с round-trip для всех четырёх типов ответов.
 
-Осталось по G-09: `Segment::root/first_unpruned_parent/validate`,
-`BitmapSegment → Segment<BitmapChunk>`, desegmenter, планировщик загрузки, resume,
-серверная выдача сегментов и включение `PIBD_HIST`.
+Верификация проверена на вручную построенном MMR (7 узлов / 4 листа): корень
+полного сегмента, корень поддерева, доказательства с левым и правым соседом,
+отказ при подмене листа, при неверном корне и при отсутствии hash-а в proof.
+Хеш-примитивы (`HashLeafWithIndex`, `HashParentWithIndex`) взяты из существующего
+`MMRHashUtil`, поэтому тесты проверяют сборку дерева и логику proof, а не сами
+blake2b-примитивы.
+
+Осталось по G-09: desegmenter (применение сегментов к PMMR с prune shifts),
+планировщик загрузки (horizon, in-flight, retry, resume), серверная выдача
+сегментов и включение `PIBD_HIST`.
 
 ---
 
@@ -145,9 +154,10 @@ GrinNode.exe --floonet --headless --no-wallet   # с изолированным 
 | Проводной формат capabilities/ID/лимитов | PASS (compile-check) |
 | Сборка зависимостей (offline, static CRT) | PASS |
 | Сборка `GrinNode.exe` + `Tests.exe` (`/W4 /WX`) | PASS |
-| Полный набор тестов (96 / 656) | PASS |
+| Полный набор тестов (101 / 674) | PASS |
 | PIBD проводной слой (модели + сообщения 21–28) | PASS (unit) |
+| PIBD верификация сегментов (`Root`/`Validate`/proof, bitmap→chunk) | PASS (unit) |
 | Smoke-запуск ноды (floonet) | PASS |
 | Живая синхронизация с Rust v5.5.2 | NOT RUN |
-| PIBD verify/desegmenter/planner/serving | NOT IMPLEMENTED |
+| PIBD desegmenter/planner/resume/serving | NOT IMPLEMENTED |
 | PIHD | NOT IMPLEMENTED |
