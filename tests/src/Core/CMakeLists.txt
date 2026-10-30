@@ -1,0 +1,9 @@
+list_append_parent(
+    test_sources
+    ${CMAKE_CURRENT_LIST_DIR}
+    "File/Test_AppendOnlyFile.cpp"
+    "Models/Test_BlockHeader.cpp"
+    "Models/Test_Genesis.cpp"
+    "Models/Test_ShortId.cpp"
+    "Validation/Test_TxBodyValidator.cpp"
+)
