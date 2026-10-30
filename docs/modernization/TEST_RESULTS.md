@@ -71,8 +71,8 @@ pwsh tools/build/build.ps1 -Target Tests
 ```
 | Артефакт | Размер | SHA-256 |
 |---|---|---|
-| `bin/Release/Release/GrinNode.exe` | 7 225 344 | `7B083723C406B71751BE5F8013A4B9B062C1F8C02520E21FC698B691FAC232D0` |
-| `bin/Release/Release/Tests.exe` | 7 922 688 | `8F6B7E2DB2B38208BF41F74FCA66E634B82ED78845F0FE8875E3E478448A1A27` |
+| `bin/Release/Release/GrinNode.exe` | 7 225 344 | `017DD0F7137F247BCAD0D4BCD1E273F79DC058BE53612E6D2BE805449A1B7888` |
+| `bin/Release/Release/Tests.exe` | 7 938 560 | `BBDF0F65094529D152A915DFB6AA4961216BEDC5E15F8D7CE968E5C9D71AE22C` |
 
 Сборка идёт с `/W4 /WX` (проектные флаги не ослаблены). Потребовались только
 конфигурационные правки: `NOMINMAX`, идемпотентная установка `/W4 /WX`,
@@ -83,7 +83,7 @@ pwsh tools/build/build.ps1 -Target Tests
 ```
 $env:HOMEDRIVE='C:'; $env:HOMEPATH='\DHW\.tmp\testhome'   # изоляция данных тестов
 bin\Release\Release\Tests.exe --reporter compact
-→ Passed all 106 test cases with 806 assertions.
+→ Passed all 108 test cases with 817 assertions.
 ```
 В набор входят новые `Test_ByteBuffer`, `Test_P2PCompat` и `Test_Segment`
 (16 кейсов PIBD-проводного слоя: MMR-позиции, `SegmentIdentifier`, `SegmentProof`,
@@ -157,7 +157,27 @@ bagging пиков) и `SegmentGenerator<T>` (порт `Segment::from_pmmr` +
 `insertion_to_pmmr_index(N-1)+1` (это позиция последнего листа, а не размер);
 тест на 4 листах поймал ошибку до попадания в основной код.
 
-Осталось по G-09: bitmap-aware `Root` (pruned leaves), desegmenter с prune shifts,
+## E14. PIBD: bitmap-aware верификация и pruned-сегменты — PASS (unit)
+
+`Segment<T>` получил `RootWithBitmap` / `FirstUnprunedParentWithBitmap` /
+`ValidateWithBitmap` (порт `root`/`first_unpruned_parent` для prunable MMR),
+`SegmentBitmap` (интерфейс `Contains`/`RangeCardinality` + векторная реализация для
+тестов) и правило обязательности листа из Rust (собственный бит, бит соседа или
+последний лист MMR). `SegmentGenerator` умеет генерировать pruned-сегменты:
+только обязательные листья, все внутренние хеши и отдельный случай полностью
+вырезанного сегмента (`start_pos`).
+
+Тесты (2 кейса + расширение прежних):
+
+* pruned-сегменты дерева на 8 листьев валидируются против корня с bitmap;
+* полностью вырезанный сегмент не имеет корня (`RootWithBitmap` = nullopt),
+  но проходит проверку через сохранённый хеш первого непрореженного родителя;
+* подмена сохранённого хеша в таком сегменте отвергается.
+
+Найдено `/W4 /WX`: C4373 из-за `const` на by-value параметре при переопределении —
+исправлено изменением сигнатур, а не отключением предупреждения.
+
+Осталось по G-09: desegmenter с prune shifts и записью в файловый PMMR,
 планировщик загрузки (horizon, in-flight, retry, resume), серверная выдача
 сегментов и включение `PIBD_HIST`.
 
@@ -172,10 +192,11 @@ bagging пиков) и `SegmentGenerator<T>` (порт `Segment::from_pmmr` +
 | Проводной формат capabilities/ID/лимитов | PASS (compile-check) |
 | Сборка зависимостей (offline, static CRT) | PASS |
 | Сборка `GrinNode.exe` + `Tests.exe` (`/W4 /WX`) | PASS |
-| Полный набор тестов (106 / 806) | PASS |
+| Полный набор тестов (108 / 817) | PASS |
 | PIBD проводной слой (модели + сообщения 21–28) | PASS (unit) |
 | PIBD верификация сегментов (`Root`/`Validate`/proof, bitmap→chunk) | PASS (unit) |
 | PIBD генерация сегментов и обратная сборка дерева | PASS (unit) |
+| PIBD pruned-сегменты и bitmap-aware верификация | PASS (unit) |
 | Smoke-запуск ноды (floonet) | PASS |
 | Живая синхронизация с Rust v5.5.2 | NOT RUN |
 | PIBD desegmenter/planner/resume/serving | NOT IMPLEMENTED |

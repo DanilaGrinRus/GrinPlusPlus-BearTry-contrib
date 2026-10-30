@@ -42,13 +42,13 @@
 
 ## Фаза 2 — PIBD: клиент + desegmenter (P0)
 
-**Прогресс (раунды 2–4):** проводной слой, верификация и генерация сегментов
-готовы и покрыты 26 unit-кейсами (`src/PMMR/Models/*`, `src/P2P/Messages/Segment*Message.h`):
-MMR-позиции, `SegmentIdentifier`, `SegmentProof` с `ReconstructRoot`/`Validate`,
-`Segment<T>` с `Root`/`FirstUnprunedParent`/`Validate`, `BitmapChunk`/`BitmapBlock`/
-`BitmapSegment` с `ToSegment`, `InMemoryPmmr` + `SegmentGenerator` (генерация и
-обратная сборка дерева), сообщения 21–28. Следующий шаг — bitmap-aware `Root`
-(pruned leaves), desegmenter с prune shifts и планировщик загрузки.
+**Прогресс (раунды 2–5):** проводной слой, верификация (включая pruned-сегменты)
+и генерация готовы, 28 unit-кейсов (`src/PMMR/Models/*`, `src/P2P/Messages/Segment*Message.h`):
+MMR-позиции, `SegmentIdentifier`, `SegmentProof`, `Segment<T>` с
+`Root`/`Validate`/`RootWithBitmap`/`ValidateWithBitmap`, `BitmapChunk`/`BitmapBlock`/
+`BitmapSegment`, `SegmentBitmap`, `InMemoryPmmr` + `SegmentGenerator` (полные и
+pruned-сегменты), сообщения 21–28. Следующий шаг — desegmenter с prune shifts и
+записью в PMMR, затем планировщик загрузки.
 
 1. Сообщения 21–28 (уже в `MessageTypes`): `SegmentRequest{block_hash, identifier}`,
    `SegmentResponse<T>`, `OutputSegmentResponse`, `OutputBitmapSegmentResponse`,
