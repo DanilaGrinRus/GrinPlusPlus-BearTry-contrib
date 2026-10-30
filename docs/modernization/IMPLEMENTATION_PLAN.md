@@ -47,8 +47,10 @@
 MMR-позиции, `SegmentIdentifier`, `SegmentProof`, `Segment<T>` с
 `Root`/`Validate`/`RootWithBitmap`/`ValidateWithBitmap`, `BitmapChunk`/`BitmapBlock`/
 `BitmapSegment`, `SegmentBitmap`, `InMemoryPmmr` + `SegmentGenerator` (полные и
-pruned-сегменты), сообщения 21–28. Следующий шаг — desegmenter с prune shifts и
-записью в PMMR, затем планировщик загрузки.
+pruned-сегменты), сообщения 21–28. Добавлена фаза 1 загрузки (`BitmapSegmentAssembler`): приём и проверка
+bitmap-сегментов, сборка output-битмапа. Следующий шаг — ассемблеры
+output/rangeproof/kernel, desegmenter с prune shifts и записью в PMMR, затем
+планировщик загрузки.
 
 1. Сообщения 21–28 (уже в `MessageTypes`): `SegmentRequest{block_hash, identifier}`,
    `SegmentResponse<T>`, `OutputSegmentResponse`, `OutputBitmapSegmentResponse`,

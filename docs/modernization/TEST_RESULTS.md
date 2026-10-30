@@ -71,8 +71,8 @@ pwsh tools/build/build.ps1 -Target Tests
 ```
 | Артефакт | Размер | SHA-256 |
 |---|---|---|
-| `bin/Release/Release/GrinNode.exe` | 7 225 344 | `017DD0F7137F247BCAD0D4BCD1E273F79DC058BE53612E6D2BE805449A1B7888` |
-| `bin/Release/Release/Tests.exe` | 7 938 560 | `BBDF0F65094529D152A915DFB6AA4961216BEDC5E15F8D7CE968E5C9D71AE22C` |
+| `bin/Release/Release/GrinNode.exe` | 7 225 344 | `94F7A45076AA5CC19A5FDA99EC3A099AAC53F5BBAE58E8482C55E47C61EA0D7C` |
+| `bin/Release/Release/Tests.exe` | 7 977 472 | `6CB78542C79449E89626D4604BE3E8E8832800848E5FF3AA1D15F6BBF1447D25` |
 
 Сборка идёт с `/W4 /WX` (проектные флаги не ослаблены). Потребовались только
 конфигурационные правки: `NOMINMAX`, идемпотентная установка `/W4 /WX`,
@@ -83,7 +83,7 @@ pwsh tools/build/build.ps1 -Target Tests
 ```
 $env:HOMEDRIVE='C:'; $env:HOMEPATH='\DHW\.tmp\testhome'   # изоляция данных тестов
 bin\Release\Release\Tests.exe --reporter compact
-→ Passed all 108 test cases with 817 assertions.
+→ Passed all 112 test cases with 854 assertions.
 ```
 В набор входят новые `Test_ByteBuffer`, `Test_P2PCompat` и `Test_Segment`
 (16 кейсов PIBD-проводного слоя: MMR-позиции, `SegmentIdentifier`, `SegmentProof`,
@@ -177,9 +177,31 @@ bagging пиков) и `SegmentGenerator<T>` (порт `Segment::from_pmmr` +
 Найдено `/W4 /WX`: C4373 из-за `const` на by-value параметре при переопределении —
 исправлено изменением сигнатур, а не отключением предупреждения.
 
-Осталось по G-09: desegmenter с prune shifts и записью в файловый PMMR,
-планировщик загрузки (horizon, in-flight, retry, resume), серверная выдача
-сегментов и включение `PIBD_HIST`.
+## E15. PIBD фаза 1: сборка output-битмапа — PASS (unit)
+
+`BitmapSegment::FromSegment` (обратное к `ToSegment`) и `BitmapSegmentAssembler`
+(`src/P2P/PIBD/`): принимает bitmap-сегменты высоты 9, проверяет идентификатор,
+ожидаемое число чанков (включая короткий хвостовой сегмент), валидирует сегмент
+против корня bitmap-MMR и собирает битмап. Дубликаты игнорируются, отсутствующие
+сегменты перечисляются, неполный набор не собирается.
+
+Тесты (`Test_BitmapAssembly.cpp`, 4 кейса):
+
+* round-trip `BitmapSegment ↔ Segment<BitmapChunk>`;
+* один сегмент на 2 чанка: сборка, проверка битов, дубликат, неполнота;
+* отказы: неверный корень горизонта, неверная высота сегмента, индекс вне
+  диапазона, подмена битов (ломает merkle proof);
+* 600 чанков / 2 сегмента, принятые в обратном порядке: `GetMissing`,
+  `IsComplete`, сверка выборочных битов.
+
+**Найдено тестами:** (1) размер bitmap-MMR считался как `insertion_to_pmmr_index(N-1)+1`
+вместо `2N − popcount(N)`, из-за чего `peaks` был пуст; (2) тест передавал число
+выходов вместо размера MMR; (3) относительные include-пути из `src/P2P/PIBD` были
+на уровень выше. Все три исправлены в коде/тестах, а не обойдены.
+
+Осталось по G-09: ассемблеры output/rangeproof/kernel, desegmenter с prune shifts
+и записью в файловый PMMR, планировщик загрузки (horizon, in-flight, retry,
+resume), серверная выдача сегментов и включение `PIBD_HIST`.
 
 ---
 
@@ -192,11 +214,12 @@ bagging пиков) и `SegmentGenerator<T>` (порт `Segment::from_pmmr` +
 | Проводной формат capabilities/ID/лимитов | PASS (compile-check) |
 | Сборка зависимостей (offline, static CRT) | PASS |
 | Сборка `GrinNode.exe` + `Tests.exe` (`/W4 /WX`) | PASS |
-| Полный набор тестов (108 / 817) | PASS |
+| Полный набор тестов (112 / 854) | PASS |
 | PIBD проводной слой (модели + сообщения 21–28) | PASS (unit) |
 | PIBD верификация сегментов (`Root`/`Validate`/proof, bitmap→chunk) | PASS (unit) |
 | PIBD генерация сегментов и обратная сборка дерева | PASS (unit) |
 | PIBD pruned-сегменты и bitmap-aware верификация | PASS (unit) |
+| PIBD фаза 1: сборка output-битмапа | PASS (unit) |
 | Smoke-запуск ноды (floonet) | PASS |
 | Живая синхронизация с Rust v5.5.2 | NOT RUN |
 | PIBD desegmenter/planner/resume/serving | NOT IMPLEMENTED |
