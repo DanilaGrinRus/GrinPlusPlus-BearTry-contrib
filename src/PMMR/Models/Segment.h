@@ -1,7 +1,11 @@
 #pragma once
 
+#include "SegmentException.h"
 #include "SegmentIdentifier.h"
 #include "SegmentProof.h"
+
+#include "../Common/MMRHashUtil.h"
+#include "../Common/MMRUtil.h"
 
 #include <Core/Exceptions/DeserializationException.h>
 #include <Core/Serialization/ByteBuffer.h>
@@ -10,6 +14,8 @@
 #include <Crypto/Models/Hash.h>
 
 #include <cstdint>
+#include <optional>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -88,6 +94,105 @@ public:
 	const std::vector<uint64_t>& GetLeafPositions() const noexcept { return m_leafPositions; }
 	const std::vector<T>& GetLeafData() const noexcept { return m_leafData; }
 	const SegmentProof& GetProof() const noexcept { return m_proof; }
+
+	const T& GetLeafDataAt(const uint64_t pos0) const
+	{
+		for (size_t i = 0; i < m_leafPositions.size(); ++i) {
+			if (m_leafPositions[i] == pos0) {
+				return m_leafData[i];
+			}
+		}
+
+		throw SegmentException(
+			ESegmentError::MissingLeaf, "Segment is missing the leaf at position " + std::to_string(pos0));
+	}
+
+	// Root hash of this segment, computed from its leaves and (for pruned data)
+	// the stored hashes. Ported from grin Segment::root for the non-prunable
+	// case (a peer that serves full segments).
+	Hash Root(const uint64_t mmrSize) const
+	{
+		const std::pair<uint64_t, uint64_t> range = m_identifier.SegmentPosRange(mmrSize);
+		std::vector<Hash> hashes;
+		for (uint64_t pos0 = range.first; ; ++pos0) {
+			const uint64_t height = MMRUtil::BintreePostorderHeight(pos0);
+			if (height == 0) {
+				Serializer leafSerializer;
+				GetLeafDataAt(pos0).Serialize(leafSerializer);
+				hashes.push_back(MMRHashUtil::HashLeafWithIndex(leafSerializer.GetBytes(), pos0));
+			} else {
+				if (hashes.size() < 2) {
+					throw SegmentException(
+						ESegmentError::MissingHash,
+						"Segment is missing a child hash below position " + std::to_string(pos0));
+				}
+
+				const Hash rightChild = hashes.back();
+				hashes.pop_back();
+				const Hash leftChild = hashes.back();
+				hashes.pop_back();
+				hashes.push_back(MMRHashUtil::HashParentWithIndex(leftChild, rightChild, pos0));
+			}
+
+			if (pos0 == range.second) {
+				break;
+			}
+		}
+
+		if (m_identifier.IsFullSegment(mmrSize)) {
+			if (hashes.size() != 1) {
+				throw SegmentException(ESegmentError::Mismatch, "Full segment did not reduce to a single hash");
+			}
+
+			return hashes.back();
+		}
+
+		// Final (partial) segment: bag the peaks contained in the segment range,
+		// right to left, exactly as grin does.
+		const std::vector<uint64_t> peaks = MMRUtil::GetPeakIndices(mmrSize);
+		std::optional<Hash> root;
+		for (auto iter = peaks.crbegin(); iter != peaks.crend(); ++iter) {
+			const uint64_t peakPos0 = *iter;
+			if (peakPos0 < range.first || peakPos0 > range.second) {
+				continue;
+			}
+
+			if (hashes.empty()) {
+				throw SegmentException(
+					ESegmentError::MissingHash,
+					"Segment is missing the peak hash at position " + std::to_string(1 + peakPos0));
+			}
+
+			const Hash peakHash = hashes.back();
+			hashes.pop_back();
+			root = root.has_value()
+				? MMRHashUtil::HashParentWithIndex(peakHash, root.value(), mmrSize)
+				: peakHash;
+		}
+
+		if (!root.has_value()) {
+			throw SegmentException(ESegmentError::NonExistent, "Segment contains no peaks for this MMR size");
+		}
+
+		return root.value();
+	}
+
+	// First unpruned parent hash of this segment and its 1-based position.
+	std::pair<Hash, uint64_t> FirstUnprunedParent(const uint64_t mmrSize) const
+	{
+		const Hash root = Root(mmrSize);
+		const std::pair<uint64_t, uint64_t> range = m_identifier.SegmentPosRange(mmrSize);
+		return { root, range.second + 1 };
+	}
+
+	// Validate this segment against the MMR root by recomputing its root and
+	// checking the merkle proof.
+	void Validate(const uint64_t mmrSize, const Hash& mmrRoot) const
+	{
+		const std::pair<uint64_t, uint64_t> range = m_identifier.SegmentPosRange(mmrSize);
+		const std::pair<Hash, uint64_t> segmentRoot = FirstUnprunedParent(mmrSize);
+		m_proof.Validate(mmrSize, mmrRoot, range.first, range.second, segmentRoot.first, segmentRoot.second);
+	}
 
 	void Serialize(Serializer& serializer) const final
 	{

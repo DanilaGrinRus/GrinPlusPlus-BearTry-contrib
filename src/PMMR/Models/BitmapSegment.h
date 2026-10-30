@@ -1,8 +1,13 @@
 #pragma once
 
 #include "BitmapBlock.h"
+#include "BitmapChunk.h"
+#include "Segment.h"
+#include "SegmentException.h"
 #include "SegmentIdentifier.h"
 #include "SegmentProof.h"
+
+#include "../Common/MMRUtil.h"
 
 #include <Core/Exceptions/DeserializationException.h>
 #include <Core/Serialization/ByteBuffer.h>
@@ -60,6 +65,56 @@ public:
 		}
 
 		return total;
+	}
+
+	// Convert this bitmap segment into the equivalent PMMR segment of bitmap
+	// chunks. Ported from grin BitmapSegment::into_segment, including the
+	// checked leaf offset and chunk bounds.
+	Segment<BitmapChunk> ToSegment() const
+	{
+		const uint64_t numChunks = GetNumChunks();
+		const uint64_t capacity = m_identifier.SegmentCapacity();
+		const uint64_t idx = m_identifier.GetIdx();
+		if (idx != 0 && capacity > UINT64_MAX / idx) {
+			throw SegmentException(ESegmentError::TooLarge, "Bitmap segment leaf offset overflows");
+		}
+
+		const uint64_t offset = m_identifier.LeafOffset();
+		std::vector<uint64_t> leafPositions;
+		std::vector<BitmapChunk> chunks;
+		leafPositions.reserve((size_t)numChunks);
+		chunks.reserve((size_t)numChunks);
+		for (uint64_t i = 0; i < numChunks; ++i) {
+			leafPositions.push_back(MMRUtil::InsertionToPmmrIndex(offset + i));
+			chunks.emplace_back();
+		}
+
+		for (size_t blockIdx = 0; blockIdx < m_blocks.size(); ++blockIdx) {
+			const BitmapBlock& block = m_blocks[blockIdx];
+			const uint64_t blockOffset = (uint64_t)blockIdx * (uint64_t)BitmapBlock::MAX_CHUNKS;
+			for (size_t bit = 0; bit < block.GetNumBits(); ++bit) {
+				if (!block.Get(bit)) {
+					continue;
+				}
+
+				const uint64_t chunkIdx = blockOffset + (uint64_t)bit / (uint64_t)BitmapChunk::LEN_BITS;
+				if (chunkIdx >= numChunks) {
+					throw SegmentException(
+						ESegmentError::Mismatch, "Bitmap segment sets a bit outside its chunk range");
+				}
+
+				chunks[(size_t)chunkIdx].Set(bit % BitmapChunk::LEN_BITS, true);
+			}
+		}
+
+		return Segment<BitmapChunk>(
+			m_identifier,
+			{},
+			{},
+			std::move(leafPositions),
+			std::move(chunks),
+			m_proof
+		);
 	}
 
 	void Serialize(Serializer& serializer) const final

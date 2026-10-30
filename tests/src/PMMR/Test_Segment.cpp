@@ -406,3 +406,163 @@ TEST_CASE("SegmentResponseMessage::RejectsWrongType")
 	REQUIRE_THROWS_AS(
 		SegmentResponseMessage::Deserialize(body, MessageTypes::Ping), DeserializationException);
 }
+
+namespace
+{
+	Hash LeafHash(const TestLeaf& leaf, const uint64_t pos0)
+	{
+		Serializer serializer;
+		leaf.Serialize(serializer);
+		return MMRHashUtil::HashLeafWithIndex(serializer.GetBytes(), pos0);
+	}
+
+	// A complete 4-leaf MMR (size 7):
+	//   0,1 leaves -> parent 2; 3,4 leaves -> parent 5; root 6 = parent(2,5).
+	struct TestMmr7
+	{
+		Hash Leaf0;
+		Hash Leaf1;
+		Hash Leaf2;
+		Hash Leaf3;
+		Hash Node2;
+		Hash Node5;
+		Hash Root;
+
+		TestMmr7()
+		{
+			Leaf0 = LeafHash(TestLeaf{ 10 }, 0);
+			Leaf1 = LeafHash(TestLeaf{ 20 }, 1);
+			Leaf2 = LeafHash(TestLeaf{ 30 }, 3);
+			Leaf3 = LeafHash(TestLeaf{ 40 }, 4);
+			Node2 = MMRHashUtil::HashParentWithIndex(Leaf0, Leaf1, 2);
+			Node5 = MMRHashUtil::HashParentWithIndex(Leaf2, Leaf3, 5);
+			Root = MMRHashUtil::HashParentWithIndex(Node2, Node5, 6);
+		}
+	};
+}
+
+TEST_CASE("Segment::RootAndValidateFullSegment")
+{
+	const TestMmr7 mmr;
+	const Segment<TestLeaf> segment(
+		SegmentIdentifier(2, 0),
+		{},
+		{},
+		{ 0, 1, 3, 4 },
+		{ TestLeaf{ 10 }, TestLeaf{ 20 }, TestLeaf{ 30 }, TestLeaf{ 40 } },
+		SegmentProof::Empty()
+	);
+
+	REQUIRE(segment.Root(7) == mmr.Root);
+
+	const std::pair<Hash, uint64_t> parent = segment.FirstUnprunedParent(7);
+	REQUIRE(parent.first == mmr.Root);
+	REQUIRE(parent.second == 7);
+
+	REQUIRE_NOTHROW(segment.Validate(7, mmr.Root));
+}
+
+TEST_CASE("Segment::ValidateRejectsTampering")
+{
+	const TestMmr7 mmr;
+	const Segment<TestLeaf> segment(
+		SegmentIdentifier(2, 0),
+		{},
+		{},
+		{ 0, 1, 3, 4 },
+		{ TestLeaf{ 10 }, TestLeaf{ 20 }, TestLeaf{ 30 }, TestLeaf{ 41 } }, // tampered
+		SegmentProof::Empty()
+	);
+
+	REQUIRE(segment.Root(7) != mmr.Root);
+	REQUIRE_THROWS_AS(segment.Validate(7, mmr.Root), SegmentException);
+
+	// A correct segment against the wrong root must fail as well.
+	const Segment<TestLeaf> good(
+		SegmentIdentifier(2, 0),
+		{},
+		{},
+		{ 0, 1, 3, 4 },
+		{ TestLeaf{ 10 }, TestLeaf{ 20 }, TestLeaf{ 30 }, TestLeaf{ 40 } },
+		SegmentProof::Empty()
+	);
+	REQUIRE_THROWS_AS(good.Validate(7, mmr.Leaf0), SegmentException);
+}
+
+TEST_CASE("Segment::RootForLeftSubtreeWithRightSiblingProof")
+{
+	const TestMmr7 mmr;
+	// Segment height 1, idx 0: leaves 0 and 1 (positions 0..2, full subtree).
+	const Segment<TestLeaf> segment(
+		SegmentIdentifier(1, 0),
+		{},
+		{},
+		{ 0, 1 },
+		{ TestLeaf{ 10 }, TestLeaf{ 20 } },
+		SegmentProof(std::vector<Hash>{ mmr.Node5 })
+	);
+
+	REQUIRE(segment.Root(7) == mmr.Node2);
+	REQUIRE_NOTHROW(segment.Validate(7, mmr.Root));
+
+	// Proof order matters: without the sibling hash validation must fail.
+	const Segment<TestLeaf> noProof(
+		SegmentIdentifier(1, 0),
+		{},
+		{},
+		{ 0, 1 },
+		{ TestLeaf{ 10 }, TestLeaf{ 20 } },
+		SegmentProof::Empty()
+	);
+	REQUIRE_THROWS_AS(noProof.Validate(7, mmr.Root), SegmentException);
+}
+
+TEST_CASE("Segment::RootForRightSubtreeWithLeftSiblingProof")
+{
+	const TestMmr7 mmr;
+	// Segment height 1, idx 1: leaves 2 and 3 (positions 3..5).
+	const Segment<TestLeaf> segment(
+		SegmentIdentifier(1, 1),
+		{},
+		{},
+		{ 3, 4 },
+		{ TestLeaf{ 30 }, TestLeaf{ 40 } },
+		SegmentProof(std::vector<Hash>{ mmr.Node2 })
+	);
+
+	REQUIRE(segment.Root(7) == mmr.Node5);
+	REQUIRE_NOTHROW(segment.Validate(7, mmr.Root));
+}
+
+TEST_CASE("BitmapSegment::ToSegmentAndValidate")
+{
+	// Bitmap MMR over two chunks: leaves at positions 0 and 1, root at 2.
+	const BitmapChunk chunk0;
+	BitmapChunk chunk1;
+	chunk1.Set(5, true);
+
+	const Hash hash0 = MMRHashUtil::HashLeafWithIndex(chunk0.GetBytes(), 0);
+	const Hash hash1 = MMRHashUtil::HashLeafWithIndex(chunk1.GetBytes(), 1);
+	const Hash root = MMRHashUtil::HashParentWithIndex(hash0, hash1, 2);
+
+	std::vector<BitmapBlock> blocks;
+	blocks.push_back(BitmapBlock(1));
+	blocks.back().Set(5, true);
+	const BitmapSegment bitmapSegment(
+		SegmentIdentifier(0, 1), std::move(blocks), SegmentProof(std::vector<Hash>{ hash0 }));
+
+	const Segment<BitmapChunk> segment = bitmapSegment.ToSegment();
+	REQUIRE(segment.GetLeafPositions() == std::vector<uint64_t>{ 1 });
+	REQUIRE(segment.GetLeafData().size() == 1);
+	REQUIRE(segment.GetLeafData()[0].Get(5));
+	REQUIRE(segment.Root(3) == hash1);
+	REQUIRE_NOTHROW(segment.Validate(3, root));
+
+	// Same segment without the sibling proof cannot validate.
+	std::vector<BitmapBlock> blocksNoProof;
+	blocksNoProof.push_back(BitmapBlock(1));
+	blocksNoProof.back().Set(5, true);
+	const BitmapSegment noProof(
+		SegmentIdentifier(0, 1), std::move(blocksNoProof), SegmentProof::Empty());
+	REQUIRE_THROWS_AS(noProof.ToSegment().Validate(3, root), SegmentException);
+}
