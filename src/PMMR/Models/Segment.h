@@ -1,0 +1,155 @@
+#pragma once
+
+#include "SegmentIdentifier.h"
+#include "SegmentProof.h"
+
+#include <Core/Exceptions/DeserializationException.h>
+#include <Core/Serialization/ByteBuffer.h>
+#include <Core/Serialization/Serializer.h>
+#include <Core/Traits/Serializable.h>
+#include <Crypto/Models/Hash.h>
+
+#include <cstdint>
+#include <utility>
+#include <vector>
+
+namespace SegmentDetail
+{
+	// Same bound as grin: MAX_SEGMENT_READ_ITEMS.
+	static constexpr uint64_t MAX_SEGMENT_READ_ITEMS = 1000000;
+
+	inline void CheckItemCount(const uint64_t count)
+	{
+		if (count > MAX_SEGMENT_READ_ITEMS) {
+			throw DESERIALIZATION_EXCEPTION_F(
+				"Segment declares {} items, limit is {}", count, MAX_SEGMENT_READ_ITEMS);
+		}
+	}
+
+	// Positions are 1-based on the wire and strictly increasing; they are stored
+	// 0-based internally (same convention as grin).
+	inline std::vector<uint64_t> ReadPositions(ByteBuffer& byteBuffer, const uint64_t count)
+	{
+		if (count > byteBuffer.GetRemainingSize() / sizeof(uint64_t)) {
+			throw DESERIALIZATION_EXCEPTION("Segment position list does not fit in the payload");
+		}
+
+		std::vector<uint64_t> positions;
+		positions.reserve((size_t)count);
+		uint64_t lastPos = 0;
+		for (uint64_t i = 0; i < count; ++i) {
+			const uint64_t pos = byteBuffer.ReadU64();
+			if (pos <= lastPos) {
+				throw DESERIALIZATION_EXCEPTION("Segment positions are not strictly increasing");
+			}
+
+			lastPos = pos;
+			positions.push_back(pos - 1);
+		}
+
+		return positions;
+	}
+
+	inline void WritePositions(Serializer& serializer, const std::vector<uint64_t>& positions)
+	{
+		serializer.Append<uint64_t>((uint64_t)positions.size());
+		for (const uint64_t pos : positions) {
+			serializer.Append<uint64_t>(pos + 1);
+		}
+	}
+}
+
+// Segment of a PMMR: unpruned leaves and the data required to verify membership
+// in the original MMR. Wire format matches grin v5.5.2 Segment<T>.
+template<class T>
+class Segment : public Traits::ISerializable
+{
+public:
+	Segment(
+		SegmentIdentifier identifier,
+		std::vector<uint64_t> hashPositions,
+		std::vector<Hash> hashes,
+		std::vector<uint64_t> leafPositions,
+		std::vector<T> leafData,
+		SegmentProof proof
+	)
+		: m_identifier(identifier),
+		m_hashPositions(std::move(hashPositions)),
+		m_hashes(std::move(hashes)),
+		m_leafPositions(std::move(leafPositions)),
+		m_leafData(std::move(leafData)),
+		m_proof(std::move(proof))
+	{
+	}
+
+	const SegmentIdentifier& GetIdentifier() const noexcept { return m_identifier; }
+	const std::vector<uint64_t>& GetHashPositions() const noexcept { return m_hashPositions; }
+	const std::vector<Hash>& GetHashes() const noexcept { return m_hashes; }
+	const std::vector<uint64_t>& GetLeafPositions() const noexcept { return m_leafPositions; }
+	const std::vector<T>& GetLeafData() const noexcept { return m_leafData; }
+	const SegmentProof& GetProof() const noexcept { return m_proof; }
+
+	void Serialize(Serializer& serializer) const final
+	{
+		m_identifier.Serialize(serializer);
+		SegmentDetail::WritePositions(serializer, m_hashPositions);
+		for (const Hash& hash : m_hashes) {
+			serializer.AppendBigInteger(hash);
+		}
+
+		SegmentDetail::WritePositions(serializer, m_leafPositions);
+		for (const T& leaf : m_leafData) {
+			leaf.Serialize(serializer);
+		}
+
+		m_proof.Serialize(serializer);
+	}
+
+	static Segment<T> Deserialize(ByteBuffer& byteBuffer)
+	{
+		const SegmentIdentifier identifier = SegmentIdentifier::Deserialize(byteBuffer);
+
+		const uint64_t numHashes = byteBuffer.ReadU64();
+		SegmentDetail::CheckItemCount(numHashes);
+		std::vector<uint64_t> hashPositions = SegmentDetail::ReadPositions(byteBuffer, numHashes);
+
+		if (numHashes > byteBuffer.GetRemainingSize() / (uint64_t)HASH_SIZE) {
+			throw DESERIALIZATION_EXCEPTION("Segment hash list does not fit in the payload");
+		}
+
+		std::vector<Hash> hashes;
+		hashes.reserve((size_t)numHashes);
+		for (uint64_t i = 0; i < numHashes; ++i) {
+			hashes.push_back(byteBuffer.ReadBigInteger<32>());
+		}
+
+		const uint64_t numLeaves = byteBuffer.ReadU64();
+		SegmentDetail::CheckItemCount(numLeaves);
+		std::vector<uint64_t> leafPositions = SegmentDetail::ReadPositions(byteBuffer, numLeaves);
+
+		std::vector<T> leafData;
+		leafData.reserve((size_t)numLeaves);
+		for (uint64_t i = 0; i < numLeaves; ++i) {
+			leafData.push_back(T::Deserialize(byteBuffer));
+		}
+
+		SegmentProof proof = SegmentProof::Deserialize(byteBuffer);
+
+		return Segment<T>(
+			identifier,
+			std::move(hashPositions),
+			std::move(hashes),
+			std::move(leafPositions),
+			std::move(leafData),
+			std::move(proof)
+		);
+	}
+
+private:
+	SegmentIdentifier m_identifier;
+	std::vector<uint64_t> m_hashPositions;
+	std::vector<Hash> m_hashes;
+	std::vector<uint64_t> m_leafPositions;
+	std::vector<T> m_leafData;
+	SegmentProof m_proof;
+};
