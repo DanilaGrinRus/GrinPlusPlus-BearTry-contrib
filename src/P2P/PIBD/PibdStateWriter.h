@@ -147,17 +147,18 @@ private:
 			hasData[(size_t)pos0] = (hasData[(size_t)leftChild] || hasData[(size_t)rightChild]) ? 1 : 0;
 		}
 
-		if (hasData[(size_t)(mmrSize - 1)] == 0) {
+		if (leafData.empty()) {
 			throw SegmentException(
 				ESegmentError::MissingHash,
-				treeName + " tree has no unpruned data and cannot be written");
+				treeName + " tree has no leaf data and cannot be written");
 		}
 
 		// 2. Roots of maximal fully-pruned subtrees: no data here, data above.
 		std::vector<uint8_t> prunedRoot((size_t)mmrSize, 0);
 		for (uint64_t pos0 = 0; pos0 < mmrSize; ++pos0) {
 			const int64_t parentPos = parent[(size_t)pos0];
-			if (hasData[(size_t)pos0] == 0 && parentPos >= 0 && hasData[(size_t)parentPos] == 1) {
+			if (hasData[(size_t)pos0] == 0 && (parentPos < 0 || hasData[(size_t)parentPos] == 1)) {
+				// A fully pruned peak is a valid carried subtree root.
 				prunedRoot[(size_t)pos0] = 1;
 			}
 		}

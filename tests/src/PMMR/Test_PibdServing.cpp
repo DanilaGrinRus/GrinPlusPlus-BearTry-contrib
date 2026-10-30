@@ -82,18 +82,14 @@ namespace
 	{
 		const uint64_t numOutputs = 64;
 
-		// All outputs unspent: the served bitmap derived from the leaf set equals
-		// the horizon bitmap. Pruned serving waits on the rebuilder fix recorded as
-		// G-26 (interior nodes of a pruned subtree must not require stored hashes).
+		// Leaf 0 is unspent; leaf 1 arrives because of the sibling rule but stays
+		// spent; leaf 63 is required as the last leaf. The rest of the tree is
+		// pruned, so serving exercises pruned-subtree roots.
 		VectorSegmentBitmap bitmap(numOutputs);
-		for (uint64_t leafIndex = 0; leafIndex < numOutputs; ++leafIndex) {
-			bitmap.Set(leafIndex, true);
-		}
+		bitmap.Set(0, true);
 
 		std::vector<BitmapChunk> chunks(1);
-		for (size_t bit = 0; bit < numOutputs; ++bit) {
-			chunks[0].Set(bit, true);
-		}
+		chunks[0].Set(0, true);
 		const InMemoryPmmr<BitmapChunk> bitmapMmr(std::move(chunks));
 		const InMemoryPmmr<OutputIdentifier> outputs = MakeTree<OutputIdentifier>(numOutputs, MakeOutput);
 		const InMemoryPmmr<RangeProof> rangeProofs = MakeTree<RangeProof>(numOutputs, MakeRangeProof);
@@ -143,6 +139,10 @@ TEST_CASE("PibdSegmentService::ServesStateThatValidates")
 
 	const PibdSnapshot written = WriteTestState(stateDir);
 
+	// Pruning really happened: only the required leaves are in the state.
+	REQUIRE(written.Outputs.size() < 64);
+	REQUIRE(written.Outputs.size()> 0);
+
 	// Serve from the files a node would read back.
 	std::shared_ptr<OutputPMMR> pOutputPMMR = OutputPMMR::Load(stateDir);
 	std::shared_ptr<RangeProofPMMR> pRangeProofPMMR = RangeProofPMMR::Load(stateDir);
@@ -154,9 +154,9 @@ TEST_CASE("PibdSegmentService::ServesStateThatValidates")
 
 	// The served bitmap is the horizon bitmap taken from the leaf set.
 	const VectorSegmentBitmap servedBitmap = service.GetOutputBitmap();
-	for (uint64_t leafIndex = 0; leafIndex < 64; ++leafIndex) {
-		REQUIRE(servedBitmap.Contains(leafIndex));
-	}
+	REQUIRE(servedBitmap.Contains(0));
+	REQUIRE(!servedBitmap.Contains(1));
+	REQUIRE(!servedBitmap.Contains(2));
 
 	// A fresh downloader receives the served segments and rebuilds the same state.
 	PibdDownload::Horizon horizon = [&written] {
