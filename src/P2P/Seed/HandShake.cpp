@@ -45,6 +45,14 @@ void HandShake::PerformOutboundHandshake(const Socket::Ptr& pSocket, ConnectedPe
     ByteBuffer buffer(pReceived->GetPayload());
     ShakeMessage shakeMessage = ShakeMessage::Deserialize(buffer);
 
+    // Only peers on the same chain may connect (Grin 5.5.2: BadHandshake).
+    if (shakeMessage.GetHash() != Global::GetGenesisHash()) {
+        throw PROTOCOL_EXCEPTION_F(
+            "Shake message genesis block does not match ours. Peer {}",
+            *connectedPeer.GetPeer()
+        );
+    }
+
     uint32_t version = (std::min)(P2P::PROTOCOL_VERSION, shakeMessage.GetVersion());
     connectedPeer.UpdateVersion(version);
     connectedPeer.UpdateCapabilities(shakeMessage.GetCapabilities());
@@ -69,6 +77,14 @@ void HandShake::PerformInboundHandshake(const Socket::Ptr& pSocket, ConnectedPee
     
     if (hand_message.GetNonce() == SELF_NONCE) {
         throw PROTOCOL_EXCEPTION("Connected to self");
+    }
+
+    // Only peers on the same chain may connect (Grin 5.5.2: BadHandshake).
+    if (hand_message.GetHash() != Global::GetGenesisHash()) {
+        throw PROTOCOL_EXCEPTION_F(
+            "Hand message genesis block does not match ours. Peer {}",
+            *connectedPeer.GetPeer()
+        );
     }
 
     if (m_connectionManager.IsConnected(connectedPeer.GetIPAddress())) {

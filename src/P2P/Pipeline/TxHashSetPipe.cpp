@@ -38,9 +38,11 @@ void TxHashSetPipe::ReceiveTxHashSet(const Connection::Ptr& pConnection, const T
 {
 	if (m_pSyncStatus->GetStatus() != ESyncStatus::SYNCING_TXHASHSET)
 	{
-		LOG_WARNING_F("Received TxHashSet from {} when not requested.", *pConnection);
-		// connection.BanPeer(EBanReason::Abusive);
-		// return;
+		// An archive that we never requested must not be written to disk or
+		// processed: it would let any peer push an arbitrary snapshot at us.
+		LOG_WARNING_F("Received unrequested TxHashSet from {}. Banning.", *pConnection);
+		pConnection->BanPeer(EBanReason::BadTxHashSet);
+		return;
 	}
 
 	const bool processing = m_processing.exchange(true);
@@ -207,11 +209,22 @@ void TxHashSetPipe::Thread_SendTxHashSet(
 		pConnection->SendSync(TxHashSetArchiveMessage{ pHeader->GetHash(), pHeader->GetHeight(), fileSize });
 
 		std::vector<uint8_t> buffer(BUFFER_SIZE, 0);
-			
-		while (file.read((char*)buffer.data(), BUFFER_SIZE)) {
+
+		// Note: std::istream::read sets failbit when it extracts fewer than the
+		// requested number of bytes, so `while (file.read(...))` silently drops the
+		// final partial chunk of every archive whose size is not a multiple of
+		// BUFFER_SIZE. Loop on gcount() instead.
+		while (file)
+		{
+			file.read((char*)buffer.data(), BUFFER_SIZE);
+			const std::streamsize bytesRead = file.gcount();
+			if (bytesRead <= 0) {
+				break;
+			}
+
 			std::vector<uint8_t> bytesToSend(
 				buffer.cbegin(),
-				buffer.cbegin() + file.gcount()
+				buffer.cbegin() + bytesRead
 			);
 			bool sent = pConnection->GetSocket()->SendSync(bytesToSend, false);
 			if (!sent || !Global::IsRunning()) {
