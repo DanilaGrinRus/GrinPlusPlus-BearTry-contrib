@@ -71,8 +71,8 @@ pwsh tools/build/build.ps1 -Target Tests
 ```
 | Артефакт | Размер | SHA-256 |
 |---|---|---|
-| `bin/Release/Release/GrinNode.exe` | 7 225 344 | `33CAA7ADAD4E44D9580B8EDC1FF7F7AE103E103FC96B97B3DA3020A2FB16D38B` |
-| `bin/Release/Release/Tests.exe` | 8 265 728 | `A4BE99C59245894B5C5A67DB19AE9BCBF3CBDEC21819BEAB208FC25CBCF8315E` |
+| `bin/Release/Release/GrinNode.exe` | 7 225 344 | `D0B7D20AB634B2C7E2DBEE654B80DE18CA447C2B8731424503EB84D456D94932` |
+| `bin/Release/Release/Tests.exe` | 8 304 128 | `3B4F5F579B5E5FA21B83A35953CFE097954DAF46DA14532387CE230996BF6FE4` |
 
 Сборка идёт с `/W4 /WX` (проектные флаги не ослаблены). Потребовались только
 конфигурационные правки: `NOMINMAX`, идемпотентная установка `/W4 /WX`,
@@ -83,7 +83,7 @@ pwsh tools/build/build.ps1 -Target Tests
 ```
 $env:HOMEDRIVE='C:'; $env:HOMEPATH='\DHW\.tmp\testhome'   # изоляция данных тестов
 bin\Release\Release\Tests.exe --reporter compact
-→ Passed all 128 test cases with 1457 assertions.
+→ Passed all 131 test cases with 1483 assertions.
 ```
 В набор входят новые `Test_ByteBuffer`, `Test_P2PCompat` и `Test_Segment`
 (16 кейсов PIBD-проводного слоя: MMR-позиции, `SegmentIdentifier`, `SegmentProof`,
@@ -307,9 +307,36 @@ bitmap {0}; после записи независимо перезагружа�
 Честное ограничение: запись идёт **в указанный staging-каталог**, атомарная
 активация поверх рабочей БД ещё не реализована; живой interop не проверялся.
 
-Осталось по G-09: staging + атомарная активация поверх рабочей БД, проводка
-`PibdSession`/`PibdScheduler` в `MessageProcessor`/`StateSyncer`, resume между
-рестартами, серверная выдача сегментов и включение `PIBD_HIST`.
+## E21. PIBD: атомарная активация состояния — PASS (unit)
+
+`PibdActivation::Activate(staging, live)` заменяет рабочее состояние без правки
+файлов на месте: маркер `pibd_activation.pending` с путями (staging, backup) →
+`rename(live, backup)` → `rename(staging, live)` → удаление маркера и backup.
+`PibdStateWriter` пишет `pibd_state.complete` только после успешной записи и
+проверки всех трёх деревьев, и активация отказывается брать staging без него.
+
+`PibdActivation::Recover(live)` разбирает прерванную активацию:
+* live полон (`pibd_state.complete` есть) → активация завершилась, backup
+  удаляется, маркер снимается;
+* live отсутствует, backup есть → backup возвращается на место (откат);
+* live неполон и backup отсутствует → явная ошибка, а не «продолжаем как есть».
+
+Тесты (`Test_PibdActivation.cpp`, 3 кейса): успешная активация с проверкой корней
+по перезагруженным файлам, исчезновением старого состояния, backup и маркера;
+отказ активации при отсутствии `pibd_state.complete` (live не тронут); оба
+сценария сбоя (откат на backup и завершение поверх stale backup).
+
+**Найдено тестами:** `CreateDirectories` возвращает false для уже существующего
+каталога (проверка `Exists` добавлена); маркер, записанный в текстовом режиме,
+содержал `\r`, из-за чего путь backup не находился (парсер теперь срезает CR) —
+иначе восстановление молча не срабатывало.
+
+**Честная граница:** активация проверена как модуль на временных каталогах; в
+процесс ноды она пока не включена, живой interop не проверялся.
+
+Осталось по G-09: проводка `PibdSession`/`PibdScheduler`/активации в
+`MessageProcessor`/`StateSyncer`, resume между рестартами, серверная выдача
+сегментов и включение `PIBD_HIST`.
 
 ---
 
@@ -322,7 +349,7 @@ bitmap {0}; после записи независимо перезагружа�
 | Проводной формат capabilities/ID/лимитов | PASS (compile-check) |
 | Сборка зависимостей (offline, static CRT) | PASS |
 | Сборка `GrinNode.exe` + `Tests.exe` (`/W4 /WX`) | PASS |
-| Полный набор тестов (128 / 1457) | PASS |
+| Полный набор тестов (131 / 1483) | PASS |
 | PIBD проводной слой (модели + сообщения 21–28) | PASS (unit) |
 | PIBD верификация сегментов (`Root`/`Validate`/proof, bitmap→chunk) | PASS (unit) |
 | PIBD генерация сегментов и обратная сборка дерева | PASS (unit) |
@@ -333,6 +360,7 @@ bitmap {0}; после записи независимо перезагружа�
 | PIBD desegmenter-ядро (снапшот, пересборка kernel-дерева) | PASS (unit) |
 | PIBD пересборка прореженного дерева (pruned-хеши) | PASS (unit) |
 | PIBD запись состояния в файловый PMMR (staging) | PASS (unit) |
+| PIBD атомарная активация и восстановление | PASS (unit) |
 | Smoke-запуск ноды (floonet) | PASS |
 | Живая синхронизация с Rust v5.5.2 | NOT RUN |
 | PIBD desegmenter/planner/resume/serving | NOT IMPLEMENTED |

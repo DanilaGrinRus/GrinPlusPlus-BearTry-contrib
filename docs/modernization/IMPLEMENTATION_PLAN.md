@@ -53,8 +53,9 @@ pruned-сегменты), сообщения 21–28. Готов ядровый 
 таймауты, повторы, fallback-таймер 660 с) `PibdSnapshot` (листья по индексам, pruned-хеши) и `PibdTreeRebuilder`
 (пересборка корня прореженного дерева — та же арифметика, что пойдёт в hash-файлы).
 Запись в файловый PMMR реализована (`PibdStateWriter`, staging-каталог, проверка
-перезагрузкой). Следующий шаг — атомарная активация staging поверх рабочей БД,
-затем проводка в `MessageProcessor`/`StateSyncer`, resume и serving.
+перезагрузкой). Атомарная активация с восстановлением после сбоя реализована
+(`PibdActivation`). Следующий шаг — проводка `PibdSession`/`PibdScheduler` и
+активации в `MessageProcessor`/`StateSyncer`, затем resume и serving.
 
 1. Сообщения 21–28 (уже в `MessageTypes`): `SegmentRequest{block_hash, identifier}`,
    `SegmentResponse<T>`, `OutputSegmentResponse`, `OutputBitmapSegmentResponse`,
