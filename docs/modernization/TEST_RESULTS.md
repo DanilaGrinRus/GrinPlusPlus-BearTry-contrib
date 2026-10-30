@@ -71,8 +71,8 @@ pwsh tools/build/build.ps1 -Target Tests
 ```
 | Артефакт | Размер | SHA-256 |
 |---|---|---|
-| `bin/Release/Release/GrinNode.exe` | 7 225 344 | `76195B099506A50257E95F2760AAF5604CAFD0083E24157B5832C240F1234ED3` |
-| `bin/Release/Release/Tests.exe` | 8 347 648 | `C51E2508396EBBA3CEA64CA2FCE8779ECF878989E81E85EB5DE1619DE8C3649D` |
+| `bin/Release/Release/GrinNode.exe` | 7 225 344 | `7227093718DD7A977212969D352FA878384B8313E06E4F79034A12069E5C861D` |
+| `bin/Release/Release/Tests.exe` | 8 352 256 | `B2BF3C23CF7005D3B34EBA111A10C6CB14BEDE1887F699192772AE7908F409F1` |
 
 Сборка идёт с `/W4 /WX` (проектные флаги не ослаблены). Потребовались только
 конфигурационные правки: `NOMINMAX`, идемпотентная установка `/W4 /WX`,
@@ -83,7 +83,7 @@ pwsh tools/build/build.ps1 -Target Tests
 ```
 $env:HOMEDRIVE='C:'; $env:HOMEPATH='\DHW\.tmp\testhome'   # изоляция данных тестов
 bin\Release\Release\Tests.exe --reporter compact
-→ Passed all 132 test cases with 1625 assertions.
+→ Passed all 132 test cases with 1504 assertions.
 ```
 В набор входят новые `Test_ByteBuffer`, `Test_P2PCompat` и `Test_Segment`
 (16 кейсов PIBD-проводного слоя: MMR-позиции, `SegmentIdentifier`, `SegmentProof`,
@@ -379,7 +379,30 @@ write → serve → download → validate → rebuild по настоящим ф
 Прореженный serving-тест возвращён к полностью непотраченному набору, чтобы набор
 оставался зелёным и не маскировал дефект.
 
-Осталось по G-09: G-26 часть 2, проводка `PibdSession`/`PibdScheduler`/активации в
+## E24. G-26 закрыт: прореженный serve→download работает — PASS (unit)
+
+Две причины, найденные тестами, устранены:
+
+1. **Интерьер прореженного поддерева больше не требует хешей.** `ComputePrunedTreeRoot`
+   (и writer) вычисляют максимальные прореженные поддеревья так же, как при записи:
+   узел — корень, если в его поддереве нет данных, а у родителя есть. Узлы внутри
+   поддерева не имеют хешей и не должны их иметь; сегмент несёт только корень.
+2. **Полностью прореженный пик.** Для MMR, где последний узел — внутренний
+   (например, 120 листьев), верхний пик может не содержать данных вовсе; его хеш
+   приходит из сегмента. Раньше пересборка отвергала такое дерево
+   (`Tree has no data`). Теперь полностью прореженный пик считается допустимым
+   корнем поддерева, а «пустое дерево» определяется по отсутствию листьев.
+
+Тест `Test_PibdServing` снова работает на **прореженном** битмапе (64 выхода,
+бит 0): состояние пишется writer-ом, загружается реальными PMMR, сервис отдаёт
+битмап/выходы/rangeproofs/ядра, свежая сессия принимает всё, доходит до Complete,
+и пересобранный снапшот совпадает; дополнительно проверяется, что в состоянии
+меньше 64 листьев (прореживание реально).
+
+Полный набор: **132 кейса / 1504 проверки PASS**. `GrinNode.exe` собирается с
+`/W4 /WX`.
+
+Осталось по G-09: проводка `PibdSession`/`PibdScheduler`/активации в
 `MessageProcessor`/`StateSyncer`, resume между рестартами и включение `PIBD_HIST`.
 
 ---
@@ -393,7 +416,7 @@ write → serve → download → validate → rebuild по настоящим ф
 | Проводной формат capabilities/ID/лимитов | PASS (compile-check) |
 | Сборка зависимостей (offline, static CRT) | PASS |
 | Сборка `GrinNode.exe` + `Tests.exe` (`/W4 /WX`) | PASS |
-| Полный набор тестов (132 / 1625) | PASS |
+| Полный набор тестов (132 / 1504) | PASS |
 | PIBD проводной слой (модели + сообщения 21–28) | PASS (unit) |
 | PIBD верификация сегментов (`Root`/`Validate`/proof, bitmap→chunk) | PASS (unit) |
 | PIBD генерация сегментов и обратная сборка дерева | PASS (unit) |
@@ -405,7 +428,7 @@ write → serve → download → validate → rebuild по настоящим ф
 | PIBD пересборка прореженного дерева (pruned-хеши) | PASS (unit) |
 | PIBD запись состояния в файловый PMMR (staging) | PASS (unit) |
 | PIBD атомарная активация и восстановление | PASS (unit) |
-| PIBD выдача сегментов из файловых PMMR (без прореживания) | PASS (unit) |
+| PIBD выдача сегментов из файловых PMMR (прореженная) | PASS (unit) |
 | Smoke-запуск ноды (floonet) | PASS |
 | Живая синхронизация с Rust v5.5.2 | NOT RUN |
 | PIBD desegmenter/planner/resume/serving | NOT IMPLEMENTED |

@@ -55,11 +55,11 @@ pruned-сегменты), сообщения 21–28. Готов ядровый 
 Запись в файловый PMMR реализована (`PibdStateWriter`, staging-каталог, проверка
 перезагрузкой). Атомарная активация реализована (`PibdActivation`), выдача сегментов из
 файловых PMMR — тоже (`PibdSegmentService`, цикл serve→download проверен).
-G-26 часть 1 закрыта: leafset строится из битмапа, обязательные потраченные
-листья отдаются через `GetRawAt`. Осталась часть 2: `ComputePrunedTreeRoot` должен
-требовать хеши только у корней максимальных прореженных поддеревьев, а не у их
-интерьера (сейчас падает на позиции 9). Следующий шаг — закрыть часть 2, затем
-проводка в `MessageProcessor`/`StateSyncer` и resume.
+G-26 закрыт полностью: leafset из битмапа, `GetRawAt` для обязательных
+потраченных листьев, пересборка по максимальным прореженным поддеревьям и
+поддержка полностью прореженного пика; прореженный serve→download проходит.
+Следующий шаг — проводка `PibdSession`/`PibdScheduler`/активации в
+`MessageProcessor`/`StateSyncer`, затем resume и `PIBD_HIST`.
 
 1. Сообщения 21–28 (уже в `MessageTypes`): `SegmentRequest{block_hash, identifier}`,
    `SegmentResponse<T>`, `OutputSegmentResponse`, `OutputBitmapSegmentResponse`,
