@@ -47,10 +47,11 @@
 MMR-позиции, `SegmentIdentifier`, `SegmentProof`, `Segment<T>` с
 `Root`/`Validate`/`RootWithBitmap`/`ValidateWithBitmap`, `BitmapChunk`/`BitmapBlock`/
 `BitmapSegment`, `SegmentBitmap`, `InMemoryPmmr` + `SegmentGenerator` (полные и
-pruned-сегменты), сообщения 21–28. Добавлена фаза 1 загрузки (`BitmapSegmentAssembler`): приём и проверка
-bitmap-сегментов, сборка output-битмапа. Следующий шаг — ассемблеры
-output/rangeproof/kernel, desegmenter с prune shifts и записью в PMMR, затем
-планировщик загрузки.
+pruned-сегменты), сообщения 21–28. Готов ядровый слой загрузки: `BitmapSegmentAssembler` (фаза 1),
+`PibdTreeAssembler<T>` и `PibdDownload` (фазы bitmap→output/rangeproof/kernel,
+запросы, дубликаты, поздние ответы), параметры из `pibd_params.rs`.
+Следующий шаг — desegmenter с prune shifts и записью в PMMR, затем сетевой слой
+(таймауты, выбор пира, retry, resume) и fallback на txhashset.zip.
 
 1. Сообщения 21–28 (уже в `MessageTypes`): `SegmentRequest{block_hash, identifier}`,
    `SegmentResponse<T>`, `OutputSegmentResponse`, `OutputBitmapSegmentResponse`,
