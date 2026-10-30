@@ -145,8 +145,8 @@ TEST_CASE("PibdStateWriter::WritesVerifiablePmmrFiles")
 	std::shared_ptr<const PruneList> pOutputPrune = PruneList::Load(outputDir / "pmmr_prun.bin");
 	REQUIRE(MMRHashUtil::Root(pOutputHash, snapshot.OutputMmrSize, pOutputPrune) == snapshot.OutputRoot);
 
-	std::shared_ptr<DataFile<PibdStateWriter::OUTPUT_SIZE>> pOutputData =
-		DataFile<PibdStateWriter::OUTPUT_SIZE>::Load(outputDir / "pmmr_data.bin");
+	std::shared_ptr<DataFile<PibdStateWriter::OUTPUT_LEAF_SIZE>> pOutputData =
+		DataFile<PibdStateWriter::OUTPUT_LEAF_SIZE>::Load(outputDir / "pmmr_data.bin");
 	REQUIRE(pOutputData->GetSize() == snapshot.Outputs.size());
 
 	// Unpruned leaf 0 carries the expected payload.
@@ -179,8 +179,8 @@ TEST_CASE("PibdStateWriter::WritesVerifiablePmmrFiles")
 	REQUIRE(pKernelPrune->GetTotalShift() == 0);
 	REQUIRE(MMRHashUtil::Root(pKernelHash, snapshot.KernelMmrSize, pKernelPrune) == snapshot.KernelRoot);
 
-	std::shared_ptr<DataFile<PibdStateWriter::KERNEL_SIZE>> pKernelData =
-		DataFile<PibdStateWriter::KERNEL_SIZE>::Load(kernelDir / "pmmr_data.bin");
+	std::shared_ptr<DataFile<PibdStateWriter::KERNEL_LEAF_SIZE>> pKernelData =
+		DataFile<PibdStateWriter::KERNEL_LEAF_SIZE>::Load(kernelDir / "pmmr_data.bin");
 	REQUIRE(pKernelData->GetSize() == numKernels);
 
 	fs::remove_all(dir, error);

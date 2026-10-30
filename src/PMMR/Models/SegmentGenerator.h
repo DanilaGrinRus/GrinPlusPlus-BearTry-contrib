@@ -10,16 +10,21 @@
 #include "../Common/MMRUtil.h"
 
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <utility>
 #include <vector>
 
-// Generate PMMR segments from an in-memory MMR.
+// Generate PMMR segments from an MMR.
 // Ported from grin v5.5.2 Segment::from_pmmr / SegmentProof::generate:
 //   * without a bitmap the segment is unpruned (all leaves in range, no hashes);
 //   * with a bitmap the segment is pruned like a real PIBD peer would serve it:
-//     only required leaves are included, internal hashes are always included and
-//     a fully pruned segment carries the first unpruned parent hash.
+//     only required leaves are included, internal hashes are included when the
+//     source has them, and a fully pruned segment carries the first unpruned
+//     parent hash plus the proof start position.
+//
+// Generation is expressed over two callbacks so both the in-memory model and the
+// node's PruneableMMR files can serve segments without duplicating the logic.
 template<class T>
 class SegmentGenerator
 {
@@ -34,7 +39,21 @@ public:
 		const SegmentIdentifier& identifier,
 		const SegmentBitmap* bitmap)
 	{
-		const uint64_t mmrSize = mmr.GetSize();
+		return GenerateFromSource(
+			identifier,
+			mmr.GetSize(),
+			bitmap,
+			[&mmr](const uint64_t pos0) { return std::optional<T>(mmr.GetLeafData(pos0)); },
+			[&mmr](const uint64_t pos0) { return std::optional<Hash>(mmr.GetHash(pos0)); });
+	}
+
+	static Segment<T> GenerateFromSource(
+		const SegmentIdentifier& identifier,
+		const uint64_t mmrSize,
+		const SegmentBitmap* bitmap,
+		const std::function<std::optional<T>(uint64_t)>& leafAt,
+		const std::function<std::optional<Hash>(uint64_t)>& hashAt)
+	{
 		if (identifier.SegmentUnprunedSize(mmrSize) == 0) {
 			throw SegmentException(
 				ESegmentError::NonExistent,
@@ -50,12 +69,18 @@ public:
 		for (uint64_t pos0 = range.first; ; ++pos0) {
 			if (MMRUtil::IsLeaf(pos0)) {
 				if (bitmap == nullptr || IsSegmentLeafRequired(pos0, mmrSize, *bitmap)) {
-					leafPositions.push_back(pos0);
-					leaves.push_back(mmr.GetLeafData(pos0));
+					std::optional<T> leaf = leafAt(pos0);
+					if (leaf.has_value()) {
+						leafPositions.push_back(pos0);
+						leaves.push_back(std::move(leaf.value()));
+					}
 				}
 			} else if (bitmap != nullptr) {
-				hashPositions.push_back(pos0);
-				hashes.push_back(mmr.GetHash(pos0));
+				std::optional<Hash> hash = hashAt(pos0);
+				if (hash.has_value()) {
+					hashPositions.push_back(pos0);
+					hashes.push_back(std::move(hash.value()));
+				}
 			}
 
 			if (pos0 == range.second) {
@@ -69,13 +94,16 @@ public:
 			const std::vector<std::pair<uint64_t, uint64_t>> branch =
 				MMRUtil::FamilyBranch(range.second, mmrSize);
 			if (!branch.empty()) {
-				hashPositions.push_back(branch[0].first);
-				hashes.push_back(mmr.GetHash(branch[0].first));
-				startPos = branch[0].first + 1;
+				std::optional<Hash> hash = hashAt(branch[0].first);
+				if (hash.has_value()) {
+					hashPositions.push_back(branch[0].first);
+					hashes.push_back(std::move(hash.value()));
+					startPos = branch[0].first + 1;
+				}
 			}
 		}
 
-		SegmentProof proof = GenerateProof(mmr, range.first, range.second, startPos);
+		SegmentProof proof = GenerateProof(mmrSize, range.first, range.second, startPos, hashAt);
 		return Segment<T>(
 			identifier,
 			std::move(hashPositions),
@@ -87,12 +115,12 @@ public:
 
 private:
 	static SegmentProof GenerateProof(
-		const InMemoryPmmr<T>& mmr,
+		const uint64_t mmrSize,
 		const uint64_t firstPos0,
 		const uint64_t lastPos0,
-		const std::optional<uint64_t> startPos)
+		const std::optional<uint64_t> startPos,
+		const std::function<std::optional<Hash>(uint64_t)>& hashAt)
 	{
-		const uint64_t mmrSize = mmr.GetSize();
 		std::vector<Hash> hashes;
 
 		// 1. Siblings along the path from the subtree root to the peak.
@@ -103,21 +131,52 @@ private:
 				continue;
 			}
 
-			hashes.push_back(mmr.GetHash(branch.second));
+			std::optional<Hash> hash = hashAt(branch.second);
+			if (!hash.has_value()) {
+				throw SegmentException(
+					ESegmentError::MissingHash,
+					"Source is missing the sibling hash at position " + std::to_string(branch.second));
+			}
+
+			hashes.push_back(std::move(hash.value()));
 		}
 
 		// 2. Bagged peaks strictly to the right of the peak.
+		const std::vector<uint64_t> peaks = MMRUtil::GetPeakIndices(mmrSize);
 		const uint64_t peakPos0 = familyBranch.empty() ? lastPos0 : familyBranch.back().first;
-		const std::optional<Hash> rhs = mmr.BagTheRhs(peakPos0);
+		std::optional<Hash> rhs;
+		for (auto iter = peaks.crbegin(); iter != peaks.crend(); ++iter) {
+			if (*iter <= peakPos0) {
+				continue;
+			}
+
+			std::optional<Hash> hash = hashAt(*iter);
+			if (!hash.has_value()) {
+				throw SegmentException(
+					ESegmentError::MissingHash,
+					"Source is missing the peak hash at position " + std::to_string(*iter));
+			}
+
+			rhs = rhs.has_value()
+				? std::optional<Hash>(MMRHashUtil::HashParentWithIndex(hash.value(), rhs.value(), mmrSize))
+				: hash;
+		}
+
 		if (rhs.has_value()) {
 			hashes.push_back(rhs.value());
 		}
 
 		// 3. Peaks strictly to the left, right to left.
-		const std::vector<uint64_t> peaks = MMRUtil::GetPeakIndices(mmrSize);
 		for (auto iter = peaks.crbegin(); iter != peaks.crend(); ++iter) {
 			if (*iter < firstPos0) {
-				hashes.push_back(mmr.GetHash(*iter));
+				std::optional<Hash> hash = hashAt(*iter);
+				if (!hash.has_value()) {
+					throw SegmentException(
+						ESegmentError::MissingHash,
+						"Source is missing the peak hash at position " + std::to_string(*iter));
+				}
+
+				hashes.push_back(std::move(hash.value()));
 			}
 		}
 

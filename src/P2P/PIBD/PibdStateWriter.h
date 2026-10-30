@@ -46,20 +46,20 @@ struct PibdTreeWriteInfo
 class PibdStateWriter
 {
 public:
-	static constexpr size_t OUTPUT_SIZE = 34;
-	static constexpr size_t RANGE_PROOF_SIZE = 683;
-	static constexpr size_t KERNEL_SIZE = 114;
+	static constexpr size_t OUTPUT_LEAF_SIZE = 34;
+	static constexpr size_t RANGEPROOF_LEAF_SIZE = 683;
+	static constexpr size_t KERNEL_LEAF_SIZE = 114;
 
 	// Write all three trees, verified against the snapshot's horizon roots.
 	static void Write(const PibdSnapshot& snapshot, const fs::path& txHashSetDir)
 	{
-		const PibdTreeWriteInfo outputs = WriteTree<OUTPUT_SIZE>(
+		const PibdTreeWriteInfo outputs = WriteTree<OUTPUT_LEAF_SIZE>(
 			txHashSetDir / "output", snapshot.OutputMmrSize, snapshot.Outputs,
 			snapshot.OutputHashes, "output");
-		const PibdTreeWriteInfo rangeProofs = WriteTree<RANGE_PROOF_SIZE>(
+		const PibdTreeWriteInfo rangeProofs = WriteTree<RANGEPROOF_LEAF_SIZE>(
 			txHashSetDir / "rangeproof", snapshot.OutputMmrSize, snapshot.RangeProofs,
 			snapshot.RangeProofHashes, "rangeproof");
-		const PibdTreeWriteInfo kernels = WriteTree<KERNEL_SIZE>(
+		const PibdTreeWriteInfo kernels = WriteTree<KERNEL_LEAF_SIZE>(
 			txHashSetDir / "kernel", snapshot.KernelMmrSize, snapshot.Kernels,
 			snapshot.KernelHashes, "kernel");
 
