@@ -71,8 +71,8 @@ pwsh tools/build/build.ps1 -Target Tests
 ```
 | Артефакт | Размер | SHA-256 |
 |---|---|---|
-| `bin/Release/Release/GrinNode.exe` | 7 225 344 | `D0B7D20AB634B2C7E2DBEE654B80DE18CA447C2B8731424503EB84D456D94932` |
-| `bin/Release/Release/Tests.exe` | 8 304 128 | `3B4F5F579B5E5FA21B83A35953CFE097954DAF46DA14532387CE230996BF6FE4` |
+| `bin/Release/Release/GrinNode.exe` | 7 225 344 | `12AD50A9BD97D4CF8366B5173CB3529854BF0BD5F7447DCE2DC77A0C43257AC9` |
+| `bin/Release/Release/Tests.exe` | 8 345 088 | `66D2F734E67FEF683AE2C44DA07F8652B4128BD13337512675C0BD3124723228` |
 
 Сборка идёт с `/W4 /WX` (проектные флаги не ослаблены). Потребовались только
 конфигурационные правки: `NOMINMAX`, идемпотентная установка `/W4 /WX`,
@@ -83,7 +83,7 @@ pwsh tools/build/build.ps1 -Target Tests
 ```
 $env:HOMEDRIVE='C:'; $env:HOMEPATH='\DHW\.tmp\testhome'   # изоляция данных тестов
 bin\Release\Release\Tests.exe --reporter compact
-→ Passed all 131 test cases with 1483 assertions.
+→ Passed all 132 test cases with 1625 assertions.
 ```
 В набор входят новые `Test_ByteBuffer`, `Test_P2PCompat` и `Test_Segment`
 (16 кейсов PIBD-проводного слоя: MMR-позиции, `SegmentIdentifier`, `SegmentProof`,
@@ -334,9 +334,32 @@ bitmap {0}; после записи независимо перезагружа�
 **Честная граница:** активация проверена как модуль на временных каталогах; в
 процесс ноды она пока не включена, живой interop не проверялся.
 
+## E22. PIBD: выдача сегментов из файловых PMMR — PASS (unit, без прореживания)
+
+`PibdSegmentService` выдаёт сегменты прямо из `OutputPMMR`/`RangeProofPMMR`/
+`KernelMMR`: битмап выводится из leafset, bitmap-MMR пересобирается в памяти из
+1024-битных чанков, прореженные сегменты стримятся из PMMR (листья — из data-файла,
+корни прореженных поддеревьев — из hash-файла), ядра — без прореживания.
+`SegmentGenerator` обобщён на источник-колбэки (`GenerateFromSource`), поэтому
+генерация для in-memory модели и для файловых PMMR идёт по одному коду.
+
+Тест (`Test_PibdServing.cpp`): состояние записывается `PibdStateWriter`, затем
+загружается реальными `OutputPMMR::Load`/`RangeProofPMMR::Load`/`KernelMMR::Load`;
+выданные сегменты принимаются **свежей** `PibdSession`, загрузка доходит до
+Complete, `BuildSnapshot` совпадает по листьям. Это полный цикл
+write → serve → download → validate → rebuild по настоящим файлам.
+
+**Найден реальный разрыв (G-26, OPEN).** При прореженном битмапе writer считает
+принятые по правилу соседа листья непрореженными, и `leafset` расходится с
+битмапом горизонта; вдобавок `PruneList::GetLeafShift` даёт 0 для pruned-root
+высоты 0, поэтому data-файл Grin++ обязан содержать запись для каждого листа ниже
+последнего непрореженного. Поэтому тест намеренно ограничен полностью
+непотраченным набором (все листья обязательны): он проверяет протокол выдачи, но
+не прореженную семантику. Это честно зафиксировано в GAP_MATRIX, а не замазано.
+
 Осталось по G-09: проводка `PibdSession`/`PibdScheduler`/активации в
-`MessageProcessor`/`StateSyncer`, resume между рестартами, серверная выдача
-сегментов и включение `PIBD_HIST`.
+`MessageProcessor`/`StateSyncer`, resume между рестартами, выдача прореженного
+состояния (G-26) и включение `PIBD_HIST`.
 
 ---
 
@@ -349,7 +372,7 @@ bitmap {0}; после записи независимо перезагружа�
 | Проводной формат capabilities/ID/лимитов | PASS (compile-check) |
 | Сборка зависимостей (offline, static CRT) | PASS |
 | Сборка `GrinNode.exe` + `Tests.exe` (`/W4 /WX`) | PASS |
-| Полный набор тестов (131 / 1483) | PASS |
+| Полный набор тестов (132 / 1625) | PASS |
 | PIBD проводной слой (модели + сообщения 21–28) | PASS (unit) |
 | PIBD верификация сегментов (`Root`/`Validate`/proof, bitmap→chunk) | PASS (unit) |
 | PIBD генерация сегментов и обратная сборка дерева | PASS (unit) |
@@ -361,6 +384,7 @@ bitmap {0}; после записи независимо перезагружа�
 | PIBD пересборка прореженного дерева (pruned-хеши) | PASS (unit) |
 | PIBD запись состояния в файловый PMMR (staging) | PASS (unit) |
 | PIBD атомарная активация и восстановление | PASS (unit) |
+| PIBD выдача сегментов из файловых PMMR (без прореживания) | PASS (unit) |
 | Smoke-запуск ноды (floonet) | PASS |
 | Живая синхронизация с Rust v5.5.2 | NOT RUN |
 | PIBD desegmenter/planner/resume/serving | NOT IMPLEMENTED |

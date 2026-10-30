@@ -53,9 +53,11 @@ pruned-сегменты), сообщения 21–28. Готов ядровый 
 таймауты, повторы, fallback-таймер 660 с) `PibdSnapshot` (листья по индексам, pruned-хеши) и `PibdTreeRebuilder`
 (пересборка корня прореженного дерева — та же арифметика, что пойдёт в hash-файлы).
 Запись в файловый PMMR реализована (`PibdStateWriter`, staging-каталог, проверка
-перезагрузкой). Атомарная активация с восстановлением после сбоя реализована
-(`PibdActivation`). Следующий шаг — проводка `PibdSession`/`PibdScheduler` и
-активации в `MessageProcessor`/`StateSyncer`, затем resume и serving.
+перезагрузкой). Атомарная активация реализована (`PibdActivation`), выдача сегментов из
+файловых PMMR — тоже (`PibdSegmentService`, цикл serve→download проверен).
+Открыт G-26: прореженная выдача требует стратегии data-файла (filler для
+прореженных листьев) и построения unspent-набора из битмапа. Следующий шаг —
+закрыть G-26, затем проводка в `MessageProcessor`/`StateSyncer` и resume.
 
 1. Сообщения 21–28 (уже в `MessageTypes`): `SegmentRequest{block_hash, identifier}`,
    `SegmentResponse<T>`, `OutputSegmentResponse`, `OutputBitmapSegmentResponse`,
