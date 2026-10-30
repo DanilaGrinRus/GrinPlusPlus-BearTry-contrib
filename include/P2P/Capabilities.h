@@ -13,18 +13,38 @@ public:
 		// We don't know (yet) what the peer can do.
 		UNKNOWN = 0x00,
 
-		// Full archival node, has the whole history without any pruning.
-		FULL_HIST = 0x01,
+		// Can provide full history of headers back to genesis (for at least one
+		// arbitrary fork). Grin 5.5.2 calls bit 0x01 HEADER_HIST; older Grin and
+		// Grin++ called it FULL_HIST. Wire format is identical.
+		HEADER_HIST = 0x01,
+		FULL_HIST = HEADER_HIST,
 
-		// Can provide block headers and the TxHashSet for some recent-enough height.
+		// Can provide the TxHashSet for some recent-enough height.
 		TXHASHET_HIST = 0x02, // LIGHT_CLIENT: We can prune old range-proofs and drop unnecessary rangeproof hashes if this isn't set
 
 		// Can provide a list of healthy peers
 		PEER_LIST = 0x04,
 
-		FAST_SYNC_NODE = (TXHASHET_HIST | PEER_LIST),
+		// Can broadcast and request transactions by kernel hash (Grin 5.5.2).
+		TX_KERNEL_HASH = 0x08,
 
-		ARCHIVE_NODE = (FULL_HIST | TXHASHET_HIST | PEER_LIST)
+		// Can provide PIBD segments during initial byte download (Grin 5.5.2).
+		PIBD_HIST = 0x10,
+
+		// Can provide historical blocks for archival sync (Grin 5.5.2).
+		BLOCK_HIST = 0x20,
+
+		// As above, with the PIBD serialization fix (Grin PR #3705) applied.
+		PIBD_HIST_1 = 0x40,
+
+		FAST_SYNC_NODE = (TXHASHET_HIST | PEER_LIST),
+		ARCHIVE_NODE = (HEADER_HIST | TXHASHET_HIST | PEER_LIST),
+
+		// Capabilities this node advertises today. PIBD_HIST / PIBD_HIST_1 and
+		// BLOCK_HIST stay off until the corresponding serving paths exist:
+		// advertising them would make Grin 5.5.2 peers expect segment/archival
+		// service that Grin++ cannot provide yet.
+		ADVERTISED = FAST_SYNC_NODE
 	};
 
 	Capabilities(const uint32_t value)

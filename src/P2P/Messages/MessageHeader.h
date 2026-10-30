@@ -69,7 +69,17 @@ public:
 		const uint8_t messageType = byteBuffer.ReadU8();
 		const uint64_t messageLength = byteBuffer.ReadU64();
 
-		if (messageLength > MessageTypes::GetMaximumSize((MessageTypes::EMessageType)messageType) * 4) {
+		// Known message types have a per-type cap. Anything else (including future
+		// message types such as PIBD/PIHD) is tolerated and bounded by the default
+		// size, mirroring Grin 5.5.2 `default_max_msg_size()` semantics, so that a
+		// newer peer cannot cause a disconnect by using a message we do not know.
+		uint64_t maxPayloadSize = MessageTypes::GetMaximumSize((MessageTypes::EMessageType)messageType);
+		if (maxPayloadSize == 0 && (MessageTypes::EMessageType)messageType != MessageTypes::Error) {
+			maxPayloadSize = P2P::MAX_BLOCK_SIZE;
+		}
+
+		// TODO 4x the limits, matching Grin 5.5.2, to leave room for future changes.
+		if (messageLength > maxPayloadSize * 4) {
 			throw DESERIALIZATION_EXCEPTION("Message header is invalid. Message length too long");
 		}
 

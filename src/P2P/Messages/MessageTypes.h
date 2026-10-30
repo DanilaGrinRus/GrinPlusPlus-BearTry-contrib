@@ -29,11 +29,21 @@ namespace MessageTypes
 		BanReasonMsg = 18,
 		GetTransactionMsg = 19,
 		TransactionKernelMsg = 20,
-		GetKernels = 21,
-		Kernels = 22
+
+		// PIBD (Grin v5.5.2, RFC-0020/0022). Wire ids must match the reference
+		// implementation exactly; the previous GetKernels/Kernels values occupied
+		// 21/22 and collided with Rust's PIBD messages.
+		GetOutputBitmapSegment = 21,
+		OutputBitmapSegment = 22,
+		GetOutputSegment = 23,
+		OutputSegment = 24,
+		GetRangeProofSegment = 25,
+		RangeProofSegment = 26,
+		GetKernelSegment = 27,
+		KernelSegment = 28
 	};
 
-	static uint64_t GetMaximumSize(const EMessageType messageType)
+	static constexpr uint64_t GetMaximumSize(const EMessageType messageType)
 	{
 		switch (messageType)
 		{
@@ -79,6 +89,16 @@ namespace MessageTypes
 				return 32;
 			case TransactionKernelMsg:
 				return 32;
+			case GetOutputBitmapSegment:
+			case GetOutputSegment:
+			case GetRangeProofSegment:
+			case GetKernelSegment:
+				return 41;
+			case OutputBitmapSegment:
+			case OutputSegment:
+			case RangeProofSegment:
+			case KernelSegment:
+				return 2 * P2P::MAX_BLOCK_SIZE;
 		}
 
 		return 0;
@@ -130,6 +150,22 @@ namespace MessageTypes
 				return "Msg::GetTransactionMsg";
 			case TransactionKernelMsg:
 				return "Msg::TransactionKernelMsg";
+			case GetOutputBitmapSegment:
+				return "Msg::GetOutputBitmapSegment";
+			case OutputBitmapSegment:
+				return "Msg::OutputBitmapSegment";
+			case GetOutputSegment:
+				return "Msg::GetOutputSegment";
+			case OutputSegment:
+				return "Msg::OutputSegment";
+			case GetRangeProofSegment:
+				return "Msg::GetRangeProofSegment";
+			case RangeProofSegment:
+				return "Msg::RangeProofSegment";
+			case GetKernelSegment:
+				return "Msg::GetKernelSegment";
+			case KernelSegment:
+				return "Msg::KernelSegment";
 		}
 
 		return "UNKNOWN";
