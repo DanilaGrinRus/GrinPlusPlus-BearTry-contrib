@@ -159,10 +159,10 @@ TEST_CASE("PibdStateWriter::WritesVerifiablePmmrFiles")
 	REQUIRE(actual.GetBytes() == expected.GetBytes());
 
 	std::shared_ptr<BitmapFile> pLeafSet = BitmapFile::Load(outputDir / "pmmr_leafset.bin");
-	// Leaf 0 is unspent and leaf 1 is required because its sibling bit is set;
-	// leaf 2 is pruned together with its sibling.
+	// The leaf set marks unspent leaves only: leaf 0 is unspent, leaf 1 was sent
+	// because its sibling bit is set but it is spent, so it stays out of the set.
 	REQUIRE(pLeafSet->IsSet(0));
-	REQUIRE(pLeafSet->IsSet(1));
+	REQUIRE(!pLeafSet->IsSet(1));
 	REQUIRE(!pLeafSet->IsSet(2));
 
 	// Rangeproof tree.

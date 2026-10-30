@@ -135,6 +135,28 @@ public:
 		return std::unique_ptr<DATA_TYPE>(nullptr);
 	}
 
+	// Reads the leaf data by position without consulting the leaf set. A spent
+	// leaf keeps its data in the data file (Grin++ never rewrites it in place), and
+	// PIBD serving must return it when the bitmap requires the leaf.
+	std::unique_ptr<DATA_TYPE> GetRawAt(const LeafIndex& leaf_idx) const
+	{
+		const uint64_t shift = m_pPruneList->GetLeafShift(leaf_idx.GetIndex());
+		const uint64_t shifted_idx = leaf_idx.Get() - shift;
+
+		try {
+			std::vector<unsigned char> data = m_pDataFile->GetDataAt(shifted_idx);
+			if (data.size() == DATA_SIZE) {
+				ByteBuffer byteBuffer(std::move(data));
+				return std::make_unique<DATA_TYPE>(DATA_TYPE::Deserialize(byteBuffer));
+			}
+		}
+		catch (FileException&) {
+			return std::unique_ptr<DATA_TYPE>(nullptr);
+		}
+
+		return std::unique_ptr<DATA_TYPE>(nullptr);
+	}
+
 	void Commit() final
 	{
 		if (IsDirty())

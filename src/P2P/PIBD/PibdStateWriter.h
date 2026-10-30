@@ -55,13 +55,13 @@ public:
 	{
 		const PibdTreeWriteInfo outputs = WriteTree<OUTPUT_LEAF_SIZE>(
 			txHashSetDir / "output", snapshot.OutputMmrSize, snapshot.Outputs,
-			snapshot.OutputHashes, "output");
+			snapshot.OutputHashes, &snapshot.Bitmap, "output");
 		const PibdTreeWriteInfo rangeProofs = WriteTree<RANGEPROOF_LEAF_SIZE>(
 			txHashSetDir / "rangeproof", snapshot.OutputMmrSize, snapshot.RangeProofs,
-			snapshot.RangeProofHashes, "rangeproof");
+			snapshot.RangeProofHashes, &snapshot.Bitmap, "rangeproof");
 		const PibdTreeWriteInfo kernels = WriteTree<KERNEL_LEAF_SIZE>(
 			txHashSetDir / "kernel", snapshot.KernelMmrSize, snapshot.Kernels,
-			snapshot.KernelHashes, "kernel");
+			snapshot.KernelHashes, nullptr, "kernel");
 
 		if (outputs.Root != snapshot.OutputRoot) {
 			throw SegmentException(ESegmentError::Mismatch, "Written output root does not match the horizon");
@@ -87,6 +87,7 @@ private:
 		const uint64_t mmrSize,
 		const std::vector<std::pair<uint64_t, T>>& leavesByLeafIndex,
 		const std::map<uint64_t, Hash>& storedHashes,
+		const SegmentBitmap* unspentLeaves,
 		const std::string& treeName)
 	{
 		if (mmrSize == 0) {
@@ -202,17 +203,40 @@ private:
 		const fs::path leafSetPath = treeDir / "pmmr_leafset.bin";
 		const fs::path prunePath = treeDir / "pmmr_prun.bin";
 
+		// The leaf set marks unspent leaves (the horizon bitmap), not every leaf we
+		// received: a spent leaf whose sibling is unspent is sent for verification
+		// but stays spent in the state.
+		if (unspentLeaves != nullptr) {
+			for (uint64_t unspentLeafIndex = 0; unspentLeafIndex < numLeaves; ++unspentLeafIndex) {
+				if (!unspentLeaves->Contains(unspentLeafIndex)) {
+					continue;
+				}
+
+				if (leafData.find(unspentLeafIndex) == leafData.end()) {
+					throw SegmentException(
+						ESegmentError::MissingLeaf,
+						treeName + " tree is missing unspent leaf " + std::to_string(unspentLeafIndex));
+				}
+			}
+		}
+
 		std::shared_ptr<HashFile> pHashFile = HashFile::Load(hashPath);
 		Roaring leafSetRoaring;
 		uint64_t storedNodes = 0;
+		uint64_t writtenLeafIndex = 0;
 		for (uint64_t pos0 = 0; pos0 < mmrSize; ++pos0) {
 			if (hashes[(size_t)pos0].has_value()) {
 				pHashFile->AddData(hashes[(size_t)pos0].value());
 				++storedNodes;
 			}
 
-			if (MMRUtil::IsLeaf(pos0) && hasData[(size_t)pos0] != 0) {
-				leafSetRoaring.add((uint32_t)(pos0 + 1));
+			if (MMRUtil::IsLeaf(pos0)) {
+				if (hasData[(size_t)pos0] != 0 &&
+					(unspentLeaves == nullptr || unspentLeaves->Contains(writtenLeafIndex))) {
+					leafSetRoaring.add((uint32_t)(pos0 + 1));
+				}
+
+				++writtenLeafIndex;
 			}
 		}
 

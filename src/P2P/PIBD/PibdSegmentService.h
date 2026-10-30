@@ -97,7 +97,7 @@ public:
 				}
 
 				std::unique_ptr<OutputIdentifier> pOutput =
-					m_pOutputPMMR->GetAt(LeafIndex::At(leafIndex.value()));
+					m_pOutputPMMR->GetRawAt(LeafIndex::At(leafIndex.value()));
 				if (pOutput == nullptr) {
 					return std::nullopt;
 				}
@@ -128,7 +128,7 @@ public:
 				}
 
 				std::unique_ptr<RangeProof> pRangeProof =
-					m_pRangeProofPMMR->GetAt(LeafIndex::At(leafIndex.value()));
+					m_pRangeProofPMMR->GetRawAt(LeafIndex::At(leafIndex.value()));
 				if (pRangeProof == nullptr) {
 					return std::nullopt;
 				}

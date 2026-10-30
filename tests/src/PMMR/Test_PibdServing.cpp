@@ -82,12 +82,12 @@ namespace
 	{
 		const uint64_t numOutputs = 64;
 
-		// All outputs are unspent: every leaf is required, so the served bitmap
-		// derived from the leaf set equals the horizon bitmap. (Serving a pruned
-		// state is limited by the data-file layout - see GAP_MATRIX G-09.)
+		// All outputs unspent: the served bitmap derived from the leaf set equals
+		// the horizon bitmap. Pruned serving waits on the rebuilder fix recorded as
+		// G-26 (interior nodes of a pruned subtree must not require stored hashes).
 		VectorSegmentBitmap bitmap(numOutputs);
-		for (uint64_t i = 0; i < numOutputs; ++i) {
-			bitmap.Set(i, true);
+		for (uint64_t leafIndex = 0; leafIndex < numOutputs; ++leafIndex) {
+			bitmap.Set(leafIndex, true);
 		}
 
 		std::vector<BitmapChunk> chunks(1);
@@ -152,7 +152,7 @@ TEST_CASE("PibdSegmentService::ServesStateThatValidates")
 	REQUIRE(service.GetOutputMmrSize() == written.OutputMmrSize);
 	REQUIRE(service.GetKernelMmrSize() == written.KernelMmrSize);
 
-	// The served bitmap matches the horizon bitmap built from the leaf set.
+	// The served bitmap is the horizon bitmap taken from the leaf set.
 	const VectorSegmentBitmap servedBitmap = service.GetOutputBitmap();
 	for (uint64_t leafIndex = 0; leafIndex < 64; ++leafIndex) {
 		REQUIRE(servedBitmap.Contains(leafIndex));
