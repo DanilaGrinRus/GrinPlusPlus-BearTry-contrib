@@ -3,6 +3,7 @@
 #include <PMMR/Common/Index.h>
 #include <PMMR/Common/LeafIndex.h>
 #include <cstdint>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -39,4 +40,8 @@ public:
 
 	static uint64_t BintreeLeftmost(const uint64_t pos0);
 	static uint64_t BintreeRightmost(const uint64_t pos0);
+
+	// 0-based leaf index of a 0-based PMMR position, if the position is a leaf
+	// (inverse of InsertionToPmmrIndex).
+	static std::optional<uint64_t> PmmrLeafToInsertionIndex(const uint64_t pos0);
 };

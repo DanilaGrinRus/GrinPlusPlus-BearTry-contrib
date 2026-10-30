@@ -26,6 +26,8 @@ public:
 class VectorSegmentBitmap : public SegmentBitmap
 {
 public:
+	VectorSegmentBitmap() = default;
+
 	explicit VectorSegmentBitmap(const uint64_t numBits)
 		: m_bits((size_t)numBits, false)
 	{

@@ -121,3 +121,13 @@ uint64_t MMRUtil::BintreeRightmost(const uint64_t pos0)
 {
 	return pos0 - BintreePostorderHeight(pos0);
 }
+
+std::optional<uint64_t> MMRUtil::PmmrLeafToInsertionIndex(const uint64_t pos0)
+{
+	const std::pair<uint64_t, uint64_t> peakMapHeight = PeakMapHeight(pos0);
+	if (peakMapHeight.second != 0) {
+		return std::nullopt;
+	}
+
+	return peakMapHeight.first;
+}
