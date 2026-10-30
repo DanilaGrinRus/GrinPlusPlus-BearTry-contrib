@@ -4,6 +4,7 @@
 #include <Core/Serialization/Serializer.h>
 #include <PMMR/Common/MMRUtil.h>
 #include <PMMR/Models/InMemoryPmmr.h>
+#include <PMMR/Models/SegmentBitmap.h>
 #include <PMMR/Models/Segment.h>
 #include <PMMR/Models/SegmentException.h>
 #include <PMMR/Models/SegmentGenerator.h>
@@ -148,4 +149,61 @@ TEST_CASE("SegmentGenerator::TamperedSegmentIsRejected")
 	);
 
 	REQUIRE_THROWS_AS(bad.Validate(mmrSize, mmr.GetRoot()), SegmentException);
+}
+
+TEST_CASE("SegmentGenerator::PrunedSegmentsValidateWithBitmap")
+{
+	// 8 leaves => complete tree, MMR size 15.
+	const InMemoryPmmr<GenLeaf> mmr = MakePmmr(8);
+	const uint64_t mmrSize = mmr.GetSize();
+	REQUIRE(mmrSize == 15);
+	const Hash root = mmr.GetRoot();
+
+	// Only leaf 0 is unspent: leaves 0 and 1 are required, the rest are pruned.
+	VectorSegmentBitmap bitmap(8);
+	bitmap.Set(0, true);
+
+	// Height 2 => two segments of four leaves.
+	const uint64_t required = SegmentIdentifier::CountSegmentsRequired(mmrSize, 2);
+	REQUIRE(required == 2);
+	for (uint64_t idx = 0; idx < required; ++idx) {
+		const Segment<GenLeaf> segment =
+			SegmentGenerator<GenLeaf>::Generate(mmr, SegmentIdentifier(2, idx), &bitmap);
+		INFO("pruned height 2 segment idx=" << idx);
+		REQUIRE(segment.GetLeafData().size() < 4);   // pruning actually removed leaves
+		REQUIRE_NOTHROW(segment.ValidateWithBitmap(mmrSize, bitmap, root));
+	}
+}
+
+TEST_CASE("SegmentGenerator::FullyPrunedSegmentUsesStoredParentHash")
+{
+	const InMemoryPmmr<GenLeaf> mmr = MakePmmr(8);
+	const uint64_t mmrSize = mmr.GetSize();
+	const Hash root = mmr.GetRoot();
+
+	VectorSegmentBitmap bitmap(8);
+	bitmap.Set(0, true);
+
+	// Height 1, idx 1: leaves 2 and 3, both pruned.
+	const Segment<GenLeaf> segment =
+		SegmentGenerator<GenLeaf>::Generate(mmr, SegmentIdentifier(1, 1), &bitmap);
+	REQUIRE(segment.GetLeafData().empty());
+	REQUIRE(!segment.GetHashes().empty());
+
+	const std::optional<Hash> segmentRoot = segment.RootWithBitmap(mmrSize, bitmap);
+	REQUIRE(!segmentRoot.has_value());   // fully pruned segment has no root
+	REQUIRE_NOTHROW(segment.ValidateWithBitmap(mmrSize, bitmap, root));
+
+	// A wrong stored hash must not validate.
+	std::vector<Hash> tampered = segment.GetHashes();
+	tampered[0] = root;
+	const Segment<GenLeaf> bad(
+		segment.GetIdentifier(),
+		segment.GetHashPositions(),
+		tampered,
+		segment.GetLeafPositions(),
+		segment.GetLeafData(),
+		segment.GetProof()
+	);
+	REQUIRE_THROWS_AS(bad.ValidateWithBitmap(mmrSize, bitmap, root), SegmentException);
 }

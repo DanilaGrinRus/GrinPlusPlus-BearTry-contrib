@@ -1,5 +1,6 @@
 #pragma once
 
+#include "SegmentBitmap.h"
 #include "SegmentException.h"
 #include "SegmentIdentifier.h"
 #include "SegmentProof.h"
@@ -13,6 +14,7 @@
 #include <Core/Traits/Serializable.h>
 #include <Crypto/Models/Hash.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -191,6 +193,160 @@ public:
 	{
 		const std::pair<uint64_t, uint64_t> range = m_identifier.SegmentPosRange(mmrSize);
 		const std::pair<Hash, uint64_t> segmentRoot = FirstUnprunedParent(mmrSize);
+		m_proof.Validate(mmrSize, mmrRoot, range.first, range.second, segmentRoot.first, segmentRoot.second);
+	}
+
+	// Hash stored in this segment at the given 0-based MMR position.
+	Hash GetHashAt(const uint64_t pos0) const
+	{
+		for (size_t i = 0; i < m_hashPositions.size(); ++i) {
+			if (m_hashPositions[i] == pos0) {
+				return m_hashes[i];
+			}
+		}
+
+		throw SegmentException(
+			ESegmentError::MissingHash, "Segment has no hash at position " + std::to_string(pos0));
+	}
+
+	// Bitmap-aware root for a prunable MMR: leaves that the bitmap does not
+	// require are absent and their subtree hashes come from this segment.
+	// Returns nullopt only for a full segment that is completely pruned.
+	// Ported from grin Segment::root.
+	std::optional<Hash> RootWithBitmap(const uint64_t mmrSize, const SegmentBitmap& bitmap) const
+	{
+		const std::pair<uint64_t, uint64_t> range = m_identifier.SegmentPosRange(mmrSize);
+		std::vector<std::optional<Hash>> hashes;
+		for (uint64_t pos0 = range.first; ; ++pos0) {
+			const uint64_t height = MMRUtil::BintreePostorderHeight(pos0);
+			std::optional<Hash> hash;
+			if (height == 0) {
+				if (IsSegmentLeafRequired(pos0, mmrSize, bitmap)) {
+					Serializer serializer;
+					GetLeafDataAt(pos0).Serialize(serializer);
+					hash = MMRHashUtil::HashLeafWithIndex(serializer.GetBytes(), pos0);
+				}
+			} else {
+				if (hashes.size() < 2) {
+					throw SegmentException(
+						ESegmentError::MissingHash,
+						"Segment is missing a child hash below position " + std::to_string(pos0));
+				}
+
+				const std::optional<Hash> rightChild = hashes.back();
+				hashes.pop_back();
+				const std::optional<Hash> leftChild = hashes.back();
+				hashes.pop_back();
+
+				if (leftChild.has_value() && rightChild.has_value()) {
+					hash = MMRHashUtil::HashParentWithIndex(
+						leftChild.value(), rightChild.value(), pos0);
+				} else if (!leftChild.has_value() && !rightChild.has_value()) {
+					hash = std::nullopt;
+				} else if (!leftChild.has_value()) {
+					const uint64_t leftChildPos = pos0 - (1ULL << height);
+					hash = MMRHashUtil::HashParentWithIndex(
+						GetHashAt(leftChildPos), rightChild.value(), pos0);
+				} else {
+					const uint64_t rightChildPos = pos0 - 1;
+					hash = MMRHashUtil::HashParentWithIndex(
+						leftChild.value(), GetHashAt(rightChildPos), pos0);
+				}
+			}
+
+			hashes.push_back(hash);
+			if (pos0 == range.second) {
+				break;
+			}
+		}
+
+		if (m_identifier.IsFullSegment(mmrSize)) {
+			if (hashes.size() != 1) {
+				throw SegmentException(ESegmentError::Mismatch, "Full segment did not reduce to a single hash");
+			}
+
+			return hashes.back();
+		}
+
+		const std::vector<uint64_t> peaks = MMRUtil::GetPeakIndices(mmrSize);
+		std::optional<Hash> root;
+		for (auto iter = peaks.crbegin(); iter != peaks.crend(); ++iter) {
+			const uint64_t peakPos0 = *iter;
+			if (peakPos0 < range.first || peakPos0 > range.second) {
+				continue;
+			}
+
+			if (hashes.empty()) {
+				throw SegmentException(
+					ESegmentError::MissingHash,
+					"Segment is missing the peak hash at position " + std::to_string(1 + peakPos0));
+			}
+
+			std::optional<Hash> peakHash = hashes.back();
+			hashes.pop_back();
+			if (!peakHash.has_value()) {
+				peakHash = GetHashAt(peakPos0);
+			}
+
+			root = root.has_value()
+				? MMRHashUtil::HashParentWithIndex(peakHash.value(), root.value(), mmrSize)
+				: peakHash;
+		}
+
+		if (!root.has_value()) {
+			throw SegmentException(ESegmentError::NonExistent, "Segment contains no peaks for this MMR size");
+		}
+
+		return root;
+	}
+
+	// First unpruned parent hash of this segment and its 1-based position, for a
+	// prunable MMR. When the segment root is fully pruned the hash is looked up
+	// along the family branch. Ported from grin Segment::first_unpruned_parent.
+	std::pair<Hash, uint64_t> FirstUnprunedParentWithBitmap(
+		const uint64_t mmrSize, const SegmentBitmap& bitmap) const
+	{
+		const std::optional<Hash> root = RootWithBitmap(mmrSize, bitmap);
+		const std::pair<uint64_t, uint64_t> range = m_identifier.SegmentPosRange(mmrSize);
+		if (root.has_value()) {
+			return { root.value(), range.second + 1 };
+		}
+
+		const uint64_t numLeaves = MMRUtil::GetNumLeaves(mmrSize);
+		uint64_t cardinality = 0;
+		uint64_t pos0 = range.second;
+		const std::vector<std::pair<uint64_t, uint64_t>> branch = MMRUtil::FamilyBranch(range.second, mmrSize);
+		size_t nextBranch = 0;
+		while (cardinality == 0) {
+			try {
+				return { GetHashAt(pos0), pos0 + 1 };
+			} catch (const SegmentException&) {
+				// No stored hash at this position; keep walking up.
+			}
+
+			if (nextBranch >= branch.size()) {
+				break;
+			}
+
+			pos0 = branch[nextBranch].first;
+			++nextBranch;
+			const uint64_t leftmost = MMRUtil::BintreeLeftmost(pos0);
+			const uint64_t rightmost = MMRUtil::BintreeRightmost(pos0);
+			const uint64_t start = MMRUtil::GetNumLeaves(1 + leftmost) - 1;
+			const uint64_t end = (std::min)(MMRUtil::GetNumLeaves(1 + rightmost), numLeaves);
+			cardinality = bitmap.RangeCardinality(start, end);
+		}
+
+		throw SegmentException(
+			ESegmentError::MissingHash, "Segment has no unpruned parent hash for this bitmap");
+	}
+
+	// Validate a pruned segment against the MMR root using the output bitmap.
+	void ValidateWithBitmap(
+		const uint64_t mmrSize, const SegmentBitmap& bitmap, const Hash& mmrRoot) const
+	{
+		const std::pair<uint64_t, uint64_t> range = m_identifier.SegmentPosRange(mmrSize);
+		const std::pair<Hash, uint64_t> segmentRoot = FirstUnprunedParentWithBitmap(mmrSize, bitmap);
 		m_proof.Validate(mmrSize, mmrRoot, range.first, range.second, segmentRoot.first, segmentRoot.second);
 	}
 
