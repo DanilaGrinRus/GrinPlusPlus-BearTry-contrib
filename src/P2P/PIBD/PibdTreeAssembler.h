@@ -9,6 +9,7 @@
 #include <Crypto/Models/Hash.h>
 
 #include <cstdint>
+#include <map>
 #include <optional>
 #include <utility>
 #include <vector>
@@ -114,6 +115,19 @@ public:
 			leaves.emplace_back(segment.GetLeafPositions()[i], segment.GetLeafData()[i]);
 		}
 
+		for (size_t i = 0; i < segment.GetHashPositions().size(); ++i) {
+			const uint64_t pos0 = segment.GetHashPositions()[i];
+			const Hash& hash = segment.GetHashes()[i];
+			const auto existing = m_storedHashes.find(pos0);
+			if (existing != m_storedHashes.end() && existing->second != hash) {
+				throw SegmentException(
+					ESegmentError::Mismatch,
+					"Segment provides a different hash for position " + std::to_string(pos0));
+			}
+
+			m_storedHashes[pos0] = hash;
+		}
+
 		slot = std::move(leaves);
 		return true;
 	}
@@ -150,6 +164,10 @@ public:
 		return stored;
 	}
 
+	// Internal subtree hashes carried by the segments; needed to rebuild the
+	// tree with pruned leaves (they are written to the PMMR hash file).
+	const std::map<uint64_t, Hash>& GetStoredHashes() const noexcept { return m_storedHashes; }
+
 	// Leaves ordered by MMR position; only valid when IsComplete().
 	std::vector<std::pair<uint64_t, T>> GetLeaves() const
 	{
@@ -173,4 +191,5 @@ private:
 	const SegmentBitmap* m_bitmap;
 	uint64_t m_required;
 	std::vector<std::optional<std::vector<std::pair<uint64_t, T>>>> m_segments;
+	std::map<uint64_t, Hash> m_storedHashes;
 };

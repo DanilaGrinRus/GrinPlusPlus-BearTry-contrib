@@ -4,6 +4,7 @@
 
 #include "../../PMMR/Common/MMRUtil.h"
 #include "../../PMMR/Models/InMemoryPmmr.h"
+#include "PibdTreeRebuilder.h"
 #include "../../PMMR/Models/SegmentException.h"
 
 #include <Core/Models/OutputIdentifier.h>
@@ -34,6 +35,11 @@ struct PibdSnapshot
 	std::vector<std::pair<uint64_t, OutputIdentifier>> Outputs;
 	std::vector<std::pair<uint64_t, RangeProof>> RangeProofs;
 	std::vector<std::pair<uint64_t, TransactionKernel>> Kernels;
+
+	// Pruned-subtree hashes carried by the segments (MMR position -> hash).
+	std::map<uint64_t, Hash> OutputHashes;
+	std::map<uint64_t, Hash> RangeProofHashes;
+	std::map<uint64_t, Hash> KernelHashes;
 
 	VectorSegmentBitmap Bitmap;
 };
@@ -90,6 +96,9 @@ inline PibdSnapshot BuildSnapshot(const PibdDownload& download)
 	snapshot.Outputs = PibdSnapshotDetail::ToLeafIndices(download.GetOutputs().GetLeaves());
 	snapshot.RangeProofs = PibdSnapshotDetail::ToLeafIndices(download.GetRangeProofs().GetLeaves());
 	snapshot.Kernels = PibdSnapshotDetail::ToLeafIndices(download.GetKernels().GetLeaves());
+	snapshot.OutputHashes = download.GetOutputs().GetStoredHashes();
+	snapshot.RangeProofHashes = download.GetRangeProofs().GetStoredHashes();
+	snapshot.KernelHashes = download.GetKernels().GetStoredHashes();
 
 	// Kernels are never pruned: the whole tree must rebuild to the horizon root.
 	const uint64_t kernelLeaves = MMRUtil::GetNumLeaves(snapshot.KernelMmrSize);
@@ -100,16 +109,25 @@ inline PibdSnapshot BuildSnapshot(const PibdDownload& download)
 				std::to_string(kernelLeaves));
 	}
 
-	std::vector<TransactionKernel> kernels;
-	kernels.reserve(snapshot.Kernels.size());
-	for (const std::pair<uint64_t, TransactionKernel>& kernel : snapshot.Kernels) {
-		kernels.push_back(kernel.second);
-	}
-
-	const InMemoryPmmr<TransactionKernel> rebuilt(std::move(kernels));
-	if (rebuilt.GetRoot() != download.GetHorizon().KernelRoot) {
+	// Rebuild every tree from the leaves and the pruned-subtree hashes and check
+	// it against the horizon. This is the same computation the desegmenter will
+	// use to write the PMMR hash files.
+	if (ComputePrunedTreeRoot(snapshot.KernelMmrSize, snapshot.Kernels, snapshot.KernelHashes)
+		!= download.GetHorizon().KernelRoot) {
 		throw SegmentException(
 			ESegmentError::Mismatch, "Rebuilt kernel tree root does not match the horizon");
+	}
+
+	if (ComputePrunedTreeRoot(snapshot.OutputMmrSize, snapshot.Outputs, snapshot.OutputHashes)
+		!= download.GetHorizon().OutputRoot) {
+		throw SegmentException(
+			ESegmentError::Mismatch, "Rebuilt output tree root does not match the horizon");
+	}
+
+	if (ComputePrunedTreeRoot(snapshot.OutputMmrSize, snapshot.RangeProofs, snapshot.RangeProofHashes)
+		!= download.GetHorizon().RangeProofRoot) {
+		throw SegmentException(
+			ESegmentError::Mismatch, "Rebuilt rangeproof tree root does not match the horizon");
 	}
 
 	// Outputs and rangeproofs are pruned with the same bitmap, so their leaf

@@ -186,3 +186,70 @@ TEST_CASE("MMRUtil::PmmrLeafToInsertionIndexInvertsInsertionIndex")
 		}
 	}
 }
+TEST_CASE("PibdSnapshot::PrunedTreeNeedsStoredHashes")
+{
+	// Pruning is only representable with the subtree hashes carried by segments:
+	// the leaves alone cannot rebuild the root.
+	const uint64_t numOutputs = 64;
+	VectorSegmentBitmap bitmap(numOutputs);
+	bitmap.Set(0, true);
+
+	std::vector<BitmapChunk> chunks(1);
+	chunks[0].Set(0, true);
+	const InMemoryPmmr<BitmapChunk> bitmapMmr(std::move(chunks));
+	const InMemoryPmmr<OutputIdentifier> outputs = MakeTree<OutputIdentifier>(numOutputs, MakeOutput);
+	const InMemoryPmmr<RangeProof> rangeProofs = MakeTree<RangeProof>(numOutputs, MakeRangeProof);
+	const InMemoryPmmr<TransactionKernel> kernels = MakeTree<TransactionKernel>(2, MakeKernel);
+
+	PibdDownload::Horizon horizon;
+	horizon.BlockHash = Hash::ValueOf(5);
+	horizon.OutputMmrSize = MmrSizeForLeaves(numOutputs);
+	horizon.KernelMmrSize = MmrSizeForLeaves(2);
+	horizon.OutputRoot = outputs.GetRoot();
+	horizon.RangeProofRoot = rangeProofs.GetRoot();
+	horizon.KernelRoot = kernels.GetRoot();
+	horizon.BitmapRoot = bitmapMmr.GetRoot();
+
+	PibdSession session(horizon);
+	REQUIRE(session.AcceptResponse(SegmentResponseMessage::CreateOutputBitmap(
+		horizon.BlockHash,
+		BitmapSegment::FromSegment(SegmentGenerator<BitmapChunk>::Generate(
+			bitmapMmr, SegmentIdentifier(PibdParams::BITMAP_SEGMENT_HEIGHT, 0))),
+		horizon.OutputRoot)));
+	REQUIRE(session.AcceptResponse(SegmentResponseMessage::CreateOutputs(
+		horizon.BlockHash,
+		SegmentGenerator<OutputIdentifier>::Generate(
+			outputs, SegmentIdentifier(PibdParams::OUTPUT_SEGMENT_HEIGHT, 0), &bitmap),
+		horizon.OutputRoot)));
+	REQUIRE(session.AcceptResponse(SegmentResponseMessage::CreateRangeProofs(
+		horizon.BlockHash,
+		SegmentGenerator<RangeProof>::Generate(
+			rangeProofs, SegmentIdentifier(PibdParams::RANGEPROOF_SEGMENT_HEIGHT, 0), &bitmap))));
+	REQUIRE(session.AcceptResponse(SegmentResponseMessage::CreateKernels(
+		horizon.BlockHash,
+		SegmentGenerator<TransactionKernel>::Generate(
+			kernels, SegmentIdentifier(PibdParams::KERNEL_SEGMENT_HEIGHT, 0)))));
+
+	const PibdSnapshot snapshot = BuildSnapshot(session.GetDownload());
+	REQUIRE(!snapshot.OutputHashes.empty());   // pruning produced subtree hashes
+
+	// With the hashes the root rebuilds exactly.
+	REQUIRE(ComputePrunedTreeRoot(snapshot.OutputMmrSize, snapshot.Outputs, snapshot.OutputHashes)
+		== horizon.OutputRoot);
+
+	// Without them the rebuild must fail rather than invent a root.
+	const std::map<uint64_t, Hash> noHashes;
+	REQUIRE_THROWS_AS(
+		ComputePrunedTreeRoot(snapshot.OutputMmrSize, snapshot.Outputs, noHashes), SegmentException);
+
+	// Wrong subtree hashes must not reproduce the root either. Every stored hash
+	// is replaced, because a hash belonging to an unpruned subtree is simply not
+	// consulted by the rebuild.
+	std::map<uint64_t, Hash> tampered = snapshot.OutputHashes;
+	for (std::pair<const uint64_t, Hash>& entry : tampered) {
+		entry.second = HASH::ZERO;
+	}
+
+	REQUIRE(ComputePrunedTreeRoot(snapshot.OutputMmrSize, snapshot.Outputs, tampered)
+		!= horizon.OutputRoot);
+}
