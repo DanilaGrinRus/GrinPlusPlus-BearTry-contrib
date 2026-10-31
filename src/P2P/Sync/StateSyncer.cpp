@@ -150,19 +150,17 @@ StateSyncer::EPibdResult StateSyncer::TryPibd(SyncStatus& syncStatus)
 		return EPibdResult::NotAttempted;
 	}
 
+	if (std::chrono::system_clock::now() < m_pibdRetryAt) {
+		return EPibdResult::InProgress;
+	}
+
 	const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
 	const PibdSync::EStatus status = m_pPibdSync->GetStatus();
 
 	if (status == PibdSync::EStatus::Failed) {
 		LOG_WARNING_F("PIBD failed: {}", m_pPibdSync->GetError());
 		m_pPibdSync->Reset();
-		if (RotatePibdPeer()) {
-			return EPibdResult::NotAttempted;
-		}
-
-		LOG_WARNING("No untried PIBD peer left; falling back to txhashset.zip");
-		DisablePibd();
-		return EPibdResult::NotAttempted;
+		return RetryOrDisablePibd();
 	}
 
 	if (status == PibdSync::EStatus::Idle) {
@@ -243,13 +241,7 @@ StateSyncer::EPibdResult StateSyncer::TryPibd(SyncStatus& syncStatus)
 		if (updated == PibdSync::EStatus::Failed) {
 			LOG_WARNING_F("PIBD failed: {}", m_pPibdSync->GetError());
 			m_pPibdSync->Reset();
-			if (RotatePibdPeer()) {
-				return EPibdResult::NotAttempted;
-			}
-
-			LOG_WARNING("No untried PIBD peer left; falling back to txhashset.zip");
-			DisablePibd();
-			return EPibdResult::NotAttempted;
+			return RetryOrDisablePibd();
 		}
 
 		if (updated != PibdSync::EStatus::Completed) {
@@ -278,6 +270,8 @@ StateSyncer::EPibdResult StateSyncer::TryPibd(SyncStatus& syncStatus)
 		LOG_INFO("PIBD state sync completed and validated.");
 		m_pibdPeer = nullptr;
 		m_pibdPeersTried.clear();
+		m_pibdRound = 0;
+		m_pibdRetryAt = std::chrono::system_clock::time_point::min();
 		return EPibdResult::Completed;
 	}
 
@@ -366,4 +360,28 @@ bool StateSyncer::RotatePibdPeer()
 
 	LOG_INFO_F("PIBD: retrying with another peer {}", m_pibdPeer);
 	return true;
+}
+
+StateSyncer::EPibdResult StateSyncer::RetryOrDisablePibd()
+{
+	m_pibdPeer = nullptr;
+	if (RotatePibdPeer()) {
+		return EPibdResult::InProgress;
+	}
+
+	if (m_pibdRound < 3) {
+		m_pibdRound++;
+		m_pibdPeersTried.clear();
+		const auto delay = std::chrono::seconds(30u << (m_pibdRound - 1));
+		m_pibdRetryAt = std::chrono::system_clock::now() + delay;
+		LOG_INFO_F(
+			"PIBD: all capable peers tried; retry round {} in {}s",
+			m_pibdRound,
+			delay.count());
+		return EPibdResult::InProgress;
+	}
+
+	LOG_WARNING("PIBD: all capable peers failed in 3 rounds; falling back to txhashset.zip");
+	DisablePibd();
+	return EPibdResult::NotAttempted;
 }

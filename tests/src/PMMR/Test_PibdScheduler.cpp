@@ -179,6 +179,20 @@ TEST_CASE("PibdScheduler::RetriesThenFails")
 	REQUIRE(!scheduler.GetFailure().empty());
 }
 
+TEST_CASE("PibdScheduler::SlowPeerRateFails")
+{
+	const PibdFixture fixture;
+	const Clock::time_point start;
+	PibdScheduler::Config config = TightConfig();
+	config.RateWindow = std::chrono::seconds(30);
+	config.MinSegmentsPerWindow = 2;
+	PibdScheduler scheduler(fixture.Horizon, start, config);
+
+	REQUIRE(scheduler.TakeRequests(start).size() == 1);
+	REQUIRE(scheduler.TakeRequests(start + std::chrono::seconds(31)).empty());
+	REQUIRE(scheduler.IsFailed());
+	REQUIRE(scheduler.GetFailure().find("rate") != std::string::npos);
+}
 TEST_CASE("PibdScheduler::CompletesThroughMessages")
 {
 	const PibdFixture fixture;

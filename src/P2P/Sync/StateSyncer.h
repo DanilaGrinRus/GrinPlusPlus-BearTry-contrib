@@ -53,6 +53,9 @@ private:
 	// Chooses an untried PIBD-capable peer after a failure. Returns false when
 	// every capable peer has already been tried for this horizon.
 	bool RotatePibdPeer();
+	// Rotates to an untried peer, starts another full round with exponential
+	// backoff after the peer set is exhausted, and only then disables PIBD.
+	EPibdResult RetryOrDisablePibd();
 
 	std::chrono::time_point<std::chrono::system_clock> m_timeRequested;
 	uint64_t m_requestedHeight;
@@ -65,4 +68,6 @@ private:
 	Hash m_pibdHorizonHash;
 	PeerPtr m_pibdPeer;
 	std::unordered_set<std::string> m_pibdPeersTried;
+	uint32_t m_pibdRound = 0;
+	std::chrono::system_clock::time_point m_pibdRetryAt = std::chrono::system_clock::time_point::min();
 };

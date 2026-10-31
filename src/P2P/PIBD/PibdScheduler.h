@@ -31,12 +31,18 @@ public:
 		std::chrono::seconds Timeout = PibdParams::SEGMENT_REQUEST_TIMEOUT;
 		size_t MaxAttempts = 3;
 		std::chrono::seconds FallbackAfter = PibdParams::TXHASHSET_ZIP_FALLBACK_TIME;
+		// A peer that is alive but too slow must also trigger rotation: if fewer
+		// than MinSegmentsPerWindow are accepted during RateWindow we fail the
+		// attempt so the caller can pick another peer.
+		std::chrono::seconds RateWindow{ 180 };
+		size_t MinSegmentsPerWindow = 10;
 	};
 
 	PibdScheduler(PibdDownload::Horizon horizon, const Clock::time_point now, Config config = Config())
 		: m_session(std::move(horizon)),
 		m_config(config),
-		m_lastProgress(now)
+		m_lastProgress(now),
+		m_rateWindowStart(now)
 	{
 	}
 
@@ -69,6 +75,19 @@ public:
 				std::to_string(std::chrono::duration_cast<std::chrono::seconds>(
 					now - m_lastProgress).count()) + "s");
 			return {};
+		}
+
+		if (now - m_rateWindowStart >= m_config.RateWindow) {
+			if (m_windowAccepted < m_config.MinSegmentsPerWindow) {
+				Fail("PIBD download rate too low: " +
+					std::to_string(m_windowAccepted) + " segments in " +
+					std::to_string(std::chrono::duration_cast<std::chrono::seconds>(
+						now - m_rateWindowStart).count()) + "s");
+				return {};
+			}
+
+			m_rateWindowStart = now;
+			m_windowAccepted = 0;
 		}
 
 		const size_t capacity = (m_config.MaxInFlight > m_inFlight.size())
@@ -126,6 +145,7 @@ public:
 		if (applied) {
 			RemoveInFlight(request.value());
 			m_lastProgress = now;
+			++m_windowAccepted;
 		}
 
 		return applied;
@@ -223,6 +243,8 @@ private:
 	std::map<KeyValue, uint32_t> m_attempts;
 	std::vector<Pending> m_inFlight;
 	Clock::time_point m_lastProgress;
+	Clock::time_point m_rateWindowStart;
+	size_t m_windowAccepted = 0;
 	size_t m_requestsSent = 0;
 	bool m_failed = false;
 	std::string m_failure;
