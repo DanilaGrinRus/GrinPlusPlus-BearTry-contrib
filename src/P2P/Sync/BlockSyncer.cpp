@@ -170,6 +170,7 @@ bool BlockSyncer::RequestBlocks(const SyncStatus& syncStatus)
 			}
 
 			if (!requested->second.TIMEOUT_COUNTED) {
+				requested->second.TIMEOUT_COUNTED = true;
 				syncStatus.IncrementBlockTimeouts();
 				LOG_WARNING_F(
 					"Block {} request timed out (attempt {}), reassigning without ban.",
