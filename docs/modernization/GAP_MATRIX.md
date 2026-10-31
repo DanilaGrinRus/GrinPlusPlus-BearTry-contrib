@@ -114,7 +114,7 @@
 
 | **G-52** | Legacy txhashset serving на горизонте | `BlockChain::SnapshotTxHashSet`, `TxHashSetManager::SaveSnapshot` | Исторический snapshot падал (`Rewind: Spent output not found`, block 3 316 349). Реализовано: сохранение архива при активации (`TxHashSetArchive`) и выдача сохранённого архива по hash без rewind; диагностика причин | Live-проверка архива/legacy-fallback не завершена (пиры); spent-position gap остаётся для произвольного исторического snapshot | build/unit; E45/E46/E48 (live pending) | **OPEN (частично: archive save/serve)** |
 
-| **G-53** | Node/API: недостающие методы grin v5.5.2 | `src/API/Node/NodeServer.cpp`, `src/API/Node/Handlers/*`, `src/TxPool/*`, `src/Server/Node/API/*` | JSON-RPC `/v2/foreign` содержал 7 методов из 13 у grin v5.5.2, `/v2/owner` пуст; REST v1 — легаси Grin++, его каталог `GET /v1/` отставал от реальных маршрутов | Добавлены `get_pool_size`, `get_stempool_size`, `get_unconfirmed_transactions` (c60604f); `/v2/owner`: `get_status`, `get_peers`, `get_connected_peers` (3b4efd4); `get_pmmr_indices`, `get_unspent_outputs` (84f135e); `get_outputs` (8fa265f); обновлён каталог `GET /v1/` (efe27b7). Осталось `/v2/foreign`: `get_blocks`, `get_kernel`; unit-тесты и живая проверка | `API.lib`/`TxPool.lib`/`NodeServer.obj` собираются; 9 из 11 методов; финальный линк ждёт освобождения бинаря | **IN PROGRESS** |
+| **G-53** | Node/API: недостающие методы grin v5.5.2 | `src/API/Node/NodeServer.cpp`, `src/API/Node/Handlers/*`, `src/TxPool/*`, `src/PMMR/TxHashSet*`, `src/Server/Node/API/*` | JSON-RPC `/v2/foreign` содержал 7 методов из 13 у grin v5.5.2, `/v2/owner` пуст; REST v1 — легаси Grin++, его каталог `GET /v1/` отставал от реальных маршрутов | Добавлены `get_pool_size`, `get_stempool_size`, `get_unconfirmed_transactions` (c60604f); `/v2/owner`: `get_status`, `get_peers`, `get_connected_peers` (3b4efd4); `get_pmmr_indices`, `get_unspent_outputs` (84f135e); `get_outputs` (8fa265f); `get_kernel` + `ITxHashSet::FindKernelByExcess` (474acc4); обновлён каталог `GET /v1/` (efe27b7). Осталось `/v2/foreign`: `get_blocks`; unit-тесты и живая проверка | Полная сборка `GrinNode.exe` прошла; 10 из 11 методов | **IN PROGRESS** |
 
 ---
 
@@ -133,9 +133,9 @@
   секреты/дампы, чек-лист, финальные hashes/provenance), **G-53** (API grin
   v5.5.2: каталог `GET /v1/` обновлён; добавлены `/v2/foreign`
   `get_pool_size`/`get_stempool_size`/`get_unconfirmed_transactions`,
-  `get_pmmr_indices`/`get_unspent_outputs`/`get_outputs` и `/v2/owner`
-  `get_status`/`get_peers`/`get_connected_peers` — 9 из 11;
-  осталось 2 foreign-метода: `get_blocks`, `get_kernel`).
+  `get_pmmr_indices`/`get_unspent_outputs`/`get_outputs`/`get_kernel` и
+  `/v2/owner` `get_status`/`get_peers`/`get_connected_peers` — 10 из 11;
+  осталось `get_blocks`).
 * Частично: G-09 (PIBD: живая загрузка/активация/догон PASS, resume replay PASS;
   живой serving Rust-клиентом и полное завершение resume не подтверждены),
   G-23 (структурная проверка/rebuild MMR DONE — E48; hash-level ревалидация
