@@ -629,6 +629,47 @@ bitmap-сегмента высоты 13 (весь битмап, 3344 чанка)
 Тесты: **135 кейсов / 1552 проверки PASS**; `GrinNode.exe` `C4FDB3EC…`,
 `Tests.exe` `9B608C30…`.
 
+## E32. Живой PIBD доведён до активации состояния — PASS (валидация/догон IN PROGRESS)
+
+Причина расхождения из E31 найдена Rust-оракулом. Маленькая программа, собранная
+против `grin_chain 5.5.2` (копия исходников в `.tmp/grin-oracle-src`, вне git;
+`cargo run` в `.tmp/oracle`), построила `BitmapAccumulator` из 3344 чанков с
+детерминированным рисунком и сериализовала сегменты высоты 9 (idx 0–6) и 13.
+Сверка байт-в-байт дала:
+
+* **`BitVec::to_bytes` в grin упаковывает биты MSB-первыми в каждом байте**
+  (бит `n` — это байт `n/8`, бит `7-(n%8)`). Наши `BitmapChunk`/`BitmapBlock`
+  использовали LSB. Для Raw-блоков это незаметно (байты при разборе и обратной
+  упаковке совпадают), но Positive/Negative кодируют индексы битов в этой же
+  нумерации, поэтому **все sparse-сегменты читались неверно**.
+* После исправления на MSB-first совпали с эталоном **все семь** корней
+  сегментов (`ff6d8a52…`, `492f9917…`, `beecc494…`, `6bf1fe59…`, `39b83440…`,
+  `3f3ce7e7…`, `a7429b2c…`) и корень всего битмапа `d8bcf07b…`
+  (`tests/src/PMMR/Test_PibdOracleVector.cpp`, файлы оракула в `.tmp/oracle/out`).
+
+**Живой interop после исправления (пир `66.154.127.84`, testnet):**
+
+* StateSyncer стартовал PIBD на архивном горизонте 3313440 (`84d7ac67…`);
+* загружены и провалидированы **bitmap**, а затем **output (807)**,
+  **rangeproof (815)** и **kernel (778)** сегментов — 2307 PIBD-запросов,
+  **0 ошибок валидации** (в отличие от E31, где ломался уже сегмент 1);
+* `TryComplete` записал staging-PMMR
+  (`pibd_staging/{output,rangeproof,kernel}/pmmr_*.bin`, 2970 МБ),
+  активация завершилась: `pibd_activation.pending` удалён, staging перенесён в
+  `NODE/TXHASHSET` (файлы на месте);
+* нода приступила к валидации активированного состояния
+  (`Validating TxHashSet for block 84d7ac67…`): kernel history — PASS,
+  kernel sums — PASS, **rangeproofs — выполняется на момент отчёта**
+  (~17+ минут CPU, ~9 ГБ RSS). Догон блоков от горизонта до типсы —
+  следом; состояние на момент отчёта: **IN PROGRESS**, не PASS.
+
+Итог: живой PIBD `download → сегменты 22/24/26/28 → запись → активация` —
+**PASS**; полная валидация и догон блоков — **IN PROGRESS**; resume между
+рестартами и PIHD — по-прежнему NOT IMPLEMENTED.
+
+Тесты: **137 кейсов / 1581 проверка PASS** (`Test_BitmapBlock::BitOrderMatchesGrin`
+и оракульные векторы); `GrinNode.exe` `AE793C26…`, `Tests.exe` `3D7299FC…`.
+
 ---
 
 ## Сводка
@@ -640,7 +681,7 @@ bitmap-сегмента высоты 13 (весь битмап, 3344 чанка)
 | Проводной формат capabilities/ID/лимитов | PASS (compile-check) |
 | Сборка зависимостей (offline, static CRT) | PASS |
 | Сборка `GrinNode.exe` + `Tests.exe` (`/W4 /WX`) | PASS |
-| Полный набор тестов (135 / 1552) | PASS |
+| Полный набор тестов (137 / 1581) | PASS |
 | PIBD проводной слой (модели + сообщения 21–28) | PASS (unit) |
 | PIBD верификация сегментов (`Root`/`Validate`/proof, bitmap→chunk) | PASS (unit) |
 | PIBD генерация сегментов и обратная сборка дерева | PASS (unit) |
@@ -659,5 +700,6 @@ bitmap-сегмента высоты 13 (весь битмап, 3344 чанка)
 | Живая синхронизация заголовков с testnet (Rust-совместимая сеть) | PASS (E31) |
 | PIBD desegmenter/planner/serving | PASS (unit) |
 | PIBD resume между рестартами | NOT IMPLEMENTED |
-| Живой PIBD-обмен сегментами | PARTIAL: bitmap idx0 PASS, idx1 FAIL (E31) |
+| Живой PIBD: загрузка+активация состояния | PASS (E32) |
+| Валидация активированного TxHashSet и догон блоков | IN PROGRESS на момент отчёта (E32) |
 | PIHD | NOT IMPLEMENTED |
