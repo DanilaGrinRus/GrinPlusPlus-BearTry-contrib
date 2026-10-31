@@ -71,8 +71,8 @@ pwsh tools/build/build.ps1 -Target Tests
 ```
 | Артефакт | Размер | SHA-256 |
 |---|---|---|
-| `bin/Release/Release/GrinNode.exe` | 7 473 152 | `FC9C3F8245CB207D8352B4D750642193F3600731656B8442E333FB899B7D2696` |
-| `bin/Release/Release/Tests.exe` | 8 408 064 | `A725AE7238A3F173C4B2AAC54B9D7436C312BAC30F0FDF9CEE07C01E64AF968C` |
+| `bin/Release/Release/GrinNode.exe` | 7 473 664 | `279C84F7C2C6C19C18A22676B407A3B33A6F4126084D3475E3E99CA56B21D164` |
+| `bin/Release/Release/Tests.exe` | 8 408 576 | `9ADD32A66A04F658772165613D593EBD3AAE5B9F2C45F52BE9D24908A33CB7B2` |
 
 Сборка идёт с `/W4 /WX` (проектные флаги не ослаблены). Потребовались только
 конфигурационные правки: `NOMINMAX`, идемпотентная установка `/W4 /WX`,
@@ -540,7 +540,35 @@ Floonet-seed-пиры за 12 секунд не ответили — **пиро�
 Полный набор: **134 кейса / 1541 проверка PASS**. Артефакты: `GrinNode.exe`
 `FC9C3F82…`, `Tests.exe` `A725AE72…`.
 
-Осталось по G-09: живой interop с Rust v5.5.2, resume между рестартами, PIHD.
+## E30. Живой interop: handshake и обмен сообщениями с Rust v5.5.2 — PASS; PIBD-обмен НЕ ДОСТИГНУТ
+
+С исправленным accept-loop (E29) и настраиваемым `P2P_PORT` (Grin++ слушает 13444,
+порт 13414 занят запущенной Rust-нодой пользователя) удалось установить живое
+соединение с эталонной Rust-нодой v5.5.2 (`grin.exe`, testnet, `db_root` в
+`.tmp/interop`, `seeding_type="List"`, `seeds` включает `127.0.0.1:13444`):
+
+* Rust подключается к Grin++, handshake проходит: в логе Rust
+  `Connected! ... "Grin++ 1.2.8", TXHASHSET_HIST | PEER_LIST | PIBD_HIST | PIBD_HIST_1`;
+* Grin++ принимает и обрабатывает сообщения: в логе
+  `Received Msg::GetPeerAddrs` и `Received Msg::Ping from Connection{127.0.0.1}`;
+* TCP-соединение стабильно (ESTABLISHED с обеих сторон).
+
+**Найден и исправлен баг рекламы возможностей:** `HandShake.cpp` отправлял
+жёстко `Capabilities::FAST_SYNC_NODE` вместо `ADVERTISED`, поэтому PIBD-биты не
+рекламировались (Rust изначально видел только `TXHASHSET_HIST | PEER_LIST`).
+Теперь оба сообщения (Hand/Shake) отправляют `ADVERTISED`.
+
+**Почему PIBD-обмен не достигнут:** Rust-нода с нуля синхронизирует testnet-заголовки
+со скоростью ≈38 заголовков/с (высота ≈3.4k за 90 с при цели ~3.9M) — это десятки
+часов; пока её chain height = 0, `Ping` сообщает height 0, и `HeaderSyncer` Grin++
+(защита `networkHeight == 0`) не начинает синхронизацию заголовков. То есть для
+живого PIBD нужен уже синхронизированный Rust-пир, а его получение в этой сессии
+непрактично. PIBD-обмен (22/24/26/28) остаётся **NOT RUN**.
+
+Полный набор: **134 кейса / 1541 проверка PASS**. Артефакты: `GrinNode.exe`
+`279C84F7…`, `Tests.exe` `9ADD32A6…`.
+
+Осталось по G-09: живой PIBD с синхронизированным пиром, resume между рестартами, PIHD.
 
 ---
 

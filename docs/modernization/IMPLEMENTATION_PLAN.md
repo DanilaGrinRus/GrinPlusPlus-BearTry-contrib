@@ -62,10 +62,12 @@ G-26 закрыт, `PibdSync` связывает download → snapshot → stagi
 `PIBD_HIST_1`-пира, закрывает txhashset, активирует staging и валидирует набор, при
 сбое откатывается на txhashset.zip; `Recover` вызывается при старте. Серверная выдача сегментов подключена (запросы 21/23/25/27 обслуживаются из
 текущего txhashset), `PIBD_HIST`/`PIBD_HIST_1` рекламируются, `MIN_SYNC_PEERS`
-конфигурируем. Следующий шаг — живой interop: наш узел с `MIN_SYNC_PEERS=1`, Rust-нода v5.5.2
-с `seeding_type = "List"` и `seeds = ["127.0.0.1:13414", <реальные пиры>]`
-(`peers_preferred` не дозванивается — проверено по исходникам grin_p2p). Попутно
-исправлен G-28: accept-loop умирал после первого отклонённого пира. Затем resume и PIHD.
+конфигурируем. Живой interop доведён до handshake и обмена сообщениями с Rust v5.5.2:
+Rust видит `PIBD_HIST | PIBD_HIST_1`, Grin++ принимает `GetPeerAddrs`/`Ping`;
+исправлены accept-loop (G-29) и реклама возможностей в handshake (G-30), добавлен
+настраиваемый `P2P_PORT`. Полный PIBD-обмен требует уже синхронизированного
+floonet-пира (testnet-заголовки идут ~38/с). Следующий шаг — синхронизированный
+пир для PIBD-обмена, затем resume и PIHD.
 
 1. Сообщения 21–28 (уже в `MessageTypes`): `SegmentRequest{block_hash, identifier}`,
    `SegmentResponse<T>`, `OutputSegmentResponse`, `OutputBitmapSegmentResponse`,
