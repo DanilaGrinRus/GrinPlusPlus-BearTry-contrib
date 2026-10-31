@@ -1,5 +1,6 @@
 #pragma once
 
+#include "PibdParams.h"
 #include "../../PMMR/Models/BitmapChunk.h"
 #include "../../PMMR/Models/InMemoryPmmr.h"
 #include "../../PMMR/Models/BitmapSegment.h"
@@ -32,7 +33,7 @@
 class BitmapSegmentAssembler
 {
 public:
-	static constexpr uint8_t SEGMENT_HEIGHT = 9;
+	static constexpr uint8_t SEGMENT_HEIGHT = PibdParams::BITMAP_SEGMENT_HEIGHT;
 	static constexpr uint64_t CHUNK_CHUNKS = 1ULL << SEGMENT_HEIGHT;   // chunks per segment
 	static constexpr uint64_t CHUNK_BITS = BitmapChunk::LEN_BITS;
 
