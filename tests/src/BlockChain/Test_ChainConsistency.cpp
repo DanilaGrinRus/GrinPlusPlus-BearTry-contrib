@@ -41,3 +41,56 @@ TEST_CASE("ChainConsistency::ConfirmedChainCannotBeAheadOfCandidate")
 	REQUIRE(plan.RewindConfirmed);
 	REQUIRE(plan.TargetEntries == 100);
 }
+TEST_CASE("ChainConsistency::CheckpointTruncatesStoresAhead")
+{
+	// A crash committed the MMR and candidate chain beyond the last checkpoint.
+	const ChainRepairPlan plan = ComputeChainRepairToCheckpoint(
+		120, 105, 50,
+		100, 100, 60);
+	REQUIRE(!plan.IsConsistent());
+	REQUIRE(plan.RewindHeaderMmr);
+	REQUIRE(plan.RewindCandidate);
+	REQUIRE(!plan.RewindConfirmed);
+	REQUIRE(plan.TargetMmrEntries == 100);
+	REQUIRE(plan.TargetCandidateEntries == 100);
+	REQUIRE(plan.TargetConfirmedEntries == 50);
+}
+
+TEST_CASE("ChainConsistency::CheckpointNeverRewindsForward")
+{
+	// Stores lag the checkpoint (the last writes were not durable): keep the
+	// actual, consistent state instead of inventing entries.
+	const ChainRepairPlan plan = ComputeChainRepairToCheckpoint(
+		80, 80, 50,
+		100, 100, 100);
+	REQUIRE(plan.IsConsistent());
+	REQUIRE(plan.TargetMmrEntries == 80);
+	REQUIRE(plan.TargetCandidateEntries == 80);
+	REQUIRE(plan.TargetConfirmedEntries == 50);
+}
+
+TEST_CASE("ChainConsistency::CheckpointClampsConfirmedChain")
+{
+	const ChainRepairPlan plan = ComputeChainRepairToCheckpoint(
+		100, 100, 120,
+		100, 100, 100);
+	REQUIRE(!plan.IsConsistent());
+	REQUIRE(plan.RewindConfirmed);
+	REQUIRE(!plan.RewindHeaderMmr);
+	REQUIRE(!plan.RewindCandidate);
+	REQUIRE(plan.TargetConfirmedEntries == 100);
+}
+TEST_CASE("ChainConsistency::CheckpointTruncatesMmrWhenChainLost")
+{
+	// MMR commit was durable, the candidate chain commit was not.
+	const ChainRepairPlan plan = ComputeChainRepairToCheckpoint(
+		100, 90, 80,
+		100, 100, 100);
+	REQUIRE(!plan.IsConsistent());
+	REQUIRE(plan.RewindHeaderMmr);
+	REQUIRE(!plan.RewindCandidate);
+	REQUIRE(!plan.RewindConfirmed);
+	REQUIRE(plan.TargetMmrEntries == 90);
+	REQUIRE(plan.TargetCandidateEntries == 90);
+	REQUIRE(plan.TargetConfirmedEntries == 80);
+}

@@ -47,7 +47,7 @@ New-Item -ItemType Directory -Force 'C:\DHW\.tmp\testhome' | Out-Null
 bin\Release\Release\Tests.exe --reporter compact
 ```
 
-Ожидаемый результат на текущем срезе: `Passed all 151 test cases with 1667 assertions.`
+Ожидаемый результат на текущем срезе: `Passed all 158 test cases with 1707 assertions.`
 (актуальное число, хеши артефактов и оговорки — в последней записи `TEST_RESULTS.md`).
 
 ## 4. Ограничения

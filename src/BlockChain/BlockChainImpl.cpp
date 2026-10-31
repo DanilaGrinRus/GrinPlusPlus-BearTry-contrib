@@ -9,6 +9,7 @@
 #include "ChainResyncer.h"
 #include "CoinView.h"
 #include "ChainConsistency.h"
+#include "DbCheckpoint.h"
 
 #include <Consensus.h>
 #include <GrinVersion.h>
@@ -57,36 +58,64 @@ std::shared_ptr<BlockChain> BlockChain::Create(
 			pChainStore->Read()->GetCandidateChain()->GetHeight() + 1;
 		const uint64_t confirmedEntries =
 			pChainStore->Read()->GetConfirmedChain()->GetHeight() + 1;
-		const ChainRepairPlan repair =
-			ComputeChainRepair(headerMmrLeaves, candidateEntries, confirmedEntries);
-		if (!repair.IsConsistent()) {
-			const uint64_t targetEntries = repair.TargetEntries > 0 ? repair.TargetEntries : 1;
-			LOG_WARNING_F(
-				"Chain stores inconsistent (header_mmr leaves {}, candidate {}, confirmed {}) after an unclean shutdown; repairing to {} entries.",
+		const fs::path checkpointPath = config.GetChainPath() / "chain.checkpoint";
+		DbCheckpointData checkpoint;
+		const bool hasCheckpoint = DbCheckpoint::Read(checkpointPath, checkpoint);
+		if (hasCheckpoint) {
+			LOG_TRACE_F("DB checkpoint found ({}).", DbCheckpoint::Describe(checkpoint));
+		}
+
+		const ChainRepairPlan repair = hasCheckpoint
+			? ComputeChainRepairToCheckpoint(
 				headerMmrLeaves,
 				candidateEntries,
 				confirmedEntries,
-				targetEntries);
+				checkpoint.MmrLeaves,
+				checkpoint.CandidateEntries,
+				checkpoint.ConfirmedEntries)
+			: ComputeChainRepair(headerMmrLeaves, candidateEntries, confirmedEntries);
+		if (!repair.IsConsistent()) {
+			LOG_WARNING_F(
+				"Chain stores inconsistent (header_mmr leaves {}, candidate {}, confirmed {}) after an unclean shutdown; repairing to mmr {}, candidate {}, confirmed {} entries{}.",
+				headerMmrLeaves,
+				candidateEntries,
+				confirmedEntries,
+				repair.TargetMmrEntries,
+				repair.TargetCandidateEntries,
+				repair.TargetConfirmedEntries,
+				hasCheckpoint ? " using the checkpoint" : "");
 
 			if (repair.RewindHeaderMmr) {
 				auto pMmrWriter = pHeaderMMR->Write();
-				pMmrWriter->Rewind(targetEntries);
+				pMmrWriter->Rewind(repair.TargetMmrEntries);
 				pMmrWriter->Commit();
 			}
 
 			if (repair.RewindCandidate || repair.RewindConfirmed) {
 				auto pChainStoreWriter = pChainStore->Write();
 				if (repair.RewindCandidate) {
-					pChainStoreWriter->GetCandidateChain()->Rewind(targetEntries - 1);
+					pChainStoreWriter->GetCandidateChain()->Rewind(repair.TargetCandidateEntries - 1);
 				}
 				if (repair.RewindConfirmed &&
-					pChainStoreWriter->GetConfirmedChain()->GetHeight() + 1 > targetEntries) {
-					pChainStoreWriter->GetConfirmedChain()->Rewind(targetEntries - 1);
+					pChainStoreWriter->GetConfirmedChain()->GetHeight() + 1 > repair.TargetConfirmedEntries) {
+					pChainStoreWriter->GetConfirmedChain()->Rewind(repair.TargetConfirmedEntries - 1);
 				}
 				pChainStoreWriter->Commit();
 			}
 
 			LOG_WARNING("Chain stores repaired.");
+		}
+
+		// Establish a fresh checkpoint for the state we are about to open. It is
+		// written only after the stores above are consistent, so a later crash
+		// can always fall back to it.
+		DbCheckpointData fresh;
+		fresh.Sequence = (hasCheckpoint ? checkpoint.Sequence : 0) + 1;
+		fresh.MmrLeaves = pHeaderMMR->Read()->GetLeafCount();
+		fresh.CandidateEntries = pChainStore->Read()->GetCandidateChain()->GetHeight() + 1;
+		fresh.ConfirmedEntries = pChainStore->Read()->GetConfirmedChain()->GetHeight() + 1;
+		if (!DbCheckpoint::Write(checkpointPath, fresh)) {
+			LOG_WARNING("Failed to write the DB checkpoint.");
 		}
 	}
 

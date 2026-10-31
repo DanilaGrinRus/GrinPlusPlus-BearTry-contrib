@@ -3,7 +3,7 @@
 Дата: 31.10.2026 (раунд 30/32). Репозиторий: `C:\DHW\Gplus\src\grinplusplus`
 (Grin++ 1.2.9, эталон — Rust Grin v5.5.2 `dbaff34`).
 
-**Итоговый вердикт: НЕ ЗАВЕРШЕНО (обновлено 19:10; полный живой цикл с горизонта PASS).** Реализован и проверен живой путь PIBD →
+**Итоговый вердикт: НЕ ЗАВЕРШЕНО (обновлено 20:20; полный живой цикл и checkpoint БД PASS).** Реализован и проверен живой путь PIBD →
 валидация → догон до `FULLY_SYNCED` на testnet, исправлен ряд реальных
 дефектов совместимости, но часть требований остаётся открытой (см. §5).
 Цель не помечается выполненной.
@@ -28,7 +28,7 @@
 | 3 | P0: консенсус | **PASS-live / PARTIAL** | Живая валидация 3.3M заголовков, PIBD-состояния (kernel history/sums/rangeproofs), догон блоков до типсы (`chain=header=network=3316673`, `FULLY_SYNCED`, E34/E37). Не сделаны дифференциальные/fuzz-тесты, NRD (G-07), PoW edge-bits (G-04) |
 | 4 | P0: P2P capabilities | **PASS** | Handshake теперь рекламирует `ADVERTISED` (`PIBD_HIST|PIBD_HIST_1`), живой Rust-пир это видит (E30); `Capabilities` тесты; PIHD-бит не рекламируется (E33) |
 | 5 | P0: безопасность десериализации | **PARTIAL** | Исправлены `ByteBuffer`/парсеры и лимиты части сообщений; PIBD-парсеры с проверками; открыты G-16 (размер TxHashSet), G-20 (частичные лимиты) |
-| 6 | P0: надёжность БД | **PARTIAL** | Найдена и воспроизведена рассинхронизация `header_mmr.bin`/`chain` после аварии (0xC0000005); добавлена загрузочная починка `ChainConsistency` + live-инъекции (E39). Атомарное формирование БД (checkpoint) — **G-48 OPEN**; миграции/бэкапы — G-22, ревалидация MMR — G-23 |
+| 6 | P0: надёжность БД | **PASS (checkpoint)** | Авария 0xC0000005 воспроизведена; загрузочная починка `ChainConsistency` (E39) и атомарный `chain.checkpoint` в `ChainState::Commit` (E43): hard kill → `FULLY_SYNCED` seq 26→27, инъекция → `repairing … using the checkpoint`. Остаточные: fsync-порядок, G-23 (полная ревалидация MMR), G-22 (бэкап миграций) |
 | 7 | PIBD download → desegmenter | **PASS (live, полный цикл)** | Сегменты 22/24/26/28, staging, активация, валидация; **19:02 `FULLY_SYNCED` после старта с горизонта, с ротацией 204→66 посреди загрузки** (E42) |
 | 8 | PIBD resume | **PASS (unit + live)** | Журнал переживает рестарт и смену пира (rotations 204→66), не теряет принятые сегменты; полный цикл с горизонта дошёл до активации и `FULLY_SYNCED` (E41/E42) |
 | 9 | PIBD serving | **PASS (unit)** | `PibdSegmentService`, `Test_PibdServing`; живой Rust-клиент сегменты у нас не запрашивал — **live NOT VERIFIED** |
@@ -64,8 +64,8 @@
 
 ## 4. Артефакты и доказательства
 
-* Тесты: **151 кейс / 1667 проверок PASS** (`Tests.exe`
-  `0EFC0BF4…`), `GrinNode.exe` `55030297…`, `/W4 /WX`.
+* Тесты: **158 кейсов / 1707 проверок PASS** (`Tests.exe`
+  `09D1C6C3…`), `GrinNode.exe` `BF7F3F9E…`, `/W4 /WX`.
 * Живые доказательства: `TEST_RESULTS.md` E30–E39; статусы
   `.tmp/interop/evidence/status_fully_synced.json`,
   `status_after_restart.json`; логи `.tmp/interop/**/Node.log`.
@@ -77,10 +77,9 @@
 
 ## 5. Что остаётся (честно, до COMPLETE)
 
-1. **G-48** — атомарное формирование БД: единый checkpoint
-   (`mmr_leaves`, высоты, CRC), порядок fsync, crash-инъекции, `db_repaired`,
-   копии повреждённых файлов (`DB_CONSISTENCY.md` §4). Это следующая задача
-   после основной.
+1. **Остаточная надёжность БД**: fsync-порядок между тремя файлами,
+   побайтовая ревалидация MMR (G-23), recovery-копии/`db_repaired`, бэкап
+   миграций (G-22) — `DB_CONSISTENCY.md` §4.
 2. **G-41** — живой legacy `txhashset.zip` fallback (код есть, прогон не
    завершён); связанные G-42/G-43 live-проверки.
 3. **PIBD serving живьём** — Rust-клиент ни разу не запрашивал сегменты у нас;

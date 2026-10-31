@@ -1,4 +1,6 @@
 #include "ChainState.h"
+#include "DbCheckpoint.h"
+#include <Common/Logger.h>
 
 #include <Consensus.h>
 #include <Crypto/Crypto.h>
@@ -22,7 +24,10 @@ ChainState::ChainState(
 	m_pTxHashSetManager(pTxHashSetManager),
 	m_pOrphanPool(std::make_shared<OrphanPool>())
 {
-
+	DbCheckpointData checkpoint;
+	if (DbCheckpoint::Read(config.GetChainPath() / "chain.checkpoint", checkpoint)) {
+		m_checkpointSequence = checkpoint.Sequence;
+	}
 }
 
 ChainState::~ChainState()
@@ -239,6 +244,29 @@ void ChainState::Commit()
 	if (!m_txHashSetWriter.IsNull())
 	{
 		m_txHashSetWriter->Commit();
+	}
+
+	// All stores above are durable now; publish one checkpoint that describes
+	// this exact state. It is the only cross-store commit point: on load every
+	// store is truncated to it (G-48).
+	if (!m_chainStoreWriter.IsNull() && !m_headerMMRWriter.IsNull())
+	{
+		DbCheckpointData checkpoint;
+		checkpoint.Sequence = ++m_checkpointSequence;
+		const uint64_t candidateEntries =
+			m_chainStoreWriter.GetShared()->GetCandidateChain()->GetHeight() + 1;
+		checkpoint.CandidateEntries = candidateEntries;
+		// After a successful commit the header MMR has exactly one leaf per
+		// candidate entry. Querying the MMR here would take the base file's read
+		// lock while the batch writer still holds the write lock (self-deadlock),
+		// so the invariant is recorded directly.
+		checkpoint.MmrLeaves = candidateEntries;
+		checkpoint.ConfirmedEntries =
+			m_chainStoreWriter.GetShared()->GetConfirmedChain()->GetHeight() + 1;
+
+		if (!DbCheckpoint::Write(m_config.GetChainPath() / "chain.checkpoint", checkpoint)) {
+			LOG_WARNING("Failed to write the DB checkpoint.");
+		}
 	}
 }
 

@@ -994,6 +994,46 @@ testnet. Хронология:
 Артефакты: `GrinNode.exe` `55030297…`, `Tests.exe` `0EFC0BF4…`; набор
 **151 кейс / 1667 проверок PASS**.
 
+## E43. G-48: атомарный checkpoint записи БД — DONE (unit + live)
+
+**Реализация.**
+* `src/BlockChain/DbCheckpoint.h` — маленький файл `NODE/CHAIN/chain.checkpoint`
+  (52 байта: magic, version, sequence, mmr_leaves, candidate/confirmed entries,
+  FNV-1a checksum), запись через временный файл + rename.
+* `ChainState::Commit()` после успешного коммита chainStore/blockDB/headerMMR/
+  txHashSet пишет checkpoint с их высотами (sequence++). Если коммит не
+  происходил — checkpoint не трогается.
+* Загрузка: `BlockChain::Create` читает checkpoint и чинит все три хранилища
+  **до него** (`ComputeChainRepairToCheckpoint`): никогда не пишет вперёд,
+  усекает MMR/цепочки до минимума фактического и checkpoint-состояния; если
+  checkpoint отсутствует/повреждён — прежняя эвристика по счётчикам. После
+  починки/проверки сразу пишется свежий checkpoint.
+* Устранён self-deadlock: `GetLeafCount()` нельзя вызывать после коммита, пока
+  batch-writer держит write-lock; после коммита используется инвариант
+  `mmr_leaves == candidate_entries`.
+
+**Тесты:** `Test_DbCheckpoint` (roundtrip, замена, corruption, truncation,
+invalid heights), `ChainConsistency::Checkpoint*` (усечение stores впереди,
+запрет записи вперёд, clamp confirmed, потеря chain-коммита при живом MMR);
+набор **158 кейсов / 1707 проверок PASS**.
+
+**Живая проверка:**
+* жёсткий kill `pp-g38` → рестарт: `FULLY_SYNCED`, checkpoint `sequence 26 → 27`,
+  без repair (согласованное состояние);
+* инъекция: в копии HOME `candidate.chain` усечён на 1000 записей при живом
+  MMR/checkpoint → старт:
+  `Chain stores inconsistent (header_mmr leaves 3317028, candidate 3316028,
+  confirmed 3317028) … repairing to mmr 3316028, candidate 3316028,
+  confirmed 3316028 entries using the checkpoint.` + `Chain stores repaired.`,
+  процесс жив, checkpoint обновлён.
+
+**Остаточные ограничения:** порядок fsync между тремя файлами по-прежнему
+определяется ОС (checkpoint уменьшает окно до одного rename), побайтовая
+ревалидация MMR/хешей — G-23, бэкап миграций — G-22. Подробности —
+`DB_CONSISTENCY.md`.
+
+Артефакты: `GrinNode.exe` `BF7F3F9E…`, `Tests.exe` `09D1C6C3…`.
+
 ---
 
 ## Сводка

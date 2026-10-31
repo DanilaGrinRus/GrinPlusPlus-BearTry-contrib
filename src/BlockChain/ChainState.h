@@ -177,4 +177,6 @@ private:
 	Writer<IBlockDB> m_blockDBWriter;
 	Writer<IHeaderMMR> m_headerMMRWriter;
 	Writer<TxHashSetManager> m_txHashSetWriter;
+
+	uint64_t m_checkpointSequence = 0;
 };
