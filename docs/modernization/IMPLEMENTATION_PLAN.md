@@ -154,7 +154,10 @@ difficulty, безопасное применение, обработка fork/r
 * Interop: Grin++ ↔ Rust Grin v5.5.2 (handshake, headers, blocks, PIBD, relay, fallback).
 * Chain integrity после синхронизации (height, tip, TD, roots, MMR sizes).
 * Reorg-сценарии; регресс кошелька/API/GUI (ручные окна + существующие тесты).
-* Performance — только после функциональной эквивалентности.
+* Performance — только после функциональной эквивалентности. Конкретика по
+  самому дорогому участку (валидация rangeproofs, ~28 из ~31 мин): инкрементальная
+  проверка с резюмом, параллельные батчи, scratch — `PERF_RANGEPROOF.md`
+  (`GAP_MATRIX` G-49).
 * **Финальный гейт вне RC (G-45): mainnet dry-run** по `docs/ACCEPTANCE.md` §M-01 —
   изолированный `--mainnet` data root, `--no-wallet`, без средств; заголовки → PIBD →
   активация → валидация → догон → рестарт → проверка чистоты окружения, сверка
