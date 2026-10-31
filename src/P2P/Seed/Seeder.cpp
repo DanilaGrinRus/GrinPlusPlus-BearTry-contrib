@@ -124,42 +124,36 @@ void Seeder::StartListener()
 void Seeder::Accept(const asio::error_code& ec)
 {
     std::unique_lock<std::mutex> lock(m_mutex);
-    
-    if (ec) return;
-    
-    if (m_connectionManager.GetNumberOfActiveConnections() < Global::GetConfig().GetMaxPeers()) {
-        SocketAddress socket_address = SocketAddress::FromEndpoint(m_pSocket->remote_endpoint());
+
+    if (!ec && m_connectionManager.GetNumberOfActiveConnections() < Global::GetConfig().GetMaxPeers()) {
         SocketPtr pSocket(new Socket(SocketAddress::FromEndpoint(m_pSocket->remote_endpoint()), m_pAsioContext, m_pSocket));
         pSocket->SetOpen(true);
 
         if (Global::GetConfig().IsPeerBlocked(pSocket->GetIPAddress())) {
             LOG_TRACE_F("peer is blocked: {}",  pSocket->GetIPAddress());
-            return;
-        }
-
-        if (!Global::GetConfig().IsPeerAllowed(pSocket->GetIPAddress())) {
-            LOG_TRACE_F("peer is not allowed: {}",  pSocket->GetIPAddress());        
-            return;
-        }
-
-        auto pPeer = m_peerManager.Write()->GetPeer( pSocket->GetIPAddress());
-
-        if (!pPeer->IsBanned()) {
-            auto pConnection = std::make_shared<Connection>(
-                pSocket,
-                m_nextId++,
-                m_connectionManager,
-                ConnectedPeer(pPeer, EDirection::INBOUND, pSocket->GetPort()),
-                m_pSyncStatus,
-                m_pMessageProcessor
-            );
-            pConnection->Connect();
+        } else if (!Global::GetConfig().IsPeerAllowed(pSocket->GetIPAddress())) {
+            LOG_TRACE_F("peer is not allowed: {}",  pSocket->GetIPAddress());
+        } else {
+            PeerPtr pPeer = m_peerManager.Write()->GetPeer(pSocket->GetIPAddress());
+            if (!pPeer->IsBanned()) {
+                auto pConnection = std::make_shared<Connection>(
+                    pSocket,
+                    m_nextId++,
+                    m_connectionManager,
+                    ConnectedPeer(pPeer, EDirection::INBOUND, pSocket->GetPort()),
+                    m_pSyncStatus,
+                    m_pMessageProcessor
+                );
+                pConnection->Connect();
+            }
         }
     } else {
         asio::error_code ignoreError;
         m_pSocket->close(ignoreError);
     }
 
+    // Re-arm the listener on every path. A rejected or failed inbound peer must
+    // never stop the accept loop permanently.
     m_pSocket = std::make_shared<asio::ip::tcp::socket>(*m_pAsioContext);
     m_pAcceptor->async_accept(*m_pSocket, std::bind(&Seeder::Accept, this, std::placeholders::_1));
 }
