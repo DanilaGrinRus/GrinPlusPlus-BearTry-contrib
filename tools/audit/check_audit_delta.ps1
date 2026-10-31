@@ -27,6 +27,7 @@ $labels = [ordered]@{
 $diffLabels = [ordered]@{ en = 'Diff'; de = 'Diff'; ru = 'Дифф' }
 
 $cards = @{}
+$diffCards = @{}
 $ok = $true
 
 foreach ($lang in $files.Keys) {
@@ -39,6 +40,18 @@ foreach ($lang in $files.Keys) {
         Select-String -Path $path -Pattern '^### (G-[0-9]{2}[a-z]?(?: / G-[0-9]{2}[a-z]?)*)' |
             ForEach-Object { $_.Matches[0].Groups[1].Value }
     )
+
+    # Cards that actually carry a diff block, in document order and unique.
+    $diffCards[$lang] = @()
+    $current = $null
+    foreach ($line in Get-Content $path) {
+        if ($line -match '^### (G-[0-9]{2}[a-z]?(?: / G-[0-9]{2}[a-z]?)*)') {
+            $current = $Matches[1]
+        }
+        elseif ($current -and $line -match ('^- ' + [regex]::Escape($diffLabels[$lang]) + ':')) {
+            if ($diffCards[$lang] -notcontains $current) { $diffCards[$lang] += $current }
+        }
+    }
 }
 
 $all = @($cards.Values | ForEach-Object { $_ } | Select-Object -Unique)
@@ -71,9 +84,24 @@ foreach ($lang in $files.Keys) {
     Write-Output ("{0}: {1} cards, {2} mandatory fields checked, {3} diff blocks, {4} lines with TODO" -f $lang, $count, $labels[$lang].Count, $diffs, $todo)
 }
 
+# Diff blocks must cover exactly the same cards in all three languages.
+$reference = $diffCards['en']
+foreach ($lang in @('de', 'ru')) {
+    $missing = @($reference | Where-Object { $diffCards[$lang] -notcontains $_ })
+    $extra = @($diffCards[$lang] | Where-Object { $reference -notcontains $_ })
+    if ($missing.Count -gt 0) {
+        Write-Output "MISSING DIFF in ${lang}: $($missing -join ', ')"
+        $ok = $false
+    }
+    if ($extra.Count -gt 0) {
+        Write-Output "EXTRA DIFF in ${lang}: $($extra -join ', ')"
+        $ok = $false
+    }
+}
+
 if (-not $ok) {
     Write-Output 'PARITY FAILED'
     exit 1
 }
 
-Write-Output ("PARITY OK: {0} card IDs, {1} mandatory fields per card in 3 languages" -f $all.Count, $labels['en'].Count)
+Write-Output ("PARITY OK: {0} card IDs, {1} mandatory fields per card, {2} diff cards in 3 languages" -f $all.Count, $labels['en'].Count, $reference.Count)

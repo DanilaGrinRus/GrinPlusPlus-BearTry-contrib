@@ -233,7 +233,15 @@ documentation-only commits are tracked in the evidence map, not as cards.
 - Rust reference: `servers/src/grin/sync/body_sync.rs:149,191-204`, `header_sync.rs:135-141`
 - Before: `BlockSyncer` banned a peer for `FraudHeight` after two timeouts, `m_slowPeers` never expired, the request window ignored peer heights, and seeder/syncer stayed silent after the bans; the header fraud rule used "height OR difficulty".
 - After: a timeout is counted and the block is reassigned; requests are capped by `min(candidate tip, network height, per-connection height)` and batch ≤100; retry 6 s/1 s + backoff; slow-peer cooldown 60 s; `FraudHeight` now mirrors Rust exactly — strictly greater TOTAL DIFFICULTY plus 120 s without header progress (a live server produced three false bans with the earlier height-OR-difficulty rule; fixed and regression-tested, E48); seeder logs the reason; `/v1/status` exposes waiting reason and counters.
-- Diff: `src/P2P/Sync/BlockSyncPolicy.h`, commit `4dbae1b` — timeout reassigned; fraud requires strictly greater total difficulty.
+- Diff: `src/P2P/Sync/BlockSyncPolicy.h`, commit `4dbae1b`
+  ```diff
+  --- /dev/null
+  +++ b/src/P2P/Sync/BlockSyncPolicy.h
+  +// Behaviour mirrored from grin v5.5.2 body_sync.rs / header_sync.rs:
+  +//   * a timeout is never fraud: reassign the block and count it;
+  +//   * FraudHeight requires a peer that claims more work than we have and has
+  +//     made no progress for a long time;
+  ```
 - Evidence: E37 (32-min live window), E42 (4 222 reassignments, zero fraud bans), E48 (TD-only fix after live false bans).
 - Risk, rollback: without bans an unresponsive peer can slow catch-up; cooldown/rotation bound it; rollback restores the previous ban path.
 
@@ -270,7 +278,18 @@ documentation-only commits are tracked in the evidence map, not as cards.
 - Rust reference: n/a (crash-consistency design; `DB_CONSISTENCY.md` §4)
 - Before: `header_mmr.bin`, `candidate.chain` and `confirmed.chain` were committed independently; a crash between commits left different heights, and early repair logic truncated the chain down to a lagging MMR, losing headers.
 - After: `ChainState::Commit` writes `chain.checkpoint` (52 bytes, FNV-1a) via temp+rename after all store commits; loading validates invariants, rebuilds a lagging MMR from the block DB, truncates only extra leaves, restores a confirmed chain tail when possible, requires a verified recovery copy, and aborts if the chain index is behind the checkpoint instead of truncating; `db_repaired`/`db_last_repair` are exposed. Live: hard kill seq 26→27; MMR −2000 leaves rebuilt with headers preserved (E43/E44/E48).
-- Diff: `src/BlockChain/DbCheckpoint.h`, commit `fdef6e6` — 52-byte checkpoint via temp+rename.
+- Diff: `src/BlockChain/DbCheckpoint.h`, commit `fdef6e6`
+  ```diff
+  --- /dev/null
+  +++ b/src/BlockChain/DbCheckpoint.h
+  +struct DbCheckpointData
+  +{
+  +    uint64_t Sequence = 0;
+  +    uint64_t MmrLeaves = 0;
+  +    uint64_t CandidateEntries = 0;
+  +    uint64_t ConfirmedEntries = 0;
+  +};
+  ```
 - Evidence: E43, E44, E48.
 - Risk, rollback: an impossible repair aborts startup (safe, no silent loss); recovery copies remain; rollback removes `chain.checkpoint` and falls back to the counts heuristic.
 
@@ -340,6 +359,15 @@ documentation-only commits are tracked in the evidence map, not as cards.
 - Rust reference: `chain/src/txhashset/txhashset.rs` (archive snapshot)
 - Before: a failed historical snapshot was swallowed (`catch (...) { return; }`), and serving rebuilt historical state on every request (failing on the spent-position gap at block 3 316 349).
 - After: the activation path saves the horizon state to `NODE/TXHASHSET/archive/TxHashSet.<height>.<hash>.zip` (`ArchivePibdState`), and `TxHashSetPipe` serves that archive by hash without any rewind; snapshot failures log the flushed/requested heights and the failing block/input/spent counts. The underlying spent-position gap remains for arbitrary historical snapshots, and the live archive/legacy transfer is still NOT VERIFIED.
+- Diff: `src/PMMR/TxHashSetManager.cpp`, commit `7973d46`
+  ```diff
+  --- a/src/PMMR/TxHashSetManager.cpp
+  +++ b/src/PMMR/TxHashSetManager.cpp
+  +            LOG_INFO_F(
+  +                "TxHashSet snapshot: flushed height {}, requested height {}.",
+  +                pFlushedHeader != nullptr ? pFlushedHeader->GetHeight() : 0,
+  +                pHeader->GetHeight());
+  ```
 - Evidence: E45/E46 (diagnosis), E48 (archive persistence code; live pending).
 - Risk, rollback: archive files consume disk; only horizon activations create them; rollback removes the archive directory and the save/serve hooks.## Known open items (not cards)
 

@@ -20,6 +20,7 @@
 - Ссылка на Rust: n/a (инфраструктура сборки)
 - Было: configure тянул зависимости из сети/системного vcpkg и использовал тот MSVC/Ninja, что оказался в `PATH`; сборка не была воспроизводимой офлайн.
 - Стало: `.toolchain/sysroot` даёт заголовки и библиотеки офлайн; генератор/тулсет закреплены; `build.ps1 -Target GrinNode|Tests` — единая точка входа; предупреждения собираются с `/W4 /WX`.
+- Дифф: `tools/build/build.ps1`, коммит `89eb22c` — offline sysroot/`/W4 /WX` entry point.
 - Доказательство: `BUILD.md`, E6–E9 (чистая сборка, предупреждения не отключались), SHA-256 бинарей в `BUILD.md`.
 - Риск, откат: риск — устаревший/неполный sysroot; откат — вернуть скрипты/CMake и собирать с системными зависимостями.
 
@@ -228,7 +229,7 @@
 ### G-38 — Политика block sync: никаких банов за таймаут
 - Статус: DONE
 - Коммиты: `4dbae1b`, `c06888b`, `7997ca5`
-- Файлы: `src/P2P/Sync/BlockSyncPolicy.h`, `src/P2P/Sync/BlockSyncer.cpp`, `src/P2P/Sync/HeaderSyncer.cpp`, `src/P2P/Seed/Seeder.cpp`, `include/P2P/SyncStatus.h`, `src/P2P/MessageProcessor.cpp`
+- Файлы: `src/P2P/Sync/BlockSyncPolicy.h`, `src/P2P/Sync/BlockSyncer.cpp`, `src/P2P/Sync/HeaderSyncer.cpp`, `src/P2P/Seed/Seeder.cpp`, `include/P2P/SyncStatus.h`, `src/P2P/MessageProcessor.cpp`, `tests/src/Net/Test_BlockSyncPolicy.cpp`
 - Ссылка на Rust: `servers/src/grin/sync/body_sync.rs:149,191-204`, `header_sync.rs:135-141`
 - Было: `BlockSyncer` банил пира за `FraudHeight` после двух таймаутов, `m_slowPeers` не истекал, окно запросов игнорировало высоты пиров, seeder/syncer молчали после банов.
 - Стало: таймаут считается и блок переназначается; запросы ограничены `min(candidate tip, network height, per-connection height)` и batch ≤100; retry 6/1 с + backoff; медленный пир получает cooldown 60 с; `FraudHeight` теперь точно как Rust: строго больший **total difficulty** + 120 с без прогресса заголовков (прежнее условие «высота ИЛИ TD» дало живьём три ложных бана; исправлено, E48); seeder логирует причину; `/v1/status` отдаёт waiting reason и счётчики.
@@ -251,6 +252,12 @@
 - Ссылка на Rust: `servers/src/grin/sync/syncer.rs`, `state_sync.rs`
 - Было: `RequestState` банил пира `BadTxHashSet`, если zip не давал прогресса 10 с или истекали 120 минут; нода могла остаться без пиров.
 - Стало: медленный пир ротируется (`Rotating txhashset sync peer`); действительно невалидный архив по-прежнему банится пайплайном после ошибки валидации.
+- Дифф: `src/P2P/Sync/StateSyncer.cpp`, коммит `bbf9a56`
+  ```diff
+  -        LOG_WARNING_F("Banning peer: {}", m_pPeer);
+  -        m_pPeer->Ban(EBanReason::BadTxHashSet);
+  +        LOG_INFO_F("Rotating txhashset sync peer: {}", m_pPeer);
+  ```
 - Доказательство: E41/E42.
 - Риск, откат: сломанный пир может быть повторён; ротация логируется; откат возвращает бан.
 
@@ -261,6 +268,7 @@
 - Ссылка на Rust: n/a (инварианты загрузки)
 - Было: после грязного завершения header MMR и candidate/confirmed chain могли разойтись; загрузка читала за пределы MMR (0xC0000005). Обработчик Ping разыменовывал отсутствующий confirmed tip.
 - Стало: `ComputeChainRepair` сравнивает количество листьев/записей и усекает хранилища до согласованной цели до открытия `ChainState`; Ping проверяет tip и отвечает либо пишет WARNING вместо падения.
+- Дифф: `src/BlockChain/ChainConsistency.h`, коммит `0331ea1` — load-time counts repair and Ping null guard.
 - Доказательство: E39 (unit + живая инъекция в обе стороны).
 - Риск, откат: починка может отрезать незакоммиченные заголовки; recovery-копии и checkpoint ограничивают потерю; откат — восстановить `NODE/recovery-*`.
 
@@ -294,6 +302,14 @@
 - Ссылка на Rust: `p2p/src/peers.rs` (seeding)
 - Было: DNS опрашивался один раз (`m_usedDNS`); при устаревших seed-адресах нода навсегда оставалась без пиров.
 - Стало: пока нет кандидатов, DNS опрашивается повторно раз в пять минут; количество полученных пиров логируется и добавляется, с существующим backoff и логом причины.
+- Дифф: `src/P2P/Seed/Seeder.cpp`, коммит `b37caa0`
+  ```diff
+  -    } else if (!m_usedDNS.exchange(true)) {
+  -        std::vector<SocketAddress> peerAddresses = DNSSeeder::GetPeersFromDNS();
+  +    } else if (m_lastDnsAttempt + std::chrono::minutes(5) <= now) {
+  +        m_lastDnsAttempt = now;
+  +        std::vector<SocketAddress> peerAddresses = DNSSeeder::GetPeersFromDNS();
+  ```
 - Доказательство: живой прогон (два DNS-опроса, адреса добавлены; доступность зависит от сетевого пути).
 - Риск, откат: повторные DNS-запросы; пятиминутный throttle ограничивает; откат возвращает однократный опрос.
 
@@ -314,6 +330,7 @@
 - Ссылка на Rust: n/a (защитная граница; эталон сам валидирует архив)
 - Было: `zipped_size` из `TxHashSetArchiveMessage` напрямую использовался для создания/записи файла архива; нулевой или произвольный размер мог заполнить диск.
 - Стало: `IsPlausibleSize` требует `0 < size ≤ 8 GiB`; pipeline отвергает неправдоподобный архив до создания файла, ставит `TXHASHSET_SYNC_FAILED` и банит `BadTxHashSet`.
+- Дифф: `include/P2P/Pipeline/TxHashSetLimits.h`, коммит `1c4d020` — 8 GiB archive bound before writing.
 - Доказательство: E44, unit `TxHashSetLimits`.
 - Риск, откат: легитимный архив >8 GiB был бы отвергнут (архивы mainnet заметно меньше); константа в одном заголовке; откат убирает проверку.
 
@@ -324,23 +341,25 @@
 - Ссылка на Rust: n/a (операционная безопасность)
 - Было: миграции v1→v2 и v2→v3 переписывали БД на месте без предыдущей копии.
 - Стало: `DbBackup` рекурсивно копирует открытый каталог RocksDB потоковыми копиями (без `LOCK`) в `DB.backup-v<version>-<timestamp>` перед миграцией; неудачная копия прерывает миграцию; свежая БД (version 0) не копируется.
+- Дифф: `include/Database/DbBackup.h`, коммит `9c6bb34` — recursive stream backup before migration.
 - Доказательство: E47, `Test_DbBackup`.
 - Риск, откат: дополнительные диск/время при миграциях; копируются только реальные миграции; откат убирает backup и вызов.
 
 ### G-23 — Структурная валидация header MMR при загрузке
 - Статус: PARTIAL (структурная проверка DONE; хеш/корневая валидация открыта)
 - Коммиты: `1c4d020`, `0331ea1`, `7997ca5`
-- Файлы: `include/PMMR/Common/MmrStructure.h`, `include/PMMR/HeaderMMR.h`, `src/PMMR/HeaderMMRImpl.h`, `src/BlockChain/BlockChainImpl.cpp`, `tests/src/PMMR/Test_MmrStructure.cpp`
+- Файлы: `include/PMMR/Common/MmrStructure.h`, `include/PMMR/HeaderMMR.h`, `src/PMMR/HeaderMMRImpl.h`, `src/BlockChain/BlockChainImpl.cpp`, `include/BlockChain/DbRecovery.h`, `tests/src/PMMR/Test_MmrStructure.cpp`
 - Ссылка на Rust: n/a (инвариант MMR `N = 2L − popcount(L)`; см. `DB_CONSISTENCY.md`)
 - Было: сырое число узлов в `header_mmr.bin` считалось доверенным; усечённый append-only файл мог загрузиться как валидный MMR.
 - Стало: `IsValidNodeCount` проверяет `N = 2L − popcount(L)`; при загрузке невозможный размер усекается до наибольшего валидного, отстающий MMR **перестраивается из block DB** (заголовки сохраняются), удаляются только лишние листья; любая модификация требует проверенной по размеру recovery-копии; цепочка позади checkpoint прерывает старт. Живая инъекция: MMR −2000 листьев → header 3 317 117 сохранён, candidate.chain без изменений (E48).
+- Дифф: `include/PMMR/Common/MmrStructure.h`, коммит `1c4d020` — `N = 2L − popcount(L)`; rebuild lagging MMR from block DB (E48).
 - Доказательство: E44 (структурная регрессия/guard), E48 (rebuild без потерь; отказ при отсутствии заголовка в DB).
 - Риск, откат: ложный вердикт «невалидно» может усечь данные (тот самый инцидент); guard, регрессионный тест и recovery-копии защищают; откат отключает структурную проверку, оставляя счётчики/checkpoint.
 
 ### G-52 — Диагностика исторического TxHashSet-снапшота (OPEN)
 - Статус: OPEN (сохранение/выдача архива частично реализованы; живой перенос NOT VERIFIED)
 - Коммиты: `7973d46`, `7997ca5`
-- Файлы: `src/PMMR/TxHashSetManager.cpp`, `src/PMMR/TxHashSetImpl.cpp`, `src/P2P/Pipeline/TxHashSetPipe.cpp`
+- Файлы: `src/PMMR/TxHashSetManager.cpp`, `src/PMMR/TxHashSetImpl.cpp`, `src/P2P/Pipeline/TxHashSetPipe.cpp`, `include/P2P/TxHashSetArchive.h`, `src/P2P/Sync/StateSyncer.cpp`
 - Ссылка на Rust: `chain/src/txhashset/txhashset.rs` (архивный снапшот)
 - Было: ошибка исторического снапшота проглатывалась (`catch (...) { return; }`), rewind сообщал только о commitment; причина была невидима.
 - Стало: при активации состояние горизонта сохраняется в `NODE/TXHASHSET/archive/TxHashSet.<height>.<hash>.zip` (`ArchivePibdState`), а `TxHashSetPipe` отдаёт этот архив по hash без исторического rewind; ошибки snapshot логируют высоты flushed/requested, блок, число входов и spent-позиций. Разрыв spent-позиций остаётся для произвольных исторических snapshot, живой перенос по-прежнему NOT VERIFIED.

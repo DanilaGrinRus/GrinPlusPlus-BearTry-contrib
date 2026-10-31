@@ -20,6 +20,7 @@ stehen in der Nachweiskarte, nicht als Karten.
 - Rust-Referenz: n/a (Build-Infrastruktur)
 - Vorher: configure löste Abhängigkeiten aus Netzwerk/System-vcpkg und nutzte das jeweilige MSVC/Ninja aus `PATH`; Builds waren offline nicht reproduzierbar.
 - Nachher: `.toolchain/sysroot` liefert Header und Bibliotheken offline; Generator/Toolset sind gepinnt; `build.ps1 -Target GrinNode|Tests` ist der einzige Einstieg; Warnungen werden mit `/W4 /WX` gebaut.
+- Diff: `tools/build/build.ps1`, Commit `89eb22c` — offline sysroot/`/W4 /WX` entry point.
 - Nachweis: `BUILD.md`, E6–E9 (sauberer Build, keine deaktivierten Warnungen), SHA-256 in `BUILD.md`.
 - Risiko, Rücknahme: Risiko ist ein veralteter/unvollständiger Sysroot; Rücknahme durch Zurücksetzen der Build-Skripte/CMake-Änderungen und Nutzung der Systemabhängigkeiten.
 
@@ -228,7 +229,7 @@ stehen in der Nachweiskarte, nicht als Karten.
 ### G-38 — Block-Sync-Policy: keine Bans wegen Timeout
 - Status: DONE
 - Commits: `4dbae1b`, `c06888b`, `7997ca5`
-- Dateien: `src/P2P/Sync/BlockSyncPolicy.h`, `src/P2P/Sync/BlockSyncer.cpp`, `src/P2P/Sync/HeaderSyncer.cpp`, `src/P2P/Seed/Seeder.cpp`, `include/P2P/SyncStatus.h`, `src/P2P/MessageProcessor.cpp`
+- Dateien: `src/P2P/Sync/BlockSyncPolicy.h`, `src/P2P/Sync/BlockSyncer.cpp`, `src/P2P/Sync/HeaderSyncer.cpp`, `src/P2P/Seed/Seeder.cpp`, `include/P2P/SyncStatus.h`, `src/P2P/MessageProcessor.cpp`, `tests/src/Net/Test_BlockSyncPolicy.cpp`
 - Rust-Referenz: `servers/src/grin/sync/body_sync.rs:149,191-204`, `header_sync.rs:135-141`
 - Vorher: `BlockSyncer` bannte einen Peer nach zwei Timeouts wegen `FraudHeight`, `m_slowPeers` verfiel nie, das Anfragefenster ignorierte Peer-Höhen, Seeder/Syncer schwiegen nach den Bans.
 - Nachher: ein Timeout wird gezählt und der Block neu zugewiesen; Anfragen sind auf `min(candidate tip, network height, per-connection height)` und Batch ≤100 begrenzt; Retry 6 s/1 s + Backoff; langsamer Peer 60 s Cooldown; `FraudHeight` spiegelt jetzt exakt Rust: strikt größere TOTAL-DIFFICULTY plus 120 s ohne Header-Fortschritt (die frühere Höhe-ODER-Schwierigkeit-Regel führte live zu drei falschen Bans; behoben, E48); Seeder loggt den Grund; `/v1/status` zeigt Wartezeit und Zähler.
@@ -251,6 +252,12 @@ stehen in der Nachweiskarte, nicht als Karten.
 - Rust-Referenz: `servers/src/grin/sync/syncer.rs`, `state_sync.rs`
 - Vorher: `RequestState` bannte den Peer mit `BadTxHashSet`, sobald der Zip 10 s keinen Fortschritt machte oder das 120-Minuten-Limit erreichte; die Node konnte ohne Peers bleiben.
 - Nachher: ein langsamer Peer wird rotiert (`Rotating txhashset sync peer`); ein wirklich ungültiges Archiv wird weiterhin nach fehlgeschlagener Validierung von der Pipeline gebannt.
+- Diff: `src/P2P/Sync/StateSyncer.cpp`, Commit `bbf9a56`
+  ```diff
+  -        LOG_WARNING_F("Banning peer: {}", m_pPeer);
+  -        m_pPeer->Ban(EBanReason::BadTxHashSet);
+  +        LOG_INFO_F("Rotating txhashset sync peer: {}", m_pPeer);
+  ```
 - Nachweis: E41/E42.
 - Risiko, Rücknahme: ein defekter Peer kann erneut versucht werden; Rotation wird geloggt; Rücknahme stellt den Ban wieder her.
 
@@ -261,6 +268,7 @@ stehen in der Nachweiskarte, nicht als Karten.
 - Rust-Referenz: n/a (Load-Time-Invarianten)
 - Vorher: nach unsauberem Shutdown konnten Header-MMR und Candidate/Confirmed-Chain auseinanderlaufen; das Laden las über das MMR hinaus (0xC0000005). Der Ping-Handler dereferenzierte einen fehlenden Confirmed-Tip.
 - Nachher: `ComputeChainRepair` vergleicht Leaf-/Entry-Zahlen und kürzt die Speicher vor dem Öffnen durch `ChainState` auf ein konsistentes Ziel; der Ping-Handler prüft den Tip und antwortet oder loggt eine Warnung statt abzustürzen.
+- Diff: `src/BlockChain/ChainConsistency.h`, Commit `0331ea1` — load-time counts repair and Ping null guard.
 - Nachweis: E39 (Unit + Live-Injektion in beide Richtungen).
 - Risiko, Rücknahme: die Reparatur kann nicht committete Header verwerfen; Recovery-Kopien und Checkpoint begrenzen den Verlust; Rücknahme stellt `NODE/recovery-*` wieder her.
 
@@ -294,6 +302,14 @@ stehen in der Nachweiskarte, nicht als Karten.
 - Rust-Referenz: `p2p/src/peers.rs` (Seeding)
 - Vorher: DNS wurde einmal abgefragt (`m_usedDNS`); bei veralteten Seeds blieb die Node dauerhaft peerlos.
 - Nachher: solange kein Kandidat existiert, wird DNS alle fünf Minuten erneut abgefragt; die Anzahl der zurückgegebenen Peers wird geloggt und hinzugefügt, mit bestehendem Seeder-Backoff und Reason-Log.
+- Diff: `src/P2P/Seed/Seeder.cpp`, Commit `b37caa0`
+  ```diff
+  -    } else if (!m_usedDNS.exchange(true)) {
+  -        std::vector<SocketAddress> peerAddresses = DNSSeeder::GetPeersFromDNS();
+  +    } else if (m_lastDnsAttempt + std::chrono::minutes(5) <= now) {
+  +        m_lastDnsAttempt = now;
+  +        std::vector<SocketAddress> peerAddresses = DNSSeeder::GetPeersFromDNS();
+  ```
 - Nachweis: Live-Lauf (zwei DNS-Runden, Adressen hinzugefügt; Erreichbarkeit hängt vom Netzpfad ab).
 - Risiko, Rücknahme: wiederholte DNS-Lookups; das Fünf-Minuten-Throttle begrenzt sie; Rücknahme stellt die Einmalabfrage wieder her.
 
@@ -314,6 +330,7 @@ stehen in der Nachweiskarte, nicht als Karten.
 - Rust-Referenz: n/a (defensive Grenze; die Referenz validiert das Archiv selbst)
 - Vorher: `zipped_size` aus `TxHashSetArchiveMessage` wurde direkt zum Erzeugen/Schreiben der Archivdatei genutzt; null oder beliebig große Werte konnten die Platte füllen.
 - Nachher: `IsPlausibleSize` verlangt `0 < size ≤ 8 GiB`; die Pipeline lehnt ein unplausibles Archiv vor dem Anlegen der Datei ab, setzt `TXHASHSET_SYNC_FAILED` und bannt `BadTxHashSet`.
+- Diff: `include/P2P/Pipeline/TxHashSetLimits.h`, Commit `1c4d020` — 8 GiB archive bound before writing.
 - Nachweis: E44, Unit `TxHashSetLimits`.
 - Risiko, Rücknahme: ein legitimes Archiv über 8 GiB würde abgelehnt (Mainnet-Archive liegen weit darunter); die Konstante steht in einem Header; Rücknahme entfernt die Prüfung.
 
@@ -324,23 +341,25 @@ stehen in der Nachweiskarte, nicht als Karten.
 - Rust-Referenz: n/a (Betriebssicherheit)
 - Vorher: die Migrationen v1→v2 und v2→v3 schrieben die DB ohne vorherige Kopie in-place um.
 - Nachher: `DbBackup` kopiert das offene RocksDB-Verzeichnis rekursiv per Stream-Kopie (ohne `LOCK`) nach `DB.backup-v<version>-<timestamp>` vor der Migration; eine fehlgeschlagene Kopie bricht die Migration ab; eine frische DB (Version 0) wird nicht kopiert.
+- Diff: `include/Database/DbBackup.h`, Commit `9c6bb34` — recursive stream backup before migration.
 - Nachweis: E47, `Test_DbBackup`.
 - Risiko, Rücknahme: zusätzlicher Speicher/Zeit bei Migrationen; nur echte Migrationen kopieren; Rücknahme entfernt Backup und Aufruf.
 
 ### G-23 — Strukturelle Header-MMR-Validierung beim Laden
 - Status: PARTIAL (strukturelle Prüfung DONE; Hash-/Root-Validierung offen)
 - Commits: `1c4d020`, `0331ea1`, `7997ca5`
-- Dateien: `include/PMMR/Common/MmrStructure.h`, `include/PMMR/HeaderMMR.h`, `src/PMMR/HeaderMMRImpl.h`, `src/BlockChain/BlockChainImpl.cpp`, `tests/src/PMMR/Test_MmrStructure.cpp`
+- Dateien: `include/PMMR/Common/MmrStructure.h`, `include/PMMR/HeaderMMR.h`, `src/PMMR/HeaderMMRImpl.h`, `src/BlockChain/BlockChainImpl.cpp`, `include/BlockChain/DbRecovery.h`, `tests/src/PMMR/Test_MmrStructure.cpp`
 - Rust-Referenz: n/a (MMR-Invariante `N = 2L − popcount(L)`; siehe `DB_CONSISTENCY.md`)
 - Vorher: die Rohknotenzahl in `header_mmr.bin` wurde vertraut; eine abgeschnittene Append-only-Datei konnte als gültiges MMR geladen werden.
 - Nachher: `IsValidNodeCount` prüft `N = 2L − popcount(L)`; beim Laden wird eine unmögliche Größe auf die größte gültige gekürzt, ein nachlaufendes MMR wird aus der Block-DB neu aufgebaut (Header bleiben erhalten), nur überzählige Leaves werden verworfen; jede Änderung verlangt eine größenverifizierte Recovery-Kopie; eine Chain hinter dem Checkpoint bricht den Start ab. Live-Injektion: MMR −2000 Leaves → Header 3 317 117 erhalten, candidate.chain unverändert (E48).
+- Diff: `include/PMMR/Common/MmrStructure.h`, Commit `1c4d020` — `N = 2L − popcount(L)`; rebuild lagging MMR from block DB (E48).
 - Nachweis: E44 (strukturelle Regression/Guard), E48 (No-Loss-Rebuild; Abbruch bei fehlendem DB-Header).
 - Risiko, Rücknahme: ein falsches Ungültig-Urteil kann Daten kürzen (der Vorfall); Guard, Regressionstest und Recovery-Kopien schützen; Rücknahme deaktiviert die strukturelle Prüfung und behält Zähler/Checkpoint.
 
 ### G-52 — Diagnose des historischen TxHashSet-Snapshots (OPEN)
 - Status: OPEN (Archiv-Persistenz/Serving teilweise implementiert; Live-Transfer NOT VERIFIED)
 - Commits: `7973d46`, `7997ca5`
-- Dateien: `src/PMMR/TxHashSetManager.cpp`, `src/PMMR/TxHashSetImpl.cpp`, `src/P2P/Pipeline/TxHashSetPipe.cpp`
+- Dateien: `src/PMMR/TxHashSetManager.cpp`, `src/PMMR/TxHashSetImpl.cpp`, `src/P2P/Pipeline/TxHashSetPipe.cpp`, `include/P2P/TxHashSetArchive.h`, `src/P2P/Sync/StateSyncer.cpp`
 - Rust-Referenz: `chain/src/txhashset/txhashset.rs` (Archiv-Snapshot)
 - Vorher: ein fehlgeschlagener historischer Snapshot wurde verschluckt (`catch (...) { return; }`), und Rewind meldete nur das Commitment; die Ursache blieb unsichtbar.
 - Nachher: die Aktivierung speichert den Horizont-Zustand unter `NODE/TXHASHSET/archive/TxHashSet.<height>.<hash>.zip` (`ArchivePibdState`), und `TxHashSetPipe` liefert dieses Archiv per Hash ohne historischen Rewind aus; Snapshot-Fehler loggen Flushed-/Requested-Höhe sowie Block/Input/Spent-Zahlen. Die Spent-Position-Lücke bleibt für beliebige historische Snapshots offen, der Live-Transfer ist weiterhin NOT VERIFIED.
