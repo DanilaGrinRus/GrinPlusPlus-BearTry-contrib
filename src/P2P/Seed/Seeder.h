@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <memory>
 #include <atomic>
+#include <chrono>
 #include <thread>
 #include <optional>
 #include <asio.hpp>
@@ -59,6 +60,10 @@ private:
 	SyncStatusConstPtr m_pSyncStatus;
 
 	std::atomic<bool> m_terminate = true;
+	// DNS discovery is retried when no candidate is found; a single attempt at
+	// startup leaves the node peerless when the seed list happens to be stale.
+	std::chrono::system_clock::time_point m_lastDnsAttempt =
+		std::chrono::system_clock::time_point::min();
 
 	std::shared_ptr<asio::io_service> m_pAsioContext;
 	std::shared_ptr<asio::ip::tcp::acceptor> m_pAcceptor;
@@ -68,6 +73,5 @@ private:
 	std::thread m_seedThread;
 
 	std::mutex m_mutex;
-	mutable std::atomic_bool m_usedDNS = false;
 	mutable uint64_t m_nextId = { 1 };
 };

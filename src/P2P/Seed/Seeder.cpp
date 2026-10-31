@@ -217,9 +217,14 @@ bool Seeder::SeedNewConnection()
         
         pConnection->Connect();
         return true;
-    } else if (!m_usedDNS.exchange(true)) {
-        std::vector<SocketAddress> peerAddresses = DNSSeeder::GetPeersFromDNS();
-        m_peerManager.Write()->AddFreshPeers(peerAddresses);
+    } else {
+        const auto now = std::chrono::system_clock::now();
+        if (m_lastDnsAttempt + std::chrono::minutes(5) <= now) {
+            m_lastDnsAttempt = now;
+            std::vector<SocketAddress> peerAddresses = DNSSeeder::GetPeersFromDNS();
+            LOG_INFO_F("DNS discovery returned {} peer(s)", peerAddresses.size());
+            m_peerManager.Write()->AddFreshPeers(peerAddresses);
+        }
     }
 
     return false;
