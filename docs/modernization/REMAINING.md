@@ -47,6 +47,7 @@
 | 10 | **OPEN** | **G-49** ускорение валидации rangeproofs | замеры до/после (`PERF_RANGEPROOF.md`) |
 | 11 | **OPEN** | **Дифференциальные/fuzz-тесты** C++ vs Rust сверх живого interop | набор + отчёт |
 | 12 | **OPEN** | **G-51** аудит-пакет | ревизия комментариев (`AUDIT_COMMENTS.md`), скан секретов/дампов, лицензии, финальные hashes/provenance, чек-лист, `dist/audit-*` |
+| 15 | **PARTIAL** | **G-24** воспроизводимая сборка: offline-sysroot и `/W4 /WX` сделаны, **CI-проводка и перенос пина vcpkg** остаются | CI + пин vcpkg |
 | 13 | **PLANNED** | **G-44** спящий каркас PIHD | вне текущего объёма; PIHD для v5.5.2 — N/A |
 | 14 | **PLANNED** | **G-45** mainnet dry-run | вне объёма (DEV/testnet) |
 
@@ -63,3 +64,14 @@
 * **PIHD** — N/A для grin v5.5.2 (сообщений PIHD нет; бит 0x80 только
   детектируется). Зафиксировано в E33/G-27.
 * **Mainnet** — вне объёма задачи (testnet/DEV).
+## 5. Вне матрицы (фазы 5–7)
+
+Эти работы не входят в 52 записи `GAP_MATRIX`, но нужны для приёмки:
+
+* замер полного синка с нуля — **идёт** (`pp-archsrv`, старт 31.10 23:55:27);
+* fsync-порядок `header_mmr.bin` / chain / `chain.checkpoint`;
+* fuzz + ASan/UBSan/TSan;
+* differential-fixtures C++ ↔ Rust;
+* reorg-сценарии;
+* регресс кошелька/API/GUI;
+* CI-проводка + пин vcpkg (G-24 частично).
