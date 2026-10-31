@@ -72,7 +72,7 @@ bool StateSyncer::IsStateSyncDue(const SyncStatus& syncStatus) const
 
 	if (m_requestedHeight == 0)
 	{
-		LOG_INFO("Requesting TxHashSet for the first time.");
+		// Logged once when the request is actually sent in RequestState().
 		return true;
 	}
 
@@ -114,6 +114,10 @@ bool StateSyncer::RequestState(const SyncStatus& syncStatus)
 
 	if (Global::IsRunning())
 	{
+		if (m_requestedHeight == 0) {
+			LOG_INFO("Requesting TxHashSet for the first time.");
+		}
+
 		const uint64_t headerHeight = syncStatus.GetHeaderHeight();
 		const uint64_t requestedHeight = headerHeight - Consensus::STATE_SYNC_THRESHOLD;
 		Hash hash = m_pBlockChain->GetBlockHeaderByHeight(requestedHeight, EChainType::CANDIDATE)->GetHash();

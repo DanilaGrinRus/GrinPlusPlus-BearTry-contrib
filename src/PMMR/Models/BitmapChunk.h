@@ -27,7 +27,7 @@ public:
 			throw DESERIALIZATION_EXCEPTION("Bitmap chunk index is out of range");
 		}
 
-		return (m_bytes[idx / 8] & (uint8_t)(1u << (idx % 8))) != 0;
+		return (m_bytes[idx / 8] & (uint8_t)(1u << (7 - (idx % 8)))) != 0;
 	}
 
 	void Set(const size_t idx, const bool value)
@@ -36,7 +36,7 @@ public:
 			throw DESERIALIZATION_EXCEPTION("Bitmap chunk index is out of range");
 		}
 
-		const uint8_t mask = (uint8_t)(1u << (idx % 8));
+		const uint8_t mask = (uint8_t)(1u << (7 - (idx % 8)));
 		if (value) {
 			m_bytes[idx / 8] = (uint8_t)(m_bytes[idx / 8] | mask);
 		} else {
