@@ -28,6 +28,8 @@
 | G-21: staging-распаковка legacy zip, atomic swap, marker recovery | E49, `Test_TxHashSetStaging` |
 | Recovery-копии + `db_repaired`/`db_last_repair` | E44, unit |
 | G-50: повторный DNS-discovery | живой прогон |
+| G-04: допустимые PoW edge-bits (29, 31–63) | E50, `Test_PoWEdgeBits` |
+| G-20: лимиты PIBD/segment-парсеров | E50, `Test_Segment` |
 | G-25: версия 1.2.9 | unit + `/v1/status` |
 | Аудит-дельта EN/DE/RU | 27 карточек, 8 полей, 16 diff-блоков, `PARITY OK` |
 
@@ -41,8 +43,6 @@
 | 4 | **OPEN** | **Живой PIBD serving** Rust-клиенту (unit `Test_PibdServing` есть) | Rust-клиент запрашивает сегменты и собирает состояние |
 | 5 | **PARTIAL** | **G-23 hash-level**: побайтовая/корневая ревалидация MMR | опция `--validate-on-load` + тест |
 | 6 | **OPEN** | **fsync-порядок** между `header_mmr.bin`/chain/checkpoint | документированный порядок + crash-тест |
-| 7 | **OPEN** | **G-20** оставшиеся лимиты парсеров (varint/vector) | unit/fuzz |
-| 8 | **OPEN** | **G-04** PoW edge-bits | дифференциальный тест против Rust |
 | 9 | **OPEN** | **G-07** NRD | реализация либо осознанный отказ + тест |
 | 10 | **OPEN** | **G-49** ускорение валидации rangeproofs | замеры до/после (`PERF_RANGEPROOF.md`) |
 | 11 | **OPEN** | **Дифференциальные/fuzz-тесты** C++ vs Rust сверх живого interop | набор + отчёт |

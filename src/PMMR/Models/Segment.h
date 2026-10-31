@@ -423,6 +423,11 @@ public:
 
 		const uint64_t numLeaves = byteBuffer.ReadU64();
 		SegmentDetail::CheckItemCount(numLeaves);
+		// Every serialized leaf consumes at least one byte; refuse unreasonable
+		// counts before reserving leaf storage.
+		if (numLeaves > byteBuffer.GetRemainingSize()) {
+			throw DESERIALIZATION_EXCEPTION("Segment leaf list does not fit in the payload");
+		}
 		std::vector<uint64_t> leafPositions = SegmentDetail::ReadPositions(byteBuffer, numLeaves);
 
 		std::vector<T> leafData;

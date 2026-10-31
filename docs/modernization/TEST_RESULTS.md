@@ -1253,3 +1253,27 @@ TD-only (height больше не считается доказательств�
   (G-41) по-прежнему NOT VERIFIED из-за доступности пиров/ G-52.
 
 Артефакты: `GrinNode.exe` `D2BBF889…`, `Tests.exe` `0B80AD8D…`.
+
+## E50. G-04 PoW edge-bits и G-20 лимиты парсеров закрыты; замер синка идёт
+
+**G-04 (PoW edge-bits).** `PoWValidator::IsSupportedEdgeBits` допускает ровно
+secondary 29 и primary 31–63 и вызывается **до** диспетчеризации в Cuckoo;
+значения ≥64 (сдвиг 64-битного слова) и 0/24/28/30 отвергаются. Unit:
+`Test_PoWEdgeBits` (11 проверок), сверено с семантикой Rust
+`is_primary()/is_secondary()` (`DEFAULT_MIN_EDGE_BITS = 31`,
+`SECOND_POW_EDGE_BITS = 29`).
+
+**G-20 (лимиты парсеров).** Ранее уже были `MAX_SEGMENT_READ_ITEMS`,
+checked arithmetic, лимиты `SegmentProof`/`BitmapSegment`/`BitmapBlock` и
+message-size cap; добавлена явная проверка `numLeaves <= remaining` в
+`Segment::Deserialize` **до reserve**. Unit `Test_Segment` (21 кейс, включая
+огромные counts и non-increasing positions). Fuzz остаётся вне матрицы
+(фазы 5–7).
+
+**Замер полного синка с нуля (`pp-archsrv`, старт 31.10 23:55:27).**
+На 00:31:51 header = 1 906 304 / net 3 317 282 (36.4 мин); после переключения
+на 204.168 скорость ~1 800 заголовков/с, до типсы ~13 мин; далее PIBD →
+валидация → архив → догон. Итоговое время будет отдельной записью (E51).
+
+**Тесты:** **171 кейс / 1836 проверок PASS**. Артефакты: `GrinNode.exe`
+`D2BBF889…`, `Tests.exe` `0204966F…`.

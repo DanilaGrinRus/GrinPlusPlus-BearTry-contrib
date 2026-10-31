@@ -20,7 +20,7 @@
 | G-01 | Block header version | `consensus::valid_header_version` = `min(5, 1+h/262080)` (`core/src/consensus.rs:170`) | нет: `Consensus::GetHeaderVersion` даёт ту же лестницу для mainnet/floonet | — | — | — | кодовое сравнение | ЗАКРЫТО |
 | G-02 | Difficulty | DMA до HF4, WTEMA после (`next_difficulty`) | нет: `DifficultyCalculator.cpp:22-28` переключается по `version < 5` | — | — | — | кодовое сравнение | ЗАКРЫТО |
 | G-03 | Secondary PoW scaling | проверяется только при `version < 5` (`chain/src/pipe.rs:445`) | нет: для v5 возвращается scaling 0 | — | — | — | кодовое сравнение | ЗАКРЫТО |
-| G-04 | PoW edge-bits sanity | `validate_pow_only`: `is_primary()/is_secondary()` + `verify_size` (`chain/src/pipe.rs`, `core/src/pow/cuckatoo.rs`) | Grin++ проверяет только алгоритм по `edge_bits==29`, без явной валидации допустимых размеров (primary ≥32 после HF4, secondary 29 до HF4) | Некорректный/дешёвый PoW не проходит total-difficulty, но класс ошибок = «битый» заголовок принимается дальше по конвейеру; расхождение с эталоном в диагностике/бане | P1 | Добавить `PoWValidator`-проверку размеров и `is_primary/is_secondary`; differential-тест на граничные `edge_bits` | unit + differential (нужна сборка) | OPEN |
+| G-04 | PoW edge-bits sanity | `validate_pow_only`: `is_primary()/is_secondary()` + `verify_size` (`chain/src/pipe.rs`, `core/src/pow/cuckatoo.rs`) | Grin++ не отвергал явно недопустимые `edge_bits` (29 secondary, 31–63 primary); значения ≥64 давали сдвиг 64-битного слова | Добавлен `PoWValidator::IsSupportedEdgeBits` и проверка **до** диспетчеризации в Cuckoo; unit-таблица границ | unit `Test_PoWEdgeBits` (11 проверок) | **DONE** |
 | G-05 | Вес блока | `1/21/3`, `MAX_BLOCK_WEIGHT=40000` | нет | — | — | — | кодовое сравнение | ЗАКРЫТО |
 | G-06 | Coinbase/kernel sums/rangeproofs/cut-through/lock heights | `block.validate`, `TxBodyValidator`, `KernelSumValidator` | нет (структурно совпадает) | — | — | — | кодовое сравнение | ЗАКРЫТО |
 | G-07 | Варианты ядер (NRD) | `TODO - NRD` (`BlockValidator.cpp:22`) — у Grin++ нет проверки kernel feature/variant | Если на сети появятся NRD-ядра (не в v5.5.2), проверка будет неполной; для v5.5.2 вреда нет | P2 | Держать как явный TODO; фиксировать при появлении HF | — | OPEN (осознанно) |
@@ -50,7 +50,7 @@
 | ID | Компонент | Эталон | Расхождение | Влияние | P | Действие | Проверка | Статус |
 |---|---|---|---|---|---|---|---|---|
 | G-19 | `ByteBuffer` (все парсеры) | Rust `Reader` — проверки с ограничением остатка | Все проверки вида `m_index + N > size`: переполнение 64-бит обходит проверку. Воспроизведено на handshake `user_agent`: вместо `DeserializationException` вылетал `std::length_error` (не ловится в `MessageProcessor`) | Пир одним 128-байтным Hand может вызвать UB/раскрутку исключения вне ожидаемого типа; класс уязвим для всех будущих PIBD-парсеров | P1 | `RequireRemaining()` с вычитанием; все чтения переведены на него | исполняемый пробник (до/после) | **DONE-P** |
-| G-20 | Ограничения размеров в парсерах | строгие лимиты на counts/allocations | До PIBD-парсеров ограничений нет (их и нет); для block/tx — ограничения задаются заголовком сообщения | — | P1 | Реализовать при добавлении PIBD-структур: max counts, checked arithmetic, отказ до аллокации | fuzz + unit | OPEN |
+| G-20 | Ограничения размеров в парсерах | строгие лимиты на counts/allocations | PIBD-парсеры уже имели `MAX_SEGMENT_READ_ITEMS`, checked arithmetic и проверки размера; не хватало явной проверки, что список листьев помещается в payload до reserve | `Segment::Deserialize` отвергает `numLeaves > remaining` до резервирования; лимиты `SegmentProof`/`BitmapSegment`/`BitmapBlock` и message-size cap подтверждены | unit `Test_Segment` (21 кейс, включает huge counts) | **DONE (PIBD/segment)**; fuzz вне матрицы |
 
 ---
 
@@ -118,15 +118,14 @@
 
 ## Сводка
 
-**Итого по матрице: 52 записи** — **39 закрыто**, 3 частично (G-09, G-23, G-24),
-2 в работе (G-41, G-51), 3 открыто (G-04, G-20, G-52), 3 запланировано
-(G-44, G-45, G-49), 1 осознанно отложен (G-07), 1 снят по объёму (G-27, PIHD
-не в v5.5.2). 39 + 3 + 2 + 3 + 3 + 1 + 1 = 52.
+**Итого по матрице: 52 записи** — **41 закрыто**, 3 частично (G-09, G-23, G-24),
+2 в работе (G-41, G-51), 1 открыто (G-52), 3 запланировано (G-44, G-45, G-49),
+1 осознанно отложен (G-07), 1 снят по объёму (G-27, PIHD не в v5.5.2).
+41 + 3 + 2 + 1 + 3 + 1 + 1 = 52.
 
-* Открыто: G-04 (PoW edge-bits), G-20 (лимиты PIBD-парсеров), **G-52
-  (legacy txhashset serving на горизонте; код сохранения/выдачи архива есть,
-  живая проверка идёт; блокирует G-41)**. G-21 (атомарная активация legacy)
-  закрыт — E49; G-22 (бэкап миграций) — E47.
+* Открыто: **G-52** (legacy txhashset serving на горизонте; код сохранения/
+  выдачи архива есть, живая проверка идёт; блокирует G-41). G-04 (PoW edge-bits)
+  и G-20 (лимиты парсеров) закрыты — E50; G-21 — E49; G-22 — E47.
 * В работе: G-41 (legacy-фолбэк; зависит от G-52 и пиров), G-51 (аудит-пакет:
   27 карточек, 16 diff-блоков, паритет EN/DE/RU; остались ревизия комментариев,
   секреты/дампы, чек-лист, финальные hashes/provenance).
