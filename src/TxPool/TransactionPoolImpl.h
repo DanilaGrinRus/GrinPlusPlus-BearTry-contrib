@@ -27,6 +27,31 @@ public:
 	TransactionPtr GetTransactionToFluff(std::shared_ptr<const IBlockDB> pBlockDB, ITxHashSetConstPtr pTxHashSet) final;
 	std::vector<TransactionPtr> GetExpiredTransactions() const final;
 
+	// Node API views (grin v5.5.2 foreign methods)
+	size_t GetPoolSize() const final
+	{
+		std::shared_lock<std::shared_mutex> lock(m_mutex);
+		return m_memPool.Size();
+	}
+
+	size_t GetStemPoolSize() const final
+	{
+		std::shared_lock<std::shared_mutex> lock(m_mutex);
+		return m_stemPool.Size();
+	}
+
+	std::vector<TransactionPtr> GetUnconfirmedTransactions() const final
+	{
+		std::shared_lock<std::shared_mutex> lock(m_mutex);
+		return m_memPool.GetAllTransactions();
+	}
+
+	std::vector<TransactionPtr> GetStemTransactions() const final
+	{
+		std::shared_lock<std::shared_mutex> lock(m_mutex);
+		return m_stemPool.GetAllTransactions();
+	}
+
 private:
 	const Config& m_config;
 	mutable std::shared_mutex m_mutex;

@@ -4,6 +4,7 @@
 #include <BlockChain/BlockChain.h>
 #include <Net/Servers/RPC/RPCServer.h>
 #include <P2P/P2PServer.h>
+#include <TxPool/TransactionPool.h>
 
 class NodeServer
 {
@@ -24,7 +25,8 @@ public:
     static NodeServer::UPtr Create(
         const ServerPtr& pServer,
         const IBlockChain::Ptr& pBlockChain,
-        const IP2PServerPtr& pP2PServer
+        const IP2PServerPtr& pP2PServer,
+        const ITransactionPool::Ptr& pTransactionPool
     );
 
 private:
