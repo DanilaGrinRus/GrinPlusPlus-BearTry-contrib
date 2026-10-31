@@ -51,6 +51,9 @@ private:
 	// Saves a snapshot of the newly activated state at the archive horizon so it
 	// can be served later without a historical rewind (G-52).
 	void ArchivePibdState(const Hash& horizonHash);
+	// If a previous activation left pibd_state.complete but no archive (e.g. the
+	// snapshot failed), retry once on startup.
+	void TryRecoverArchive();
 	PeerPtr FindPibdPeer() const;
 	PeerPtr FindPibdPeer(const bool excludeTried) const;
 	// Chooses an untried PIBD-capable peer after a failure. Returns false when
@@ -73,4 +76,5 @@ private:
 	std::unordered_set<std::string> m_pibdPeersTried;
 	uint32_t m_pibdRound = 0;
 	std::chrono::system_clock::time_point m_pibdRetryAt = std::chrono::system_clock::time_point::min();
+	bool m_archiveRecoveryChecked = false;
 };

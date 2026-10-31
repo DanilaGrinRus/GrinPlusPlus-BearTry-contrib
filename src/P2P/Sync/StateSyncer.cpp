@@ -2,6 +2,7 @@
 #include "../Messages/TxHashSetRequestMessage.h"
 #include "../PIBD/PibdSync.h"
 #include <P2P/TxHashSetArchive.h>
+#include <fstream>
 
 #include <Consensus.h>
 #include <Common/Logger.h>
@@ -13,6 +14,7 @@
 
 bool StateSyncer::SyncState(SyncStatus& syncStatus)
 {
+	TryRecoverArchive();
 	if (IsStateSyncDue(syncStatus))
 	{
 		// Prefer PIBD when a capable peer is connected. On success the state is
@@ -302,6 +304,45 @@ StateSyncer::EPibdResult StateSyncer::TryPibd(SyncStatus& syncStatus)
 	syncStatus.SetPibdStarted(0);
 	DisablePibd();
 	return EPibdResult::NotAttempted;
+}
+
+void StateSyncer::TryRecoverArchive()
+{
+	if (m_archiveRecoveryChecked) {
+		return;
+	}
+	m_archiveRecoveryChecked = true;
+
+	try {
+		const fs::path marker = Global::GetConfig().GetTxHashSetPath() / "pibd_state.complete";
+		if (!fs::exists(marker)) {
+			return;
+		}
+
+		std::ifstream file(marker);
+		std::string hashHex;
+		if (!std::getline(file, hashHex) || hashHex.empty()) {
+			return;
+		}
+
+		const Hash horizonHash = Hash::FromHex(hashHex);
+		const BlockHeaderPtr pHeader = m_pBlockChain->GetBlockHeaderByHash(horizonHash);
+		if (pHeader == nullptr) {
+			return;
+		}
+
+		const fs::path archivePath = TxHashSetArchive::Path(
+			Global::GetConfig().GetTxHashSetPath(), pHeader);
+		if (fs::exists(archivePath)) {
+			return;
+		}
+
+		LOG_INFO_F("Recovering the missing TxHashSet archive at height {}.", pHeader->GetHeight());
+		ArchivePibdState(horizonHash);
+	}
+	catch (std::exception& e) {
+		LOG_WARNING_F("TxHashSet archive recovery failed: {}", e.what());
+	}
 }
 
 void StateSyncer::ArchivePibdState(const Hash& horizonHash)

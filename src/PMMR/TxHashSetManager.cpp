@@ -9,6 +9,7 @@
 #include <Common/Util/StringUtil.h>
 #include <Core/File/FileRemover.h>
 #include <Common/Logger.h>
+#include <Core/File/BitmapFile.h>
 
 #include <filesystem.h>
 #include <thread>
@@ -136,6 +137,31 @@ fs::path TxHashSetManager::SaveSnapshot(std::shared_ptr<IBlockDB> pBlockDB, Bloc
 			// Flush Snapshot TxHashSet
 			snapshotTxHashSet.Commit();
 		}
+
+		// PIBD activation writes the modern pmmr_leafset.bin; the legacy zip
+		// format (and legacy clients) expect pmmr_leaf.bin. Materialize the
+		// Roaring bitmap before renaming.
+		const auto materializeLegacyLeaf = [](const fs::path& dir) {
+			const fs::path leafPath = dir / "pmmr_leaf.bin";
+			const fs::path leafSetPath = dir / "pmmr_leafset.bin";
+			if (fs::exists(leafPath) || !fs::exists(leafSetPath)) {
+				return;
+			}
+
+			auto pLeafSet = BitmapFile::Load(leafSetPath);
+			Roaring bitmap = pLeafSet->ToRoaring();
+			const size_t numBytes = bitmap.getSizeInBytes();
+			std::vector<uint8_t> bytes(numBytes);
+			const size_t written = bitmap.write((char*)bytes.data());
+			if (written != numBytes) {
+				throw FILE_EXCEPTION("Failed to serialize pmmr_leaf.bin");
+			}
+
+			FileUtil::SafeWriteToFile(leafPath, bytes);
+		};
+
+		materializeLegacyLeaf(snapshotDir / "output");
+		materializeLegacyLeaf(snapshotDir / "rangeproof");
 
 		// Rename pmmr_leaf files
 		const std::string newFileName = StringUtil::Format("pmmr_leaf.bin.{}", pHeader->ShortHash());

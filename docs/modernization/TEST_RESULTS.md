@@ -1316,3 +1316,28 @@ outbound** вместо 1–3; PIBD скачал **4988/4989 сегментов*
 
 **Тесты:** **172 кейса / 1859 проверок PASS**. Артефакты: `GrinNode.exe`
 `9B67F5DE…`, `Tests.exe` `49D47100…`.
+
+## E53. Полный синк, фикс архива на горизонте и повторный PIBD
+
+**1. Полный синк дошёл до `FULLY_SYNCED`.** На `pp-archsrv` (старт 31.10
+23:55:27) заголовки догнаны к 00:47, PIBD-загрузка/валидация с 01:59,
+`PIBD state sync completed and validated` в 02:30:32, догон блоков и
+**`FULLY_SYNCED` в 02:49** на высоте **3 317 412**. Суммарно ~2 ч 54 мин.
+Оговорка: block DB в этом HOME была предзаполнена (копия `pp-net`), поэтому
+«с нуля» здесь — заголовки + state/PIBD + валидация; чистая БД блоков не
+перекачивалась.
+
+**2. Найден и исправлен срыв архива (G-52).** `ArchivePibdState` вызывается
+после успешной активации, но `TxHashSetManager::SaveSnapshot` ожидал legacy
+`pmmr_leaf.bin`, тогда как PIBD пишет `pmmr_leafset.bin`; rename падал:
+`Failed to rename ...\output\pmmr_leaf.bin ... file not found`. Исправление:
+перед zip материализуется `pmmr_leaf.bin` из `LeafSet`/`Roaring`
+(`BitmapFile::ToRoaring`), для output и rangeproof. Добавлено восстановление на
+старте: если `pibd_state.complete` есть, а архива нет — один раз пробуется
+snapshot. Повторный snapshot *позднего* состояния назад к горизонту упирается
+в известный разрыв spent-позиций (`Rewind: Spent output not found`), поэтому
+для архива нужен свежий PIBD-цикл; он запущен в 02:50 на том же HOME
+(подтверждённый chain откатан к genesis, state удалён, заголовки сохранены).
+
+**Тесты:** **172 кейса / 1862 проверки PASS**. Артефакты: `GrinNode.exe`
+`C0FCCBE4…`, `Tests.exe` `1C2A1C91…`.
