@@ -16,6 +16,7 @@ namespace ConfigProps
 		static const std::string MIN_SYNC_PEERS = "MIN_SYNC_PEERS";
 		static const std::string P2P_PORT = "P2P_PORT";
 		static const std::string P2P_PEER_PORT = "P2P_PEER_PORT";
+		static const std::string PIBD_ENABLED = "PIBD_ENABLED";
 		static const std::string MAX_PEERS = "MAX_PEERS";
 		static const std::string PREFERRED_PEERS = "PREFERRED_PEERS";
 		static const std::string ALLOWED_PEERS = "ALLOWED_PEERS";

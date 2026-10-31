@@ -141,6 +141,10 @@ StateSyncer::EPibdResult StateSyncer::TryPibd(SyncStatus& syncStatus)
 		return EPibdResult::NotAttempted;
 	}
 
+	if (!Global::GetConfig().IsPibdEnabled()) {
+		return EPibdResult::NotAttempted;
+	}
+
 	if (std::chrono::system_clock::now() < m_pibdDisabledUntil) {
 		return EPibdResult::NotAttempted;
 	}

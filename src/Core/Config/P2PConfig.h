@@ -23,6 +23,9 @@ public:
 	// Port used for outbound connections to peers. Defaults to the listening port;
 	// they differ only when running behind a forward or on a shared test host.
 	uint16_t GetPeerPort() const noexcept { return m_peerPort; }
+	// Allows running the legacy txhashset.zip sync path on purpose (tests,
+	// diagnostics, or peers that cannot serve PIBD).
+	bool IsPibdEnabled() const noexcept { return m_pibdEnabled; }
 	const std::vector<uint8_t>& GetMagicBytes() const noexcept { return m_magicBytes; }
 
 	uint8_t GetMinSyncPeers() const noexcept { return m_minSyncPeers; }
@@ -79,6 +82,10 @@ public:
 			m_peerPort = (uint16_t)p2pJSON.get(ConfigProps::P2P::P2P_PEER_PORT, (int)m_port).asInt();
 		}
 
+		if (p2pJSON.isMember(ConfigProps::P2P::PIBD_ENABLED)) {
+			m_pibdEnabled = p2pJSON.get(ConfigProps::P2P::PIBD_ENABLED, true).asBool();
+		}
+
 		if (p2pJSON.isMember(ConfigProps::P2P::MIN_SYNC_PEERS)) {
 			m_minSyncPeers = (uint8_t)p2pJSON.get(ConfigProps::P2P::MIN_SYNC_PEERS, 3).asInt();
 		}
@@ -116,6 +123,7 @@ private:
 	int m_minConnections;
 	uint16_t m_port;
 	uint16_t m_peerPort;
+	bool m_pibdEnabled = true;
 	std::vector<uint8_t> m_magicBytes;
 	uint8_t m_minSyncPeers;
 	std::unordered_set<IPAddress> m_peferredPeers;

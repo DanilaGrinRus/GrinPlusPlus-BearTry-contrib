@@ -1,10 +1,19 @@
 #include <catch.hpp>
 
+#include <GrinVersion.h>
 #include <P2P/Capabilities.h>
+#include <P2P/Common.h>
 #include <P2P/Messages/MessageTypes.h>
 
 // Wire-format pins for Grin v5.5.2 compatibility. These values are consensus on
 // the network boundary: changing any of them silently breaks interop.
+TEST_CASE("GrinVersion::MatchesRelease")
+{
+	// The repository is Grin++ v1.2.9; do not pretend to be the Rust reference.
+	REQUIRE(GRINPP_VERSION == "1.2.9");
+	REQUIRE(P2P::USER_AGENT == "Grin++ 1.2.9");
+}
+
 TEST_CASE("Capabilities::WireFormat")
 {
 	REQUIRE((uint32_t)Capabilities::HEADER_HIST == 0x01);
