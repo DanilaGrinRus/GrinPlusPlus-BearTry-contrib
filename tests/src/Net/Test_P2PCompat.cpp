@@ -15,12 +15,21 @@ TEST_CASE("Capabilities::WireFormat")
 	REQUIRE((uint32_t)Capabilities::PIBD_HIST == 0x10);
 	REQUIRE((uint32_t)Capabilities::BLOCK_HIST == 0x20);
 	REQUIRE((uint32_t)Capabilities::PIBD_HIST_1 == 0x40);
+	REQUIRE((uint32_t)Capabilities::PIHD_HIST == 0x80);
 
 	// PIBD serving is implemented, so both PIBD bits are advertised; peers may
 	// request bitmap/output/rangeproof/kernel segments from us at our flushed state.
 	REQUIRE(Capabilities(Capabilities::ADVERTISED).HasCapability(Capabilities::PIBD_HIST));
 	REQUIRE(Capabilities(Capabilities::ADVERTISED).HasCapability(Capabilities::PIBD_HIST_1));
 	REQUIRE(!Capabilities(Capabilities::ADVERTISED).HasCapability(Capabilities::BLOCK_HIST));
+
+	// Grin 5.5.2 has no PIHD messages (its enum ends at KernelSegment = 28), so
+	// the extension bit must never be advertised; header sync stays legacy.
+	REQUIRE(!Capabilities(Capabilities::ADVERTISED).HasCapability(Capabilities::PIHD_HIST));
+	REQUIRE(Capabilities(Capabilities::PIBD_HIST_1 | Capabilities::PIHD_HIST)
+		.HasCapability(Capabilities::PIBD_HIST_1));
+	REQUIRE(Capabilities(Capabilities::PIBD_HIST_1 | Capabilities::PIHD_HIST)
+		.HasCapability(Capabilities::PIHD_HIST));
 }
 
 TEST_CASE("MessageTypes::PibdIds")

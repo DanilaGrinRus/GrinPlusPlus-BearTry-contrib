@@ -71,7 +71,9 @@ std::shared_ptr<P2PServer> P2PServer::Create(
 	// PIBD state sync service (download -> desegmenter -> activation).
 	const fs::path txHashSetPath = config.GetTxHashSetPath();
 	const fs::path pibdStagingPath = txHashSetPath.parent_path() / "pibd_staging";
-	std::shared_ptr<PibdSync> pPibdSync = std::make_shared<PibdSync>(txHashSetPath, pibdStagingPath);
+	const fs::path pibdResumePath = txHashSetPath.parent_path() / "pibd_resume";
+	std::shared_ptr<PibdSync> pPibdSync =
+		std::make_shared<PibdSync>(txHashSetPath, pibdStagingPath, pibdResumePath);
 
 	// Seeder
 	std::unique_ptr<Seeder> pSeeder = Seeder::Create(

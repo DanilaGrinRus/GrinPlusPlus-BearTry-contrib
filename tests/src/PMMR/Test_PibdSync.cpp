@@ -155,7 +155,7 @@ TEST_CASE("PibdSync::DownloadsWritesAndActivates")
 	FileUtil::CreateDirectories(root / "live");
 	FileUtil::WriteTextToFile(root / "live" / "old_state.txt", "sentinel\n");
 
-	PibdSync sync(root / "live", root / "staging");
+	PibdSync sync(root / "live", root / "staging", root / "resume");
 	REQUIRE(sync.Start(fixture.Horizon, start));
 	REQUIRE(sync.GetStatus() == PibdSync::EStatus::Downloading);
 
@@ -201,7 +201,7 @@ TEST_CASE("PibdSync::BadSegmentFailsWithoutTouchingLiveState")
 	FileUtil::CreateDirectories(root / "live");
 	FileUtil::WriteTextToFile(root / "live" / "old_state.txt", "sentinel\n");
 
-	PibdSync sync(root / "live", root / "staging");
+	PibdSync sync(root / "live", root / "staging", root / "resume");
 	REQUIRE(sync.Start(fixture.Horizon, start));
 
 	const std::vector<IMessagePtr> requests = sync.TakeRequests(start);

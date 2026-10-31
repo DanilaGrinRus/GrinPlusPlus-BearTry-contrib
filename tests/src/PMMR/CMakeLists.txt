@@ -12,6 +12,7 @@ list_append_parent(
     "Test_PibdServing.cpp"
     "Test_PibdLiveVector.cpp"
     "Test_PibdOracleVector.cpp"
+    "Test_PibdResume.cpp"
     "Test_PibdSync.cpp"
     "Test_Segment.cpp"
     "Test_SegmentGenerator.cpp"

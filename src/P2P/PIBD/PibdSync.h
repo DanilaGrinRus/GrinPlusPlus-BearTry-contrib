@@ -1,6 +1,7 @@
 #pragma once
 
 #include "PibdActivation.h"
+#include "PibdResume.h"
 #include "PibdScheduler.h"
 #include "PibdSnapshot.h"
 #include "PibdStateWriter.h"
@@ -40,9 +41,10 @@ public:
 
 	using Clock = std::chrono::steady_clock;
 
-	PibdSync(fs::path liveTxHashSetPath, fs::path stagingDir)
+	PibdSync(fs::path liveTxHashSetPath, fs::path stagingDir, fs::path resumeDir)
 		: m_livePath(std::move(liveTxHashSetPath)),
-		m_stagingPath(std::move(stagingDir))
+		m_stagingPath(std::move(stagingDir)),
+		m_resume(std::move(resumeDir))
 	{
 	}
 
@@ -89,6 +91,41 @@ public:
 		m_scheduler = std::make_unique<PibdScheduler>(horizon, now);
 		m_status = EStatus::Downloading;
 		m_error.clear();
+
+		if (m_resume.Prepare(horizon)) {
+			bool replayed = true;
+			m_resume.LoadAll([this, &replayed, now](
+				const MessageTypes::EMessageType type,
+				const std::vector<uint8_t>& payload
+			) {
+				if (!replayed) {
+					return;
+				}
+
+				try {
+					ByteBuffer buffer(payload);
+					const SegmentResponseMessage message =
+						SegmentResponseMessage::Deserialize(buffer, type);
+					if (buffer.GetRemainingSize() != 0) {
+						throw DESERIALIZATION_EXCEPTION("Trailing bytes in a journalled PIBD segment");
+					}
+
+					m_scheduler->OnResponse(message, now);
+				}
+				catch (const std::exception&) {
+					replayed = false;
+				}
+			});
+
+			if (!replayed) {
+				// A journal that no longer replays cleanly is discarded; the
+				// download then continues from scratch.
+				m_resume.Clear();
+				m_scheduler = std::make_unique<PibdScheduler>(horizon, now);
+				m_resume.Prepare(horizon);
+			}
+		}
+
 		return true;
 	}
 
@@ -124,6 +161,10 @@ public:
 
 		try {
 			const bool applied = m_scheduler->OnResponse(message, now);
+			if (applied) {
+				m_resume.Store(message.GetMessageType(), message.SerializePayload());
+			}
+
 			if (m_scheduler->IsComplete()) {
 				m_status = EStatus::Completed;
 			}
@@ -150,6 +191,7 @@ public:
 				BuildSnapshot(m_scheduler->GetSession().GetDownload());
 			PibdStateWriter::Write(snapshot, m_stagingPath);
 			PibdActivation::Activate(m_stagingPath, m_livePath);
+			m_resume.Clear();
 			m_status = EStatus::Activated;
 			return true;
 		}
@@ -169,6 +211,7 @@ private:
 	mutable std::mutex m_mutex;
 	fs::path m_livePath;
 	fs::path m_stagingPath;
+	PibdResume m_resume;
 	std::unique_ptr<PibdScheduler> m_scheduler;
 	EStatus m_status = EStatus::Idle;
 	std::string m_error;

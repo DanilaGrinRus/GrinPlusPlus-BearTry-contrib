@@ -100,6 +100,20 @@ public:
 
 	const SegmentPayload& GetPayload() const noexcept { return m_payload; }
 
+	// Re-serializes the message body exactly as it appears on the wire. Used by
+	// the PIBD resume journal so a restart can replay accepted segments without
+	// keeping the network message object alive.
+	std::vector<uint8_t> SerializePayload() const
+	{
+		Serializer serializer;
+		serializer.AppendBigInteger(m_blockHash);
+		std::visit([&serializer](const auto& payload) { payload.Serialize(serializer); }, m_payload);
+		if (m_extraRoot.has_value()) {
+			serializer.AppendBigInteger(m_extraRoot.value());
+		}
+		return serializer.GetBytes();
+	}
+
 protected:
 	void SerializeBody(Serializer& serializer) const final
 	{
