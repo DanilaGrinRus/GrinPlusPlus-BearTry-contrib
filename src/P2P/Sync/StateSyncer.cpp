@@ -105,10 +105,11 @@ bool StateSyncer::IsStateSyncDue(const SyncStatus& syncStatus) const
 
 bool StateSyncer::RequestState(const SyncStatus& syncStatus)
 {
+	// A slow or unresponsive peer is rotated, never banned: a real bad
+	// txhashset is detected and banned by the txhashset pipeline itself.
 	if (m_pPeer != nullptr)
 	{
-		LOG_WARNING_F("Banning peer: {}", m_pPeer);
-		m_pPeer->Ban(EBanReason::BadTxHashSet);
+		LOG_INFO_F("Rotating txhashset sync peer: {}", m_pPeer);
 		m_pPeer = nullptr;
 	}
 
