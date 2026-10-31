@@ -331,6 +331,37 @@ documentation-only commits are tracked in the evidence map, not as cards.
 - Evidence: E44, unit `TxHashSetLimits`.
 - Risk, rollback: a legitimate archive above 8 GiB would be rejected (mainnet archives are far below); the constant is in one header; rollback removes the check.
 
+### G-04 — PoW edge-bit validation
+- Status: DONE
+- Commits: `9d9f1ae`
+- Files: `include/PoW/PoWValidator.h`, `src/PoW/PoWValidator.cpp`, `tests/src/Consensus/Test_PoWEdgeBits.cpp`
+- Rust reference: `chain/src/pipe.rs` (`validate_pow_only`, `is_primary`/`is_secondary`), `core/src/pow/cuckatoo.rs` (`verify_size`)
+- Before: only `edge_bits == 29` selected a Cuckoo variant; any other value (0, 24, 30, 64, 255) reached `Cuckatoo::Validate`, where a 64-bit shift by `edge_bits` is undefined.
+- After: `PoWValidator::IsSupportedEdgeBits` accepts secondary 29 and primary 31–63; `IsPoWValid` rejects every other size before dispatch; the boundary table is unit-tested.
+- Diff: `src/PoW/PoWValidator.cpp`, commit `9d9f1ae`
+  ```diff
+  +    if (!IsSupportedEdgeBits(header.GetEdgeBits())) {
+  +        LOG_WARNING_F("Unsupported PoW edge bits {} for block {}", header.GetEdgeBits(), header);
+  +        return false;
+  +    }
+  ```
+- Evidence: E50, `Test_PoWEdgeBits` (11 assertions).
+- Risk, rollback: future primary sizes above 63 would need a consensus change; the accepted set is one constant; rollback removes the guard.
+### G-20 — Parser size limits
+- Status: DONE (PIBD/segment parsers; fuzz outside the matrix)
+- Commits: `9d9f1ae`
+- Files: `src/PMMR/Models/Segment.h`, `tests/src/PMMR/Test_Segment.cpp`, `src/PMMR/Models/BitmapSegment.h`, `src/PMMR/Models/SegmentProof.h`
+- Rust reference: `core/src/ser.rs` (bounds checks), `core/src/core/pmmr/segment.rs` (`MAX_SEGMENT_READ_ITEMS`)
+- Before: segment counts were bounded by `MAX_SEGMENT_READ_ITEMS`, checked arithmetic and message caps, but the leaf vector could reserve up to that limit before verifying that the leaf list fits the payload.
+- After: `numLeaves > remaining` is rejected before reserving leaf storage; `SegmentProof`/`BitmapSegment`/`BitmapBlock` limits, checked arithmetic and the message-size cap remain; tests cover huge counts, non-increasing positions and over-height segments.
+- Diff: `src/PMMR/Models/Segment.h`, commit `9d9f1ae`
+  ```diff
+  +        if (numLeaves > byteBuffer.GetRemainingSize()) {
+  +            throw DESERIALIZATION_EXCEPTION("Segment leaf list does not fit in the payload");
+  +        }
+  ```
+- Evidence: E50, `Test_Segment` (21 cases, including huge counts).
+- Risk, rollback: malformed payloads are rejected earlier; valid segments are unaffected; rollback removes the leaf-fit guard.
 ### G-21 — Atomic legacy txhashset activation
 - Status: DONE
 - Commits: `2122e32`

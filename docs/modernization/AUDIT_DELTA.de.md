@@ -334,6 +334,37 @@ stehen in der Nachweiskarte, nicht als Karten.
 - Nachweis: E44, Unit `TxHashSetLimits`.
 - Risiko, Rücknahme: ein legitimes Archiv über 8 GiB würde abgelehnt (Mainnet-Archive liegen weit darunter); die Konstante steht in einem Header; Rücknahme entfernt die Prüfung.
 
+### G-04 — Validierung der PoW-Edge-Bits
+- Status: DONE
+- Commits: `9d9f1ae`
+- Dateien: `include/PoW/PoWValidator.h`, `src/PoW/PoWValidator.cpp`, `tests/src/Consensus/Test_PoWEdgeBits.cpp`
+- Rust-Referenz: `chain/src/pipe.rs` (`validate_pow_only`, `is_primary`/`is_secondary`), `core/src/pow/cuckatoo.rs` (`verify_size`)
+- Vorher: nur `edge_bits == 29` wählte eine Cuckoo-Variante; jeder andere Wert (0, 24, 30, 64, 255) erreichte `Cuckatoo::Validate`, wo eine 64-Bit-Verschiebung um `edge_bits` undefiniert ist.
+- Nachher: `PoWValidator::IsSupportedEdgeBits` akzeptiert Secondary 29 und Primary 31–63; `IsPoWValid` lehnt jede andere Größe vor dem Dispatch ab; die Grenztabelle ist unit-getestet.
+- Diff: `src/PoW/PoWValidator.cpp`, Commit `9d9f1ae`
+  ```diff
+  +    if (!IsSupportedEdgeBits(header.GetEdgeBits())) {
+  +        LOG_WARNING_F("Unsupported PoW edge bits {} for block {}", header.GetEdgeBits(), header);
+  +        return false;
+  +    }
+  ```
+- Nachweis: E50, `Test_PoWEdgeBits` (11 Assertions).
+- Risiko, Rücknahme: künftige Primary-Größen über 63 bräuchten eine Konsensänderung; der Satz ist eine Konstante; Rücknahme entfernt den Guard.
+### G-20 — Größenlimits der Parser
+- Status: DONE (PIBD-/Segment-Parser; Fuzz außerhalb der Matrix)
+- Commits: `9d9f1ae`
+- Dateien: `src/PMMR/Models/Segment.h`, `tests/src/PMMR/Test_Segment.cpp`, `src/PMMR/Models/BitmapSegment.h`, `src/PMMR/Models/SegmentProof.h`
+- Rust-Referenz: `core/src/ser.rs` (Grenzen), `core/src/core/pmmr/segment.rs` (`MAX_SEGMENT_READ_ITEMS`)
+- Vorher: Segment-Zähler waren durch `MAX_SEGMENT_READ_ITEMS`, checked arithmetic und Message-Caps begrenzt, aber der Leaf-Vektor konnte bis zum Limit reservieren, bevor geprüft wurde, ob die Liste in die Nutzlast passt.
+- Nachher: `numLeaves > remaining` wird vor der Reservierung abgelehnt; Limits für `SegmentProof`/`BitmapSegment`/`BitmapBlock`, checked arithmetic und Message-Cap bleiben; Tests decken riesige Counts, nicht-steigende Positionen und zu hohe Segmente ab.
+- Diff: `src/PMMR/Models/Segment.h`, Commit `9d9f1ae`
+  ```diff
+  +        if (numLeaves > byteBuffer.GetRemainingSize()) {
+  +            throw DESERIALIZATION_EXCEPTION("Segment leaf list does not fit in the payload");
+  +        }
+  ```
+- Nachweis: E50, `Test_Segment` (21 Fälle, inkl. riesiger Counts).
+- Risiko, Rücknahme: fehlerhafte Nutzlasten werden früher abgelehnt; gültige Segmente sind unberührt; Rücknahme entfernt den Leaf-Fit-Guard.
 ### G-21 — Atomare Aktivierung des Legacy-TxHashSet
 - Status: DONE
 - Commits: `2122e32`

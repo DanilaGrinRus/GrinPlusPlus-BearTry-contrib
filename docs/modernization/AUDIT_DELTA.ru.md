@@ -334,6 +334,37 @@
 - Доказательство: E44, unit `TxHashSetLimits`.
 - Риск, откат: легитимный архив >8 GiB был бы отвергнут (архивы mainnet заметно меньше); константа в одном заголовке; откат убирает проверку.
 
+### G-04 — Проверка edge-bits PoW
+- Статус: DONE
+- Коммиты: `9d9f1ae`
+- Файлы: `include/PoW/PoWValidator.h`, `src/PoW/PoWValidator.cpp`, `tests/src/Consensus/Test_PoWEdgeBits.cpp`
+- Ссылка на Rust: `chain/src/pipe.rs` (`validate_pow_only`, `is_primary`/`is_secondary`), `core/src/pow/cuckatoo.rs` (`verify_size`)
+- Было: только `edge_bits == 29` выбирал вариант Cuckoo; любое другое значение (0, 24, 30, 64, 255) попадало в `Cuckatoo::Validate`, где сдвиг 64-битного слова на `edge_bits` не определён.
+- Стало: `PoWValidator::IsSupportedEdgeBits` допускает secondary 29 и primary 31–63; `IsPoWValid` отвергает остальные размеры до диспетчеризации; таблица границ покрыта unit-тестом.
+- Дифф: `src/PoW/PoWValidator.cpp`, коммит `9d9f1ae`
+  ```diff
+  +    if (!IsSupportedEdgeBits(header.GetEdgeBits())) {
+  +        LOG_WARNING_F("Unsupported PoW edge bits {} for block {}", header.GetEdgeBits(), header);
+  +        return false;
+  +    }
+  ```
+- Доказательство: E50, `Test_PoWEdgeBits` (11 проверок).
+- Риск, откат: будущие primary-размеры >63 потребуют изменения консенсуса; набор задан константой; откат убирает guard.
+### G-20 — Лимиты размеров в парсерах
+- Статус: DONE (PIBD/segment-парсеры; fuzz вне матрицы)
+- Коммиты: `9d9f1ae`
+- Файлы: `src/PMMR/Models/Segment.h`, `tests/src/PMMR/Test_Segment.cpp`, `src/PMMR/Models/BitmapSegment.h`, `src/PMMR/Models/SegmentProof.h`
+- Ссылка на Rust: `core/src/ser.rs` (границы), `core/src/core/pmmr/segment.rs` (`MAX_SEGMENT_READ_ITEMS`)
+- Было: счётчики сегментов ограничивались `MAX_SEGMENT_READ_ITEMS`, checked arithmetic и лимитами сообщений, но вектор листьев мог зарезервировать память до лимита, ещё не проверив, что список помещается в payload.
+- Стало: `numLeaves > remaining` отвергается до резервирования; лимиты `SegmentProof`/`BitmapSegment`/`BitmapBlock`, checked arithmetic и message-cap сохранены; тесты покрывают огромные counts, неубывающие позиции и слишком высокие сегменты.
+- Дифф: `src/PMMR/Models/Segment.h`, коммит `9d9f1ae`
+  ```diff
+  +        if (numLeaves > byteBuffer.GetRemainingSize()) {
+  +            throw DESERIALIZATION_EXCEPTION("Segment leaf list does not fit in the payload");
+  +        }
+  ```
+- Доказательство: E50, `Test_Segment` (21 кейс, включая огромные counts).
+- Риск, откат: некорректные payload отвергаются раньше; валидные сегменты не затронуты; откат убирает guard.
 ### G-21 — Атомарная активация legacy-txhashset
 - Статус: DONE
 - Коммиты: `2122e32`
