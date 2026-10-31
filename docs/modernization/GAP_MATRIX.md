@@ -101,29 +101,28 @@
 | **G-41** | Переключатель PIBD для fallback | — | Не было способа проверить legacy-путь на живом узле | Добавлен `P2P.PIBD_ENABLED` (default true); при false StateSyncer сразу идёт в txhashset.zip | unit + живой `pp-fallback` | **DONE (код)**, live IN PROGRESS (живой прогон упирается в G-38) |
 | **G-38** | Ложные баны пиров и залипание block sync | `servers/src/grin/sync/body_sync.rs:149,191-204`, `header_sync.rs:135-141` | Подтверждено: `BlockSyncer` банил за таймаут, `m_slowPeers` не очищался, окно запросов не ограничивалось высотой пира, seeder/sync молчали. Исправлено по `REQ_G38_FIX.md`: политика вынесена в `BlockSyncPolicy.h` (batch≤100, `min(candidate tip, network, per-connection height)`, retry 6 с/1 с + backoff, cooldown 60 с, `FraudHeight` только при 120 с stale и заявленном TD/высоте выше нашего head); `HeaderSyncer` банит только по правилу Rust; seeder логирует причину отсутствия кандидатов и делает backoff; watchdog пишет причину `WAITING_FOR_PEERS`; в `/v1/status` добавлены `waiting_reason` и счётчики (`requests/timeouts/reassignments/bans_fraud_height/bans_invalid_data`); «медленный» пир больше не банится | unit: `Test_BlockSyncPolicy`; живое окно 32 мин (`pp-net`, 0 fraud-банов, `FULLY_SYNCED`, E37); полный догон с PIBD-горизонта — на `pp-g38` | **DONE (unit + live window)** |
 | **G-42** | Legacy state sync банит пиров за таймаут | `StateSyncer::RequestState` | При `txhashset.zip` 10–120 с без прогресса пир банился с `BadTxHashSet` и узел оставался без пиров | Исправлено: медленный пир теперь **ротируется** (`Rotating txhashset sync peer`), а не банится; реальный плохой txhashset по-прежнему банится в `TXHASHSET_PIPE` при ошибке валидации | unit/сборка; живой legacy-прогон — G-41 | **DONE (код)** |
-| **G-43** | PIBD: стопор пира на сегменте | `PibdScheduler`/`PibdSync` | Живой прогон resume: пир перестал отдавать `tree 2 idx 1229` → retry limit → PIBD failed → fallback; журнал replay при этом сработал (0 повторных bitmap-запросов) | Исправлено: `StateSyncer` при `PibdSync::Failed` перебирает других PIBD-пиров (`RotatePibdPeer`, `m_pibdPeersTried` на горизонт), `DisablePibd()` только после исчерпания; запросы идут выбранному пиру | unit/сборка; живой прогон: старт после NULL-фикса, progress-based fallback 660 с, **живая ротация 204→66** (E40/E41), replay журнала; полный догон прерван троттлингом пира | **DONE**, полный live-догон — отдельно |
+| **G-43** | PIBD: стопор пира на сегменте | `PibdScheduler`/`PibdSync` | Живой прогон resume: пир перестал отдавать `tree 2 idx 1229` → retry limit → PIBD failed → fallback; журнал replay при этом сработал (0 повторных bitmap-запросов) | Исправлено: `PibdScheduler` ретраит сегмент с backoff 20/40/60 с и падает только при 660 с без прогресса (как таймер Rust); `StateSyncer` при `PibdSync::Failed` перебирает других PIBD-пиров (`RotatePibdPeer`, `m_pibdPeersTried` на горизонт), `DisablePibd()` только после исчерпания; запросы идут выбранному пиру | unit/сборка; живой прогон: 17:13:30 `PIBD failed: no PIBD progress…` → 17:13:31 `RotatePibdPeer … another peer 66.154.127.84` → 17:14 новый старт; затем legacy-ротация `RequestState` 66.154→195.201→157.90 (G-42); replay журнала без повторных bitmap-запросов (E41). Остаток: порог ротации по скорости (сейчас только нулевой прогресс) и повторный обход набора после backoff — не реализованы; полный догон с ротацией прерван троттлингом пира | **DONE**, полный live-догон — отдельно |
 
 
 | **G-46** | Краш-согласованность chain-хранилищ | `HeaderMMR`/`Chain`/`ChainStore` | `header_mmr.bin` и `candidate/confirmed.chain` — три независимых append-only файла; kill между коммитами оставляет разные высоты, загрузка читала заголовок за MMR → `0xC0000005` | Загрузочная починка: `ChainConsistency::ComputeChainRepair` + применение в `BlockChain::Create` (rewind MMR или цепочек, WARNING в лог); полная атомарность записи — G-48 | unit `Test_ChainConsistency` (4 кейса); живой crash-тест — IN PROGRESS | **DONE (mitigation)** |
 | **G-47** | NULL-deref в обработчике Ping | `MessageProcessor.cpp` | При отсутствии confirmed tip `pTipHeader->GetTotalDifficulty()` падал (0xC0000005) | Проверка на nullptr: `WARNING "Cannot answer Ping: no confirmed tip header."`, Pong не отправляется | сборка/тесты | **DONE** |
-| **G-48** | Атомарное формирование БД (чекпоинт записи) | `Chain::Commit`, `ChainStore::Commit`, `HeaderMMR::Commit` | Три файла коммитятся по отдельности, без общего чекпоинта/порядка fsync; после аварии возможна потеря/рассинхронизация | **OPEN**: единый checkpoint (`mmr_leaves`, высоты, CRC) + temp+rename/RocksDB-батч; инвариант на каждом коммите; crash-инъекции; копия битых файлов в `NODE/recovery-*`; счётчик `db_repaired`. Разбор — `DB_CONSISTENCY.md` §4 | — | **OPEN (следующая после основной)** |
+| **G-48** | Атомарное формирование БД (чекпоинт записи) | `Chain::Commit`, `ChainStore::Commit`, `HeaderMMR::Commit` | Три файла коммитятся по отдельности, без общего чекпоинта/порядка fsync; после аварии возможна потеря/рассинхронизация | **OPEN**: единый checkpoint (`mmr_leaves`, высоты, CRC, A/B-слоты) + порядок MMR→chain→checkpoint; инвариант на каждом коммите; crash-инъекции; копия битых файлов в `NODE/recovery-*`; счётчик `db_repaired`. Варианты A–E, рекомендуемый план, формат checkpoint и критерии приёмки — `DB_CONSISTENCY.md` §7 | — | **OPEN (следующая после основной)** |
 
 ---
 
 ## Сводка
 
-**Итого по матрице: 48 записей** — 32 закрыто, G-24 закрыт частично, G-27 снят по
-объёму (PIHD не в v5.5.2), 2 частично (G-09, G-23), 2 в работе (G-41, G-43),
+**Итого по матрице: 48 записей** — 33 закрыто, G-24 закрыт частично, G-27 снят по
+объёму (PIHD не в v5.5.2), 2 частично (G-09, G-23), 1 в работе (G-41),
 7 открыто по работе, 2 запланировано (G-44, G-45), 1 осознанно отложен (G-07).
-32 + 1 + 1 + 2 + 2 + 7 + 2 + 1 = 48.
+33 + 1 + 1 + 2 + 1 + 7 + 2 + 1 = 48.
 
 * Открыто (работа не начата): G-04 (PoW edge-bits), G-16 (лимит размера и диска
   для TxHashSet), G-17 (rate limiting/баны), G-20 (лимиты PIBD-парсеров), G-21
   (атомарная активация legacy-пути), G-22 (бэкап перед миграцией), G-48
-  (атомарный чекпоинт chain-хранилищ); G-07 — осознанно отложен до появления NRD.
-* В работе (код готов, идёт живая проверка): G-41 (legacy-фолбэк), G-43 (PIBD:
-  ротация пиров вместо retry-лимита). G-42 (бан за `BadTxHashSet` по таймауту)
-  исправлен в коде (E38).
+  (атомарный чекпоинт chain-хранилищ; варианты и план — `DB_CONSISTENCY.md` §7);
+  G-07 — осознанно отложен до появления NRD.
+* В работе (код готов, идёт живая проверка): G-41 (legacy-фолбэк).
 * Запланировано вне текущего объёма: G-44 — спящий каркас PIHD (параметры,
   политика, конфиг, unit-тесты; без сетевого кода и без рекламы `PIHD_HIST`) и
   **G-45 — mainnet dry-run, финальный гейт** по `docs/ACCEPTANCE.md` §M-01.
@@ -136,9 +135,11 @@
 * Закрыто с живой проверкой: G-25 (версия 1.2.9), G-31 (горизонт), G-32
   (`BitmapBlock`), G-35 (порядок бит), G-36 (download+активация), G-37 (валидация
   состояния), G-39 (догон до `FULLY_SYNCED`), G-40 (сохранение состояния между
-  рестартами), G-38 (живое 32-мин окно без fraud-банов, E37), G-46 (починка
+  рестартами), G-38 (живое 32-мин окно без fraud-банов, E37), G-43 (живая
+  ротация PIBD-пира 204→66 после 660 с без прогресса, E41), G-46 (починка
   рассинхрона MMR/chain подтверждена инъекциями, E39), G-47 (NULL-deref в `Ping`,
-  E39). G-42 исправлен в коде, живая ротация ожидается в G-41/G-43.
+  E39). G-42 исправлен в коде и проверен живой ротацией legacy-пиров (E41);
+  полный догон после ротации — отдельная проверка G-41.
 * PIHD (G-27) — не входит в v5.5.2 (enum до `KernelSegment = 28`); в ветке `staging`
   реализовано целиком (PR #3879/#3882), для совместимости с v5.5.2 не требуется —
   разбор в `PIHD_UPSTREAM.md`.
