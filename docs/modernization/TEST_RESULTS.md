@@ -511,7 +511,7 @@ Floonet-seed-пиры за 12 секунд не ответили — **пиро�
 
 ## E29. Живой interop, раунд 19: найден и исправлен дефект accept-loop — PASS (fix+tests)
 
-Во время подготовки interop обнаружен **реальный дефект P2P** (G-27):
+Во время подготовки interop обнаружен **реальный дефект P2P** (G-29):
 `Seeder::Accept` при отклонённом входящем пире (`IsPeerBlocked`/`IsPeerAllowed`)
 делал `return` **до** повторной постановки `async_accept`. Первый же отклонённый
 пир навсегда останавливал приём входящих соединений: Rust-нода подключалась к
@@ -570,6 +570,58 @@ Floonet-seed-пиры за 12 секунд не ответили — **пиро�
 
 Осталось по G-09: живой PIBD с синхронизированным пиром, resume между рестартами, PIHD.
 
+## E31. Живой PIBD-обмен с testnet-сетью: заголовки и bitmap-сегменты — PASS; сегмент 1 — FAIL (разбор)
+
+Вместо локальной Rust-ноды нашей ноде дан отдельный порт дозвона (`P2P_PEER_PORT`
+= 13414) при прослушивании 13444. С явными живыми testnet-пирами
+(`PREFERRED_PEERS`) узел подключился к реальной сети и синхронизировал
+**3,3 млн заголовков** за ~25 минут (512 заголовков на сообщение, ~1500/с);
+в `netstat` — ESTABLISHED с `204.168.202.205:13414` и др.
+
+После догона заголовков StateSyncer запустил PIBD на archive-горизонте:
+
+```
+Starting PIBD state sync at height 3313440 (header hash 84d7ac67...)
+Sending 7 PIBD request(s) to 195.201.2.51
+Received Msg::OutputBitmapSegment from Connection{195.201.2.51}
+```
+
+**Найдено и исправлено по ходу живого обмена:**
+
+1. **Горизонт PIBD** — раньше запрашивали candidate tip; Rust проверяет
+   `segmenter.header().hash() == requested hash` (adapters.rs:517), а заголовок
+   сегментера — это archive header `(head − STATE_SYNC_THRESHOLD)` с округлением
+   вниз до `TXHASHSET_ARCHIVE_INTERVAL = 720` (`chain.rs:985,1002`). Теперь
+   горизонт вычисляется так же, и завершение устанавливает состояние именно для
+   этого заголовка.
+2. **`BitmapBlock`** — блок покрывает `2^16` бит = **64** чанка по 1024 бита, а
+   не 16 (`bitmap_accumulator.rs:470,213`). С прежним значением реальный сегмент
+   не десериализовался; после фикса парсится, но см. ниже.
+3. `MessageProcessor` теперь логирует текст исключения десериализации, а
+   `BitmapSegmentAssembler` — промежуточные корни при несовпадении.
+
+**Регрессионный вектор (offline, PASS):** захваченный с живого пира первый
+bitmap-сегмент архива `84d7ac67…` (65 731 байт) полностью разбирается, и
+`Segment::ValidateWithOtherRoot` сходится с `header.output_root =
+49fe85ec…` (комбинированный корень `H(6684 ‖ output_root ‖ bitmap_root)`).
+Вектор закреплён в `tests/src/PMMR/Test_PibdLiveVector.cpp` (пропускается, если
+файла нет; файл лежит вне git в `.tmp/interop`).
+
+**FAIL, требует продолжения:** второй захваченный сегмент (idx 1, 512 чанков)
+даёт корень `a4e175cf…`, тогда как из proof сегмента 0 следует, что корень
+поддерева листьев 512–1023 равен `00e742a9…`; наш `ValidateWithOtherRoot`
+завершается `Segment proof does not reconstruct the combined MMR root`.
+Расхождение воспроизведено и независимым Python-разбором (в котором сегмент 0
+сходится с эталонной формулой, а сегмент 1 — нет), то есть проблема не в
+C++-реконструкции proof, а в интерпретации блоков сегмента (вероятно, порядок
+/семантика sparse-блоков). Захваченные векторы сохранены в
+`.tmp/interop/bitmap_payload_0.bin` и `bitmap_payload_1.bin`; это следующая
+задача. Полный PIBD (24/26/28 → запись → активация → досинхронизация блоков)
+на живом пире **NOT RUN**.
+
+Тесты: **135 кейсов / 1552 проверки PASS**; `GrinNode.exe` `3E45683A…`,
+`Tests.exe` `757AAE60…`.
+
 ---
 
 ## Сводка
@@ -581,7 +633,7 @@ Floonet-seed-пиры за 12 секунд не ответили — **пиро�
 | Проводной формат capabilities/ID/лимитов | PASS (compile-check) |
 | Сборка зависимостей (offline, static CRT) | PASS |
 | Сборка `GrinNode.exe` + `Tests.exe` (`/W4 /WX`) | PASS |
-| Полный набор тестов (134 / 1541) | PASS |
+| Полный набор тестов (135 / 1552) | PASS |
 | PIBD проводной слой (модели + сообщения 21–28) | PASS (unit) |
 | PIBD верификация сегментов (`Root`/`Validate`/proof, bitmap→chunk) | PASS (unit) |
 | PIBD генерация сегментов и обратная сборка дерева | PASS (unit) |
@@ -597,6 +649,8 @@ Floonet-seed-пиры за 12 секунд не ответили — **пиро�
 | PIBD сервис полного цикла (`PibdSync`) | PASS (unit) |
 | PIBD модель корней сверена с Rust v5.5.2 (E26) | PASS (unit) |
 | Smoke-запуск ноды (floonet) | PASS |
-| Живая синхронизация с Rust v5.5.2 | NOT RUN |
-| PIBD desegmenter/planner/resume/serving | NOT IMPLEMENTED |
+| Живая синхронизация заголовков с testnet (Rust-совместимая сеть) | PASS (E31) |
+| PIBD desegmenter/planner/serving | PASS (unit) |
+| PIBD resume между рестартами | NOT IMPLEMENTED |
+| Живой PIBD-обмен сегментами | PARTIAL: bitmap idx0 PASS, idx1 FAIL (E31) |
 | PIHD | NOT IMPLEMENTED |
