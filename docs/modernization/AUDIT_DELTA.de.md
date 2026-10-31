@@ -227,11 +227,11 @@ stehen in der Nachweiskarte, nicht als Karten.
 
 ### G-38 — Block-Sync-Policy: keine Bans wegen Timeout
 - Status: DONE
-- Commits: `4dbae1b`, `c06888b`
+- Commits: `4dbae1b`, `c06888b`, `7997ca5`
 - Dateien: `src/P2P/Sync/BlockSyncPolicy.h`, `src/P2P/Sync/BlockSyncer.cpp`, `src/P2P/Sync/HeaderSyncer.cpp`, `src/P2P/Seed/Seeder.cpp`, `include/P2P/SyncStatus.h`, `src/P2P/MessageProcessor.cpp`
 - Rust-Referenz: `servers/src/grin/sync/body_sync.rs:149,191-204`, `header_sync.rs:135-141`
 - Vorher: `BlockSyncer` bannte einen Peer nach zwei Timeouts wegen `FraudHeight`, `m_slowPeers` verfiel nie, das Anfragefenster ignorierte Peer-Höhen, Seeder/Syncer schwiegen nach den Bans.
-- Nachher: ein Timeout wird gezählt und der Block neu zugewiesen, nie gebannt; Anfragen sind auf `min(candidate tip, network height, per-connection height)` und Batch ≤100 begrenzt; Retry 6 s (1 s mit Fortschritt) plus Backoff; ein langsamer Peer bekommt 60 s Cooldown; `FraudHeight` erfordert höhere behauptete Arbeit und 120 s ohne Header-Fortschritt; Seeder loggt Grund/Backoff; `/v1/status` zeigt Wartezeit und Zähler.
+- Nachher: ein Timeout wird gezählt und der Block neu zugewiesen; Anfragen sind auf `min(candidate tip, network height, per-connection height)` und Batch ≤100 begrenzt; Retry 6 s/1 s + Backoff; langsamer Peer 60 s Cooldown; `FraudHeight` spiegelt jetzt exakt Rust: strikt größere TOTAL-DIFFICULTY plus 120 s ohne Header-Fortschritt (die frühere Höhe-ODER-Schwierigkeit-Regel führte live zu drei falschen Bans; behoben, E48); Seeder loggt den Grund; `/v1/status` zeigt Wartezeit und Zähler.
 - Diff: `src/P2P/Sync/BlockSyncPolicy.h`, Commit `4dbae1b`
   ```diff
   --- /dev/null
@@ -241,7 +241,7 @@ stehen in der Nachweiskarte, nicht als Karten.
   +//   * FraudHeight requires a peer that claims more work than we have and has
   +//     made no progress for a long time;
   ```
-- Nachweis: E37 (32-Minuten-Live-Fenster), E42 (4 222 Reassignments, null Fraud-Bans).
+- Nachweis: E37 (32-Minuten-Live-Fenster), E42 (4 222 Reassignments, null Fraud-Bans), E48 (TD-only nach Live-Falschbans).
 - Risiko, Rücknahme: ohne Bans kann ein nicht antwortender Peer den Catch-up bremsen; Cooldown/Rotation begrenzen es; Rücknahme stellt den Ban-Pfad wieder her.
 
 ### G-42 — Legacy-State-Sync: Peer-Rotation statt Ban
@@ -266,11 +266,11 @@ stehen in der Nachweiskarte, nicht als Karten.
 
 ### G-48 — Atomarer Checkpoint für Chain-Speicher
 - Status: DONE (Checkpoint; Hash-Validierung siehe G-23)
-- Commits: `fdef6e6`, `1c4d020`
+- Commits: `fdef6e6`, `1c4d020`, `7997ca5`
 - Dateien: `src/BlockChain/DbCheckpoint.h`, `src/BlockChain/ChainState.*`, `src/BlockChain/BlockChainImpl.cpp`, `include/BlockChain/DbRecovery.h`
 - Rust-Referenz: n/a (Crash-Konsistenz-Design; `DB_CONSISTENCY.md` §4)
 - Vorher: `header_mmr.bin`, `candidate.chain` und `confirmed.chain` wurden unabhängig committet; ein Absturz zwischen den Commits hinterließ unterschiedliche Höhen, und der Ladepfad vertraute den Rohzahlen.
-- Nachher: nach allen vier Store-Commits schreibt `ChainState::Commit` `chain.checkpoint` (52 Bytes: Magic/Version/Sequence/`mmr_leaves`/Candidate/Confirmed/FNV-1a) per Temp+rename; `BlockChain::Create` repariert jeden Store auf `min(actual, checkpoint)` und schreibt einen frischen Checkpoint; die vier Dateien werden vor der Reparatur nach `NODE/recovery-*` kopiert, `db_repaired` erscheint in `/v1/status`.
+- Nachher: `ChainState::Commit` schreibt `chain.checkpoint` (52 Bytes, FNV-1a) per Temp+rename nach allen Store-Commits; beim Laden werden Invarianten geprüft, ein nachlaufendes MMR aus der Block-DB neu aufgebaut, nur überzählige Leaves verworfen, ein fehlender confirmed-Tail ergänzt, eine größenverifizierte Recovery-Kopie verlangt und bei einer Chain hinter dem Checkpoint der Start abgebrochen; `db_repaired`/`db_last_repair` werden veröffentlicht. Live: Hard-Kill seq 26→27; MMR −2000 Leaves neu aufgebaut, Header erhalten (E43/E44/E48).
 - Diff: `src/BlockChain/DbCheckpoint.h`, Commit `fdef6e6`
   ```diff
   --- /dev/null
@@ -284,7 +284,7 @@ stehen in der Nachweiskarte, nicht als Karten.
   +};
   +// "GRINPPCK" magic, version, FNV-1a checksum; written via temp + rename
   ```
-- Nachweis: E43 (Hard-Kill-Neustart seq 26→27; Live-Mismatch-Reparatur), E44 (Recovery/`db_repaired`).
+- Nachweis: E43, E44, E48.
 - Risiko, Rücknahme: ein zu konservativer Checkpoint verwirft nicht committete Header; Recovery-Kopien bleiben; Rücknahme löscht `chain.checkpoint` und fällt auf die Zähler-Heuristik zurück.
 
 ### G-50 — Wiederholte DNS-Peer-Erkennung
@@ -329,21 +329,21 @@ stehen in der Nachweiskarte, nicht als Karten.
 
 ### G-23 — Strukturelle Header-MMR-Validierung beim Laden
 - Status: PARTIAL (strukturelle Prüfung DONE; Hash-/Root-Validierung offen)
-- Commits: `1c4d020`, `0331ea1`
+- Commits: `1c4d020`, `0331ea1`, `7997ca5`
 - Dateien: `include/PMMR/Common/MmrStructure.h`, `include/PMMR/HeaderMMR.h`, `src/PMMR/HeaderMMRImpl.h`, `src/BlockChain/BlockChainImpl.cpp`, `tests/src/PMMR/Test_MmrStructure.cpp`
 - Rust-Referenz: n/a (MMR-Invariante `N = 2L − popcount(L)`; siehe `DB_CONSISTENCY.md`)
 - Vorher: die Rohknotenzahl in `header_mmr.bin` wurde vertraut; eine abgeschnittene Append-only-Datei konnte als gültiges MMR geladen werden.
-- Nachher: `IsValidNodeCount` prüft `N = 2L − popcount(L)`, `LargestValidNodeCount`/`LeavesForNodes` leiten ein sicheres Ziel ab; beim Laden wird eine unmögliche Größe auf die größte gültige gekürzt, mit einem Guard, der ohne ableitbare Leaf-Zahl nicht kürzt; ein Regressionstest deckt 3,3 Mio. Leaves ab.
-- Nachweis: E44 (die erste Version hatte eine falsche Binärsuchgrenze und kürzte ein gesundes MMR fälschlich; behoben, geschützt, Regressionstest).
+- Nachher: `IsValidNodeCount` prüft `N = 2L − popcount(L)`; beim Laden wird eine unmögliche Größe auf die größte gültige gekürzt, ein nachlaufendes MMR wird aus der Block-DB neu aufgebaut (Header bleiben erhalten), nur überzählige Leaves werden verworfen; jede Änderung verlangt eine größenverifizierte Recovery-Kopie; eine Chain hinter dem Checkpoint bricht den Start ab. Live-Injektion: MMR −2000 Leaves → Header 3 317 117 erhalten, candidate.chain unverändert (E48).
+- Nachweis: E44 (strukturelle Regression/Guard), E48 (No-Loss-Rebuild; Abbruch bei fehlendem DB-Header).
 - Risiko, Rücknahme: ein falsches Ungültig-Urteil kann Daten kürzen (der Vorfall); Guard, Regressionstest und Recovery-Kopien schützen; Rücknahme deaktiviert die strukturelle Prüfung und behält Zähler/Checkpoint.
 
 ### G-52 — Diagnose des historischen TxHashSet-Snapshots (OPEN)
-- Status: OPEN (nur Diagnose; keine funktionale Korrektur)
-- Commits: `7973d46`
+- Status: OPEN (Archiv-Persistenz/Serving teilweise implementiert; Live-Transfer NOT VERIFIED)
+- Commits: `7973d46`, `7997ca5`
 - Dateien: `src/PMMR/TxHashSetManager.cpp`, `src/PMMR/TxHashSetImpl.cpp`, `src/P2P/Pipeline/TxHashSetPipe.cpp`
 - Rust-Referenz: `chain/src/txhashset/txhashset.rs` (Archiv-Snapshot)
 - Vorher: ein fehlgeschlagener historischer Snapshot wurde verschluckt (`catch (...) { return; }`), und Rewind meldete nur das Commitment; die Ursache blieb unsichtbar.
-- Nachher: der Sender loggt Flushed-/Requested-Höhe, Snapshot-Pfad und Größe; Rewind loggt Blockhöhe, Input-Anzahl und Spent-Position-Anzahl; die funktionale Lücke bleibt offen.
+- Nachher: die Aktivierung speichert den Horizont-Zustand unter `NODE/TXHASHSET/archive/TxHashSet.<height>.<hash>.zip` (`ArchivePibdState`), und `TxHashSetPipe` liefert dieses Archiv per Hash ohne historischen Rewind aus; Snapshot-Fehler loggen Flushed-/Requested-Höhe sowie Block/Input/Spent-Zahlen. Die Spent-Position-Lücke bleibt für beliebige historische Snapshots offen, der Live-Transfer ist weiterhin NOT VERIFIED.
 - Diff: `src/PMMR/TxHashSetManager.cpp`, Commit `7973d46`
   ```diff
   --- a/src/PMMR/TxHashSetManager.cpp
@@ -353,7 +353,7 @@ stehen in der Nachweiskarte, nicht als Karten.
   +                pFlushedHeader != nullptr ? pFlushedHeader->GetHeight() : 0,
   +                pHeader->GetHeight());
   ```
-- Nachweis: E45/E46 (`flushed 3317111 → requested 3314160`, Block `3316349`, 1 Input, 0 Spent-Positionen).
+- Nachweis: E45/E46 (Diagnose), E48 (Archiv-Persistenz-Code; live pending).
 - Risiko, Rücknahme: nur Logging; Rücknahme entfernt die Log-Zeilen.
 ## Bekannte offene Punkte (keine Karten)
 

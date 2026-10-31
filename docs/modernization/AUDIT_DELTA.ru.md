@@ -227,11 +227,11 @@
 
 ### G-38 — Политика block sync: никаких банов за таймаут
 - Статус: DONE
-- Коммиты: `4dbae1b`, `c06888b`
+- Коммиты: `4dbae1b`, `c06888b`, `7997ca5`
 - Файлы: `src/P2P/Sync/BlockSyncPolicy.h`, `src/P2P/Sync/BlockSyncer.cpp`, `src/P2P/Sync/HeaderSyncer.cpp`, `src/P2P/Seed/Seeder.cpp`, `include/P2P/SyncStatus.h`, `src/P2P/MessageProcessor.cpp`
 - Ссылка на Rust: `servers/src/grin/sync/body_sync.rs:149,191-204`, `header_sync.rs:135-141`
 - Было: `BlockSyncer` банил пира за `FraudHeight` после двух таймаутов, `m_slowPeers` не истекал, окно запросов игнорировало высоты пиров, seeder/syncer молчали после банов.
-- Стало: таймаут считается и блок переназначается, без бана; запросы ограничены `min(candidate tip, network height, per-connection height)` и batch ≤100; retry 6 с (1 с при прогрессе) + backoff; медленный пир получает cooldown 60 с; `FraudHeight` требует большей заявленной работы и 120 с без прогресса заголовков; seeder логирует причину/backoff; `/v1/status` отдаёт waiting reason и счётчики.
+- Стало: таймаут считается и блок переназначается; запросы ограничены `min(candidate tip, network height, per-connection height)` и batch ≤100; retry 6/1 с + backoff; медленный пир получает cooldown 60 с; `FraudHeight` теперь точно как Rust: строго больший **total difficulty** + 120 с без прогресса заголовков (прежнее условие «высота ИЛИ TD» дало живьём три ложных бана; исправлено, E48); seeder логирует причину; `/v1/status` отдаёт waiting reason и счётчики.
 - Дифф: `src/P2P/Sync/BlockSyncPolicy.h`, коммит `4dbae1b`
   ```diff
   --- /dev/null
@@ -241,7 +241,7 @@
   +//   * FraudHeight requires a peer that claims more work than we have and has
   +//     made no progress for a long time;
   ```
-- Доказательство: E37 (32-минутное живое окно), E42 (4 222 переназначения, ноль fraud-банов).
+- Доказательство: E37 (32-мин живое окно), E42 (4 222 переназначения, 0 fraud-банов), E48 (TD-only после живых ложных банов).
 - Риск, откат: без банов неотвечающий пир может замедлить догон; cooldown/ротация ограничивают; откат возвращает прежний путь бана.
 
 ### G-42 — Ротация пира legacy state sync вместо бана
@@ -266,11 +266,11 @@
 
 ### G-48 — Атомарный checkpoint chain-хранилищ
 - Статус: DONE (checkpoint; хеш-валидация — G-23)
-- Коммиты: `fdef6e6`, `1c4d020`
+- Коммиты: `fdef6e6`, `1c4d020`, `7997ca5`
 - Файлы: `src/BlockChain/DbCheckpoint.h`, `src/BlockChain/ChainState.*`, `src/BlockChain/BlockChainImpl.cpp`, `include/BlockChain/DbRecovery.h`
 - Ссылка на Rust: n/a (дизайн краш-согласованности; `DB_CONSISTENCY.md` §4)
 - Было: `header_mmr.bin`, `candidate.chain` и `confirmed.chain` коммитились независимо; падение между коммитами оставляло разные высоты, а загрузка доверяла сырым счётчикам.
-- Стало: после всех четырёх коммитов `ChainState::Commit` пишет `chain.checkpoint` (52 байта: magic/version/sequence/`mmr_leaves`/candidate/confirmed/FNV-1a) через temp+rename; `BlockChain::Create` чинит каждое хранилище до `min(actual, checkpoint)` и пишет свежий checkpoint; четыре файла копируются в `NODE/recovery-*` перед починкой, `db_repaired` отдаётся в `/v1/status`.
+- Стало: `ChainState::Commit` пишет `chain.checkpoint` (52 байта, FNV-1a) через temp+rename после всех коммитов; при загрузке проверяются инварианты, отстающий MMR перестраивается из block DB, удаляются только лишние листья, восстанавливается хвост confirmed, требуется проверенная по размеру recovery-копия, а при цепочке позади checkpoint старт прерывается; `db_repaired`/`db_last_repair` отдаются в `/v1/status`. Живьём: hard kill seq 26→27; MMR −2000 листьев перестроен, header сохранён (E43/E44/E48).
 - Дифф: `src/BlockChain/DbCheckpoint.h`, коммит `fdef6e6`
   ```diff
   --- /dev/null
@@ -284,7 +284,7 @@
   +};
   +// "GRINPPCK" magic, version, FNV-1a checksum; written via temp + rename
   ```
-- Доказательство: E43 (hard kill, рестарт seq 26→27; живая починка рассинхронизации), E44 (recovery/`db_repaired`).
+- Доказательство: E43, E44, E48.
 - Риск, откат: слишком консервативный checkpoint отбрасывает незакоммиченные заголовки; recovery-копии сохраняются; откат — удалить `chain.checkpoint`, вернуться к эвристике по счётчикам.
 
 ### G-50 — Повторное DNS-обнаружение пиров
@@ -329,21 +329,21 @@
 
 ### G-23 — Структурная валидация header MMR при загрузке
 - Статус: PARTIAL (структурная проверка DONE; хеш/корневая валидация открыта)
-- Коммиты: `1c4d020`, `0331ea1`
+- Коммиты: `1c4d020`, `0331ea1`, `7997ca5`
 - Файлы: `include/PMMR/Common/MmrStructure.h`, `include/PMMR/HeaderMMR.h`, `src/PMMR/HeaderMMRImpl.h`, `src/BlockChain/BlockChainImpl.cpp`, `tests/src/PMMR/Test_MmrStructure.cpp`
 - Ссылка на Rust: n/a (инвариант MMR `N = 2L − popcount(L)`; см. `DB_CONSISTENCY.md`)
 - Было: сырое число узлов в `header_mmr.bin` считалось доверенным; усечённый append-only файл мог загрузиться как валидный MMR.
-- Стало: `IsValidNodeCount` проверяет `N = 2L − popcount(L)`, `LargestValidNodeCount`/`LeavesForNodes` выводят безопасную цель; при загрузке невозможный размер усекается до наибольшего валидного, с guard, запрещающим усечение, если число листьев не выводится; регрессионный тест покрывает 3.3M листьев.
-- Доказательство: E44 (первая версия имела неверную границу бинарного поиска и ложно усекла здоровый MMR; исправлено, добавлены guard и регрессионный тест).
+- Стало: `IsValidNodeCount` проверяет `N = 2L − popcount(L)`; при загрузке невозможный размер усекается до наибольшего валидного, отстающий MMR **перестраивается из block DB** (заголовки сохраняются), удаляются только лишние листья; любая модификация требует проверенной по размеру recovery-копии; цепочка позади checkpoint прерывает старт. Живая инъекция: MMR −2000 листьев → header 3 317 117 сохранён, candidate.chain без изменений (E48).
+- Доказательство: E44 (структурная регрессия/guard), E48 (rebuild без потерь; отказ при отсутствии заголовка в DB).
 - Риск, откат: ложный вердикт «невалидно» может усечь данные (тот самый инцидент); guard, регрессионный тест и recovery-копии защищают; откат отключает структурную проверку, оставляя счётчики/checkpoint.
 
 ### G-52 — Диагностика исторического TxHashSet-снапшота (OPEN)
-- Статус: OPEN (только диагностика; функционального исправления нет)
-- Коммиты: `7973d46`
+- Статус: OPEN (сохранение/выдача архива частично реализованы; живой перенос NOT VERIFIED)
+- Коммиты: `7973d46`, `7997ca5`
 - Файлы: `src/PMMR/TxHashSetManager.cpp`, `src/PMMR/TxHashSetImpl.cpp`, `src/P2P/Pipeline/TxHashSetPipe.cpp`
 - Ссылка на Rust: `chain/src/txhashset/txhashset.rs` (архивный снапшот)
 - Было: ошибка исторического снапшота проглатывалась (`catch (...) { return; }`), rewind сообщал только о commitment; причина была невидима.
-- Стало: отправитель логирует высоты flushed/requested, путь и размер снапшота; rewind логирует высоту блока, число входов и число spent-позиций; функциональная лазейка остаётся открытой.
+- Стало: при активации состояние горизонта сохраняется в `NODE/TXHASHSET/archive/TxHashSet.<height>.<hash>.zip` (`ArchivePibdState`), а `TxHashSetPipe` отдаёт этот архив по hash без исторического rewind; ошибки snapshot логируют высоты flushed/requested, блок, число входов и spent-позиций. Разрыв spent-позиций остаётся для произвольных исторических snapshot, живой перенос по-прежнему NOT VERIFIED.
 - Дифф: `src/PMMR/TxHashSetManager.cpp`, коммит `7973d46`
   ```diff
   --- a/src/PMMR/TxHashSetManager.cpp
@@ -353,7 +353,7 @@
   +                pFlushedHeader != nullptr ? pFlushedHeader->GetHeight() : 0,
   +                pHeader->GetHeight());
   ```
-- Доказательство: E45/E46 (`flushed 3317111 → requested 3314160`, блок `3316349`, 1 вход, 0 spent-позиций).
+- Доказательство: E45/E46 (диагноз), E48 (код сохранения архива; live pending).
 - Риск, откат: только логирование; откат убирает строки лога.
 ## Известные открытые пункты (не карточки)
 
