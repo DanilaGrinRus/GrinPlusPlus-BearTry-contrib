@@ -1,6 +1,7 @@
 #include "ChainState.h"
 #include "DbCheckpoint.h"
 #include <Common/Logger.h>
+#include <Core/File/FileSync.h>
 
 #include <Consensus.h>
 #include <Crypto/Crypto.h>
@@ -251,6 +252,11 @@ void ChainState::Commit()
 	// store is truncated to it (G-48).
 	if (!m_chainStoreWriter.IsNull() && !m_headerMMRWriter.IsNull())
 	{
+		// Make the writes durable before the checkpoint is renamed into place.
+		const fs::path chainPath = m_config.GetChainPath();
+		FileSync::Flush(chainPath / "header_mmr.bin");
+		FileSync::Flush(chainPath / "candidate.chain");
+		FileSync::Flush(chainPath / "confirmed.chain");
 		DbCheckpointData checkpoint;
 		checkpoint.Sequence = ++m_checkpointSequence;
 		const uint64_t candidateEntries =

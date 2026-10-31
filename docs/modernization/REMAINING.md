@@ -69,7 +69,7 @@
 Эти работы не входят в 52 записи `GAP_MATRIX`, но нужны для приёмки:
 
 * замер полного синка с нуля — **идёт** (`pp-archsrv`, старт 31.10 23:55:27);
-* fsync-порядок `header_mmr.bin` / chain / `chain.checkpoint`;
+* fsync-порядок `header_mmr.bin` / chain / `chain.checkpoint` — **сделан** (E51): flush трёх файлов до checkpoint, temp flush до rename; каталоги Windows не флашатся (ограничение).
 * fuzz + ASan/UBSan/TSan;
 * differential-fixtures C++ ↔ Rust;
 * reorg-сценарии;

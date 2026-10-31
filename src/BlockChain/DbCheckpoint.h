@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <cstring>
 #include <filesystem.h>
+#include <Core/File/FileSync.h>
 #include <fstream>
 #include <string>
 
@@ -105,6 +106,9 @@ namespace DbCheckpoint
 				return false;
 			}
 		}
+
+		// The checkpoint itself must be durable before it replaces the old one.
+		FileSync::Flush(temp);
 
 		std::error_code ec;
 		fs::rename(temp, path, ec);

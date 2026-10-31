@@ -1277,3 +1277,13 @@ message-size cap; добавлена явная проверка `numLeaves <= r
 
 **Тесты:** **171 кейс / 1836 проверок PASS**. Артефакты: `GrinNode.exe`
 `D2BBF889…`, `Tests.exe` `0204966F…`.
+
+## E51. fsync-порядок MMR/chain/checkpoint
+
+`FileSync::Flush` (`CreateFileW` + `FlushFileBuffers` на Windows) вызывается в
+`ChainState::Commit` для `header_mmr.bin`, `candidate.chain`, `confirmed.chain`
+**перед** публикацией checkpoint, а `DbCheckpoint::Write` флашит временный файл
+**до** rename. Порядок: коммиты writer'ов → flush трёх файлов → flush temp
+checkpoint → rename. Каталоги на Windows отдельно не флашатся (нет API);
+это задокументировано как остаточное ограничение. Тесты: **171 кейс / 1839
+проверок PASS**.
