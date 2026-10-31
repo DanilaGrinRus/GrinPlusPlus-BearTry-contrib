@@ -336,6 +336,43 @@ OutputDTO TxHashSet::GetOutput(const OutputLocation& location) const
 	return OutputDTO(false, *pOutput, location, *pRangeProof);
 }
 
+std::optional<std::pair<TransactionKernel, uint64_t>> TxHashSet::FindKernelByExcess(
+	const Commitment& excess,
+	const std::optional<uint64_t>& minIndex,
+	const std::optional<uint64_t>& maxIndex) const
+{
+	const uint64_t numKernels = m_pKernelMMR->GetNumKernels();
+	if (numKernels == 0) {
+		return std::nullopt;
+	}
+
+	// 1-based kernel MMR indices map to 0-based leaf indices.
+	uint64_t firstLeaf = 0;
+	if (minIndex.has_value()) {
+		firstLeaf = *minIndex == 0 ? 0 : *minIndex - 1;
+	}
+
+	uint64_t lastLeaf = numKernels - 1;
+	if (maxIndex.has_value()) {
+		lastLeaf = *maxIndex == 0 ? 0 : *maxIndex - 1;
+	}
+
+	if (firstLeaf > lastLeaf) {
+		return std::nullopt;
+	}
+
+	lastLeaf = (std::min)(lastLeaf, numKernels - 1);
+
+	for (uint64_t leaf = firstLeaf; leaf <= lastLeaf; leaf++) {
+		std::unique_ptr<TransactionKernel> pKernel = m_pKernelMMR->GetKernelAt(LeafIndex::At(leaf));
+		if (pKernel != nullptr && pKernel->GetExcessCommitment() == excess) {
+			return std::make_pair(*pKernel, leaf + 1);
+		}
+	}
+
+	return std::nullopt;
+}
+
 void TxHashSet::Rewind(std::shared_ptr<IBlockDB> pBlockDB, const BlockHeader& header)
 {
 	std::vector<uint64_t> leavesToAdd;

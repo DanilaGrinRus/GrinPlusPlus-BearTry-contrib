@@ -35,6 +35,11 @@ public:
 	OutputRange GetOutputsByLeafIndex(std::shared_ptr<const IBlockDB> pBlockDB, const uint64_t startIndex, const uint64_t maxNumOutputs) const final;
 	std::vector<OutputDTO> GetOutputsByMMRIndex(std::shared_ptr<const IBlockDB> pBlockDB, const uint64_t startIndex, const uint64_t lastIndex) const final;
 	OutputDTO GetOutput(const OutputLocation& location) const final;
+	std::optional<std::pair<TransactionKernel, uint64_t>> FindKernelByExcess(
+		const Commitment& excess,
+		const std::optional<uint64_t>& minIndex,
+		const std::optional<uint64_t>& maxIndex
+	) const final;
 
 	void Rewind(std::shared_ptr<IBlockDB> pBlockDB, const BlockHeader& header) final;
 	void Commit() final;
