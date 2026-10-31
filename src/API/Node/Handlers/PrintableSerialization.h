@@ -1,6 +1,7 @@
 #pragma once
 
 #include <BlockChain/BlockChain.h>
+#include <PMMR/TxHashSet.h>
 #include <Core/Models/BlockHeader.h>
 #include <Core/Models/DTOs/OutputDTO.h>
 #include <Core/Models/Features.h>
