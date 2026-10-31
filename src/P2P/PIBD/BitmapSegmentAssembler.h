@@ -10,6 +10,8 @@
 #include "../../PMMR/Common/MMRUtil.h"
 
 #include <Common/Util/BitUtil.h>
+#include <Common/Logger.h>
+#include "../../PMMR/Common/MMRHashUtil.h"
 #include <Core/Serialization/Serializer.h>
 #include <Crypto/Models/Hash.h>
 
@@ -134,13 +136,31 @@ public:
 			m_outputMmrRoot = outputMmrRoot;
 		}
 
-		pmmrSegment.ValidateWithOtherRoot(
-			m_bitmapMmrSize,
-			nullptr,
-			m_headerOutputRoot,
-			m_outputMmrSize,
-			outputMmrRoot,
-			true);
+		try {
+			pmmrSegment.ValidateWithOtherRoot(
+				m_bitmapMmrSize,
+				nullptr,
+				m_headerOutputRoot,
+				m_outputMmrSize,
+				outputMmrRoot,
+				true);
+		}
+		catch (const std::exception& e) {
+			const Hash bitmapRoot = pmmrSegment.Root(m_bitmapMmrSize);
+			const Hash combined = MMRHashUtil::HashParentWithIndex(outputMmrRoot, bitmapRoot, m_outputMmrSize);
+			LOG_WARNING_F(
+				"Bitmap segment {} validation failed: {}; bitmapMmrSize={} chunks={} outputs={} bitmapRoot={} outputRoot={} combined={} expected={}",
+				identifier.GetIdx(),
+				e.what(),
+				m_bitmapMmrSize,
+				m_numChunks,
+				m_numOutputs,
+				bitmapRoot,
+				outputMmrRoot,
+				combined,
+				m_headerOutputRoot);
+			throw;
+		}
 
 		// The combined root is only meaningful if the segment proof reproduces the
 		// bitmap MMR root, which ValidateWithOtherRoot already enforced.

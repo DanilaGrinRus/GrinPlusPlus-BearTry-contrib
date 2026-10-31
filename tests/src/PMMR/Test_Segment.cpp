@@ -242,8 +242,8 @@ TEST_CASE("BitmapBlock::RoundTripModes")
 	REQUIRE(denseBack.Get(0));
 	REQUIRE(!denseBack.Get(123));
 
-	// Mixed: raw mode.
-	BitmapBlock mixed(4);
+	// Mixed: raw mode (both set and unset counts >= MAX_BITS / 16).
+	BitmapBlock mixed(16);
 	for (size_t i = 0; i < mixed.GetNumBits(); ++i) {
 		mixed.Set(i, (i % 2) == 0);
 	}
@@ -259,7 +259,7 @@ TEST_CASE("BitmapBlock::RoundTripModes")
 TEST_CASE("BitmapBlock::RejectsMalformedInput")
 {
 	// Invalid chunk count.
-	std::vector<uint8_t> tooManyChunks{ 17, 0 };
+	std::vector<uint8_t> tooManyChunks{ 65, 0 };
 	ByteBuffer chunkBuffer(tooManyChunks);
 	REQUIRE_THROWS_AS(BitmapBlock::Deserialize(chunkBuffer), DeserializationException);
 

@@ -20,6 +20,9 @@ public:
 	void SetMinConnections(const int min_connections) noexcept { m_minConnections = min_connections; }
 
 	uint16_t GetP2PPort() const noexcept { return m_port; }
+	// Port used for outbound connections to peers. Defaults to the listening port;
+	// they differ only when running behind a forward or on a shared test host.
+	uint16_t GetPeerPort() const noexcept { return m_peerPort; }
 	const std::vector<uint8_t>& GetMagicBytes() const noexcept { return m_magicBytes; }
 
 	uint8_t GetMinSyncPeers() const noexcept { return m_minSyncPeers; }
@@ -71,6 +74,11 @@ public:
 			m_port = (uint16_t)p2pJSON.get(ConfigProps::P2P::P2P_PORT, (int)m_port).asInt();
 		}
 
+		m_peerPort = m_port;
+		if (p2pJSON.isMember(ConfigProps::P2P::P2P_PEER_PORT)) {
+			m_peerPort = (uint16_t)p2pJSON.get(ConfigProps::P2P::P2P_PEER_PORT, (int)m_port).asInt();
+		}
+
 		if (p2pJSON.isMember(ConfigProps::P2P::MIN_SYNC_PEERS)) {
 			m_minSyncPeers = (uint8_t)p2pJSON.get(ConfigProps::P2P::MIN_SYNC_PEERS, 3).asInt();
 		}
@@ -107,6 +115,7 @@ private:
 	int m_maxConnections;
 	int m_minConnections;
 	uint16_t m_port;
+	uint16_t m_peerPort;
 	std::vector<uint8_t> m_magicBytes;
 	uint8_t m_minSyncPeers;
 	std::unordered_set<IPAddress> m_peferredPeers;

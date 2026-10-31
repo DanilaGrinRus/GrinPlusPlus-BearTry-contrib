@@ -167,7 +167,7 @@ void Seeder::SeedNewConnection()
         ConnectedPeer connectedPeer(
             pPeer,
             EDirection::OUTBOUND,
-            Global::GetConfig().GetP2PPort()
+            Global::GetConfig().GetPeerPort()
         );
         SocketPtr pSocket(new Socket(
             connectedPeer.GetSocketAddress(),

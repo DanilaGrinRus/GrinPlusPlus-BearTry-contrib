@@ -162,20 +162,40 @@ StateSyncer::EPibdResult StateSyncer::TryPibd(SyncStatus& syncStatus)
 			return EPibdResult::NotAttempted;
 		}
 
+		// PIBD horizon is deterministic and must match the peer segmenter header:
+		// archive_height = (header_head - STATE_SYNC_THRESHOLD) rounded down to a
+		// multiple of TXHASHSET_ARCHIVE_INTERVAL (grin txhashset_archive_header_header_only).
+		uint64_t archiveHeight = pTip->GetHeight();
+		archiveHeight = archiveHeight > Consensus::STATE_SYNC_THRESHOLD
+			? archiveHeight - Consensus::STATE_SYNC_THRESHOLD
+			: 0;
+		archiveHeight -= archiveHeight % Consensus::TXHASHSET_ARCHIVE_INTERVAL;
+
+		const BlockHeaderPtr pHorizon =
+			m_pBlockChain->GetBlockHeaderByHeight(archiveHeight, EChainType::CANDIDATE);
+		if (pHorizon == nullptr) {
+			return EPibdResult::NotAttempted;
+		}
+
 		PibdDownload::Horizon horizon;
-		horizon.BlockHash = pTip->GetHash();
-		horizon.Height = pTip->GetHeight();
-		horizon.OutputMmrSize = pTip->GetOutputMMRSize();
-		horizon.KernelMmrSize = pTip->GetKernelMMRSize();
-		horizon.OutputRoot = pTip->GetOutputRoot();
-		horizon.RangeProofRoot = pTip->GetRangeProofRoot();
-		horizon.KernelRoot = pTip->GetKernelRoot();
+		horizon.BlockHash = pHorizon->GetHash();
+		horizon.Height = pHorizon->GetHeight();
+		horizon.OutputMmrSize = pHorizon->GetOutputMMRSize();
+		horizon.KernelMmrSize = pHorizon->GetKernelMMRSize();
+		horizon.OutputRoot = pHorizon->GetOutputRoot();
+		horizon.RangeProofRoot = pHorizon->GetRangeProofRoot();
+		horizon.KernelRoot = pHorizon->GetKernelRoot();
+		m_pibdHorizonHash = horizon.BlockHash;
 
 		if (!m_pPibdSync->Start(horizon, now)) {
 			return EPibdResult::NotAttempted;
 		}
 
-		LOG_INFO_F("Starting PIBD state sync at height {}.", horizon.Height);
+		LOG_INFO_F(
+			"Starting PIBD state sync at height {} (header hash {}), peer {}.",
+			horizon.Height,
+			horizon.BlockHash,
+			FindPibdPeer());
 		syncStatus.UpdateStatus(ESyncStatus::SYNCING_TXHASHSET);
 		SendPibdRequests(now);
 		return EPibdResult::InProgress;
@@ -210,9 +230,8 @@ StateSyncer::EPibdResult StateSyncer::TryPibd(SyncStatus& syncStatus)
 		return EPibdResult::NotAttempted;
 	}
 
-	const BlockHeaderPtr pTip = m_pBlockChain->GetTipBlockHeader(EChainType::CANDIDATE);
 	const EBlockChainStatus chainStatus =
-		m_pBlockChain->ProcessExistingTxHashSet(pTip->GetHash(), syncStatus);
+		m_pBlockChain->ProcessExistingTxHashSet(m_pibdHorizonHash, syncStatus);
 	m_pPibdSync->Reset();
 
 	if (chainStatus == EBlockChainStatus::SUCCESS) {
@@ -248,7 +267,12 @@ void StateSyncer::SendPibdRequests(const std::chrono::steady_clock::time_point n
 		return;
 	}
 
-	for (const IMessagePtr& pMessage : m_pPibdSync->TakeRequests(now)) {
+	const std::vector<IMessagePtr> requests = m_pPibdSync->TakeRequests(now);
+	if (!requests.empty()) {
+		LOG_DEBUG_F("Sending {} PIBD request(s) to {}", requests.size(), pPeer);
+	}
+
+	for (const IMessagePtr& pMessage : requests) {
 		pConnectionManager->SendMessageToPeer(*pMessage, pPeer);
 	}
 }

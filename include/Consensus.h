@@ -165,6 +165,9 @@ namespace Consensus
 	// easier to reason about.
 	static constexpr uint32_t STATE_SYNC_THRESHOLD = 2 * DAY_HEIGHT;
 
+	// PIBD horizon interval, from grin global::TXHASHSET_ARCHIVE_INTERVAL (12 * 60).
+	static constexpr uint32_t TXHASHSET_ARCHIVE_INTERVAL = 12 * 60;
+
 	// Time window in blocks to calculate block time median
 	static const uint64_t MEDIAN_TIME_WINDOW = 11;
 

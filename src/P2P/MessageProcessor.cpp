@@ -100,12 +100,13 @@ void MessageProcessor::ProcessMessage(const std::shared_ptr<Connection>& pConnec
 			e.what()
 		);
 	}
-	catch (const DeserializationException&)
+	catch (const DeserializationException& e)
 	{
 		LOG_ERROR_F(
-			"Deserialization exception while processing {} from {}",
+			"Deserialization exception while processing {} from {}: {}",
 			MessageTypes::ToString(messageType),
-			pConnection
+			pConnection,
+			e.what()
 		);
 		pConnection->Disconnect();
 	}

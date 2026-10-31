@@ -16,7 +16,8 @@ class BitmapBlock : public Traits::ISerializable
 {
 public:
 	static constexpr size_t CHUNK_BITS = 1024;
-	static constexpr size_t MAX_CHUNKS = 16;
+	// A block covers 2^16 bits, i.e. 64 chunks of 1024 bits (grin BitmapBlock::NBITS).
+	static constexpr size_t MAX_CHUNKS = 64;
 	static constexpr size_t MAX_BITS = MAX_CHUNKS * CHUNK_BITS;
 
 	enum class ESerializationMode : uint8_t

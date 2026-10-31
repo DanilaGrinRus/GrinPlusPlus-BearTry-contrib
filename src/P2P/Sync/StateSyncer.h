@@ -56,4 +56,5 @@ private:
 	IBlockChain::Ptr m_pBlockChain;
 	std::shared_ptr<PibdSync> m_pPibdSync;
 	std::chrono::system_clock::time_point m_pibdDisabledUntil = std::chrono::system_clock::time_point::min();
+	Hash m_pibdHorizonHash;
 };

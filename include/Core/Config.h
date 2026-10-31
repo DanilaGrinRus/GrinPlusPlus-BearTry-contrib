@@ -43,6 +43,8 @@ public:
 	void SetMaxPeers(int max_peers) noexcept;
 
 	uint16_t GetP2PPort() const noexcept;
+	// Port used when connecting to peers (may differ from the listening port).
+	uint16_t GetPeerPort() const noexcept;
 	const std::vector<uint8_t>& GetMagicBytes() const noexcept;
 
 	uint8_t GetMinSyncPeers() const noexcept;
