@@ -1,10 +1,19 @@
 # PEER_BAN_AND_STALL — ложные баны пиров и зависание block sync
 
-Статус: **зафиксировано, код не менялся на 13:45** (по указанию — только
-документация). Запрос на исправление — `REQ_G38_FIX.md`; строка `G-38` — в
-`GAP_MATRIX.md` (OPEN) и `TEST_RESULTS.md` (E33). Все выводы ниже опираются на
-логи живого запуска и код этого репозитория; ссылки на строки даны для дерева
-`9ee77f2`/`f73c7e8`.
+Статус: **исправлено в коде (unit PASS)**; живой критерий из `REQ_G38_FIX.md`
+(≥30 мин догона без ручной очистки PEERS-БД и без `Banning peer … fraud height`
+на таймаутах) — **IN PROGRESS** (`GAP_MATRIX` G-38, `TEST_RESULTS` E36).
+
+Что изменено после этой записи: политика в `src/P2P/Sync/BlockSyncPolicy.h`
+(потолок `min(candidate tip, network, per-connection height)`, retry 6 с/1 с +
+backoff, cooldown 60 с вместо вечного `m_slowPeers`, `FraudHeight` только по
+правилу Rust), `BlockSyncer` больше не банит за таймаут, `HeaderSyncer` — только
+по правилу `header_sync.rs:135-141`, `Seeder` логирует причину и делает backoff,
+watchdog пишет `WAITING_FOR_PEERS`, счётчики добавлены в `/v1/status`.
+Проверка: `Test_BlockSyncPolicy`, набор 146/1645, живой прогон `pp-g38`.
+
+Ниже — исходное описание инцидента (разбор сохранён; выводы §3–§6 учтены при
+исправлении). Ссылки на строки даны для дерева `9ee77f2`/`f73c7e8`.
 
 ## 1. Что произошло
 
