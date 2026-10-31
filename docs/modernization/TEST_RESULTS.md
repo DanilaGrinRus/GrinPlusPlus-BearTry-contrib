@@ -858,6 +858,52 @@ PIBD-горизонта** тем же бинарём идёт на свежем 
 
 Артефакты: `GrinNode.exe` `35970767…`, `Tests.exe` `A644DE5E…`.
 
+## E39. БД: рассинхронизация header MMR / chain-файлов после аварии — починка PASS (unit + live injection); атомарная запись — OPEN
+
+**Инцидент.** Узел `pp-g38` (свежий HOME, синхронизация заголовков) аварийно
+завершился на ~3.29 млн заголовков; перезапуск того же HOME падал через ~10 с
+с `0xC0000005` (access violation), без stderr и события Windows. Удаление
+каталога `NODE` возвращало работоспособность → повреждено сохранённое
+состояние, не бинарь.
+
+**Причина.** `NODE/CHAIN/header_mmr.bin` (`HashFile`) и
+`candidate/confirmed.chain` (`DataFile<32>`) — три независимых append-only
+файла, коммитятся раздельно (`HeaderMMR::Commit`, `Chain::Commit`,
+`ChainStore::Commit`). Kill между коммитами оставляет их на разных высотах;
+`BlockChain::Create` не сверял `leaf count` MMR с высотой chain (открытый
+пункт G-23), и чтение заголовка за пределами MMR давало AV. Подробный разбор,
+формат файлов и требование к записи — `DB_CONSISTENCY.md`.
+
+**Сделано (mitigation).**
+* `IHeaderMMR::GetLeafCount()`; чистая `ChainConsistency::ComputeChainRepair`
+  (приоритет — chain-индекс: лишние листья MMR отбрасываются; если chain
+  впереди MMR — обе цепочки откатываются до MMR; confirmed не может быть
+  впереди candidate).
+* `BlockChain::Create` применяет план **до** `ChainState::Create`, пишет
+  `WARNING "Chain stores inconsistent … repairing to N entries"` и
+  `"Chain stores repaired."`.
+* NULL-guard в `Ping`-обработчике: нет confirmed tip → WARNING, без Pango и без
+  падения.
+* `Test_ChainConsistency`: 4 кейса; набор **150 кейсов / 1661 проверка PASS**.
+
+**Живая проверка починки (инъекция повреждений в копии HOME):**
+* MMR впереди: `leaves 830465, candidate 829965` → `repairing to 829965`,
+  `Chain stores repaired.`, процесс жив;
+* chain впереди: `leaves 830215, candidate 830465` → `repairing to 830215`,
+  процесс жив, старт без AV.
+Оба случая — с бинарём `25B8A7BE…`.
+
+**Что ещё нужно (в документ и в работу после основной):** сделать запись
+краш-согласованной — единый checkpoint (`mmr_leaves`, высоты, CRC) с
+temp+rename/RocksDB-батчем, порядок fsync, инвариант на каждом коммите,
+crash-инъекции, копия повреждённых файлов в `NODE/recovery-*`, счётчик
+`db_repaired` в `/v1/status`. Это **G-48 OPEN**; текущая починка лишь
+восстанавливает согласованность при старте (и может откатить часть уже
+скачанных заголовков).
+
+Артефакты: `GrinNode.exe` `25B8A7BE…`, `Tests.exe` `42B21046…`; набор
+**150 кейсов / 1661 проверка PASS**.
+
 ---
 
 ## Сводка
@@ -869,7 +915,7 @@ PIBD-горизонта** тем же бинарём идёт на свежем 
 | Проводной формат capabilities/ID/лимитов | PASS (compile-check) |
 | Сборка зависимостей (offline, static CRT) | PASS |
 | Сборка `GrinNode.exe` + `Tests.exe` (`/W4 /WX`) | PASS |
-| Полный набор тестов (146 / 1645) | PASS |
+| Полный набор тестов (150 / 1661) | PASS |
 | PIBD проводной слой (модели + сообщения 21–28) | PASS (unit) |
 | PIBD верификация сегментов (`Root`/`Validate`/proof, bitmap→chunk) | PASS (unit) |
 | PIBD генерация сегментов и обратная сборка дерева | PASS (unit) |
@@ -892,6 +938,8 @@ PIBD-горизонта** тем же бинарём идёт на свежем 
 | Валидация активированного TxHashSet (kernel history/sums/rangeproofs) | PASS (E33) |
 | Догон блоков после активации | PASS (исторически, с обходом G-38): `FULLY_SYNCED` на 3316561 (E34) |
 | G-38: ложные баны и залипание block sync | PASS (unit + 32-мин живое окно без fraud-банов, `FULLY_SYNCED`; полный догон с горизонта — отдельно, G-43) (E37) |
+| БД: починка рассинхронизации MMR/chain при старте | PASS (unit + live-инъекция в обе стороны) (E39) |
+| БД: атомарное формирование (checkpoint записи) | OPEN (G-48; требование в `DB_CONSISTENCY.md` §4) |
 | PIBD resume (journal) | PASS (unit); live replay PASS (0 повторных bitmap-запросов), полное завершение NOT RUN (G-43) |
 | Сохранение состояния между рестартами | PASS (E34: FULLY_SYNCED без нового PIBD) |
 | PIHD | Не входит в v5.5.2 (enum до 28); в ветке `staging` реализовано целиком (PR #3879/#3882), для совместимости с v5.5.2 не требуется — см. `PIHD_UPSTREAM.md` |
