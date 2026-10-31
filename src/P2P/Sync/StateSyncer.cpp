@@ -120,7 +120,12 @@ bool StateSyncer::RequestState(const SyncStatus& syncStatus)
 		}
 
 		const uint64_t headerHeight = syncStatus.GetHeaderHeight();
-		const uint64_t requestedHeight = headerHeight - Consensus::STATE_SYNC_THRESHOLD;
+		uint64_t requestedHeight = headerHeight > Consensus::STATE_SYNC_THRESHOLD
+			? headerHeight - Consensus::STATE_SYNC_THRESHOLD
+			: 0;
+		// The archive only exists at a multiple of TXHASHSET_ARCHIVE_INTERVAL
+		// (same rule as the PIBD horizon and grin txhashset_archive_header).
+		requestedHeight -= requestedHeight % Consensus::TXHASHSET_ARCHIVE_INTERVAL;
 		Hash hash = m_pBlockChain->GetBlockHeaderByHeight(requestedHeight, EChainType::CANDIDATE)->GetHash();
 
 		const TxHashSetRequestMessage txHashSetRequestMessage(std::move(hash), requestedHeight);

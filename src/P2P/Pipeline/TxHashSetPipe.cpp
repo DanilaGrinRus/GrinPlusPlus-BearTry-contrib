@@ -198,9 +198,23 @@ void TxHashSetPipe::Thread_SendTxHashSet(
 	try {
 		zipFilePath = pBlockChain->SnapshotTxHashSet(pHeader);
 	}
-	catch (std::exception&) {
+	catch (std::exception& e) {
+		LOG_ERROR_F(
+			"Snapshot TxHashSet for height {} failed: {}",
+			pHeader->GetHeight(),
+			e.what());
 		return;
 	}
+	catch (...) {
+		LOG_ERROR_F("Snapshot TxHashSet for height {} failed: unknown error", pHeader->GetHeight());
+		return;
+	}
+
+	LOG_INFO_F(
+		"Snapshot TxHashSet for height {} is {} bytes ({})",
+		pHeader->GetHeight(),
+		FileUtil::GetFileSize(zipFilePath),
+		zipFilePath.string());
 
 	// Hack until I can determine why zips aren't deleted.
 	FileRemover remover(zipFilePath);
