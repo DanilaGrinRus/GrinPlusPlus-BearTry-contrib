@@ -1155,7 +1155,7 @@ Fresh DB (version 0) не бэкапится: мигрировать нечег�
   (LOCK исключён); при экзотических блокировках возможен отказ — в этом
   случае узел не мигрирует, а сообщает об ошибке.
 
-Артефакты: `GrinNode.exe` `FINAL_GRIN_HASH…`, `Tests.exe` `FINAL_TESTS_HASH…`.
+Артефакты: `GrinNode.exe` `ADBB9D92…`, `Tests.exe` `8E0F4F63…`.
 
 ---
 
