@@ -1034,6 +1034,40 @@ invalid heights), `ChainConsistency::Checkpoint*` (усечение stores вп�
 
 Артефакты: `GrinNode.exe` `BF7F3F9E…`, `Tests.exe` `09D1C6C3…`.
 
+## E44. G-16 лимит TxHashSet, G-23 структурная проверка MMR, recovery-копии и `db_repaired`
+
+**Сделано.**
+* **G-16**: `TxHashSetLimits::MAX_ZIPPED_SIZE = 8 GiB`; `TxHashSetPipe` до создания
+  файла и записи отвергает `zipped_size == 0` или `> 8 GiB`, ставит
+  `TXHASHSET_SYNC_FAILED` и банит пира `BadTxHashSet` (unit `TxHashSetLimits`).
+* **G-23 (структурная часть)**: `MmrStructure::IsValidNodeCount` проверяет
+  формулу `S = 2L − popcount(L)`; `BlockChain::Create` до вывода высот усекает
+  невалидный MMR до ближайшего корректного размера, с защитой «не усекать, если
+  leaves не выводится». Добавлены `GetNodeCount()`/`GetLeafCount()`.
+* **Recovery-копии и счётчик**: `DbRecovery::CopyForRecovery` сохраняет
+  `header_mmr.bin/candidate.chain/confirmed.chain/chain.checkpoint` в
+  `NODE/recovery-<ts>` перед любой починкой; `/v1/status` отдаёт `db_repaired`
+  и `db_last_repair`. Копирование переписано с `std::filesystem::copy_file`
+  на потоковое: `CopyFileW` не смог прочитать открытый HashFile и оставил
+  целевую копию 0 байт (поймано живой инъекцией).
+
+**Инцидент (найден и исправлен в этом же раунде).** Первая версия бинарного
+поиска в `MmrStructure` имела верхнюю границу `(nodes+1)/2+1`, которая для
+больших MMR меньше истинного `L` (≈ `(nodes+popcount)/2`). Здоровый MMR на
+6 634 093 узла был признан невалидным, «починен» до 0 листьев, после чего
+цепочки усечены до genesis — потеряны заголовки в тестовом HOME (не пользовательские
+данные). Исправлено: `high = nodes`; регрессионный тест для 3.3M листьев;
+guard `validLeaves > 0`. Узлы перesинхронизируют заголовки, `db_repaired`
+после рестарта с корректным кодом = 0.
+
+**Тесты:** `MmrStructure` (4 кейса, включая round-trip 3 317 054 листьев),
+`TxHashSetLimits`, `DbRecovery`; набор **165 кейсов / 1764 проверки PASS**.
+
+**Осталось по G-23:** проверка хешей/корней (опция `--validate-on-load`) —
+структурная проверка закрыта, побайтовая нет.
+
+Артефакты: `GrinNode.exe` `76BAFF91…`, `Tests.exe` `D07B6608…`.
+
 ---
 
 ## Сводка

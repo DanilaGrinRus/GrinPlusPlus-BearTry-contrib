@@ -21,6 +21,11 @@ public:
 		return Index::At(m_pLockedHashFile->Read()->GetSize()).GetLeafIndex();
 	}
 
+	uint64_t GetNodeCount() const final
+	{
+		return m_pLockedHashFile->Read()->GetSize();
+	}
+
 	void Commit() final;
 	void Rollback() noexcept final;
 

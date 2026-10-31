@@ -1,4 +1,5 @@
 #include "ServerAPI.h"
+#include <BlockChain/DbRecovery.h>
 #include "../NodeContext.h"
 
 #include <Net/Util/HTTPUtil.h>
@@ -69,6 +70,8 @@ int ServerAPI::GetStatus_Handler(struct mg_connection* conn, void* pNodeContext)
 	SyncStatusConstPtr pSyncStatus = pServer->m_pP2PServer->GetSyncStatus();
 	statusNode["sync_status"] = GetStatusString(*pSyncStatus);
 	statusNode["waiting_reason"] = pSyncStatus->GetWaitingReason();
+	statusNode["db_repaired"] = Json::UInt64(DbRecovery::GetRepairCount());
+	statusNode["db_last_repair"] = Json::Int64(DbRecovery::GetLastRepairTime());
 
 	Json::Value blockSyncNode;
 	blockSyncNode["requests"] = Json::UInt64(pSyncStatus->GetBlockRequests());

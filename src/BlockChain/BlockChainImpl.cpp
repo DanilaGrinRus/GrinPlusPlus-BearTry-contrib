@@ -10,6 +10,8 @@
 #include "CoinView.h"
 #include "ChainConsistency.h"
 #include "DbCheckpoint.h"
+#include <BlockChain/DbRecovery.h>
+#include <PMMR/Common/MmrStructure.h>
 
 #include <Consensus.h>
 #include <GrinVersion.h>
@@ -51,8 +53,37 @@ std::shared_ptr<BlockChain> BlockChain::Create(
 	// header_mmr.bin and the chain files are committed independently. A crash
 	// between the commits leaves them at different heights; loading such a state
 	// used to read a header beyond the MMR. Repair the stores before anything
-	// else opens them (GAP G-23).
+	// else opens them (GAP G-23/G-48).
 	{
+		// A raw node count that cannot describe any MMR means the append-only
+		// file was truncated mid-write. Cut it back to the largest valid size
+		// before any height is derived from it.
+		const uint64_t rawMmrNodes = pHeaderMMR->Read()->GetNodeCount();
+		if (!MmrStructure::IsValidNodeCount(rawMmrNodes)) {
+			const uint64_t validNodes = MmrStructure::LargestValidNodeCount(rawMmrNodes);
+			const uint64_t validLeaves = MmrStructure::LeavesForNodes(validNodes);
+			LOG_WARNING_F(
+				"Header MMR has {} nodes, which is not a valid MMR size; repairing to {} nodes ({} leaves).",
+				rawMmrNodes,
+				validNodes,
+				validLeaves);
+
+			DbRecovery::CopyForRecovery(
+				config.GetChainPath(),
+				{ "header_mmr.bin", "candidate.chain", "confirmed.chain", "chain.checkpoint" });
+			DbRecovery::RecordRepair();
+
+			// Never truncate when the inverse mapping failed: a wrong structural
+			// verdict must not destroy a healthy chain (regression caught live).
+			if (validNodes > 0 && validLeaves > 0) {
+				auto pMmrWriter = pHeaderMMR->Write();
+				pMmrWriter->Rewind(validLeaves);
+				pMmrWriter->Commit();
+			} else if (rawMmrNodes > 0) {
+				LOG_ERROR("Refusing to truncate the header MMR: could not derive a valid leaf count.");
+			}
+		}
+
 		const uint64_t headerMmrLeaves = pHeaderMMR->Read()->GetLeafCount();
 		const uint64_t candidateEntries =
 			pChainStore->Read()->GetCandidateChain()->GetHeight() + 1;
@@ -75,6 +106,11 @@ std::shared_ptr<BlockChain> BlockChain::Create(
 				checkpoint.ConfirmedEntries)
 			: ComputeChainRepair(headerMmrLeaves, candidateEntries, confirmedEntries);
 		if (!repair.IsConsistent()) {
+			DbRecovery::CopyForRecovery(
+				config.GetChainPath(),
+				{ "header_mmr.bin", "candidate.chain", "confirmed.chain", "chain.checkpoint" });
+			DbRecovery::RecordRepair();
+
 			LOG_WARNING_F(
 				"Chain stores inconsistent (header_mmr leaves {}, candidate {}, confirmed {}) after an unclean shutdown; repairing to mmr {}, candidate {}, confirmed {} entries{}.",
 				headerMmrLeaves,

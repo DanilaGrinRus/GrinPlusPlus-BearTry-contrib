@@ -28,6 +28,9 @@ public:
 	// Number of headers committed to the MMR; used to detect a crash between the
 	// MMR commit and the chain-index commit.
 	virtual uint64_t GetLeafCount() const = 0;
+	// Raw number of 32-byte nodes in the on-disk MMR file; used for structural
+	// validation before any heights are trusted (G-23).
+	virtual uint64_t GetNodeCount() const = 0;
 };
 
 namespace HeaderMMRAPI

@@ -1,4 +1,5 @@
 #include "TxHashSetPipe.h"
+#include <P2P/Pipeline/TxHashSetLimits.h>
 #include "../Connection.h"
 #include "../ConnectionManager.h"
 #include "../Messages/TxHashSetArchiveMessage.h"
@@ -73,6 +74,14 @@ void TxHashSetPipe::Thread_ProcessTxHashSet(TxHashSetPipe& pipeline, Connection:
 		HASH::ShortHash(blockHash)
 	);
 	const fs::path txHashSetPath = fs::temp_directory_path() / fileName;
+
+	if (!TxHashSetLimits::IsPlausibleSize(zipped_size)) {
+		LOG_ERROR_F("Rejecting TxHashSet with implausible size {}.", zipped_size);
+		pipeline.m_processing = false;
+		pipeline.m_pSyncStatus->UpdateStatus(ESyncStatus::TXHASHSET_SYNC_FAILED);
+		pConnection->BanPeer(EBanReason::BadTxHashSet);
+		return;
+	}
 
 	try
 	{
