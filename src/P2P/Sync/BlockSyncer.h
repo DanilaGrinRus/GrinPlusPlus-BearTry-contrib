@@ -54,6 +54,7 @@ private:
 		uint64_t BLOCK_HEIGHT = 0;
 		std::chrono::time_point<std::chrono::system_clock> TIMEOUT;
 		bool RETRIED = false;
+		bool TIMEOUT_COUNTED = false;
 		uint32_t ATTEMPTS = 0;
 	};
 	std::unordered_map<uint64_t, RequestedBlock> m_requestedBlocks;

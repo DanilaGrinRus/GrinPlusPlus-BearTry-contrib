@@ -83,8 +83,12 @@ bool BlockSyncer::IsBlockSyncDue(const SyncStatus& syncStatus)
 				continue;
 			}
 
-			syncStatus.IncrementBlockTimeouts();
-			LOG_WARNING_F("Block {} request timed out.", needed.first);
+			// Count and log a timeout once per request, not on every sync tick.
+			if (!requestedBlock->second.TIMEOUT_COUNTED) {
+				requestedBlock->second.TIMEOUT_COUNTED = true;
+				syncStatus.IncrementBlockTimeouts();
+				LOG_WARNING_F("Block {} request timed out.", needed.first);
+			}
 			return true;
 		}
 	}
@@ -165,12 +169,14 @@ bool BlockSyncer::RequestBlocks(const SyncStatus& syncStatus)
 				continue;
 			}
 
-			syncStatus.IncrementBlockTimeouts();
+			if (!requested->second.TIMEOUT_COUNTED) {
+				syncStatus.IncrementBlockTimeouts();
+				LOG_WARNING_F(
+					"Block {} request timed out (attempt {}), reassigning without ban.",
+					height,
+					requested->second.ATTEMPTS + 1);
+			}
 			m_slowPeers.MarkSlow(oldKey, steadyNow);
-			LOG_WARNING_F(
-				"Block {} request timed out (attempt {}), reassigning without ban.",
-				height,
-				requested->second.ATTEMPTS + 1);
 
 			bool reassigned = false;
 			for (size_t attempt = 0; attempt < connections.size(); attempt++) {
@@ -194,6 +200,7 @@ bool BlockSyncer::RequestBlocks(const SyncStatus& syncStatus)
 							m_progressSinceLastRequest,
 							requested->second.ATTEMPTS + 1);
 					updated.RETRIED = true;
+					updated.TIMEOUT_COUNTED = false;
 					updated.ATTEMPTS = requested->second.ATTEMPTS + 1;
 					m_requestedBlocks[height] = std::move(updated);
 					syncStatus.IncrementBlockReassignments();
@@ -244,6 +251,7 @@ bool BlockSyncer::RequestBlocks(const SyncStatus& syncStatus)
 		blockRequested.TIMEOUT = systemNow +
 			BlockSyncPolicy::RetryDelay(m_progressSinceLastRequest);
 		blockRequested.RETRIED = false;
+		blockRequested.TIMEOUT_COUNTED = false;
 		blockRequested.ATTEMPTS = 0;
 
 		m_requestedBlocks[block.first] = std::move(blockRequested);
