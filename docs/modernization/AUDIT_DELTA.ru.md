@@ -334,6 +334,21 @@
 - Доказательство: E44, unit `TxHashSetLimits`.
 - Риск, откат: легитимный архив >8 GiB был бы отвергнут (архивы mainnet заметно меньше); константа в одном заголовке; откат убирает проверку.
 
+### G-21 — Атомарная активация legacy-txhashset
+- Статус: DONE
+- Коммиты: `2122e32`
+- Файлы: `src/PMMR/Zip/TxHashSetZip.*`, `include/PMMR/TxHashSetManager.h`, `src/PMMR/TxHashSetManager.cpp`, `src/BlockChain/Processors/TxHashSetProcessor.cpp`, `include/PMMR/TxHashSetStaging.h`, `tests/src/PMMR/Test_TxHashSetStaging.cpp`
+- Ссылка на Rust: `chain/src/txhashset/txhashset.rs` (установка состояния), `servers/src/grin/sync/state_sync.rs`
+- Было: `TxHashSetZip::Extract` удалял и перезаписывал живой `NODE/TXHASHSET` до валидации; неудачный или прерванный legacy-sync оставлял частичное состояние.
+- Стало: zip распаковывается в `TXHASHSET.staging` и валидируется там, живое состояние не трогается; при ошибке staging удаляется и живое состояние переоткрывается; при успехе — `live → backup` / `staging → live` под `txhashset_activation.pending`, а `TxHashSetStaging::Recover` при старте восстанавливает backup или удаляет устаревший staging.
+- Дифф: `src/BlockChain/Processors/TxHashSetProcessor.cpp`, коммит `2122e32`
+  ```diff
+  -        ITxHashSetPtr pTxHashSet = TxHashSetManager::LoadFromZip(m_config, path, pHeader);
+  +        const fs::path stagingPath = TxHashSetStaging::Staging(livePath);
+  +        ITxHashSetPtr pStaged = TxHashSetManager::LoadFromZip(m_config, path, pHeader, stagingPath);
+  ```
+- Доказательство: E49, `Test_TxHashSetStaging` (3 кейса).
+- Риск, откат: ошибка rename восстанавливает backup; падение между переименованиями восстанавливается по маркеру; откат убирает staging-путь.
 ### G-22 — Бэкап БД перед миграцией
 - Статус: DONE
 - Коммиты: `9c6bb34`

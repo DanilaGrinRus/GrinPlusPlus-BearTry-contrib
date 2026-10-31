@@ -331,6 +331,21 @@ documentation-only commits are tracked in the evidence map, not as cards.
 - Evidence: E44, unit `TxHashSetLimits`.
 - Risk, rollback: a legitimate archive above 8 GiB would be rejected (mainnet archives are far below); the constant is in one header; rollback removes the check.
 
+### G-21 — Atomic legacy txhashset activation
+- Status: DONE
+- Commits: `2122e32`
+- Files: `src/PMMR/Zip/TxHashSetZip.*`, `include/PMMR/TxHashSetManager.h`, `src/PMMR/TxHashSetManager.cpp`, `src/BlockChain/Processors/TxHashSetProcessor.cpp`, `include/PMMR/TxHashSetStaging.h`, `tests/src/PMMR/Test_TxHashSetStaging.cpp`
+- Rust reference: `chain/src/txhashset/txhashset.rs` (state installation), `servers/src/grin/sync/state_sync.rs`
+- Before: `TxHashSetZip::Extract` removed and rewrote the live `NODE/TXHASHSET` before validation; a failed or interrupted legacy sync left a partial state.
+- After: the zip is extracted to `TXHASHSET.staging` and validated there while the live state is untouched; failure removes staging and reopens the live state; success performs `live → backup` / `staging → live` under `txhashset_activation.pending`, and startup `TxHashSetStaging::Recover` restores the backup or drops stale staging.
+- Diff: `src/BlockChain/Processors/TxHashSetProcessor.cpp`, commit `2122e32`
+  ```diff
+  -        ITxHashSetPtr pTxHashSet = TxHashSetManager::LoadFromZip(m_config, path, pHeader);
+  +        const fs::path stagingPath = TxHashSetStaging::Staging(livePath);
+  +        ITxHashSetPtr pStaged = TxHashSetManager::LoadFromZip(m_config, path, pHeader, stagingPath);
+  ```
+- Evidence: E49, `Test_TxHashSetStaging` (3 cases).
+- Risk, rollback: a rename failure restores the backup; a crash between renames is recovered by the marker; rollback removes the staging path and returns to direct extraction.
 ### G-22 — Database backup before migration
 - Status: DONE
 - Commits: `9c6bb34`
