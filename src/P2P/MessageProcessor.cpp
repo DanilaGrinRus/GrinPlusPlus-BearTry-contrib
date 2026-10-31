@@ -90,6 +90,9 @@ void MessageProcessor::ProcessMessage(const std::shared_ptr<Connection>& pConnec
 
 		// TODO: Send ban reason
 		pConnection->BanPeer(e.GetReason());
+		if (m_pSyncStatus != nullptr) {
+			m_pSyncStatus->IncrementBansInvalidData();
+		}
 	}
 	catch (const BlockChainException& e)
 	{

@@ -6,6 +6,7 @@
 #include <BlockChain/BlockChain.h>
 #include <P2P/SyncStatus.h>
 #include <Common/Logger.h>
+#include <Common/Util/StringUtil.h>
 #include <Common/Util/ThreadUtil.h>
 #include <Core/Global.h>
 
@@ -94,6 +95,18 @@ void Syncer::Thread_Sync(Syncer& syncer)
                 pStatus->UpdateStatus(ESyncStatus::NOT_SYNCING);
             } else if (pStatus->GetStatus() != ESyncStatus::PROCESSING_TXHASHSET) {
                 pStatus->UpdateStatus(ESyncStatus::WAITING_FOR_PEERS);
+
+                const auto nowTp = std::chrono::steady_clock::now();
+                static thread_local auto lastWaitLog = nowTp - std::chrono::hours(1);
+                const std::string reason = StringUtil::Format(
+                    "waiting for peers: {} active connection(s), {} required",
+                    pStatus->GetNumActiveConnections(),
+                    Global::GetConfig().GetMinSyncPeers());
+                pStatus->SetWaitingReason(reason);
+                if (lastWaitLog + std::chrono::seconds(30) < nowTp) {
+                    lastWaitLog = nowTp;
+                    LOG_INFO_F("{}", reason);
+                }
             }
         }
         catch (std::exception& e) {

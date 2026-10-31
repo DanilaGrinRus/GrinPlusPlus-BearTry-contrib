@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <memory>
 #include <atomic>
+#include <mutex>
+#include <string>
 
 enum class ESyncStatus
 {
@@ -46,9 +48,15 @@ public:
 		m_lastBlockTime(other.m_lastBlockTime.load()),
 		m_txHashSetDownloaded(other.m_txHashSetDownloaded.load()),
 		m_txHashSetTotalSize(other.m_txHashSetTotalSize.load()),
-		m_txHashSetProcessingStatus(other.m_txHashSetProcessingStatus.load())
+		m_txHashSetProcessingStatus(other.m_txHashSetProcessingStatus.load()),
+		m_blockRequests(other.m_blockRequests.load()),
+		m_blockTimeouts(other.m_blockTimeouts.load()),
+		m_blockReassignments(other.m_blockReassignments.load()),
+		m_bansFraudHeight(other.m_bansFraudHeight.load()),
+		m_bansInvalidData(other.m_bansInvalidData.load())
 	{
-
+		std::lock_guard<std::mutex> lock(other.m_reasonMutex);
+		m_waitingReason = other.m_waitingReason;
 	}
 
 	bool IsSyncing() const { return m_syncStatus != ESyncStatus::NOT_SYNCING; }
@@ -64,6 +72,31 @@ public:
 	uint64_t GetDownloaded() const { return m_txHashSetDownloaded; }
 	uint64_t GetDownloadSize() const { return m_txHashSetTotalSize; }
 	uint8_t GetProcessingStatus() const { return m_txHashSetProcessingStatus; }
+
+	// Block download observability (REQ_G38_FIX.md §3.8).
+	uint64_t GetBlockRequests() const { return m_blockRequests; }
+	uint64_t GetBlockTimeouts() const { return m_blockTimeouts; }
+	uint64_t GetBlockReassignments() const { return m_blockReassignments; }
+	uint64_t GetBansFraudHeight() const { return m_bansFraudHeight; }
+	uint64_t GetBansInvalidData() const { return m_bansInvalidData; }
+	void IncrementBlockRequests(const uint64_t count = 1) const { m_blockRequests += count; }
+	void IncrementBlockTimeouts(const uint64_t count = 1) const { m_blockTimeouts += count; }
+	void IncrementBlockReassignments(const uint64_t count = 1) const { m_blockReassignments += count; }
+	void IncrementBansFraudHeight(const uint64_t count = 1) const { m_bansFraudHeight += count; }
+	void IncrementBansInvalidData(const uint64_t count = 1) const { m_bansInvalidData += count; }
+
+	// Human-readable reason for the WAITING_FOR_PEERS state.
+	void SetWaitingReason(const std::string& reason) const
+	{
+		std::lock_guard<std::mutex> lock(m_reasonMutex);
+		m_waitingReason = reason;
+	}
+
+	std::string GetWaitingReason() const
+	{
+		std::lock_guard<std::mutex> lock(m_reasonMutex);
+		return m_waitingReason;
+	}
 
 	void UpdateStatus(const ESyncStatus syncStatus) { m_syncStatus = syncStatus; }
 
@@ -104,6 +137,14 @@ private:
 	std::atomic<uint64_t> m_txHashSetDownloaded;
 	std::atomic<uint64_t> m_txHashSetTotalSize;
 	std::atomic<uint8_t> m_txHashSetProcessingStatus;
+
+	mutable std::atomic<uint64_t> m_blockRequests;
+	mutable std::atomic<uint64_t> m_blockTimeouts;
+	mutable std::atomic<uint64_t> m_blockReassignments;
+	mutable std::atomic<uint64_t> m_bansFraudHeight;
+	mutable std::atomic<uint64_t> m_bansInvalidData;
+	mutable std::mutex m_reasonMutex;
+	mutable std::string m_waitingReason;
 };
 
 typedef std::shared_ptr<SyncStatus> SyncStatusPtr;

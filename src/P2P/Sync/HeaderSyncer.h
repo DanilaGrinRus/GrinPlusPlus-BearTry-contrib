@@ -1,5 +1,6 @@
 #pragma once
 
+#include "BlockSyncPolicy.h"
 #include "../ConnectionManager.h"
 
 #include <BlockChain/BlockChain.h>
@@ -18,6 +19,8 @@ public:
 		m_lastHeight = 0;
 		m_pPeer = nullptr;
 		m_retried = false;
+		m_lastProgress = BlockSyncPolicy::Clock::now();
+		m_lastProgressHeight = 0;
 	}
 
 	bool SyncHeaders(const SyncStatus& syncStatus, const bool startup);
@@ -33,4 +36,6 @@ private:
 	uint64_t m_lastHeight;
 	PeerPtr m_pPeer;
 	bool m_retried;
+	BlockSyncPolicy::Clock::time_point m_lastProgress;
+	uint64_t m_lastProgressHeight;
 };

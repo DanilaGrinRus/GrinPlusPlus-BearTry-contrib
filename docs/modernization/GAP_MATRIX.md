@@ -97,24 +97,32 @@
 | **G-39** | Полная живая синхронизация до типсы | `pibd.rs`, `block_sync` | Проверено на реальной testnet: PIBD → активация → валидация TxHashSet → догон блоков до `chain=header=network=3316561`, `FULLY_SYNCED` | — | живой REST-статус + логи E34 | **PASS** |
 | **G-40** | Сохранение состояния между рестартами | `chain`/`txhashset` load | После рестарта узел сразу `FULLY_SYNCED` на той же высоте/хеше, PIBD не перезапускается (state-level resume; journal-resume скачивания ещё не проверен) | — | живой лог E34 | **PASS** |
 | **G-41** | Переключатель PIBD для fallback | — | Не было способа проверить legacy-путь на живом узле | Добавлен `P2P.PIBD_ENABLED` (default true); при false StateSyncer сразу идёт в txhashset.zip | unit + живой `pp-fallback` | **DONE (код)**, live IN PROGRESS (живой прогон упирается в G-38) |
-| **G-38** | Ложные баны пиров и залипание block sync | `servers/src/grin/sync/body_sync.rs:149,191-204` (таймаут → повтор, без бана), `header_sync.rs:135-141` (`FraudHeight` только при 120 с stale и заявленном TD выше head) | `BlockSyncer` банил пира после второго таймаута (10 с + 5 с) за «fraud height», `m_slowPeers` не очищался, окно запросов не ограничивалось высотой пира; после бана двух пиров `Seeder`/`Syncer` молчали → простой до `BAN_WINDOW` (3 ч), переживающий рестарт | План и подтверждённые причины — `PEER_BAN_AND_STALL.md`; запрос на исправление — `REQ_G38_FIX.md` | live-логи 12:24–13:30 | **OPEN** |
+| **G-38** | Ложные баны пиров и залипание block sync | `servers/src/grin/sync/body_sync.rs:149,191-204`, `header_sync.rs:135-141` | Подтверждено: `BlockSyncer` банил за таймаут, `m_slowPeers` не очищался, окно запросов не ограничивалось высотой пира, seeder/sync молчали. Исправлено по `REQ_G38_FIX.md`: политика вынесена в `BlockSyncPolicy.h` (batch≤100, `min(candidate tip, network, per-connection height)`, retry 6 с/1 с + backoff, cooldown 60 с, `FraudHeight` только при 120 с stale и заявленном TD/высоте выше нашего head); `HeaderSyncer` банит только по правилу Rust; seeder логирует причину отсутствия кандидатов и делает backoff; watchdog пишет причину `WAITING_FOR_PEERS`; в `/v1/status` добавлены `waiting_reason` и счётчики (`requests/timeouts/reassignments/bans_fraud_height/bans_invalid_data`); «медленный» пир больше не банится | unit: `Test_BlockSyncPolicy` (высота/cooldown/правило фрода/счётчики); живой прогон `pp-g38` — IN PROGRESS | **DONE (unit)**, live IN PROGRESS |
+| **G-42** | Legacy state sync банит пиров за таймаут | `StateSyncer::RequestState` | При `txhashset.zip` 10–120 с без прогресса пир банится с `BadTxHashSet` (не `fraud height`), после чего остаётся без пиров; вне объёма G-38 | OPEN (следующая после основной) | — | логи 13:30 | OPEN |
+| **G-43** | PIBD: стопор пира на сегменте | `PibdScheduler`/`PibdSync` | Живой прогон resume: пир перестал отдавать `tree 2 idx 1229` → retry limit → PIBD failed → fallback; журнал replay при этом сработал (0 повторных bitmap-запросов) | OPEN: нужен backoff/ротация пиров и, желательно, докачка с другого пира | лог 13:43 `PIBD failed: segment tree 2 … exceeded the retry limit` | OPEN |
+
 
 ---
 
 ## Сводка
 
-* Открыто: G-04, G-16, G-17, G-20, G-21, G-22, G-23 (надёжность/безопасность) и
-  **G-38** — текущий блокер живых прогонов (ложные баны, залипание, молчаливое
-  восстановление); план и причины — `PEER_BAN_AND_STALL.md`, `REQ_G38_FIX.md`.
-* В работе: G-41 (live-проверка legacy-фолбэка; упирается в G-38).
-* Частично: G-09 (PIBD: живая загрузка/активация/догон PASS, не проверены живой
-  serving и живой журнальный resume), G-24 (offline sysroot; пин vcpkg не перенесён).
+* Открыто: G-04, G-16, G-17, G-20, G-21, G-22, G-23 (надёжность/безопасность),
+  G-42 (legacy `RequestState` всё ещё банит пиров за `BadTxHashSet` по таймауту —
+  вне объёма G-38), G-43 (PIBD: стопор пира на сегменте → retry limit → fallback;
+  журнальный resume при этом работает).
+* В работе: G-38 live-критерий (30 мин догона без ручной очистки PEERS-БД и без
+  fraud-банов), G-41 (live-проверка legacy-фолбэка).
+* Частично: G-09 (PIBD: живая загрузка/активация/догон PASS; журнальный resume
+  проверен живьём на воспроизведение — после рестарта 0 повторных bitmap-запросов;
+  не проверены живой serving Rust-клиентом и полное завершение resume), G-24
+  (offline sysroot; пин vcpkg не перенесён).
 * Закрыто с живой проверкой: G-25 (версия 1.2.9), G-31 (горизонт), G-32
-  (`BitmapBlock`), G-35 (порядок бит), G-36 (download+активация), G-39 (догон до
-  `FULLY_SYNCED`), G-40 (сохранение состояния между рестартами).
+  (`BitmapBlock`), G-35 (порядок бит), G-36 (download+активация), G-37 (валидация
+  состояния), G-39 (догон до `FULLY_SYNCED`), G-40 (сохранение состояния между
+  рестартами).
 * PIHD (G-27) — **N/A**: в эталоне v5.5.2 сообщений PIHD нет, бит `0x80` только
   детектируется и не рекламируется (E33).
 * Сборка и тесты проверяемы исполнением: `/W4 /WX`, актуальный прогон — последняя
-  запись `TEST_RESULTS.md` (E35: 140 кейсов / 1603 проверки PASS).
+  запись `TEST_RESULTS.md` (E36: 146 кейсов / 1645 проверок PASS).
 * Не подтверждено: живой serving, живой журнальный resume, legacy-фолбэк (G-41),
   reorg, crash/fuzz.

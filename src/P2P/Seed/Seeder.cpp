@@ -78,6 +78,8 @@ void Seeder::Thread_Seed(Seeder& seeder)
     LOG_TRACE("BEGIN");
 
     auto lastConnectTime = std::chrono::system_clock::now() - std::chrono::seconds(5);
+    auto lastNoPeerLog = std::chrono::system_clock::now() - std::chrono::seconds(60);
+    uint32_t seedBackoffSeconds = 5;
 
     const size_t minimumConnections = Global::GetConfig().GetMinPeers();
     while (!seeder.m_terminate && Global::IsRunning()) {
@@ -86,12 +88,26 @@ void Seeder::Thread_Seed(Seeder& seeder)
 
             auto now = std::chrono::system_clock::now();
             const size_t numOutbound = seeder.m_connectionManager.GetNumOutbound();
-            if (numOutbound < minimumConnections && lastConnectTime + std::chrono::seconds(5) < now) {
+            if (numOutbound < minimumConnections &&
+                lastConnectTime + std::chrono::seconds(seedBackoffSeconds) < now) {
                 lastConnectTime = now;
 
                 const size_t connectionsToAdd = (std::min)((size_t)15, (minimumConnections - numOutbound));
+                bool attempted = false;
                 for (size_t i = 0; i < connectionsToAdd; i++) {
-                    seeder.SeedNewConnection();
+                    attempted = seeder.SeedNewConnection() || attempted;
+                }
+
+                if (attempted) {
+                    seedBackoffSeconds = 5;
+                } else {
+                    seedBackoffSeconds = (std::min)(seedBackoffSeconds * 2, (uint32_t)60);
+                    if (lastNoPeerLog + std::chrono::seconds(60) < now) {
+                        lastNoPeerLog = now;
+                        LOG_WARNING_F(
+                            "No peer candidates: {}",
+                            seeder.m_peerManager.Read()->GetNoPeerReason(Capabilities::FAST_SYNC_NODE));
+                    }
                 }
             }
         }
@@ -158,7 +174,7 @@ void Seeder::Accept(const asio::error_code& ec)
     m_pAcceptor->async_accept(*m_pSocket, std::bind(&Seeder::Accept, this, std::placeholders::_1));
 }
 
-void Seeder::SeedNewConnection()
+bool Seeder::SeedNewConnection()
 {
     PeerPtr pPeer = m_peerManager.Write()->GetNewPeer(Capabilities::FAST_SYNC_NODE);
     if (pPeer != nullptr) {
@@ -177,17 +193,17 @@ void Seeder::SeedNewConnection()
         
         if (Global::GetConfig().IsPeerBlocked(pSocket->GetIPAddress())) {
             LOG_TRACE_F("peer is blocked: {}", pSocket->GetIPAddress());
-            return;
+            return false;
         }
 
         if (!Global::GetConfig().IsPeerAllowed(pSocket->GetIPAddress())) {
             LOG_TRACE_F("peer is not allowed: {}", pSocket->GetIPAddress());        
-            return;
+            return false;
         }
 
         if (!Global::GetConfig().IsPeerPreferred(pSocket->GetIPAddress())) {
             LOG_TRACE_F("peer is not in preferred pool of peers: {}", pSocket->GetIPAddress());        
-            return;
+            return false;
         }
         
         ConnectionPtr pConnection = std::make_shared<Connection>(
@@ -200,8 +216,11 @@ void Seeder::SeedNewConnection()
         );
         
         pConnection->Connect();
+        return true;
     } else if (!m_usedDNS.exchange(true)) {
         std::vector<SocketAddress> peerAddresses = DNSSeeder::GetPeersFromDNS();
         m_peerManager.Write()->AddFreshPeers(peerAddresses);
     }
+
+    return false;
 }

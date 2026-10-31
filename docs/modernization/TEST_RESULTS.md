@@ -758,6 +758,50 @@ block sync до типсы → рестарт без повторной загр
 
 Тесты: **140 кейсов / 1603 проверки PASS**.
 
+## E36. G-38: ложные баны и залипание block sync исправлены (unit PASS; live IN PROGRESS)
+
+Реализовано по `REQ_G38_FIX.md`:
+
+* **Политика вынесена в `src/P2P/Sync/BlockSyncPolicy.h`** (чистые функции,
+  юнит-тестируемые): batch ≤ `min(100, peers*10)`, потолок запросов
+  `min(candidate tip, networkHeight, per-connection height)`,
+  `SelectPeer` учитывает высоту пира и cooldown, retry 6 с / 1 с при прогрессе,
+  backoff до 60 с, `SlowPeerTracker` с TTL 60 с и сбросом при прогрессе,
+  `IsProvenFraudHeight` — только при 120 с без прогресса и заявленном
+  TD/высоте выше нашего head.
+* **`BlockSyncer`**: больше **не банит** по таймауту — переназначает блок другому
+  пиру (счётчик `reassignments`), не просит блоки выше `networkHeight` и
+  per-connection height, использует `GetMostWorkConnections()`; при отсутствии
+  подходящего пира блок остаётся в очереди (debug-лог), а не превращается в бан.
+* **`HeaderSyncer`**: `FraudHeight` только по правилу Rust (120 с stale +
+  заявленный TD выше нашего), иначе — смена пира без бана; добавлен счётчик.
+* **`Seeder`/`PeerManager`**: при `GetNewPeer()==nullptr` — `WARNING` с причиной
+  (`known/banned/no_capability/retry_window/connected`) не чаще раза в 60 с и
+  exponential backoff seeding до 60 с.
+* **Watchdog**: `WAITING_FOR_PEERS` пишется в лог (INFO раз в 30 с) и в
+  `waiting_reason` REST-статуса.
+* **Наблюдаемость**: `/v1/status` → `block_sync { requests, timeouts,
+  reassignments, bans_fraud_height, bans_invalid_data }`; бан из
+  `BadDataException` инкрементит `bans_invalid_data`.
+
+**Тесты:** новый `Test_BlockSyncPolicy` (высота/cooldown/правило фрода/счётчики/
+backoff/copy-семантика статуса), набор — **146 кейсов / 1645 проверок PASS**.
+
+**Живой прогон:** чистый HOME `pp-g38` (порты 13474/13419, 4 живых пира,
+PEERS-БД создаётся заново — ручной очистки в процессе нет), бинарь
+`D657EF90…`. Критерий REQ (≥30 мин догона, ноль `Banning peer … fraud height`
+по таймаутам, `FULLY_SYNCED`) — **IN PROGRESS на момент записи**; результат
+будет в следующей записи/`GAP_MATRIX` G-38.
+
+**Живой журнальный resume (из этого же раунда):** после убийства узла в середине
+PIBD и рестарта — **0 повторных `OutputBitmapSegment`** (bitmap воспроизведён из
+журнала), журнал продолжил расти 13.9 МБ → 1.6 ГБ; затем пир перестал отдавать
+`tree 2 idx 1229` → retry limit → fallback. То есть replay работает, а
+устойчивость PIBD к стопору пира — отдельный дефект **G-43** (OPEN).
+
+Тесты: **146 кейсов / 1645 проверок PASS**; `GrinNode.exe` `D657EF90…`,
+`Tests.exe` `CA208907…`.
+
 ---
 
 ## Сводка
@@ -769,7 +813,7 @@ block sync до типсы → рестарт без повторной загр
 | Проводной формат capabilities/ID/лимитов | PASS (compile-check) |
 | Сборка зависимостей (offline, static CRT) | PASS |
 | Сборка `GrinNode.exe` + `Tests.exe` (`/W4 /WX`) | PASS |
-| Полный набор тестов (140 / 1603) | PASS |
+| Полный набор тестов (146 / 1645) | PASS |
 | PIBD проводной слой (модели + сообщения 21–28) | PASS (unit) |
 | PIBD верификация сегментов (`Root`/`Validate`/proof, bitmap→chunk) | PASS (unit) |
 | PIBD генерация сегментов и обратная сборка дерева | PASS (unit) |
@@ -790,8 +834,9 @@ block sync до типсы → рестарт без повторной загр
 | Живой serving: Rust-пир запрашивает сегменты у нас | NOT RUN (только unit, `Test_PibdServing`) |
 | Живой PIBD: загрузка+активация состояния | PASS (E32) |
 | Валидация активированного TxHashSet (kernel history/sums/rangeproofs) | PASS (E33) |
-| Догон блоков после активации | PASS с обходом G-38 (очистка банов + 12 пиров): `FULLY_SYNCED` на 3316561 (E34) |
-| PIBD resume (journal) | PASS (unit); live NOT RUN |
+| Догон блоков после активации | PASS (исторически, с обходом G-38): `FULLY_SYNCED` на 3316561 (E34) |
+| G-38: ложные баны и залипание block sync | PASS (unit: `Test_BlockSyncPolicy`); живой критерий 30 мин — IN PROGRESS (E36) |
+| PIBD resume (journal) | PASS (unit); live replay PASS (0 повторных bitmap-запросов), полное завершение NOT RUN (G-43) |
 | Сохранение состояния между рестартами | PASS (E34: FULLY_SYNCED без нового PIBD) |
 | PIHD | N/A: в эталоне v5.5.2 нет сообщений PIHD (enum до 28); бит 0x80 — только детекция, не рекламируется |
 | Версия ПО | PASS: `Grin++ 1.2.9` (G-25), закреплено тестом |

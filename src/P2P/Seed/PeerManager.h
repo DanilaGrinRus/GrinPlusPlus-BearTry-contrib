@@ -32,6 +32,8 @@ public:
 	std::vector<PeerConstPtr> GetAllPeers() const;
 
 	PeerPtr GetNewPeer(const Capabilities::ECapability& preferredCapability);
+	// Explains why GetNewPeer() found nothing: known/banned/retry-window/no-capability.
+	std::string GetNoPeerReason(const Capabilities::ECapability& preferredCapability) const;
 	std::vector<PeerPtr> GetPeers(const Capabilities::ECapability& preferredCapability, const uint16_t maxPeers) const;
 
 	void AddFreshPeers(const std::vector<SocketAddress>& peerAddresses);

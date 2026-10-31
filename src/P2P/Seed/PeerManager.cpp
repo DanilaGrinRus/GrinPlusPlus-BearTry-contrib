@@ -2,6 +2,7 @@
 
 #include <Core/Context.h>
 #include <P2P/Common.h>
+#include <Common/Util/StringUtil.h>
 #include <Common/Util/TimeUtil.h>
 #include <Common/Util/ThreadUtil.h>
 #include <Core/Config.h>
@@ -144,6 +145,46 @@ PeerPtr PeerManager::GetNewPeer(const Capabilities::ECapability& preferredCapabi
     }
 
     return peers.front();
+}
+
+std::string PeerManager::GetNoPeerReason(const Capabilities::ECapability& preferredCapability) const
+{
+    const time_t currentTime = TimeUtil::Now();
+    const time_t maxBanTime = std::chrono::system_clock::to_time_t(
+        std::chrono::system_clock::now() - std::chrono::seconds(P2P::BAN_WINDOW)
+    );
+
+    size_t banned = 0;
+    size_t retryWindow = 0;
+    size_t withoutCapability = 0;
+    size_t connected = 0;
+
+    for (const auto& entry : m_peersByAddress) {
+        const PeerPtr& peer = entry.second.m_peer;
+        if (peer->GetLastBanTime() > maxBanTime) {
+            banned++;
+        }
+        if (peer->IsConnected()) {
+            connected++;
+        }
+        if (!peer->GetCapabilities().HasCapability(preferredCapability)) {
+            withoutCapability++;
+            continue;
+        }
+        if (std::difftime(currentTime, entry.second.m_lastAttempt) <= (double)P2P::RETRY_WINDOW) {
+            retryWindow++;
+        }
+    }
+
+    return StringUtil::Format(
+        "known={}, banned={}, no_capability=0x{:x}:{}, retry_window={}s:{}, connected={}",
+        m_peersByAddress.size(),
+        banned,
+        (uint32_t)preferredCapability,
+        withoutCapability,
+        P2P::RETRY_WINDOW,
+        retryWindow,
+        connected);
 }
 
 std::vector<PeerPtr> PeerManager::GetAllPeers()

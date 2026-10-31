@@ -68,6 +68,15 @@ int ServerAPI::GetStatus_Handler(struct mg_connection* conn, void* pNodeContext)
 
 	SyncStatusConstPtr pSyncStatus = pServer->m_pP2PServer->GetSyncStatus();
 	statusNode["sync_status"] = GetStatusString(*pSyncStatus);
+	statusNode["waiting_reason"] = pSyncStatus->GetWaitingReason();
+
+	Json::Value blockSyncNode;
+	blockSyncNode["requests"] = Json::UInt64(pSyncStatus->GetBlockRequests());
+	blockSyncNode["timeouts"] = Json::UInt64(pSyncStatus->GetBlockTimeouts());
+	blockSyncNode["reassignments"] = Json::UInt64(pSyncStatus->GetBlockReassignments());
+	blockSyncNode["bans_fraud_height"] = Json::UInt64(pSyncStatus->GetBansFraudHeight());
+	blockSyncNode["bans_invalid_data"] = Json::UInt64(pSyncStatus->GetBansInvalidData());
+	statusNode["block_sync"] = blockSyncNode;
 
 	Json::Value stateNode;
 	stateNode["downloaded"] = pSyncStatus->GetDownloaded();

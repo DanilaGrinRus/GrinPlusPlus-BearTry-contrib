@@ -95,6 +95,37 @@ std::vector<PeerPtr> ConnectionManager::GetMostWorkPeers() const
 	return mostWorkPeers;
 }
 
+std::vector<ConnectionPtr> ConnectionManager::GetMostWorkConnections() const
+{
+	std::vector<ConnectionPtr> mostWorkConnections;
+
+	auto connections = m_connections.Read();
+
+	ConnectionPtr pMostWorkPeer = GetMostWorkPeer(*connections);
+	if (pMostWorkPeer != nullptr) {
+		const uint64_t totalDifficulty = pMostWorkPeer->GetTotalDifficulty();
+		for (const ConnectionPtr& pConnection : *connections) {
+			if (pConnection->GetTotalDifficulty() >= totalDifficulty && pConnection->GetHeight() > 0) {
+				mostWorkConnections.push_back(pConnection);
+			}
+		}
+	}
+
+	return mostWorkConnections;
+}
+
+ConnectionPtr ConnectionManager::GetConnectionByAddress(const IPAddress& address) const
+{
+	auto connections = m_connections.Read();
+	const auto iter = std::find_if(
+		connections->cbegin(),
+		connections->cend(),
+		[&address](const ConnectionPtr& pConnection) { return pConnection->GetIPAddress() == address; }
+	);
+
+	return iter != connections->cend() ? *iter : nullptr;
+}
+
 std::vector<ConnectedPeer> ConnectionManager::GetConnectedPeers() const
 {
 	auto connections = m_connections.Read();

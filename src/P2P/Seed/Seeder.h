@@ -50,7 +50,7 @@ private:
 	void StartListener();
 
 	void Accept(const asio::error_code& ec);
-	void SeedNewConnection();
+	bool SeedNewConnection();
 
 	ConnectionManager& m_connectionManager;
 	Locked<PeerManager> m_peerManager;
