@@ -105,3 +105,19 @@
 «полноценный PIBD с resume и serving и legacy fallback», «атомарная надёжность
 БД», часть P1 и дифференциальные доказательства **не закрыты**, поэтому статус
 мастер-задания — **НЕ ЗАВЕРШЕНО**, цель остаётся активной.
+## 7. Финальная сверка (раунд 32/32)
+
+* Сборка `/W4 /WX`: `GrinNode.exe` `BF7F3F9E…` (7 517 696 Б),
+  `Tests.exe` `09D1C6C3…` (8 535 040 Б).
+* Полный набор: **158 кейсов / 1707 проверок PASS** (включая `DbCheckpoint`,
+  `ChainConsistency::Checkpoint*`, `PibdScheduler::SlowPeerRateFails`).
+* Живой узел `pp-g38` с финальным бинарём: `chain = header = network =
+  3 317 031`, `FULLY_SYNCED`, `bans_fraud_height = 0`; `chain.checkpoint`
+  используется (E43), состояние переживает жёсткий kill.
+* Живой полный цикл с PIBD-горизонта — PASS (E42, `FULLY_SYNCED` 3 316 955,
+  4 222 переназначения, 0 fraud-банов); checkpoint-инъекция — PASS (E43).
+* Репозиторий чист; последние коммиты: `fdef6e6` (checkpoint) и внешние
+  аудит-документы `AUDIT_PACKAGE.md` / `AUDIT_DELTA.{en,de,ru}.md` (G-51).
+* **Вердикт не меняется: НЕ ЗАВЕРШЕНО** — открыты живой legacy-fallback
+  (G-41), живой PIBD serving, остаточная надёжность БД (G-22/G-23/fsync),
+  P1-пункты, дифференциальные/fuzz-тесты; PIHD — N/A для v5.5.2.
