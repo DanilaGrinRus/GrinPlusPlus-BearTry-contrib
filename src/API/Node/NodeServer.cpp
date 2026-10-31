@@ -15,6 +15,7 @@
 #include "Handlers/GetConnectedPeersOwnerHandler.h"
 #include "Handlers/GetPmmrIndicesHandler.h"
 #include "Handlers/GetUnspentOutputsHandler.h"
+#include "Handlers/GetOutputsHandler.h"
 
 NodeServer::UPtr NodeServer::Create(
     const ServerPtr& pServer,
@@ -36,6 +37,7 @@ NodeServer::UPtr NodeServer::Create(
     pForeignServer->AddMethod("get_unconfirmed_transactions", std::make_shared<GetUnconfirmedTransactionsHandler>(pTransactionPool));
     pForeignServer->AddMethod("get_pmmr_indices", std::make_shared<GetPmmrIndicesHandler>(pBlockChain));
     pForeignServer->AddMethod("get_unspent_outputs", std::make_shared<GetUnspentOutputsHandler>(pTxHashSetManager, pDatabase));
+    pForeignServer->AddMethod("get_outputs", std::make_shared<GetOutputsHandler>(pBlockChain, pTxHashSetManager, pDatabase));
 
     pForeignServer->AddMethod("get_config", std::make_shared<GetConfigHandler>());
     pForeignServer->AddMethod("update_config", std::make_shared<UpdateConfigHandler>());
