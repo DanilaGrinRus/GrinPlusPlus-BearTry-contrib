@@ -743,6 +743,21 @@ block sync до типсы → рестарт без повторной загр
 Тесты и артефакты на момент записи: **139 кейсов / 1601 проверка PASS**;
 `GrinNode.exe` `FFF16B9A…`, `Tests.exe` `3718F40B…`.
 
+## E35. Версия 1.2.9 и переключатель PIBD для живого fallback — PASS (unit); live IN PROGRESS
+
+* `GrinVersion.h` по-прежнему объявлял `1.2.8` при релизе 1.2.9 (G-25).
+  Обновлено на `1.2.9`: user agent `/v1/status` и логи теперь `Grin++ 1.2.9`;
+  тест `GrinVersion::MatchesRelease` фиксирует версию и UA.
+* Добавлен `P2P.PIBD_ENABLED` (по умолчанию `true`). При `false`
+  `StateSyncer::TryPibd` сразу возвращает `NotAttempted` и узел идёт legacy-путём
+  `txhashset.zip`. Это нужно для проверки fallback и для пиров без PIBD.
+* Для живых проверок одновременно подняты три узла на новом бинаре
+  `96C33D57…`: `pp-net` (сразу `FULLY_SYNCED`, 3 316 576), `pp-resume`
+  (докачивает заголовки для теста journal-resume) и `pp-fallback`
+  (`PIBD_ENABLED=false`, синхронизирует заголовки, затем legacy zip).
+
+Тесты: **140 кейсов / 1603 проверки PASS**.
+
 ---
 
 ## Сводка
@@ -754,7 +769,7 @@ block sync до типсы → рестарт без повторной загр
 | Проводной формат capabilities/ID/лимитов | PASS (compile-check) |
 | Сборка зависимостей (offline, static CRT) | PASS |
 | Сборка `GrinNode.exe` + `Tests.exe` (`/W4 /WX`) | PASS |
-| Полный набор тестов (139 / 1601) | PASS |
+| Полный набор тестов (140 / 1603) | PASS |
 | PIBD проводной слой (модели + сообщения 21–28) | PASS (unit) |
 | PIBD верификация сегментов (`Root`/`Validate`/proof, bitmap→chunk) | PASS (unit) |
 | PIBD генерация сегментов и обратная сборка дерева | PASS (unit) |
@@ -779,3 +794,5 @@ block sync до типсы → рестарт без повторной загр
 | PIBD resume (journal) | PASS (unit); live NOT RUN |
 | Сохранение состояния между рестартами | PASS (E34: FULLY_SYNCED без нового PIBD) |
 | PIHD | N/A: в эталоне v5.5.2 нет сообщений PIHD (enum до 28); бит 0x80 — только детекция, не рекламируется |
+| Версия ПО | PASS: `Grin++ 1.2.9` (G-25), закреплено тестом |
+| Legacy-фолбэк txhashset.zip | IN PROGRESS: конфиг `PIBD_ENABLED=false`, живой узел `pp-fallback` |
