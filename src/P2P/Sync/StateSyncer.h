@@ -5,6 +5,8 @@
 #include <BlockChain/BlockChain.h>
 #include <chrono>
 #include <memory>
+#include <string>
+#include <unordered_set>
 
 // Forward Declarations
 class SyncStatus;
@@ -47,6 +49,10 @@ private:
 	void DisablePibd();
 	void SendPibdRequests(const std::chrono::steady_clock::time_point now);
 	PeerPtr FindPibdPeer() const;
+	PeerPtr FindPibdPeer(const bool excludeTried) const;
+	// Chooses an untried PIBD-capable peer after a failure. Returns false when
+	// every capable peer has already been tried for this horizon.
+	bool RotatePibdPeer();
 
 	std::chrono::time_point<std::chrono::system_clock> m_timeRequested;
 	uint64_t m_requestedHeight;
@@ -57,4 +63,6 @@ private:
 	std::shared_ptr<PibdSync> m_pPibdSync;
 	std::chrono::system_clock::time_point m_pibdDisabledUntil = std::chrono::system_clock::time_point::min();
 	Hash m_pibdHorizonHash;
+	PeerPtr m_pibdPeer;
+	std::unordered_set<std::string> m_pibdPeersTried;
 };

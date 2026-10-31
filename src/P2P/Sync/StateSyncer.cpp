@@ -154,15 +154,24 @@ StateSyncer::EPibdResult StateSyncer::TryPibd(SyncStatus& syncStatus)
 	const PibdSync::EStatus status = m_pPibdSync->GetStatus();
 
 	if (status == PibdSync::EStatus::Failed) {
-		LOG_WARNING_F("PIBD failed: {}. Falling back to txhashset.zip", m_pPibdSync->GetError());
+		LOG_WARNING_F("PIBD failed: {}", m_pPibdSync->GetError());
 		m_pPibdSync->Reset();
+		if (RotatePibdPeer()) {
+			return EPibdResult::NotAttempted;
+		}
+
+		LOG_WARNING("No untried PIBD peer left; falling back to txhashset.zip");
 		DisablePibd();
 		return EPibdResult::NotAttempted;
 	}
 
 	if (status == PibdSync::EStatus::Idle) {
-		if (FindPibdPeer() == nullptr) {
-			LOG_DEBUG("No PIBD-capable peer connected; using txhashset.zip");
+		if (m_pibdPeer == nullptr) {
+			m_pibdPeer = FindPibdPeer(true);
+		}
+
+		if (m_pibdPeer == nullptr) {
+			LOG_DEBUG("No untried PIBD-capable peer connected; using txhashset.zip");
 			return EPibdResult::NotAttempted;
 		}
 
@@ -194,17 +203,23 @@ StateSyncer::EPibdResult StateSyncer::TryPibd(SyncStatus& syncStatus)
 		horizon.OutputRoot = pHorizon->GetOutputRoot();
 		horizon.RangeProofRoot = pHorizon->GetRangeProofRoot();
 		horizon.KernelRoot = pHorizon->GetKernelRoot();
-		m_pibdHorizonHash = horizon.BlockHash;
+		if (m_pibdHorizonHash != horizon.BlockHash) {
+			// New horizon: allow every capable peer to be tried again.
+			m_pibdHorizonHash = horizon.BlockHash;
+			m_pibdPeersTried.clear();
+			m_pibdPeer = nullptr;
+		}
 
 		if (!m_pPibdSync->Start(horizon, now)) {
 			return EPibdResult::NotAttempted;
 		}
 
+		m_pibdPeersTried.insert(m_pibdPeer->GetIPAddress().Format());
 		LOG_INFO_F(
 			"Starting PIBD state sync at height {} (header hash {}), peer {}.",
 			horizon.Height,
 			horizon.BlockHash,
-			FindPibdPeer());
+			m_pibdPeer);
 		syncStatus.UpdateStatus(ESyncStatus::SYNCING_TXHASHSET);
 		SendPibdRequests(now);
 		return EPibdResult::InProgress;
@@ -215,8 +230,13 @@ StateSyncer::EPibdResult StateSyncer::TryPibd(SyncStatus& syncStatus)
 
 		const PibdSync::EStatus updated = m_pPibdSync->GetStatus();
 		if (updated == PibdSync::EStatus::Failed) {
-			LOG_WARNING_F("PIBD failed: {}. Falling back to txhashset.zip", m_pPibdSync->GetError());
+			LOG_WARNING_F("PIBD failed: {}", m_pPibdSync->GetError());
 			m_pPibdSync->Reset();
+			if (RotatePibdPeer()) {
+				return EPibdResult::NotAttempted;
+			}
+
+			LOG_WARNING("No untried PIBD peer left; falling back to txhashset.zip");
 			DisablePibd();
 			return EPibdResult::NotAttempted;
 		}
@@ -245,6 +265,8 @@ StateSyncer::EPibdResult StateSyncer::TryPibd(SyncStatus& syncStatus)
 
 	if (chainStatus == EBlockChainStatus::SUCCESS) {
 		LOG_INFO("PIBD state sync completed and validated.");
+		m_pibdPeer = nullptr;
+		m_pibdPeersTried.clear();
 		return EPibdResult::Completed;
 	}
 
@@ -271,7 +293,7 @@ void StateSyncer::SendPibdRequests(const std::chrono::steady_clock::time_point n
 		return;
 	}
 
-	const PeerPtr pPeer = FindPibdPeer();
+	const PeerPtr pPeer = m_pibdPeer;
 	if (pPeer == nullptr) {
 		return;
 	}
@@ -287,6 +309,11 @@ void StateSyncer::SendPibdRequests(const std::chrono::steady_clock::time_point n
 }
 
 PeerPtr StateSyncer::FindPibdPeer() const
+{
+	return FindPibdPeer(false);
+}
+
+PeerPtr StateSyncer::FindPibdPeer(const bool excludeTried) const
 {
 	ConnectionManagerPtr pConnectionManager = m_pConnectionManager.lock();
 	if (pConnectionManager == nullptr) {
@@ -305,6 +332,11 @@ PeerPtr StateSyncer::FindPibdPeer() const
 			continue;
 		}
 
+		if (excludeTried &&
+			m_pibdPeersTried.find(pPeer->GetIPAddress().Format()) != m_pibdPeersTried.cend()) {
+			continue;
+		}
+
 		if (pBestPeer == nullptr || connectedPeer.GetHeight() > bestHeight) {
 			pBestPeer = pPeer;
 			bestHeight = connectedPeer.GetHeight();
@@ -312,4 +344,15 @@ PeerPtr StateSyncer::FindPibdPeer() const
 	}
 
 	return pBestPeer;
+}
+
+bool StateSyncer::RotatePibdPeer()
+{
+	m_pibdPeer = FindPibdPeer(true);
+	if (m_pibdPeer == nullptr) {
+		return false;
+	}
+
+	LOG_INFO_F("PIBD: retrying with another peer {}", m_pibdPeer);
+	return true;
 }
