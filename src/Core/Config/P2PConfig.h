@@ -67,6 +67,10 @@ public:
 			m_minConnections = p2pJSON.get(ConfigProps::P2P::MIN_PEERS, 10).asInt();
 		}
 
+		if (p2pJSON.isMember(ConfigProps::P2P::P2P_PORT)) {
+			m_port = (uint16_t)p2pJSON.get(ConfigProps::P2P::P2P_PORT, (int)m_port).asInt();
+		}
+
 		if (p2pJSON.isMember(ConfigProps::P2P::MIN_SYNC_PEERS)) {
 			m_minSyncPeers = (uint8_t)p2pJSON.get(ConfigProps::P2P::MIN_SYNC_PEERS, 3).asInt();
 		}
