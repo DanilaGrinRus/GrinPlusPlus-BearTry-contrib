@@ -16,6 +16,11 @@ public:
 	Hash Root(const uint64_t lastHeight) const final;
 	void Rewind(const uint64_t size) final;
 
+	uint64_t GetLeafCount() const final
+	{
+		return Index::At(m_pLockedHashFile->Read()->GetSize()).GetLeafIndex();
+	}
+
 	void Commit() final;
 	void Rollback() noexcept final;
 

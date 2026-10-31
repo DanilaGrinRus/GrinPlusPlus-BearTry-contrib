@@ -3,4 +3,5 @@ list_append_parent(
     ${CMAKE_CURRENT_LIST_DIR}
     "Test_Chain.cpp"
     "Test_ReorgChain.cpp"
+    "Test_ChainConsistency.cpp"
 )

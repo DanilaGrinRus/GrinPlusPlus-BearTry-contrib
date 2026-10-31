@@ -8,6 +8,7 @@
 #include "Processors/BlockProcessor.h"
 #include "ChainResyncer.h"
 #include "CoinView.h"
+#include "ChainConsistency.h"
 
 #include <Consensus.h>
 #include <GrinVersion.h>
@@ -45,6 +46,50 @@ std::shared_ptr<BlockChain> BlockChain::Create(
 	auto pGenesisIndex = std::make_shared<BlockIndex>(genesisBlock.GetHash(), 0);
 
 	auto pChainStore = ChainStore::Load(config, pGenesisIndex);
+
+	// header_mmr.bin and the chain files are committed independently. A crash
+	// between the commits leaves them at different heights; loading such a state
+	// used to read a header beyond the MMR. Repair the stores before anything
+	// else opens them (GAP G-23).
+	{
+		const uint64_t headerMmrLeaves = pHeaderMMR->Read()->GetLeafCount();
+		const uint64_t candidateEntries =
+			pChainStore->Read()->GetCandidateChain()->GetHeight() + 1;
+		const uint64_t confirmedEntries =
+			pChainStore->Read()->GetConfirmedChain()->GetHeight() + 1;
+		const ChainRepairPlan repair =
+			ComputeChainRepair(headerMmrLeaves, candidateEntries, confirmedEntries);
+		if (!repair.IsConsistent()) {
+			const uint64_t targetEntries = repair.TargetEntries > 0 ? repair.TargetEntries : 1;
+			LOG_WARNING_F(
+				"Chain stores inconsistent (header_mmr leaves {}, candidate {}, confirmed {}) after an unclean shutdown; repairing to {} entries.",
+				headerMmrLeaves,
+				candidateEntries,
+				confirmedEntries,
+				targetEntries);
+
+			if (repair.RewindHeaderMmr) {
+				auto pMmrWriter = pHeaderMMR->Write();
+				pMmrWriter->Rewind(targetEntries);
+				pMmrWriter->Commit();
+			}
+
+			if (repair.RewindCandidate || repair.RewindConfirmed) {
+				auto pChainStoreWriter = pChainStore->Write();
+				if (repair.RewindCandidate) {
+					pChainStoreWriter->GetCandidateChain()->Rewind(targetEntries - 1);
+				}
+				if (repair.RewindConfirmed &&
+					pChainStoreWriter->GetConfirmedChain()->GetHeight() + 1 > targetEntries) {
+					pChainStoreWriter->GetConfirmedChain()->Rewind(targetEntries - 1);
+				}
+				pChainStoreWriter->Commit();
+			}
+
+			LOG_WARNING("Chain stores repaired.");
+		}
+	}
+
 	auto pChainState = ChainState::Create(
 		config,
 		pChainStore,

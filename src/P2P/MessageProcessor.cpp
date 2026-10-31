@@ -141,9 +141,13 @@ void MessageProcessor::ProcessMessageInternal(const std::shared_ptr<Connection>&
 			const PingMessage pingMessage = PingMessage::Deserialize(byteBuffer);
 			pConnection->UpdateTotals(pingMessage.GetTotalDifficulty(), pingMessage.GetHeight());
 
-			auto pTipHeader = m_pBlockChain->GetTipBlockHeader(EChainType::CONFIRMED);
-			const PongMessage pongMessage(pTipHeader->GetTotalDifficulty(), pTipHeader->GetHeight());
+			const BlockHeaderPtr pTipHeader = m_pBlockChain->GetTipBlockHeader(EChainType::CONFIRMED);
+			if (pTipHeader == nullptr) {
+				LOG_WARNING("Cannot answer Ping: no confirmed tip header.");
+				break;
+			}
 
+			const PongMessage pongMessage(pTipHeader->GetTotalDifficulty(), pTipHeader->GetHeight());
 			pConnection->SendAsync(pongMessage);
 			break;
 		}
