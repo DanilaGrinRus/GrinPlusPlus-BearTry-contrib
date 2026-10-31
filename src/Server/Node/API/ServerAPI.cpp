@@ -6,44 +6,31 @@
 #include <P2P/Common.h>
 #include <json/json.h>
 
-/*
-	mg_set_request_handler(ctx, "/v1/status", ServerAPI::GetStatus_Handler, &m_nodeContext);
-	mg_set_request_handler(ctx, "/v1/headers/", HeaderAPI::GetHeader_Handler, m_pBlockChainServer);
-	mg_set_request_handler(ctx, "/v1/blocks/", BlockAPI::GetBlock_Handler, m_pBlockChainServer);
-	mg_set_request_handler(ctx, "/v1/chain/outputs/byids", ChainAPI::GetChainOutputsByIds_Handler, &m_nodeContext);
-	mg_set_request_handler(ctx, "/v1/chain/outputs/byheight", ChainAPI::GetChainOutputsByHeight_Handler, &m_nodeContext);
-	mg_set_request_handler(ctx, "/v1/chain", ChainAPI::GetChain_Handler, m_pBlockChainServer);
-	mg_set_request_handler(ctx, "/v1/peers/all", PeersAPI::GetAllPeers_Handler, &m_nodeContext);
-	mg_set_request_handler(ctx, "/v1/peers/connected", PeersAPI::GetConnectedPeers_Handler, &m_nodeContext);
-	mg_set_request_handler(ctx, "/v1/peers/", PeersAPI::Peer_Handler, &m_nodeContext);
-	mg_set_request_handler(ctx, "/v1/txhashset/roots", TxHashSetAPI::GetRoots_Handler, &m_nodeContext);
-	mg_set_request_handler(ctx, "/v1/txhashset/lastkernels", TxHashSetAPI::GetLastKernels_Handler, &m_nodeContext);
-	mg_set_request_handler(ctx, "/v1/txhashset/lastoutputs", TxHashSetAPI::GetLastOutputs_Handler, &m_nodeContext);
-	mg_set_request_handler(ctx, "/v1/txhashset/lastrangeproofs", TxHashSetAPI::GetLastRangeproofs_Handler, &m_nodeContext);
-	mg_set_request_handler(ctx, "/v1/txhashset/outputs", TxHashSetAPI::GetOutputs_Handler, &m_nodeContext);
-	mg_set_request_handler(ctx, "/v1/", ServerAPI::V1_Handler, &m_nodeContext);
-*/
 int ServerAPI::V1_Handler(struct mg_connection* conn, void*)
 {
 	if (HTTPUtil::GetHTTPMethod(conn) == HTTP::EHTTPMethod::GET)
 	{
 		Json::Value json;
-		json.append("GET /v1/blocks/<hash>?compact");
-		json.append("GET /v1/blocks/<height>?compact");
-		json.append("GET /v1/blocks/<output commit>?compact");
-		json.append("GET /v1/chain/");
+		json.append("GET /v1/status");
+		json.append("GET|POST /v1/resync");
+		json.append("POST /v1/shutdown");
+		json.append("GET /v1/headers/<hash|height>");
+		json.append("GET /v1/blocks/<hash|height|output commit>?compact");
+		json.append("GET /v1/chain");
 		json.append("GET /v1/chain/outputs/byids?id=xxx,yyy&id=zzz");
 		json.append("GET /v1/chain/outputs/byheight?start_height=100&end_height=200");
 		json.append("GET /v1/peers/all");
 		json.append("GET /v1/peers/connected");
-		json.append("GET /v1/peers/a.b.c.d");
-		json.append("POST /v1/peers/ban?a.b.c.d");
-		json.append("POST /v1/peers/unban?a.b.c.d");
+		json.append("GET /v1/peers/diagnostics");
+		json.append("GET /v1/peers/<a.b.c.d>");
+		json.append("POST /v1/peers/<a.b.c.d>/ban");
+		json.append("POST /v1/peers/<a.b.c.d>/unban");
 		json.append("GET /v1/txhashset/roots");
 		json.append("GET /v1/txhashset/lastkernels?n=###");
 		json.append("GET /v1/txhashset/lastoutputs?n=###");
 		json.append("GET /v1/txhashset/lastrangeproofs?n=###");
 		json.append("GET /v1/txhashset/outputs?start_index=1&max=100");
+		json.append("GET /v1/");
 
 		return HTTPUtil::BuildSuccessResponse(conn, json.toStyledString());
 	}
