@@ -52,13 +52,68 @@ std::shared_ptr<BlockChain> BlockChain::Create(
 	auto pChainStore = ChainStore::Load(config, pGenesisIndex);
 
 	// header_mmr.bin and the chain files are committed independently. A crash
-	// between the commits leaves them at different heights; loading such a state
-	// used to read a header beyond the MMR. Repair the stores before anything
-	// else opens them (GAP G-23/G-48).
+	// between the commits used to leave them at different heights and loading
+	// such a state read past the MMR (G-23/G-48). Repair invariants without
+	// throwing away headers: a lagging MMR is rebuilt from the block DB, and a
+	// missing chain segment aborts startup instead of silently truncating data.
 	{
-		// A raw node count that cannot describe any MMR means the append-only
-		// file was truncated mid-write. Cut it back to the largest valid size
-		// before any height is derived from it.
+		const fs::path checkpointPath = config.GetChainPath() / "chain.checkpoint";
+		DbCheckpointData checkpoint;
+		const bool hasCheckpoint = DbCheckpoint::Read(checkpointPath, checkpoint);
+		if (hasCheckpoint) {
+			LOG_TRACE_F("DB checkpoint found ({}).", DbCheckpoint::Describe(checkpoint));
+		}
+
+		bool backedUp = false;
+		const auto ensureBackup = [&]() {
+			if (backedUp) {
+				return;
+			}
+
+			const bool copied = DbRecovery::CopyForRecovery(
+				config.GetChainPath(),
+				{ "header_mmr.bin", "candidate.chain", "confirmed.chain", "chain.checkpoint" });
+			if (!copied) {
+				LOG_ERROR("Refusing to modify chain stores: recovery copy failed.");
+				throw std::runtime_error("Chain store repair aborted: recovery copy failed");
+			}
+
+			backedUp = true;
+			DbRecovery::RecordRepair();
+		};
+
+		const auto rebuildHeaderMmr = [&](const uint64_t fromHeight) {
+			auto pCandidateChain = pChainStore->Read()->GetCandidateChain();
+			const uint64_t targetHeight = pCandidateChain->GetHeight();
+			LOG_WARNING_F(
+				"Rebuilding header MMR from the block DB: leaves {} -> heights {}-{}.",
+				fromHeight,
+				fromHeight,
+				targetHeight);
+
+			auto pMmrWriter = pHeaderMMR->Write();
+			auto pBlockDBReader = pDatabase->Read();
+			for (uint64_t height = fromHeight; height <= targetHeight; height++) {
+				const Hash& hash = pCandidateChain->GetHash(height);
+				const BlockHeaderPtr pHeader = pBlockDBReader->GetBlockHeader(hash);
+				if (pHeader == nullptr) {
+					throw std::runtime_error(
+						"Cannot rebuild the header MMR: a block header is missing at height " +
+						std::to_string(height));
+				}
+
+				pMmrWriter->AddHeader(*pHeader);
+				if (height != 0 && height % 100000 == 0) {
+					LOG_INFO_F("Rebuilding header MMR: height {}", height);
+				}
+			}
+
+			pMmrWriter->Commit();
+		};
+
+		// A raw node count that cannot describe any MMR means the append-only file
+		// was truncated mid-write. Cut it back to the largest valid size; the
+		// missing leaves are rebuilt from the block DB below.
 		const uint64_t rawMmrNodes = pHeaderMMR->Read()->GetNodeCount();
 		if (!MmrStructure::IsValidNodeCount(rawMmrNodes)) {
 			const uint64_t validNodes = MmrStructure::LargestValidNodeCount(rawMmrNodes);
@@ -69,93 +124,104 @@ std::shared_ptr<BlockChain> BlockChain::Create(
 				validNodes,
 				validLeaves);
 
-			DbRecovery::CopyForRecovery(
-				config.GetChainPath(),
-				{ "header_mmr.bin", "candidate.chain", "confirmed.chain", "chain.checkpoint" });
-			DbRecovery::RecordRepair();
-
-			// Never truncate when the inverse mapping failed: a wrong structural
-			// verdict must not destroy a healthy chain (regression caught live).
 			if (validNodes > 0 && validLeaves > 0) {
+				ensureBackup();
 				auto pMmrWriter = pHeaderMMR->Write();
 				pMmrWriter->Rewind(validLeaves);
 				pMmrWriter->Commit();
 			} else if (rawMmrNodes > 0) {
 				LOG_ERROR("Refusing to truncate the header MMR: could not derive a valid leaf count.");
+				throw std::runtime_error("Header MMR structure is invalid");
 			}
 		}
 
-		const uint64_t headerMmrLeaves = pHeaderMMR->Read()->GetLeafCount();
-		const uint64_t candidateEntries =
+		uint64_t headerMmrLeaves = pHeaderMMR->Read()->GetLeafCount();
+		uint64_t candidateEntries =
 			pChainStore->Read()->GetCandidateChain()->GetHeight() + 1;
-		const uint64_t confirmedEntries =
+		uint64_t confirmedEntries =
 			pChainStore->Read()->GetConfirmedChain()->GetHeight() + 1;
-		const fs::path checkpointPath = config.GetChainPath() / "chain.checkpoint";
-		DbCheckpointData checkpoint;
-		const bool hasCheckpoint = DbCheckpoint::Read(checkpointPath, checkpoint);
+
+		// A brand-new database has only genesis in the chain index; its header MMR
+		// is populated by ChainState::Create just below. Do not rebuild it here.
+		const bool genesisPending = candidateEntries == 1 && headerMmrLeaves == 0;
+
 		if (hasCheckpoint) {
-			LOG_TRACE_F("DB checkpoint found ({}).", DbCheckpoint::Describe(checkpoint));
-		}
-
-		const ChainRepairPlan repair = hasCheckpoint
-			? ComputeChainRepairToCheckpoint(
-				headerMmrLeaves,
-				candidateEntries,
-				confirmedEntries,
-				checkpoint.MmrLeaves,
-				checkpoint.CandidateEntries,
-				checkpoint.ConfirmedEntries)
-			: ComputeChainRepair(headerMmrLeaves, candidateEntries, confirmedEntries);
-		if (!repair.IsConsistent()) {
-			DbRecovery::CopyForRecovery(
-				config.GetChainPath(),
-				{ "header_mmr.bin", "candidate.chain", "confirmed.chain", "chain.checkpoint" });
-			DbRecovery::RecordRepair();
-
-			LOG_WARNING_F(
-				"Chain stores inconsistent (header_mmr leaves {}, candidate {}, confirmed {}) after an unclean shutdown; repairing to mmr {}, candidate {}, confirmed {} entries{}.",
-				headerMmrLeaves,
-				candidateEntries,
-				confirmedEntries,
-				repair.TargetMmrEntries,
-				repair.TargetCandidateEntries,
-				repair.TargetConfirmedEntries,
-				hasCheckpoint ? " using the checkpoint" : "");
-
-			if (repair.RewindHeaderMmr) {
-				auto pMmrWriter = pHeaderMMR->Write();
-				pMmrWriter->Rewind(repair.TargetMmrEntries);
-				pMmrWriter->Commit();
+			// A chain index shorter than the checkpoint cannot be rebuilt from
+			// headers alone (fork choice is lost): stop instead of truncating.
+			if (candidateEntries < checkpoint.CandidateEntries ||
+				confirmedEntries < checkpoint.ConfirmedEntries) {
+				throw std::runtime_error(
+					"Chain index is behind the checkpoint; refusing to truncate. "
+					"Restore NODE/recovery-* or resync from a peer.");
 			}
 
-			if (repair.RewindCandidate || repair.RewindConfirmed) {
+			// Confirm the chain can be restored from the candidate chain when its
+			// tail was lost between two commits.
+			if (confirmedEntries < checkpoint.ConfirmedEntries) {
+				ensureBackup();
 				auto pChainStoreWriter = pChainStore->Write();
-				if (repair.RewindCandidate) {
-					pChainStoreWriter->GetCandidateChain()->Rewind(repair.TargetCandidateEntries - 1);
-				}
-				if (repair.RewindConfirmed &&
-					pChainStoreWriter->GetConfirmedChain()->GetHeight() + 1 > repair.TargetConfirmedEntries) {
-					pChainStoreWriter->GetConfirmedChain()->Rewind(repair.TargetConfirmedEntries - 1);
+				auto pConfirmedChain = pChainStoreWriter->GetConfirmedChain();
+				const auto pCandidateChain = pChainStore->Read()->GetCandidateChain();
+				const uint64_t target = (std::min)(checkpoint.ConfirmedEntries, candidateEntries);
+				for (uint64_t height = confirmedEntries; height < target; height++) {
+					pConfirmedChain->AddBlock(pCandidateChain->GetHash(height), height);
 				}
 				pChainStoreWriter->Commit();
+				confirmedEntries = pChainStore->Read()->GetConfirmedChain()->GetHeight() + 1;
+				LOG_WARNING_F("Restored confirmed chain to {} entries.", confirmedEntries);
 			}
-
-			LOG_WARNING("Chain stores repaired.");
 		}
 
-		// Establish a fresh checkpoint for the state we are about to open. It is
-		// written only after the stores above are consistent, so a later crash
-		// can always fall back to it.
-		DbCheckpointData fresh;
+		if (headerMmrLeaves > candidateEntries) {
+			// Extra MMR leaves are not indexed by the chain; drop them.
+			ensureBackup();
+			LOG_WARNING_F(
+				"Header MMR is ahead of the candidate chain ({} > {}); truncating the MMR.",
+				headerMmrLeaves,
+				candidateEntries);
+			auto pMmrWriter = pHeaderMMR->Write();
+			pMmrWriter->Rewind(candidateEntries);
+			pMmrWriter->Commit();
+			headerMmrLeaves = pHeaderMMR->Read()->GetLeafCount();
+		} else if (headerMmrLeaves < candidateEntries && !genesisPending) {
+			// Never truncate the chain for a lagging MMR: the headers are in the
+			// block DB, so rebuild the MMR instead (live data-loss regression).
+			ensureBackup();
+			rebuildHeaderMmr(headerMmrLeaves);
+			headerMmrLeaves = pHeaderMMR->Read()->GetLeafCount();
+		}
+
+		if (confirmedEntries > candidateEntries) {
+			ensureBackup();
+			LOG_WARNING_F(
+				"Confirmed chain is ahead of the candidate chain ({} > {}); truncating the confirmed chain.",
+				confirmedEntries,
+				candidateEntries);
+			auto pChainStoreWriter = pChainStore->Write();
+			pChainStoreWriter->GetConfirmedChain()->Rewind(candidateEntries - 1);
+			pChainStoreWriter->Commit();
+			confirmedEntries = pChainStore->Read()->GetConfirmedChain()->GetHeight() + 1;
+		}
+
+		if (headerMmrLeaves != candidateEntries && !genesisPending) {
+			throw std::runtime_error("Header MMR could not be made consistent with the chain index");
+		}
+
+		if (genesisPending) {
+			// ChainState::Create adds genesis to the MMR and commits a checkpoint.
+			LOG_DEBUG("Fresh chain store: genesis header will initialise the MMR.");
+		} else {
+			// Publish the verified state as the new checkpoint.
+			DbCheckpointData fresh;
 		fresh.Sequence = (hasCheckpoint ? checkpoint.Sequence : 0) + 1;
-		fresh.MmrLeaves = pHeaderMMR->Read()->GetLeafCount();
-		fresh.CandidateEntries = pChainStore->Read()->GetCandidateChain()->GetHeight() + 1;
-		fresh.ConfirmedEntries = pChainStore->Read()->GetConfirmedChain()->GetHeight() + 1;
-		if (!DbCheckpoint::Write(checkpointPath, fresh)) {
-			LOG_WARNING("Failed to write the DB checkpoint.");
+		fresh.MmrLeaves = headerMmrLeaves;
+		fresh.CandidateEntries = candidateEntries;
+		fresh.ConfirmedEntries = confirmedEntries;
+			if (!DbCheckpoint::Write(checkpointPath, fresh)) {
+				LOG_WARNING("Failed to write the DB checkpoint.");
+			}
 		}
 	}
-
 	auto pChainState = ChainState::Create(
 		config,
 		pChainStore,

@@ -114,21 +114,23 @@ public:
 		return std::nullopt;
 	}
 
-	// FraudHeight is only defensible when the peer claims more height/work than
-	// we have and has been unable to produce headers for FRAUD_STALE seconds.
+	// Mirrors grin v5.5.2 header_sync.rs:135-141: fraud is only proven when
+	// the peer claims strictly more TOTAL DIFFICULTY than our header head and
+	// has been unable to produce headers for FRAUD_STALE seconds. Height alone
+	// is not enough (a peer can report a higher height at the same/earlier TD),
+	// and the difficulty must be known.
 	static bool IsProvenFraudHeight(
-		const uint64_t peerClaimedHeight,
+		const uint64_t /*peerClaimedHeight*/,
 		const uint64_t peerClaimedDifficulty,
-		const uint64_t ourHeaderHeight,
+		const uint64_t /*ourHeaderHeight*/,
 		const uint64_t ourHeaderDifficulty,
 		const std::chrono::seconds secondsWithoutProgress) noexcept
 	{
-		if (secondsWithoutProgress < FRAUD_STALE) {
+		if (secondsWithoutProgress < FRAUD_STALE || peerClaimedDifficulty == 0) {
 			return false;
 		}
 
-		return peerClaimedHeight > ourHeaderHeight ||
-			peerClaimedDifficulty > ourHeaderDifficulty;
+		return peerClaimedDifficulty > ourHeaderDifficulty;
 	}
 };
 

@@ -48,6 +48,9 @@ private:
 	EPibdResult TryPibd(SyncStatus& syncStatus);
 	void DisablePibd();
 	void SendPibdRequests(const std::chrono::steady_clock::time_point now);
+	// Saves a snapshot of the newly activated state at the archive horizon so it
+	// can be served later without a historical rewind (G-52).
+	void ArchivePibdState(const Hash& horizonHash);
 	PeerPtr FindPibdPeer() const;
 	PeerPtr FindPibdPeer(const bool excludeTried) const;
 	// Chooses an untried PIBD-capable peer after a failure. Returns false when

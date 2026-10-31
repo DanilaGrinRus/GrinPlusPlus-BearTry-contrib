@@ -1,6 +1,7 @@
 #include "StateSyncer.h"
 #include "../Messages/TxHashSetRequestMessage.h"
 #include "../PIBD/PibdSync.h"
+#include <P2P/TxHashSetArchive.h>
 
 #include <Consensus.h>
 #include <Common/Logger.h>
@@ -273,6 +274,7 @@ StateSyncer::EPibdResult StateSyncer::TryPibd(SyncStatus& syncStatus)
 
 	if (chainStatus == EBlockChainStatus::SUCCESS) {
 		LOG_INFO("PIBD state sync completed and validated.");
+		ArchivePibdState(m_pibdHorizonHash);
 		m_pibdPeer = nullptr;
 		m_pibdPeersTried.clear();
 		m_pibdRound = 0;
@@ -283,6 +285,53 @@ StateSyncer::EPibdResult StateSyncer::TryPibd(SyncStatus& syncStatus)
 	LOG_WARNING("PIBD state failed chain validation; falling back to txhashset.zip");
 	DisablePibd();
 	return EPibdResult::NotAttempted;
+}
+
+void StateSyncer::ArchivePibdState(const Hash& horizonHash)
+{
+	try {
+		const BlockHeaderPtr pHeader = m_pBlockChain->GetBlockHeaderByHash(horizonHash);
+		if (pHeader == nullptr) {
+			return;
+		}
+
+		const fs::path archivePath = TxHashSetArchive::Path(
+			Global::GetConfig().GetTxHashSetPath(),
+			pHeader);
+		std::error_code ec;
+		if (fs::exists(archivePath, ec)) {
+			return;
+		}
+
+		const fs::path zipPath = m_pBlockChain->SnapshotTxHashSet(pHeader);
+		if (zipPath.empty()) {
+			LOG_WARNING("PIBD activation produced an empty archive snapshot.");
+			return;
+		}
+
+		fs::create_directories(archivePath.parent_path(), ec);
+		fs::copy_file(zipPath, archivePath, fs::copy_options::overwrite_existing, ec);
+		std::error_code removeError;
+		fs::remove(zipPath, removeError);
+
+		if (ec) {
+			LOG_WARNING_F(
+				"Failed to persist the TxHashSet archive for height {}: {}",
+				pHeader->GetHeight(),
+				ec.message());
+		} else {
+			LOG_INFO_F(
+				"Archived TxHashSet at height {} for serving ({})",
+				pHeader->GetHeight(),
+				archivePath.string());
+		}
+	}
+	catch (std::exception& e) {
+		LOG_WARNING_F("Failed to archive the activated TxHashSet: {}", e.what());
+	}
+	catch (...) {
+		LOG_WARNING("Failed to archive the activated TxHashSet: unknown error");
+	}
 }
 
 void StateSyncer::DisablePibd()

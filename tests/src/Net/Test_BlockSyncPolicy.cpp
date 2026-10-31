@@ -58,8 +58,9 @@ TEST_CASE("BlockSyncPolicy::FraudHeightNeedsStaleHigherClaim")
 	REQUIRE(!BlockSyncPolicy::IsProvenFraudHeight(200, 2000, 100, 1000, seconds(10)));
 	REQUIRE(!BlockSyncPolicy::IsProvenFraudHeight(100, 1000, 100, 1000, seconds(200)));
 	REQUIRE(!BlockSyncPolicy::IsProvenFraudHeight(90, 900, 100, 1000, seconds(200)));
-	REQUIRE(BlockSyncPolicy::IsProvenFraudHeight(200, 1000, 100, 1000, seconds(120)));
-	REQUIRE(BlockSyncPolicy::IsProvenFraudHeight(100, 2000, 100, 1000, seconds(120)));
+	// Height alone is not fraud: the peer must claim more total difficulty.
+	REQUIRE(!BlockSyncPolicy::IsProvenFraudHeight(200, 1000, 100, 1000, seconds(120)));
+	REQUIRE(BlockSyncPolicy::IsProvenFraudHeight(200, 2000, 100, 1000, seconds(120)));
 }
 
 TEST_CASE("SlowPeerTracker::CooldownExpiresAndProgressClearsIt")

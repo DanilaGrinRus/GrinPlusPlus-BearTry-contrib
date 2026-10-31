@@ -76,9 +76,16 @@ candidate+confirmed entries/FNV-1a), temp+rename после всех комми�
 
 Дополнительно: перед любой починкой `DbRecovery` сохраняет
 `header_mmr.bin/candidate.chain/confirmed.chain/chain.checkpoint` в
-`NODE/recovery-<ts>`; счётчик и время последней починки отдаются в
-`/v1/status` (`db_repaired`, `db_last_repair`). Копирование потоковое:
-`CopyFileW` не осиливал открытый HashFile и оставлял копию 0 байт.
+`NODE/recovery-<ts>`; копия **проверяется по размеру**, при любой ошибке
+ремонт прерывается. Счётчик и время последней починки отдаются в `/v1/status`
+(`db_repaired`, `db_last_repair`). Копирование потоковое: `CopyFileW` не
+оси ливал открытый HashFile и оставлял копию 0 байт.
+
+**Стратегия ремонта (E48):** MMR позади chain → **rebuild из block DB**
+(заголовки не теряются); MMR впереди → удаляются только лишние листья;
+`confirmed` впереди candidate → усечение confirmed; chain-индекс позади
+checkpoint → старт прерывается (история fork-choice не восстанавливается
+усечением).
 
 **Инцидент E44:** первая версия структурной проверки MMR (`2L−popcount(L)`)
 использовала неверную верхнюю границу поиска и ложно усекла здоровый MMR на

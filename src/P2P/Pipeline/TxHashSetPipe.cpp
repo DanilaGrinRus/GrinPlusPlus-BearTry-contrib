@@ -1,4 +1,5 @@
 #include "TxHashSetPipe.h"
+#include <P2P/TxHashSetArchive.h>
 #include <P2P/Pipeline/TxHashSetLimits.h>
 #include "../Connection.h"
 #include "../ConnectionManager.h"
@@ -194,34 +195,54 @@ void TxHashSetPipe::Thread_SendTxHashSet(
 	}
 
 	fs::path zipFilePath;
+	bool temporaryArchive = false;
 
-	try {
-		zipFilePath = pBlockChain->SnapshotTxHashSet(pHeader);
-	}
-	catch (std::exception& e) {
-		LOG_ERROR_F(
-			"Snapshot TxHashSet for height {} failed: {}",
+	std::error_code archiveError;
+	const fs::path archivedPath = TxHashSetArchive::Path(
+		Global::GetConfig().GetTxHashSetPath(),
+		pHeader);
+	if (fs::exists(archivedPath, archiveError)) {
+		// A state activated at this archive horizon was saved for serving; no
+		// historical rewind is needed (G-52).
+		zipFilePath = archivedPath;
+		LOG_INFO_F(
+			"Serving archived TxHashSet for height {} ({})",
 			pHeader->GetHeight(),
-			e.what());
-		return;
-	}
-	catch (...) {
-		LOG_ERROR_F("Snapshot TxHashSet for height {} failed: unknown error", pHeader->GetHeight());
-		return;
+			zipFilePath.string());
+	} else {
+		try {
+			zipFilePath = pBlockChain->SnapshotTxHashSet(pHeader);
+			temporaryArchive = true;
+		}
+		catch (std::exception& e) {
+			LOG_ERROR_F(
+				"Snapshot TxHashSet for height {} failed: {}",
+				pHeader->GetHeight(),
+				e.what());
+			return;
+		}
+		catch (...) {
+			LOG_ERROR_F("Snapshot TxHashSet for height {} failed: unknown error", pHeader->GetHeight());
+			return;
+		}
+
+		LOG_INFO_F(
+			"Snapshot TxHashSet for height {} is {} bytes ({})",
+			pHeader->GetHeight(),
+			FileUtil::GetFileSize(zipFilePath),
+			zipFilePath.string());
 	}
 
-	LOG_INFO_F(
-		"Snapshot TxHashSet for height {} is {} bytes ({})",
-		pHeader->GetHeight(),
-		FileUtil::GetFileSize(zipFilePath),
-		zipFilePath.string());
-
-	// Hack until I can determine why zips aren't deleted.
-	FileRemover remover(zipFilePath);
+	std::unique_ptr<FileRemover> pRemover;
+	if (temporaryArchive) {
+		pRemover = std::make_unique<FileRemover>(zipFilePath);
+	}
 
 	std::ifstream file(zipFilePath, std::ios::in | std::ios::ate | std::ios::binary);
 	if (!file.is_open()) {
-		FileUtil::RemoveFile(zipFilePath);
+		if (temporaryArchive) {
+			FileUtil::RemoveFile(zipFilePath);
+		}
 		return;
 	}
 
@@ -262,5 +283,7 @@ void TxHashSetPipe::Thread_SendTxHashSet(
 	}
 
 	file.close();
-	FileUtil::RemoveFile(zipFilePath);
+	if (temporaryArchive) {
+		FileUtil::RemoveFile(zipFilePath);
+	}
 }

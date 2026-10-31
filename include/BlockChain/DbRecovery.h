@@ -49,15 +49,18 @@ namespace DbRecovery
 		return chainPath.parent_path() / name;
 	}
 
-	// Copies existing files aside before repair. Missing files are ignored.
-	// Returns true when at least one file was copied.
+	// Copies existing files aside before repair. Missing files are ignored, but
+	// every existing file must be copied completely: if any copy fails the
+	// function returns false and the caller must abort the repair. A partial or
+	// zero-byte backup must never be used as justification for truncation.
 	inline bool CopyForRecovery(
 		const fs::path& chainPath,
 		const std::vector<std::string>& fileNames)
 	{
 		std::error_code ec;
 		const fs::path dir = GetRecoveryDir(chainPath);
-		bool copied = false;
+		bool copiedAny = false;
+		bool createdDir = false;
 
 		for (const std::string& name : fileNames) {
 			const fs::path source = chainPath / name;
@@ -65,9 +68,12 @@ namespace DbRecovery
 				continue;
 			}
 
-			if (!copied) {
+			if (!createdDir) {
 				fs::create_directories(dir, ec);
-				ec.clear();
+				if (ec) {
+					return false;
+				}
+				createdDir = true;
 			}
 
 			const fs::path target = dir / name;
@@ -76,13 +82,12 @@ namespace DbRecovery
 			// remove the target on any failure.
 			std::ifstream input(source, std::ios::binary);
 			if (!input.is_open()) {
-				continue;
+				return false;
 			}
 
 			std::ofstream output(target, std::ios::binary | std::ios::trunc);
 			if (!output.is_open()) {
-				input.close();
-				continue;
+				return false;
 			}
 
 			output << input.rdbuf();
@@ -94,12 +99,20 @@ namespace DbRecovery
 			if (!ok) {
 				ec.clear();
 				fs::remove(target, ec);
-				continue;
+				return false;
 			}
 
-			copied = true;
+			// Verify the copy instead of trusting a successful stream close.
+			ec.clear();
+			if (fs::file_size(source, ec) != fs::file_size(target, ec) || ec) {
+				ec.clear();
+				fs::remove(target, ec);
+				return false;
+			}
+
+			copiedAny = true;
 		}
 
-		return copied;
+		return copiedAny || createdDir;
 	}
 }

@@ -20,6 +20,7 @@ documentation-only commits are tracked in the evidence map, not as cards.
 - Rust reference: n/a (build infrastructure)
 - Before: configure resolved dependencies from the network/system vcpkg and used whichever MSVC/Ninja was on `PATH`; builds were not reproducible offline.
 - After: `.toolchain/sysroot` provides headers and libraries offline; the generator/toolset are pinned; `build.ps1 -Target GrinNode|Tests` is the single entry point; warnings build with `/W4 /WX`.
+- Diff: `tools/build/build.ps1`, commit `89eb22c` — offline sysroot/`/W4 /WX` entry point.
 - Evidence: `BUILD.md`, E6–E9 (clean build, no warnings disabled), binary SHA-256 in `BUILD.md`.
 - Risk, rollback: risk is a stale or incomplete sysroot; roll back by reverting the build scripts/CMake changes and using system dependencies.
 
@@ -227,33 +228,30 @@ documentation-only commits are tracked in the evidence map, not as cards.
 
 ### G-38 — Block sync policy: no timeout bans
 - Status: DONE
-- Commits: `4dbae1b`, `c06888b`
-- Files: `src/P2P/Sync/BlockSyncPolicy.h`, `src/P2P/Sync/BlockSyncer.cpp`, `src/P2P/Sync/HeaderSyncer.cpp`, `src/P2P/Seed/Seeder.cpp`, `include/P2P/SyncStatus.h`, `src/P2P/MessageProcessor.cpp`
+- Commits: `4dbae1b`, `c06888b`, `7997ca5`
+- Files: `src/P2P/Sync/BlockSyncPolicy.h`, `src/P2P/Sync/BlockSyncer.cpp`, `src/P2P/Sync/HeaderSyncer.cpp`, `src/P2P/Seed/Seeder.cpp`, `include/P2P/SyncStatus.h`, `src/P2P/MessageProcessor.cpp`, `tests/src/Net/Test_BlockSyncPolicy.cpp`
 - Rust reference: `servers/src/grin/sync/body_sync.rs:149,191-204`, `header_sync.rs:135-141`
-- Before: `BlockSyncer` banned a peer for `FraudHeight` after two timeouts, `m_slowPeers` never expired, the request window ignored peer heights, and seeder/syncer stayed silent after the bans.
-- After: a timeout is counted and the block is reassigned, never banned; requests are capped by `min(candidate tip, network height, per-connection height)` and batch ≤100; retry is 6 s (1 s with progress) plus backoff; a slow peer gets a 60 s cooldown; `FraudHeight` requires a higher claimed work and 120 s without header progress; seeder logs the reason/backoff; `/v1/status` exposes waiting reason and counters.
-- Diff: `src/P2P/Sync/BlockSyncPolicy.h`, commit `4dbae1b`
-  ```diff
-  --- /dev/null
-  +++ b/src/P2P/Sync/BlockSyncPolicy.h
-  +// Behaviour mirrored from grin v5.5.2 body_sync.rs / header_sync.rs:
-  +//   * a timeout is never fraud: reassign the block and count it;
-  +//   * FraudHeight requires a peer that claims more work than we have and has
-  +//     made no progress for a long time;
-  ```
-- Evidence: E37 (32-min live window), E42 (4 222 reassignments, zero fraud bans).
-- Risk, rollback: without bans an unresponsive peer can slow catch-up; cooldown and rotation bound it; rollback restores the previous ban path.
+- Before: `BlockSyncer` banned a peer for `FraudHeight` after two timeouts, `m_slowPeers` never expired, the request window ignored peer heights, and seeder/syncer stayed silent after the bans; the header fraud rule used "height OR difficulty".
+- After: a timeout is counted and the block is reassigned; requests are capped by `min(candidate tip, network height, per-connection height)` and batch ≤100; retry 6 s/1 s + backoff; slow-peer cooldown 60 s; `FraudHeight` now mirrors Rust exactly — strictly greater TOTAL DIFFICULTY plus 120 s without header progress (a live server produced three false bans with the earlier height-OR-difficulty rule; fixed and regression-tested, E48); seeder logs the reason; `/v1/status` exposes waiting reason and counters.
+- Diff: `src/P2P/Sync/BlockSyncPolicy.h`, commit `4dbae1b` — timeout reassigned; fraud requires strictly greater total difficulty.
+- Evidence: E37 (32-min live window), E42 (4 222 reassignments, zero fraud bans), E48 (TD-only fix after live false bans).
+- Risk, rollback: without bans an unresponsive peer can slow catch-up; cooldown/rotation bound it; rollback restores the previous ban path.
 
 ### G-42 — Legacy state sync peer rotation instead of ban
 - Status: DONE
 - Commits: `bbf9a56`
 - Files: `src/P2P/Sync/StateSyncer.cpp`
 - Rust reference: `servers/src/grin/sync/syncer.rs`, `state_sync.rs`
-- Before: `RequestState` banned the peer with `BadTxHashSet` whenever the zip made no progress for 10 s or timed out, which could leave the node peerless.
+- Before: `RequestState` banned the peer with `BadTxHashSet` whenever the zip made no progress for 10 s or reached the 120-minute timeout, which could leave the node peerless.
 - After: a slow peer is rotated (`Rotating txhashset sync peer`); a genuinely invalid archive is still banned by the txhashset pipeline after validation fails.
+- Diff: `src/P2P/Sync/StateSyncer.cpp`, commit `bbf9a56`
+  ```diff
+  -        LOG_WARNING_F("Banning peer: {}", m_pPeer);
+  -        m_pPeer->Ban(EBanReason::BadTxHashSet);
+  +        LOG_INFO_F("Rotating txhashset sync peer: {}", m_pPeer);
+  ```
 - Evidence: E41/E42.
 - Risk, rollback: a broken peer may be retried; rotation is logged; rollback restores the ban.
-
 ### G-46 / G-47 — Chain store consistency repair and Ping null guard
 - Status: DONE (load-time mitigation)
 - Commits: `0331ea1`
@@ -261,31 +259,20 @@ documentation-only commits are tracked in the evidence map, not as cards.
 - Rust reference: n/a (load-time invariants)
 - Before: after an unclean shutdown the header MMR and candidate/confirmed chain could diverge; loading such a state read past the MMR (0xC0000005). The Ping handler dereferenced a missing confirmed tip.
 - After: `ComputeChainRepair` compares leaf/entry counts and truncates the stores to a consistent target before `ChainState` opens them; the Ping handler checks the tip and answers or logs a warning instead of crashing.
+- Diff: `src/BlockChain/ChainConsistency.h`, commit `0331ea1` — load-time counts repair and Ping null guard.
 - Evidence: E39 (unit + live injection in both directions).
 - Risk, rollback: repair can truncate uncommitted headers; recovery copies and the checkpoint bound the loss; rollback restores `NODE/recovery-*`.
 
 ### G-48 — Atomic checkpoint for chain stores
-- Status: DONE (checkpoint; see G-23 for hash-level validation)
-- Commits: `fdef6e6`, `1c4d020`
+- Status: DONE (checkpoint and no-loss repair; see G-23 for hash-level validation)
+- Commits: `fdef6e6`, `1c4d020`, `7997ca5`
 - Files: `src/BlockChain/DbCheckpoint.h`, `src/BlockChain/ChainState.*`, `src/BlockChain/BlockChainImpl.cpp`, `include/BlockChain/DbRecovery.h`
 - Rust reference: n/a (crash-consistency design; `DB_CONSISTENCY.md` §4)
-- Before: `header_mmr.bin`, `candidate.chain` and `confirmed.chain` were committed independently; a crash between commits left them at different heights and the load path trusted the raw counts.
-- After: after all four store commits `ChainState::Commit` writes `chain.checkpoint` (52 bytes: magic/version/sequence/`mmr_leaves`/candidate/confirmed/FNV-1a) via temp+rename; `BlockChain::Create` repairs every store to `min(actual, checkpoint)` and writes a fresh checkpoint; the four files are copied to `NODE/recovery-*` before repair and `db_repaired` is exposed in `/v1/status`.
-- Diff: `src/BlockChain/DbCheckpoint.h`, commit `fdef6e6`
-  ```diff
-  --- /dev/null
-  +++ b/src/BlockChain/DbCheckpoint.h
-  +struct DbCheckpointData
-  +{
-  +    uint64_t Sequence = 0;
-  +    uint64_t MmrLeaves = 0;
-  +    uint64_t CandidateEntries = 0;
-  +    uint64_t ConfirmedEntries = 0;
-  +};
-  +// "GRINPPCK" magic, version, FNV-1a checksum; written via temp + rename
-  ```
-- Evidence: E43 (hard kill restart seq 26→27; live mismatch repair), E44 (recovery/`db_repaired`).
-- Risk, rollback: an overly conservative checkpoint drops uncommitted headers; recovery copies are kept; rollback removes `chain.checkpoint` and falls back to the count heuristic.
+- Before: `header_mmr.bin`, `candidate.chain` and `confirmed.chain` were committed independently; a crash between commits left different heights, and early repair logic truncated the chain down to a lagging MMR, losing headers.
+- After: `ChainState::Commit` writes `chain.checkpoint` (52 bytes, FNV-1a) via temp+rename after all store commits; loading validates invariants, rebuilds a lagging MMR from the block DB, truncates only extra leaves, restores a confirmed chain tail when possible, requires a verified recovery copy, and aborts if the chain index is behind the checkpoint instead of truncating; `db_repaired`/`db_last_repair` are exposed. Live: hard kill seq 26→27; MMR −2000 leaves rebuilt with headers preserved (E43/E44/E48).
+- Diff: `src/BlockChain/DbCheckpoint.h`, commit `fdef6e6` — 52-byte checkpoint via temp+rename.
+- Evidence: E43, E44, E48.
+- Risk, rollback: an impossible repair aborts startup (safe, no silent loss); recovery copies remain; rollback removes `chain.checkpoint` and falls back to the counts heuristic.
 
 ### G-50 — Repeated DNS peer discovery
 - Status: DONE
@@ -294,9 +281,16 @@ documentation-only commits are tracked in the evidence map, not as cards.
 - Rust reference: `p2p/src/peers.rs` (seeding)
 - Before: DNS was queried once (`m_usedDNS`); if the seeds were stale the node stayed peerless forever.
 - After: DNS is queried again every five minutes while no candidate exists; the number of returned peers is logged and added, with the existing seeder backoff and reason log.
-- Evidence: live run (two DNS rounds, addresses added; reachability depends on the network path).
+- Diff: `src/P2P/Seed/Seeder.cpp`, commit `b37caa0`
+  ```diff
+  -    } else if (!m_usedDNS.exchange(true)) {
+  -        std::vector<SocketAddress> peerAddresses = DNSSeeder::GetPeersFromDNS();
+  +    } else if (m_lastDnsAttempt + std::chrono::minutes(5) <= now) {
+  +        m_lastDnsAttempt = now;
+  +        std::vector<SocketAddress> peerAddresses = DNSSeeder::GetPeersFromDNS();
+  ```
+- Evidence: live run (two DNS rounds, addresses added).
 - Risk, rollback: repeated DNS lookups; the five-minute throttle bounds them; rollback restores the single query.
-
 ### G-27 — PIHD detection only (no protocol)
 - Status: N/A for grin v5.5.2 (bit detected, never advertised)
 - Commits: `a5c88bf`, `f73c7e8`, `348d87e`
@@ -314,6 +308,7 @@ documentation-only commits are tracked in the evidence map, not as cards.
 - Rust reference: n/a (defensive bound; the reference validates the archive itself)
 - Before: the `zipped_size` from `TxHashSetArchiveMessage` was used directly to create and write the archive file; zero or arbitrarily large sizes could fill the disk.
 - After: `IsPlausibleSize` requires `0 < size ≤ 8 GiB`; the pipeline rejects an implausible archive before creating the file, marks `TXHASHSET_SYNC_FAILED` and bans `BadTxHashSet`.
+- Diff: `include/P2P/Pipeline/TxHashSetLimits.h`, commit `1c4d020` — 8 GiB archive bound before writing.
 - Evidence: E44, unit `TxHashSetLimits`.
 - Risk, rollback: a legitimate archive above 8 GiB would be rejected (mainnet archives are far below); the constant is in one header; rollback removes the check.
 
@@ -324,38 +319,29 @@ documentation-only commits are tracked in the evidence map, not as cards.
 - Rust reference: n/a (operational safety)
 - Before: the v1→v2 and v2→v3 migrations rewrote the DB in place with no previous copy.
 - After: `DbBackup` copies the open RocksDB directory recursively with stream copies (skipping `LOCK`) to `DB.backup-v<version>-<timestamp>` before migration; a failed copy aborts the migration; a fresh database (version 0) is not copied.
+- Diff: `include/Database/DbBackup.h`, commit `9c6bb34` — recursive stream backup before migration.
 - Evidence: E47, `Test_DbBackup`.
 - Risk, rollback: extra disk/time during migrations; only real migrations copy; rollback removes the backup and the call.
 
-### G-23 — Header MMR structural validation on load
-- Status: PARTIAL (structural check DONE; hash/root revalidation open)
-- Commits: `1c4d020`, `0331ea1`
-- Files: `include/PMMR/Common/MmrStructure.h`, `include/PMMR/HeaderMMR.h`, `src/PMMR/HeaderMMRImpl.h`, `src/BlockChain/BlockChainImpl.cpp`, `tests/src/PMMR/Test_MmrStructure.cpp`
+### G-23 — Header MMR structural validation and rebuild on load
+- Status: PARTIAL (structural check and rebuild DONE; hash/root revalidation open)
+- Commits: `1c4d020`, `0331ea1`, `7997ca5`
+- Files: `include/PMMR/Common/MmrStructure.h`, `include/PMMR/HeaderMMR.h`, `src/PMMR/HeaderMMRImpl.h`, `src/BlockChain/BlockChainImpl.cpp`, `include/BlockChain/DbRecovery.h`, `tests/src/PMMR/Test_MmrStructure.cpp`
 - Rust reference: n/a (MMR invariant `N = 2L − popcount(L)`; see `DB_CONSISTENCY.md`)
-- Before: the raw node count in `header_mmr.bin` was trusted; a truncated append-only file could be loaded as if it were a valid MMR.
-- After: `IsValidNodeCount` verifies `N = 2L − popcount(L)`, `LargestValidNodeCount`/`LeavesForNodes` derive a safe target; loading truncates an impossible size to the largest valid size, with a guard that refuses to truncate when no leaf count can be derived; a regression test covers 3.3M leaves.
-- Evidence: E44 (the first version had a wrong binary-search bound and falsely truncated a healthy MMR; fixed, guarded and regression-tested).
-- Risk, rollback: a false invalid verdict can truncate data (the incident above); the guard, regression test and recovery copies protect; rollback disables the structural check and keeps counts/checkpoint.
-
-### G-52 — Historical TxHashSet snapshot diagnostics (OPEN)
-- Status: OPEN (diagnostics only; no functional fix)
-- Commits: `7973d46`
-- Files: `src/PMMR/TxHashSetManager.cpp`, `src/PMMR/TxHashSetImpl.cpp`, `src/P2P/Pipeline/TxHashSetPipe.cpp`
+- Before: the raw node count in `header_mmr.bin` was trusted; a truncated file could be loaded as a valid MMR, and the first load-time repair truncated the candidate chain when the MMR lagged (live header loss).
+- After: `IsValidNodeCount` verifies `N = 2L − popcount(L)`; a lagging MMR is rebuilt from the block DB (heights from the current leaf count to the candidate tip), only extra MMR leaves are dropped, and every modification requires a size-verified recovery copy; a chain index behind the checkpoint aborts startup instead of truncating. Live injection: MMR −2000 leaves → `Rebuilding header MMR … heights 3316116-3317117`, header preserved, candidate file unchanged (E48).
+- Diff: `include/PMMR/Common/MmrStructure.h`, commit `1c4d020` — `N = 2L − popcount(L)`; rebuild lagging MMR from block DB (E48).
+- Evidence: E44 (structural regression/guard), E48 (no-loss rebuild; abort when the block DB lacks a header).
+- Risk, rollback: a missing DB header aborts startup (safe failure, no truncation); hash-level validation is still absent; rollback disables the rebuild and keeps counts/checkpoint.### G-52 — Historical TxHashSet archive: persistence/serving (OPEN, partially implemented)
+### G-52 — Historical TxHashSet archive: persistence/serving (OPEN, partially implemented)
+- Status: OPEN (archive persistence/serving added; live transfer NOT VERIFIED)
+- Commits: `7973d46`, `7997ca5`
+- Files: `src/PMMR/TxHashSetManager.cpp`, `src/PMMR/TxHashSetImpl.cpp`, `src/P2P/Pipeline/TxHashSetPipe.cpp`, `include/P2P/TxHashSetArchive.h`, `src/P2P/Sync/StateSyncer.cpp`
 - Rust reference: `chain/src/txhashset/txhashset.rs` (archive snapshot)
-- Before: a failed historical snapshot was swallowed (`catch (...) { return; }`) and rewind reported only the commitment, so the reason was invisible.
-- After: the sender logs the flushed and requested heights, the snapshot path and its size; rewind logs the failing block height, input count and spent-position count; the functional gap remains open.
-- Diff: `src/PMMR/TxHashSetManager.cpp`, commit `7973d46`
-  ```diff
-  --- a/src/PMMR/TxHashSetManager.cpp
-  +++ b/src/PMMR/TxHashSetManager.cpp
-  +            LOG_INFO_F(
-  +                "TxHashSet snapshot: flushed height {}, requested height {}.",
-  +                pFlushedHeader != nullptr ? pFlushedHeader->GetHeight() : 0,
-  +                pHeader->GetHeight());
-  ```
-- Evidence: E45/E46 (`flushed 3317111 → requested 3314160`, block `3316349`, 1 input, 0 spent positions).
-- Risk, rollback: logging only; rollback removes the log lines.
-## Known open items (not cards)
+- Before: a failed historical snapshot was swallowed (`catch (...) { return; }`), and serving rebuilt historical state on every request (failing on the spent-position gap at block 3 316 349).
+- After: the activation path saves the horizon state to `NODE/TXHASHSET/archive/TxHashSet.<height>.<hash>.zip` (`ArchivePibdState`), and `TxHashSetPipe` serves that archive by hash without any rewind; snapshot failures log the flushed/requested heights and the failing block/input/spent counts. The underlying spent-position gap remains for arbitrary historical snapshots, and the live archive/legacy transfer is still NOT VERIFIED.
+- Evidence: E45/E46 (diagnosis), E48 (archive persistence code; live pending).
+- Risk, rollback: archive files consume disk; only horizon activations create them; rollback removes the archive directory and the save/serve hooks.## Known open items (not cards)
 
 - **G-52 (OPEN)**: historical `TxHashSet` snapshot/serving fails on a spent-position
   history gap (`Rewind: Spent output not found … block 3 316 349`, zero records for
