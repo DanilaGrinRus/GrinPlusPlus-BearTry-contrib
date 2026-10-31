@@ -88,7 +88,8 @@ void MessageProcessor::ProcessMessage(const std::shared_ptr<Connection>& pConnec
 			e.what()
 		);
 
-		// TODO: Send ban reason
+		// grin 5.5.2 has no ban-reason field on the wire; the reason is logged
+		// locally before the peer is banned.
 		pConnection->BanPeer(e.GetReason());
 		if (m_pSyncStatus != nullptr) {
 			m_pSyncStatus->IncrementBansInvalidData();

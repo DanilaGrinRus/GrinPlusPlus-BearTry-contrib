@@ -54,6 +54,8 @@ public:
 	const std::string& GetFailure() const noexcept { return m_failure; }
 	size_t GetInFlightCount() const noexcept { return m_inFlight.size(); }
 	size_t GetTotalRequestsSent() const noexcept { return m_requestsSent; }
+	size_t GetReceivedSegments() const noexcept { return m_session.GetDownload().GetReceivedCount(); }
+	size_t GetRequiredSegments() const noexcept { return m_session.GetDownload().GetRequiredCount(); }
 
 	// Expire timed-out requests and return the messages to send now.
 	std::vector<IMessagePtr> TakeRequests(const Clock::time_point now)

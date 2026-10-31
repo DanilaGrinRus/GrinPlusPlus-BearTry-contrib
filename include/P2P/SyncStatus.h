@@ -32,7 +32,10 @@ public:
 		m_lastBlockTime(0),
 		m_txHashSetDownloaded(0),
 		m_txHashSetTotalSize(0),
-		m_txHashSetProcessingStatus(0)
+		m_txHashSetProcessingStatus(0),
+		m_pibdReceived(0),
+		m_pibdRequired(0),
+		m_pibdStarted(0)
 	{
 
 	}
@@ -53,10 +56,14 @@ public:
 		m_blockTimeouts(other.m_blockTimeouts.load()),
 		m_blockReassignments(other.m_blockReassignments.load()),
 		m_bansFraudHeight(other.m_bansFraudHeight.load()),
-		m_bansInvalidData(other.m_bansInvalidData.load())
+		m_bansInvalidData(other.m_bansInvalidData.load()),
+		m_pibdReceived(other.m_pibdReceived.load()),
+		m_pibdRequired(other.m_pibdRequired.load()),
+		m_pibdStarted(other.m_pibdStarted.load())
 	{
 		std::lock_guard<std::mutex> lock(other.m_reasonMutex);
 		m_waitingReason = other.m_waitingReason;
+		m_pibdPeer = other.m_pibdPeer;
 	}
 
 	bool IsSyncing() const { return m_syncStatus != ESyncStatus::NOT_SYNCING; }
@@ -79,6 +86,13 @@ public:
 	uint64_t GetBlockReassignments() const { return m_blockReassignments; }
 	uint64_t GetBansFraudHeight() const { return m_bansFraudHeight; }
 	uint64_t GetBansInvalidData() const { return m_bansInvalidData; }
+	uint64_t GetPibdReceived() const { return m_pibdReceived; }
+	uint64_t GetPibdRequired() const { return m_pibdRequired; }
+	time_t GetPibdStarted() const { return m_pibdStarted; }
+	std::string GetPibdPeer() const { std::lock_guard<std::mutex> lock(m_reasonMutex); return m_pibdPeer; }
+	void SetPibdPeer(const std::string& peer) const { std::lock_guard<std::mutex> lock(m_reasonMutex); m_pibdPeer = peer; }
+	void SetPibdProgress(const uint64_t received, const uint64_t required) const { m_pibdReceived = received; m_pibdRequired = required; }
+	void SetPibdStarted(const time_t started) const { m_pibdStarted = started; }
 	void IncrementBlockRequests(const uint64_t count = 1) const { m_blockRequests += count; }
 	void IncrementBlockTimeouts(const uint64_t count = 1) const { m_blockTimeouts += count; }
 	void IncrementBlockReassignments(const uint64_t count = 1) const { m_blockReassignments += count; }
@@ -145,6 +159,10 @@ private:
 	mutable std::atomic<uint64_t> m_bansInvalidData;
 	mutable std::mutex m_reasonMutex;
 	mutable std::string m_waitingReason;
+	mutable std::string m_pibdPeer;
+	mutable std::atomic<uint64_t> m_pibdReceived;
+	mutable std::atomic<uint64_t> m_pibdRequired;
+	mutable std::atomic<time_t> m_pibdStarted;
 };
 
 typedef std::shared_ptr<SyncStatus> SyncStatusPtr;

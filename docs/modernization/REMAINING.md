@@ -30,6 +30,7 @@
 | G-50: повторный DNS-discovery | живой прогон |
 | G-04: допустимые PoW edge-bits (29, 31–63) | E50, `Test_PoWEdgeBits` |
 | G-20: лимиты PIBD/segment-парсеров | E50, `Test_Segment` |
+| G-50: цель 8 outbound вместо MIN_PEERS | E52, `Test_SeederPolicy`, живой прогон 7–8 пиров |
 | G-25: версия 1.2.9 | unit + `/v1/status` |
 | Аудит-дельта EN/DE/RU | 27 карточек, 8 полей, 16 diff-блоков, `PARITY OK` |
 

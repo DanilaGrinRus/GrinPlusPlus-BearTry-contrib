@@ -1,4 +1,5 @@
 #include "Seeder.h"
+#include <P2P/Seed/SeederPolicy.h>
 #include "DNSSeeder.h"
 #include "PeerManager.h"
 #include "../ConnectionManager.h"
@@ -81,18 +82,21 @@ void Seeder::Thread_Seed(Seeder& seeder)
     auto lastNoPeerLog = std::chrono::system_clock::now() - std::chrono::seconds(60);
     uint32_t seedBackoffSeconds = 5;
 
-    const size_t minimumConnections = Global::GetConfig().GetMinPeers();
+    const size_t minimumConnections = (size_t)(std::max)(0, Global::GetConfig().GetMinPeers());
+    const size_t maximumConnections = (size_t)(std::max)(0, Global::GetConfig().GetMaxPeers());
+    const size_t targetConnections = SeederPolicy::TargetOutbound(minimumConnections, maximumConnections);
+    LOG_INFO_F("Peer target: {} outbound (MIN_PEERS={}, MAX_PEERS={})", targetConnections, minimumConnections, maximumConnections);
     while (!seeder.m_terminate && Global::IsRunning()) {
         try {
             seeder.m_connectionManager.PruneConnections(true);
 
             auto now = std::chrono::system_clock::now();
             const size_t numOutbound = seeder.m_connectionManager.GetNumOutbound();
-            if (numOutbound < minimumConnections &&
+            if (numOutbound < targetConnections &&
                 lastConnectTime + std::chrono::seconds(seedBackoffSeconds) < now) {
                 lastConnectTime = now;
 
-                const size_t connectionsToAdd = (std::min)((size_t)15, (minimumConnections - numOutbound));
+                const size_t connectionsToAdd = SeederPolicy::ConnectionsToAdd(numOutbound, targetConnections, 15);
                 bool attempted = false;
                 for (size_t i = 0; i < connectionsToAdd; i++) {
                     attempted = seeder.SeedNewConnection() || attempted;

@@ -78,7 +78,8 @@ public:
 			maxPayloadSize = P2P::MAX_BLOCK_SIZE;
 		}
 
-		// TODO 4x the limits, matching Grin 5.5.2, to leave room for future changes.
+		// Grin 5.5.2 allows 4x the per-type cap for forward compatibility; keep
+		// the same multiplier so a future message variant is not rejected here.
 		if (messageLength > maxPayloadSize * 4) {
 			throw DESERIALIZATION_EXCEPTION("Message header is invalid. Message length too long");
 		}

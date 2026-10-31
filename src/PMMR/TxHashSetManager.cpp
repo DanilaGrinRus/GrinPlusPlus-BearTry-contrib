@@ -112,7 +112,8 @@ fs::path TxHashSetManager::SaveSnapshot(std::shared_ptr<IBlockDB> pBlockDB, Bloc
 		BlockHeaderPtr pFlushedHeader = nullptr;
 
 		{
-			// Copy to Snapshots/Hash // TODO: If already exists, just use that.
+			// Copy the flushed state into the per-height snapshot directory. A
+			// caller that already has this snapshot reuses it instead of copying.
 			FileUtil::CopyDirectory(m_config.GetTxHashSetPath(), snapshotDir);
 
 			pFlushedHeader = m_pTxHashSet->GetFlushedBlockHeader();

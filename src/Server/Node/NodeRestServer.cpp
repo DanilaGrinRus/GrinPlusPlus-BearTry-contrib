@@ -34,6 +34,7 @@ NodeRestServer::UPtr NodeRestServer::Create(const Config& config, std::shared_pt
 	pServer->AddListener("/v1/chain", ChainAPI::GetChain_Handler, pNodeContext.get());
 	pServer->AddListener("/v1/peers/all", PeersAPI::GetAllPeers_Handler, pNodeContext.get());
 	pServer->AddListener("/v1/peers/connected", PeersAPI::GetConnectedPeers_Handler, pNodeContext.get());
+	pServer->AddListener("/v1/peers/diagnostics", PeersAPI::GetDiagnostics_Handler, pNodeContext.get());
 	pServer->AddListener("/v1/peers/", PeersAPI::Peer_Handler, pNodeContext.get());
 	pServer->AddListener("/v1/txhashset/roots", TxHashSetAPI::GetRoots_Handler, pNodeContext.get());
 	pServer->AddListener("/v1/txhashset/lastkernels", TxHashSetAPI::GetLastKernels_Handler, pNodeContext.get());

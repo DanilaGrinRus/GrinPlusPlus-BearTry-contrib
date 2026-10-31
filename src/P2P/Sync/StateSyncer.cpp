@@ -165,6 +165,9 @@ StateSyncer::EPibdResult StateSyncer::TryPibd(SyncStatus& syncStatus)
 
 	if (status == PibdSync::EStatus::Failed) {
 		LOG_WARNING_F("PIBD failed: {}", m_pPibdSync->GetError());
+		syncStatus.SetPibdPeer("");
+		syncStatus.SetPibdProgress(0, 0);
+		syncStatus.SetPibdStarted(0);
 		m_pPibdSync->Reset();
 		return RetryOrDisablePibd();
 	}
@@ -236,16 +239,24 @@ StateSyncer::EPibdResult StateSyncer::TryPibd(SyncStatus& syncStatus)
 			horizon.BlockHash,
 			m_pibdPeer);
 		syncStatus.UpdateStatus(ESyncStatus::SYNCING_TXHASHSET);
+		syncStatus.SetPibdPeer(m_pibdPeer->GetIPAddress().Format());
+		syncStatus.SetPibdStarted(std::time(nullptr));
+		syncStatus.SetPibdProgress(0, 0);
 		SendPibdRequests(now);
 		return EPibdResult::InProgress;
 	}
 
 	if (status == PibdSync::EStatus::Downloading) {
 		SendPibdRequests(now);
+		const PibdSync::Progress progress = m_pPibdSync->GetProgress();
+		syncStatus.SetPibdProgress(progress.Received, progress.Required);
 
 		const PibdSync::EStatus updated = m_pPibdSync->GetStatus();
 		if (updated == PibdSync::EStatus::Failed) {
 			LOG_WARNING_F("PIBD failed: {}", m_pPibdSync->GetError());
+			syncStatus.SetPibdPeer("");
+			syncStatus.SetPibdProgress(0, 0);
+			syncStatus.SetPibdStarted(0);
 			m_pPibdSync->Reset();
 			return RetryOrDisablePibd();
 		}
@@ -275,6 +286,9 @@ StateSyncer::EPibdResult StateSyncer::TryPibd(SyncStatus& syncStatus)
 	if (chainStatus == EBlockChainStatus::SUCCESS) {
 		LOG_INFO("PIBD state sync completed and validated.");
 		ArchivePibdState(m_pibdHorizonHash);
+		syncStatus.SetPibdPeer("");
+		syncStatus.SetPibdProgress(0, 0);
+		syncStatus.SetPibdStarted(0);
 		m_pibdPeer = nullptr;
 		m_pibdPeersTried.clear();
 		m_pibdRound = 0;
@@ -283,6 +297,9 @@ StateSyncer::EPibdResult StateSyncer::TryPibd(SyncStatus& syncStatus)
 	}
 
 	LOG_WARNING("PIBD state failed chain validation; falling back to txhashset.zip");
+	syncStatus.SetPibdPeer("");
+	syncStatus.SetPibdProgress(0, 0);
+	syncStatus.SetPibdStarted(0);
 	DisablePibd();
 	return EPibdResult::NotAttempted;
 }

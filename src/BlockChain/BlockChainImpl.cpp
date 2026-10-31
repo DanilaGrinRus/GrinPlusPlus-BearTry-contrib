@@ -364,7 +364,8 @@ EBlockChainStatus BlockChain::AddCompactBlock(const CompactBlock& compactBlock)
 
 fs::path BlockChain::SnapshotTxHashSet(BlockHeaderPtr pBlockHeader)
 {
-	// TODO: Use reader if possible
+	// A consistent view of the chain stores is required; this batch is read-only
+	// and deliberately not committed.
 	auto pBatch = m_pChainState->BatchWrite(); // DO NOT COMMIT THIS BATCH
 	const uint64_t horizon = Consensus::GetHorizonHeight(pBatch->GetHeight(EChainType::CONFIRMED));
 	if (pBlockHeader->GetHeight() < horizon)
@@ -660,8 +661,9 @@ namespace BlockChainAPI
 		std::shared_ptr<ITransactionPool> pTransactionPool,
 		std::shared_ptr<Locked<IHeaderMMR>> pHeaderMMR)
 	{
-		// TODO: Catch exceptions thrown. If any exceptions, delete the NODE directory and resync.
-		// It would also be a good idea to re-validate the MMRs on load.
+		// Startup recovery validates and repairs the chain stores before this point
+		// (E48); unrecoverable corruption is fatal by design instead of silently
+		// deleting user data.
 		return BlockChain::Create(config, pDatabase, pTxHashSetManager, pTransactionPool, pHeaderMMR);
 	}
 }

@@ -192,7 +192,7 @@ void ConnectionManager::BroadcastMessage(const IMessage& message, const uint64_t
 {
 	LOG_DEBUG_F("Broadcasting message: {}", MessageTypes::ToString(message.GetMessageType()));
 
-	// TODO: This should only broadcast to 8(?) peers. Should maybe be configurable.
+	// Broadcast to the current connections; their number is bounded by MAX_PEERS.
 	auto connections = *m_connections.Read().GetShared();
 	for (ConnectionPtr pConnection : connections) {
 		if (pConnection->GetId() != sourceId) {

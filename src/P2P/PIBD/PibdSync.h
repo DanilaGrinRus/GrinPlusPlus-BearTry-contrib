@@ -75,6 +75,24 @@ public:
 		return m_error;
 	}
 
+	struct Progress
+	{
+		size_t Received = 0;
+		size_t Required = 0;
+		bool Active = false;
+	};
+
+	Progress GetProgress() const
+	{
+		std::lock_guard<std::mutex> lock(m_mutex);
+		if (m_scheduler == nullptr) {
+			return {};
+		}
+
+		return { m_scheduler->GetReceivedSegments(), m_scheduler->GetRequiredSegments(),
+			m_status == EStatus::Downloading };
+	}
+
 	// Starts a download at the given horizon. A stale staging directory from an
 	// earlier attempt is removed first.
 	bool Start(const PibdDownload::Horizon& horizon, const Clock::time_point now)

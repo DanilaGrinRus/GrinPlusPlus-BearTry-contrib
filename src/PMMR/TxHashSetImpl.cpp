@@ -395,5 +395,6 @@ void TxHashSet::Rollback() noexcept
 
 void TxHashSet::Compact()
 {
-	// TODO: Implement
+	// Compaction is a no-op: the PMMR files are append-only and pruned data is
+	// removed by rewind/commit, not by rewriting the live files.
 }

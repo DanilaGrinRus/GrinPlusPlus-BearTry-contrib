@@ -1287,3 +1287,32 @@ message-size cap; добавлена явная проверка `numLeaves <= r
 checkpoint → rename. Каталоги на Windows отдельно не флашатся (нет API);
 это задокументировано как остаточное ограничение. Тесты: **171 кейс / 1839
 проверок PASS**.
+
+## E52. Цель 8 исходящих пиров, диагностика и ревизия комментариев
+
+**1. Seeder: цель 8 outbound (G-50).** Раньше `Seeder::Thread_Seed` держал ровно
+`MIN_PEERS` (старые конфиги 2–3), поэтому узел стоял на 2–3 соединениях.
+Добавлен `SeederPolicy::TargetOutbound(min, max)` = `max(min(8,max), min(min,max))`:
+старый `MIN_PEERS=2` автоматически даёт цель 8, `MAX_PEERS` остаётся жёстким
+потолком, а явный `MIN_PEERS>8` уважается. `ConnectionsToAdd` ограничивает
+пачку 15. Unit `Test_SeederPolicy` (11 проверок). Живой эффект: **7–8
+outbound** вместо 1–3; PIBD скачал **4988/4989 сегментов** и перешёл к
+валидации TxHashSet (02:01:41).
+
+**2. Диагностический REST-эндпоинт.** Явный
+`GET /v1/peers/diagnostics` (REST-порт, не P2P 13414) отдаёт:
+`totals` (connected/inbound/outbound/banned), `banned` (IP, причина, время),
+`connected` (height, direction, capabilities, user_agent, protocol_version,
+`is_download_source`), `download` (текущий PIBD-источник, сегменты, %, примерная
+скорость seg/min, статус) и `versions`. PIBD-пир/прогресс добавлены в
+`SyncStatus` и обновляются из `StateSyncer`. Это обычный диагностический API,
+не часть P2P-совместимости.
+
+**3. G-51: ревизия комментариев/секретов.** `AUDIT_COMMENTS.md` заполнен:
+112 изменённых файлов, 0 кириллицы, 0 жёстких `C:\DHW`, 0 TODO в диффе
+(8 переписаны/удалены, мёртвый код в `ChainState.h` удалён), 0 секретов
+(131 совпадение — имена ключей/пути). `AUDIT_CHECKLIST.md` создан; остались
+лицензии, README EN/DE/RU, финальные хеши/подпись.
+
+**Тесты:** **172 кейса / 1859 проверок PASS**. Артефакты: `GrinNode.exe`
+`9B67F5DE…`, `Tests.exe` `49D47100…`.
