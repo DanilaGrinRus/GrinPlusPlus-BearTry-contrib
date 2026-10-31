@@ -30,8 +30,10 @@
 11 зависимостей зафиксированных версий в `.toolchain/sysroot` (SHA-256 исходников,
 статический CRT), `tools/build/build.ps1` конфигурирует проект и собирает цели.
 
-Результат: `GrinNode.exe` (7 225 344 B) и `Tests.exe` (7 747 584 B); полный набор
-тестов — **80 кейсов / 558 проверок PASS**; smoke-запуск ноды на floonet — PASS.
+Результат фазы 1 (на тот момент): `GrinNode.exe` (7 225 344 B) и `Tests.exe`
+(7 747 584 B); полный набор тестов — **80 кейсов / 558 проверок PASS**; smoke-запуск
+ноды на floonet — PASS. Актуальный прогон — в последней записи `TEST_RESULTS.md`
+(E35: 140 кейсов / 1603 проверки PASS).
 Подробности и команды: `BUILD.md`, `TEST_RESULTS.md` (E6-E9).
 
 Остаток фазы: перенести пин зависимостей в репозиторий (`vcpkg.json` с
@@ -62,12 +64,14 @@ G-26 закрыт, `PibdSync` связывает download → snapshot → stagi
 `PIBD_HIST_1`-пира, закрывает txhashset, активирует staging и валидирует набор, при
 сбое откатывается на txhashset.zip; `Recover` вызывается при старте. Серверная выдача сегментов подключена (запросы 21/23/25/27 обслуживаются из
 текущего txhashset), `PIBD_HIST`/`PIBD_HIST_1` рекламируются, `MIN_SYNC_PEERS`
-конфигурируем. Живой interop доведён до handshake и обмена сообщениями с Rust v5.5.2:
-Rust видит `PIBD_HIST | PIBD_HIST_1`, Grin++ принимает `GetPeerAddrs`/`Ping`;
-исправлены accept-loop (G-29) и реклама возможностей в handshake (G-30), добавлен
-настраиваемый `P2P_PORT`. Полный PIBD-обмен требует уже синхронизированного
-floonet-пира (testnet-заголовки идут ~38/с). Следующий шаг — синхронизированный
-пир для PIBD-обмена, затем resume и PIHD.
+конфигурируем. Живой interop пройден полностью (E31–E34): заголовки testnet
+синхронизированы, PIBD-сегменты 22/24/26/28 загружены и провалидированы, staging
+записан, активация выполнена, активированный TxHashSet провалидирован (kernel
+history/sums/rangeproofs), цепочка догнана до `FULLY_SYNCED` и переживает рестарт.
+По ходу найдены и исправлены: горизонт (G-31), wire-формат `BitmapBlock` (G-32),
+порядок бит (G-35). Журнальный resume реализован (unit; живой прогон — NOT RUN).
+Остаток фазы: живой serving (наш узел отдаёт сегменты Rust-пиру), живой журнальный
+resume и G-38 (ложные баны block sync): без него живые проверки упираются в простой.
 
 1. Сообщения 21–28 (уже в `MessageTypes`): `SegmentRequest{block_hash, identifier}`,
    `SegmentResponse<T>`, `OutputSegmentResponse`, `OutputBitmapSegmentResponse`,
@@ -104,6 +108,10 @@ output/kernel/rangeproof roots и height/tip, что и у Rust-ноды на т
 сегментация заголовков, параллельная загрузка, проверка непрерывности/PoW/cumulative
 difficulty, безопасное применение, обработка fork/reorg, fallback на legacy header sync.
 До готовности сервера — download-only и без рекламы `PIHD_HIST`.
+
+**Статус: N/A для v5.5.2.** В эталоне нет сообщений PIHD (enum заканчивается на
+`KernelSegment = 28`), бит `0x80` только детектируется и не рекламируется (E33).
+Фаза имеет смысл только вместе с расширением эталона.
 
 ---
 

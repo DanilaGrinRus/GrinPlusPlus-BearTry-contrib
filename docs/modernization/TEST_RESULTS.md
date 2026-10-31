@@ -787,7 +787,7 @@ block sync до типсы → рестарт без повторной загр
 | Smoke-запуск ноды (floonet) | PASS |
 | Живая синхронизация заголовков с testnet (Rust-совместимая сеть) | PASS (E31) |
 | PIBD desegmenter/planner/serving | PASS (unit) |
-| PIBD resume между рестартами | NOT IMPLEMENTED |
+| Живой serving: Rust-пир запрашивает сегменты у нас | NOT RUN (только unit, `Test_PibdServing`) |
 | Живой PIBD: загрузка+активация состояния | PASS (E32) |
 | Валидация активированного TxHashSet (kernel history/sums/rangeproofs) | PASS (E33) |
 | Догон блоков после активации | PASS с обходом G-38 (очистка банов + 12 пиров): `FULLY_SYNCED` на 3316561 (E34) |
