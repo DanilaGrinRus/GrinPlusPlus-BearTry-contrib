@@ -30,6 +30,15 @@ documentation-only commits are tracked in the evidence map, not as cards.
 - Rust reference: `core/src/ser.rs` (reader bounds checks)
 - Before: varint/vector/string readers could consume bytes beyond the payload and size arithmetic was not checked against the remaining buffer.
 - After: every read is bounds-checked against the buffer end (protocol-version aware); truncated and oversized inputs fail cleanly; unit tests cover both.
+- Diff: `include/Core/Serialization/ByteBuffer.h`, commit `fc9e988`
+  ```diff
+  --- a/include/Core/Serialization/ByteBuffer.h
+  +++ b/include/Core/Serialization/ByteBuffer.h
+  -        if (m_index + sizeof(T) > m_bytes.size()) {
+  -            throw DESERIALIZATION_EXCEPTION("Attempted to read past end of ByteBuffer.");
+  -        }
+  +        RequireRemaining(sizeof(T));
+  ```
 - Evidence: E2 (reproduced before/after), `Test_ByteBuffer`.
 - Risk, rollback: strict checks can reject edge-valid messages; the protocol-version gate limits this to formats that require it; roll back by reverting `ByteBuffer`.
 
@@ -80,6 +89,15 @@ documentation-only commits are tracked in the evidence map, not as cards.
 - Rust reference: `p2p/src/msg.rs` (Hand/Shake fields)
 - Before: the handshake advertised a hardcoded `FAST_SYNC_NODE`, hiding the PIBD bits, and the listen port was also used to dial the network.
 - After: the handshake advertises `ADVERTISED` (`FAST_SYNC_NODE | PIBD_HIST | PIBD_HIST_1`); `P2P_PEER_PORT` selects the dialling port; both are configuration-backed and tested.
+- Diff: `src/P2P/Seed/HandShake.cpp`, commit `72c94f2`
+  ```diff
+  --- a/src/P2P/Seed/HandShake.cpp
+  +++ b/src/P2P/Seed/HandShake.cpp
+  -        Capabilities::FAST_SYNC_NODE,
+  +        Capabilities::ADVERTISED,
+  -        Capabilities::FAST_SYNC_NODE,
+  +        Capabilities::ADVERTISED,
+  ```
 - Evidence: E30 (a live Rust peer sees `TXHASHSET_HIST | PEER_LIST | PIBD_HIST | PIBD_HIST_1`).
 - Risk, rollback: peers may treat extra bits differently; PIBD bits can be disabled by policy; rollback restores the previous advertised value.
 
@@ -110,6 +128,19 @@ documentation-only commits are tracked in the evidence map, not as cards.
 - Rust reference: `chain/src/txhashset/txhashset.rs` (snapshot), activation semantics
 - Before: a downloaded PIBD state had no crash-safe staging/activation path.
 - After: `PibdStateWriter` writes staging PMMR files; activation uses a temporary directory/marker and switches after validation; tests inject crashes in both directions and verify recovery.
+- Diff: `src/P2P/PIBD/PibdActivation.h`, commit `fcea044`
+  ```diff
+  --- /dev/null
+  +++ b/src/P2P/PIBD/PibdActivation.h
+  +// Atomic activation of a downloaded PIBD state.
+  +//
+  +// The writer produces a complete state in a staging directory. Activation swaps
+  +// it in with two renames and a marker file:
+  +//
+  +//   1. write <live parent>/pibd_activation.pending with (staging, backup) paths
+  +//   2. rename live -> backup            (if a live state exists)
+  +//   3. rename staging -> live
+  ```
 - Evidence: `Test_PibdStateWriter`, `Test_PibdActivation`.
 - Risk, rollback: a partial staging directory must never be installed; the activation marker and tests enforce it; rollback deletes staging and keeps the live state.
 
@@ -140,6 +171,18 @@ documentation-only commits are tracked in the evidence map, not as cards.
 - Rust reference: `chain/src/chain.rs:985` (`txhashset_archive_header`)
 - Before: PIBD requested the candidate tip hash, so peers answered `SegmenterHeaderMismatch`.
 - After: the horizon is `archive_height = (head − STATE_SYNC_THRESHOLD)` rounded down to `TXHASHSET_ARCHIVE_INTERVAL = 720`; PIBD and legacy archive requests use that height.
+- Diff: `src/P2P/Sync/StateSyncer.cpp`, commit `39b77a9`
+  ```diff
+  --- a/src/P2P/Sync/StateSyncer.cpp
+  +++ b/src/P2P/Sync/StateSyncer.cpp
+  +        // archive_height = (header_head - STATE_SYNC_THRESHOLD) rounded down to a
+  +        // multiple of TXHASHSET_ARCHIVE_INTERVAL (grin txhashset_archive_header_header_only).
+  +        uint64_t archiveHeight = pTip->GetHeight();
+  +        archiveHeight = archiveHeight > Consensus::STATE_SYNC_THRESHOLD
+  +            ? archiveHeight - Consensus::STATE_SYNC_THRESHOLD
+  +            : 0;
+  +        archiveHeight -= archiveHeight % Consensus::TXHASHSET_ARCHIVE_INTERVAL;
+  ```
 - Evidence: E31 (live segment matches `header.output_root`), E42.
 - Risk, rollback: an off-by-one interval breaks segment validation; oracle/live tests pin it; rollback restores the tip request (known broken).
 
@@ -150,6 +193,15 @@ documentation-only commits are tracked in the evidence map, not as cards.
 - Rust reference: `chain/src/txhashset/bitmap_accumulator.rs:470,213`
 - Before: a `BitmapBlock` held 16 chunks and indexed bits LSB-first; sparse (positive/negative) segments were misread and real segments did not deserialize.
 - After: 2^16 bits = 64 chunks × 1024; bit `n` lives in byte `n/8`, bit `7−(n%8)` (MSB-first, as `bitvec::to_bytes`); raw chunks serialize the 1024 bytes without a length prefix.
+- Diff: `src/PMMR/Models/BitmapChunk.h`, commit `c6ab7ff`
+  ```diff
+  --- a/src/PMMR/Models/BitmapChunk.h
+  +++ b/src/PMMR/Models/BitmapChunk.h
+  -        return (m_bytes[idx / 8] & (uint8_t)(1u << (idx % 8))) != 0;
+  +        return (m_bytes[idx / 8] & (uint8_t)(1u << (7 - (idx % 8)))) != 0;
+  -        const uint8_t mask = (uint8_t)(1u << (idx % 8));
+  +        const uint8_t mask = (uint8_t)(1u << (7 - (idx % 8)));
+  ```
 - Evidence: E32/E35, oracle vectors (`grin_chain 5.5.2`): 7/7 segment roots and the whole bitmap root match.
 - Risk, rollback: wrong bit order silently corrupts roots; oracle and unit vectors catch it; rollback restores the previous layout only with PIBD disabled.
 
@@ -180,6 +232,15 @@ documentation-only commits are tracked in the evidence map, not as cards.
 - Rust reference: `servers/src/grin/sync/body_sync.rs:149,191-204`, `header_sync.rs:135-141`
 - Before: `BlockSyncer` banned a peer for `FraudHeight` after two timeouts, `m_slowPeers` never expired, the request window ignored peer heights, and seeder/syncer stayed silent after the bans.
 - After: a timeout is counted and the block is reassigned, never banned; requests are capped by `min(candidate tip, network height, per-connection height)` and batch ≤100; retry is 6 s (1 s with progress) plus backoff; a slow peer gets a 60 s cooldown; `FraudHeight` requires a higher claimed work and 120 s without header progress; seeder logs the reason/backoff; `/v1/status` exposes waiting reason and counters.
+- Diff: `src/P2P/Sync/BlockSyncPolicy.h`, commit `4dbae1b`
+  ```diff
+  --- /dev/null
+  +++ b/src/P2P/Sync/BlockSyncPolicy.h
+  +// Behaviour mirrored from grin v5.5.2 body_sync.rs / header_sync.rs:
+  +//   * a timeout is never fraud: reassign the block and count it;
+  +//   * FraudHeight requires a peer that claims more work than we have and has
+  +//     made no progress for a long time;
+  ```
 - Evidence: E37 (32-min live window), E42 (4 222 reassignments, zero fraud bans).
 - Risk, rollback: without bans an unresponsive peer can slow catch-up; cooldown and rotation bound it; rollback restores the previous ban path.
 
@@ -210,6 +271,19 @@ documentation-only commits are tracked in the evidence map, not as cards.
 - Rust reference: n/a (crash-consistency design; `DB_CONSISTENCY.md` §4)
 - Before: `header_mmr.bin`, `candidate.chain` and `confirmed.chain` were committed independently; a crash between commits left them at different heights and the load path trusted the raw counts.
 - After: after all four store commits `ChainState::Commit` writes `chain.checkpoint` (52 bytes: magic/version/sequence/`mmr_leaves`/candidate/confirmed/FNV-1a) via temp+rename; `BlockChain::Create` repairs every store to `min(actual, checkpoint)` and writes a fresh checkpoint; the four files are copied to `NODE/recovery-*` before repair and `db_repaired` is exposed in `/v1/status`.
+- Diff: `src/BlockChain/DbCheckpoint.h`, commit `fdef6e6`
+  ```diff
+  --- /dev/null
+  +++ b/src/BlockChain/DbCheckpoint.h
+  +struct DbCheckpointData
+  +{
+  +    uint64_t Sequence = 0;
+  +    uint64_t MmrLeaves = 0;
+  +    uint64_t CandidateEntries = 0;
+  +    uint64_t ConfirmedEntries = 0;
+  +};
+  +// "GRINPPCK" magic, version, FNV-1a checksum; written via temp + rename
+  ```
 - Evidence: E43 (hard kill restart seq 26→27; live mismatch repair), E44 (recovery/`db_repaired`).
 - Risk, rollback: an overly conservative checkpoint drops uncommitted headers; recovery copies are kept; rollback removes `chain.checkpoint` and falls back to the count heuristic.
 
@@ -270,6 +344,15 @@ documentation-only commits are tracked in the evidence map, not as cards.
 - Rust reference: `chain/src/txhashset/txhashset.rs` (archive snapshot)
 - Before: a failed historical snapshot was swallowed (`catch (...) { return; }`) and rewind reported only the commitment, so the reason was invisible.
 - After: the sender logs the flushed and requested heights, the snapshot path and its size; rewind logs the failing block height, input count and spent-position count; the functional gap remains open.
+- Diff: `src/PMMR/TxHashSetManager.cpp`, commit `7973d46`
+  ```diff
+  --- a/src/PMMR/TxHashSetManager.cpp
+  +++ b/src/PMMR/TxHashSetManager.cpp
+  +            LOG_INFO_F(
+  +                "TxHashSet snapshot: flushed height {}, requested height {}.",
+  +                pFlushedHeader != nullptr ? pFlushedHeader->GetHeight() : 0,
+  +                pHeader->GetHeight());
+  ```
 - Evidence: E45/E46 (`flushed 3317111 → requested 3314160`, block `3316349`, 1 input, 0 spent positions).
 - Risk, rollback: logging only; rollback removes the log lines.
 ## Known open items (not cards)

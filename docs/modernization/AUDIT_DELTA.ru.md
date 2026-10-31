@@ -30,6 +30,15 @@
 - Ссылка на Rust: `core/src/ser.rs` (проверки границ чтения)
 - Было: чтение varint/vector/string могло выйти за пределы payload; арифметика размеров не проверялась против остатка буфера.
 - Стало: каждое чтение проверяется по концу буфера (с учётом версии протокола); усечённые и чрезмерные входы аккуратно отвергаются; unit-тесты покрывают оба случая.
+- Дифф: `include/Core/Serialization/ByteBuffer.h`, коммит `fc9e988`
+  ```diff
+  --- a/include/Core/Serialization/ByteBuffer.h
+  +++ b/include/Core/Serialization/ByteBuffer.h
+  -        if (m_index + sizeof(T) > m_bytes.size()) {
+  -            throw DESERIALIZATION_EXCEPTION("Attempted to read past end of ByteBuffer.");
+  -        }
+  +        RequireRemaining(sizeof(T));
+  ```
 - Доказательство: E2 (воспроизведено до/после), `Test_ByteBuffer`.
 - Риск, откат: строгие проверки могут отвергнуть погранично-валидные сообщения; версионный гейт ограничивает это; откат — вернуть `ByteBuffer`.
 
@@ -80,6 +89,15 @@
 - Ссылка на Rust: `p2p/src/msg.rs` (поля Hand/Shake)
 - Было: handshake рекламировал жёстко зашитый `FAST_SYNC_NODE`, из-за чего PIBD-биты не были видны; порт прослушивания использовался и для исходящих соединений.
 - Стало: handshake рекламирует `ADVERTISED` (`FAST_SYNC_NODE | PIBD_HIST | PIBD_HIST_1`); `P2P_PEER_PORT` задаёт порт дозвона; оба параметра конфигурируются и тестируются.
+- Дифф: `src/P2P/Seed/HandShake.cpp`, коммит `72c94f2`
+  ```diff
+  --- a/src/P2P/Seed/HandShake.cpp
+  +++ b/src/P2P/Seed/HandShake.cpp
+  -        Capabilities::FAST_SYNC_NODE,
+  +        Capabilities::ADVERTISED,
+  -        Capabilities::FAST_SYNC_NODE,
+  +        Capabilities::ADVERTISED,
+  ```
 - Доказательство: E30 (живой Rust-пир видит `TXHASHSET_HIST | PEER_LIST | PIBD_HIST | PIBD_HIST_1`).
 - Риск, откат: пиры могут иначе трактовать лишние биты; PIBD-биты отключаются политикой; откат возвращает прежнее значение.
 
@@ -110,6 +128,19 @@
 - Ссылка на Rust: `chain/src/txhashset/txhashset.rs` (snapshot), семантика активации
 - Было: для загруженного состояния PIBD не было краш-безопасного staging/активации.
 - Стало: `PibdStateWriter` пишет staging-PMMR; активация использует временный каталог/маркер и переключается после валидации; тесты инжектируют падения в обе стороны и проверяют восстановление.
+- Дифф: `src/P2P/PIBD/PibdActivation.h`, коммит `fcea044`
+  ```diff
+  --- /dev/null
+  +++ b/src/P2P/PIBD/PibdActivation.h
+  +// Atomic activation of a downloaded PIBD state.
+  +//
+  +// The writer produces a complete state in a staging directory. Activation swaps
+  +// it in with two renames and a marker file:
+  +//
+  +//   1. write <live parent>/pibd_activation.pending with (staging, backup) paths
+  +//   2. rename live -> backup            (if a live state exists)
+  +//   3. rename staging -> live
+  ```
 - Доказательство: `Test_PibdStateWriter`, `Test_PibdActivation`.
 - Риск, откат: частичный staging нельзя устанавливать; маркер и тесты это обеспечивают; откат удаляет staging и сохраняет живое состояние.
 
@@ -140,6 +171,18 @@
 - Ссылка на Rust: `chain/src/chain.rs:985` (`txhashset_archive_header`)
 - Было: PIBD запрашивал hash candidate tip, и пиры отвечали `SegmenterHeaderMismatch`.
 - Стало: горизонт `archive_height = (head − STATE_SYNC_THRESHOLD)`, округлённый вниз до `TXHASHSET_ARCHIVE_INTERVAL = 720`; PIBD и legacy-запрос архива используют эту высоту.
+- Дифф: `src/P2P/Sync/StateSyncer.cpp`, коммит `39b77a9`
+  ```diff
+  --- a/src/P2P/Sync/StateSyncer.cpp
+  +++ b/src/P2P/Sync/StateSyncer.cpp
+  +        // archive_height = (header_head - STATE_SYNC_THRESHOLD) rounded down to a
+  +        // multiple of TXHASHSET_ARCHIVE_INTERVAL (grin txhashset_archive_header_header_only).
+  +        uint64_t archiveHeight = pTip->GetHeight();
+  +        archiveHeight = archiveHeight > Consensus::STATE_SYNC_THRESHOLD
+  +            ? archiveHeight - Consensus::STATE_SYNC_THRESHOLD
+  +            : 0;
+  +        archiveHeight -= archiveHeight % Consensus::TXHASHSET_ARCHIVE_INTERVAL;
+  ```
 - Доказательство: E31 (живой сегмент сходится с `header.output_root`), E42.
 - Риск, откат: off-by-one в интервале ломает валидацию сегментов; оракул/живые тесты это закрепляют; откат возвращает запрос по tip (известно неверный).
 
@@ -150,6 +193,15 @@
 - Ссылка на Rust: `chain/src/txhashset/bitmap_accumulator.rs:470,213`
 - Было: `BitmapBlock` содержал 16 чанков и индексировал биты LSB-first; sparse (positive/negative) сегменты читались неверно, реальные сегменты не десериализовались.
 - Стало: 2^16 бит = 64 чанка × 1024; бит `n` лежит в байте `n/8`, бит `7−(n%8)` (MSB-first, как `bitvec::to_bytes`); raw-чанки пишут 1024 байта без префикса длины.
+- Дифф: `src/PMMR/Models/BitmapChunk.h`, коммит `c6ab7ff`
+  ```diff
+  --- a/src/PMMR/Models/BitmapChunk.h
+  +++ b/src/PMMR/Models/BitmapChunk.h
+  -        return (m_bytes[idx / 8] & (uint8_t)(1u << (idx % 8))) != 0;
+  +        return (m_bytes[idx / 8] & (uint8_t)(1u << (7 - (idx % 8)))) != 0;
+  -        const uint8_t mask = (uint8_t)(1u << (idx % 8));
+  +        const uint8_t mask = (uint8_t)(1u << (7 - (idx % 8)));
+  ```
 - Доказательство: E32/E35, оракульные векторы (`grin_chain 5.5.2`): 7/7 корней сегментов и корень всего битмапа совпадают.
 - Риск, откат: неверный порядок бит молча портит корни; оракул/unit-векторы это ловят; откат — только с отключённым PIBD.
 
@@ -180,6 +232,15 @@
 - Ссылка на Rust: `servers/src/grin/sync/body_sync.rs:149,191-204`, `header_sync.rs:135-141`
 - Было: `BlockSyncer` банил пира за `FraudHeight` после двух таймаутов, `m_slowPeers` не истекал, окно запросов игнорировало высоты пиров, seeder/syncer молчали после банов.
 - Стало: таймаут считается и блок переназначается, без бана; запросы ограничены `min(candidate tip, network height, per-connection height)` и batch ≤100; retry 6 с (1 с при прогрессе) + backoff; медленный пир получает cooldown 60 с; `FraudHeight` требует большей заявленной работы и 120 с без прогресса заголовков; seeder логирует причину/backoff; `/v1/status` отдаёт waiting reason и счётчики.
+- Дифф: `src/P2P/Sync/BlockSyncPolicy.h`, коммит `4dbae1b`
+  ```diff
+  --- /dev/null
+  +++ b/src/P2P/Sync/BlockSyncPolicy.h
+  +// Behaviour mirrored from grin v5.5.2 body_sync.rs / header_sync.rs:
+  +//   * a timeout is never fraud: reassign the block and count it;
+  +//   * FraudHeight requires a peer that claims more work than we have and has
+  +//     made no progress for a long time;
+  ```
 - Доказательство: E37 (32-минутное живое окно), E42 (4 222 переназначения, ноль fraud-банов).
 - Риск, откат: без банов неотвечающий пир может замедлить догон; cooldown/ротация ограничивают; откат возвращает прежний путь бана.
 
@@ -210,6 +271,19 @@
 - Ссылка на Rust: n/a (дизайн краш-согласованности; `DB_CONSISTENCY.md` §4)
 - Было: `header_mmr.bin`, `candidate.chain` и `confirmed.chain` коммитились независимо; падение между коммитами оставляло разные высоты, а загрузка доверяла сырым счётчикам.
 - Стало: после всех четырёх коммитов `ChainState::Commit` пишет `chain.checkpoint` (52 байта: magic/version/sequence/`mmr_leaves`/candidate/confirmed/FNV-1a) через temp+rename; `BlockChain::Create` чинит каждое хранилище до `min(actual, checkpoint)` и пишет свежий checkpoint; четыре файла копируются в `NODE/recovery-*` перед починкой, `db_repaired` отдаётся в `/v1/status`.
+- Дифф: `src/BlockChain/DbCheckpoint.h`, коммит `fdef6e6`
+  ```diff
+  --- /dev/null
+  +++ b/src/BlockChain/DbCheckpoint.h
+  +struct DbCheckpointData
+  +{
+  +    uint64_t Sequence = 0;
+  +    uint64_t MmrLeaves = 0;
+  +    uint64_t CandidateEntries = 0;
+  +    uint64_t ConfirmedEntries = 0;
+  +};
+  +// "GRINPPCK" magic, version, FNV-1a checksum; written via temp + rename
+  ```
 - Доказательство: E43 (hard kill, рестарт seq 26→27; живая починка рассинхронизации), E44 (recovery/`db_repaired`).
 - Риск, откат: слишком консервативный checkpoint отбрасывает незакоммиченные заголовки; recovery-копии сохраняются; откат — удалить `chain.checkpoint`, вернуться к эвристике по счётчикам.
 
@@ -270,6 +344,15 @@
 - Ссылка на Rust: `chain/src/txhashset/txhashset.rs` (архивный снапшот)
 - Было: ошибка исторического снапшота проглатывалась (`catch (...) { return; }`), rewind сообщал только о commitment; причина была невидима.
 - Стало: отправитель логирует высоты flushed/requested, путь и размер снапшота; rewind логирует высоту блока, число входов и число spent-позиций; функциональная лазейка остаётся открытой.
+- Дифф: `src/PMMR/TxHashSetManager.cpp`, коммит `7973d46`
+  ```diff
+  --- a/src/PMMR/TxHashSetManager.cpp
+  +++ b/src/PMMR/TxHashSetManager.cpp
+  +            LOG_INFO_F(
+  +                "TxHashSet snapshot: flushed height {}, requested height {}.",
+  +                pFlushedHeader != nullptr ? pFlushedHeader->GetHeight() : 0,
+  +                pHeader->GetHeight());
+  ```
 - Доказательство: E45/E46 (`flushed 3317111 → requested 3314160`, блок `3316349`, 1 вход, 0 spent-позиций).
 - Риск, откат: только логирование; откат убирает строки лога.
 ## Известные открытые пункты (не карточки)

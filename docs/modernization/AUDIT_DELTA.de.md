@@ -30,6 +30,15 @@ stehen in der Nachweiskarte, nicht als Karten.
 - Rust-Referenz: `core/src/ser.rs` (Grenzen des Readers)
 - Vorher: varint/vector/string-Reader konnten über die Nutzlast hinaus lesen; Größenrechnung wurde nicht gegen den Restpuffer geprüft.
 - Nachher: jeder Lesezugriff wird gegen das Pufferende geprüft (protokollversionsabhängig); abgeschnittene und übergroße Eingaben scheitern sauber; Unit-Tests decken beides ab.
+- Diff: `include/Core/Serialization/ByteBuffer.h`, Commit `fc9e988`
+  ```diff
+  --- a/include/Core/Serialization/ByteBuffer.h
+  +++ b/include/Core/Serialization/ByteBuffer.h
+  -        if (m_index + sizeof(T) > m_bytes.size()) {
+  -            throw DESERIALIZATION_EXCEPTION("Attempted to read past end of ByteBuffer.");
+  -        }
+  +        RequireRemaining(sizeof(T));
+  ```
 - Nachweis: E2 (vorher/nachher reproduziert), `Test_ByteBuffer`.
 - Risiko, Rücknahme: strenge Prüfungen können grenzgültige Nachrichten ablehnen; das Versionsgate begrenzt dies; Rücknahme durch Zurücksetzen von `ByteBuffer`.
 
@@ -80,6 +89,15 @@ stehen in der Nachweiskarte, nicht als Karten.
 - Rust-Referenz: `p2p/src/msg.rs` (Hand/Shake-Felder)
 - Vorher: der Handshake bewarb ein hartkodiertes `FAST_SYNC_NODE`, die PIBD-Bits blieben unsichtbar; der Listen-Port wurde auch zum Wählen genutzt.
 - Nachher: der Handshake bewirbt `ADVERTISED` (`FAST_SYNC_NODE | PIBD_HIST | PIBD_HIST_1`); `P2P_PEER_PORT` wählt den Wähl-Port; beides ist konfiguriert und getestet.
+- Diff: `src/P2P/Seed/HandShake.cpp`, Commit `72c94f2`
+  ```diff
+  --- a/src/P2P/Seed/HandShake.cpp
+  +++ b/src/P2P/Seed/HandShake.cpp
+  -        Capabilities::FAST_SYNC_NODE,
+  +        Capabilities::ADVERTISED,
+  -        Capabilities::FAST_SYNC_NODE,
+  +        Capabilities::ADVERTISED,
+  ```
 - Nachweis: E30 (ein echter Rust-Peer sieht `TXHASHSET_HIST | PEER_LIST | PIBD_HIST | PIBD_HIST_1`).
 - Risiko, Rücknahme: Peers können zusätzliche Bits anders behandeln; PIBD-Bits sind per Policy abschaltbar; Rücknahme stellt den alten Wert wieder her.
 
@@ -110,6 +128,19 @@ stehen in der Nachweiskarte, nicht als Karten.
 - Rust-Referenz: `chain/src/txhashset/txhashset.rs` (Snapshot), Aktivierungssemantik
 - Vorher: für einen geladenen PIBD-Zustand gab es keinen crash-sicheren Staging-/Aktivierungspfad.
 - Nachher: `PibdStateWriter` schreibt Staging-PMMR-Dateien; die Aktivierung nutzt ein temporäres Verzeichnis/einen Marker und schaltet nach der Validierung um; Tests injizieren Abstürze in beide Richtungen und prüfen die Wiederherstellung.
+- Diff: `src/P2P/PIBD/PibdActivation.h`, Commit `fcea044`
+  ```diff
+  --- /dev/null
+  +++ b/src/P2P/PIBD/PibdActivation.h
+  +// Atomic activation of a downloaded PIBD state.
+  +//
+  +// The writer produces a complete state in a staging directory. Activation swaps
+  +// it in with two renames and a marker file:
+  +//
+  +//   1. write <live parent>/pibd_activation.pending with (staging, backup) paths
+  +//   2. rename live -> backup            (if a live state exists)
+  +//   3. rename staging -> live
+  ```
 - Nachweis: `Test_PibdStateWriter`, `Test_PibdActivation`.
 - Risiko, Rücknahme: ein unvollständiges Staging-Verzeichnis darf nie installiert werden; Marker und Tests erzwingen das; Rücknahme löscht Staging und behält den Live-Zustand.
 
@@ -140,6 +171,18 @@ stehen in der Nachweiskarte, nicht als Karten.
 - Rust-Referenz: `chain/src/chain.rs:985` (`txhashset_archive_header`)
 - Vorher: PIBD forderte den Candidate-Tip-Hash an, Peers antworteten mit `SegmenterHeaderMismatch`.
 - Nachher: der Horizont ist `archive_height = (head − STATE_SYNC_THRESHOLD)` abgerundet auf `TXHASHSET_ARCHIVE_INTERVAL = 720`; PIBD und Legacy-Archivanfragen nutzen diese Höhe.
+- Diff: `src/P2P/Sync/StateSyncer.cpp`, Commit `39b77a9`
+  ```diff
+  --- a/src/P2P/Sync/StateSyncer.cpp
+  +++ b/src/P2P/Sync/StateSyncer.cpp
+  +        // archive_height = (header_head - STATE_SYNC_THRESHOLD) rounded down to a
+  +        // multiple of TXHASHSET_ARCHIVE_INTERVAL (grin txhashset_archive_header_header_only).
+  +        uint64_t archiveHeight = pTip->GetHeight();
+  +        archiveHeight = archiveHeight > Consensus::STATE_SYNC_THRESHOLD
+  +            ? archiveHeight - Consensus::STATE_SYNC_THRESHOLD
+  +            : 0;
+  +        archiveHeight -= archiveHeight % Consensus::TXHASHSET_ARCHIVE_INTERVAL;
+  ```
 - Nachweis: E31 (Live-Segment passt zu `header.output_root`), E42.
 - Risiko, Rücknahme: ein Off-by-One im Intervall bricht die Segmentvalidierung; Orakel/Live-Tests pinnen es; Rücknahme stellt die Tip-Anfrage wieder her (bekannt fehlerhaft).
 
@@ -150,6 +193,15 @@ stehen in der Nachweiskarte, nicht als Karten.
 - Rust-Referenz: `chain/src/txhashset/bitmap_accumulator.rs:470,213`
 - Vorher: ein `BitmapBlock` hatte 16 Chunks und indizierte Bits LSB-first; sparse (positive/negative) Segmente wurden falsch gelesen, echte Segmente deserialisierten nicht.
 - Nachher: 2^16 Bits = 64 Chunks × 1024; Bit `n` liegt in Byte `n/8`, Bit `7−(n%8)` (MSB-first, wie `bitvec::to_bytes`); Raw-Chunks serialisieren die 1024 Bytes ohne Längenpräfix.
+- Diff: `src/PMMR/Models/BitmapChunk.h`, Commit `c6ab7ff`
+  ```diff
+  --- a/src/PMMR/Models/BitmapChunk.h
+  +++ b/src/PMMR/Models/BitmapChunk.h
+  -        return (m_bytes[idx / 8] & (uint8_t)(1u << (idx % 8))) != 0;
+  +        return (m_bytes[idx / 8] & (uint8_t)(1u << (7 - (idx % 8)))) != 0;
+  -        const uint8_t mask = (uint8_t)(1u << (idx % 8));
+  +        const uint8_t mask = (uint8_t)(1u << (7 - (idx % 8)));
+  ```
 - Nachweis: E32/E35, Orakelvektoren (`grin_chain 5.5.2`): 7/7 Segment-Roots und der Gesamt-Bitmap-Root stimmen.
 - Risiko, Rücknahme: falsche Bitreihenfolge korrumpiert Roots still; Orakel-/Unit-Vektoren erkennen es; Rücknahme nur mit deaktiviertem PIBD.
 
@@ -180,6 +232,15 @@ stehen in der Nachweiskarte, nicht als Karten.
 - Rust-Referenz: `servers/src/grin/sync/body_sync.rs:149,191-204`, `header_sync.rs:135-141`
 - Vorher: `BlockSyncer` bannte einen Peer nach zwei Timeouts wegen `FraudHeight`, `m_slowPeers` verfiel nie, das Anfragefenster ignorierte Peer-Höhen, Seeder/Syncer schwiegen nach den Bans.
 - Nachher: ein Timeout wird gezählt und der Block neu zugewiesen, nie gebannt; Anfragen sind auf `min(candidate tip, network height, per-connection height)` und Batch ≤100 begrenzt; Retry 6 s (1 s mit Fortschritt) plus Backoff; ein langsamer Peer bekommt 60 s Cooldown; `FraudHeight` erfordert höhere behauptete Arbeit und 120 s ohne Header-Fortschritt; Seeder loggt Grund/Backoff; `/v1/status` zeigt Wartezeit und Zähler.
+- Diff: `src/P2P/Sync/BlockSyncPolicy.h`, Commit `4dbae1b`
+  ```diff
+  --- /dev/null
+  +++ b/src/P2P/Sync/BlockSyncPolicy.h
+  +// Behaviour mirrored from grin v5.5.2 body_sync.rs / header_sync.rs:
+  +//   * a timeout is never fraud: reassign the block and count it;
+  +//   * FraudHeight requires a peer that claims more work than we have and has
+  +//     made no progress for a long time;
+  ```
 - Nachweis: E37 (32-Minuten-Live-Fenster), E42 (4 222 Reassignments, null Fraud-Bans).
 - Risiko, Rücknahme: ohne Bans kann ein nicht antwortender Peer den Catch-up bremsen; Cooldown/Rotation begrenzen es; Rücknahme stellt den Ban-Pfad wieder her.
 
@@ -210,6 +271,19 @@ stehen in der Nachweiskarte, nicht als Karten.
 - Rust-Referenz: n/a (Crash-Konsistenz-Design; `DB_CONSISTENCY.md` §4)
 - Vorher: `header_mmr.bin`, `candidate.chain` und `confirmed.chain` wurden unabhängig committet; ein Absturz zwischen den Commits hinterließ unterschiedliche Höhen, und der Ladepfad vertraute den Rohzahlen.
 - Nachher: nach allen vier Store-Commits schreibt `ChainState::Commit` `chain.checkpoint` (52 Bytes: Magic/Version/Sequence/`mmr_leaves`/Candidate/Confirmed/FNV-1a) per Temp+rename; `BlockChain::Create` repariert jeden Store auf `min(actual, checkpoint)` und schreibt einen frischen Checkpoint; die vier Dateien werden vor der Reparatur nach `NODE/recovery-*` kopiert, `db_repaired` erscheint in `/v1/status`.
+- Diff: `src/BlockChain/DbCheckpoint.h`, Commit `fdef6e6`
+  ```diff
+  --- /dev/null
+  +++ b/src/BlockChain/DbCheckpoint.h
+  +struct DbCheckpointData
+  +{
+  +    uint64_t Sequence = 0;
+  +    uint64_t MmrLeaves = 0;
+  +    uint64_t CandidateEntries = 0;
+  +    uint64_t ConfirmedEntries = 0;
+  +};
+  +// "GRINPPCK" magic, version, FNV-1a checksum; written via temp + rename
+  ```
 - Nachweis: E43 (Hard-Kill-Neustart seq 26→27; Live-Mismatch-Reparatur), E44 (Recovery/`db_repaired`).
 - Risiko, Rücknahme: ein zu konservativer Checkpoint verwirft nicht committete Header; Recovery-Kopien bleiben; Rücknahme löscht `chain.checkpoint` und fällt auf die Zähler-Heuristik zurück.
 
@@ -270,6 +344,15 @@ stehen in der Nachweiskarte, nicht als Karten.
 - Rust-Referenz: `chain/src/txhashset/txhashset.rs` (Archiv-Snapshot)
 - Vorher: ein fehlgeschlagener historischer Snapshot wurde verschluckt (`catch (...) { return; }`), und Rewind meldete nur das Commitment; die Ursache blieb unsichtbar.
 - Nachher: der Sender loggt Flushed-/Requested-Höhe, Snapshot-Pfad und Größe; Rewind loggt Blockhöhe, Input-Anzahl und Spent-Position-Anzahl; die funktionale Lücke bleibt offen.
+- Diff: `src/PMMR/TxHashSetManager.cpp`, Commit `7973d46`
+  ```diff
+  --- a/src/PMMR/TxHashSetManager.cpp
+  +++ b/src/PMMR/TxHashSetManager.cpp
+  +            LOG_INFO_F(
+  +                "TxHashSet snapshot: flushed height {}, requested height {}.",
+  +                pFlushedHeader != nullptr ? pFlushedHeader->GetHeight() : 0,
+  +                pHeader->GetHeight());
+  ```
 - Nachweis: E45/E46 (`flushed 3317111 → requested 3314160`, Block `3316349`, 1 Input, 0 Spent-Positionen).
 - Risiko, Rücknahme: nur Logging; Rücknahme entfernt die Log-Zeilen.
 ## Bekannte offene Punkte (keine Karten)
