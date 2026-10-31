@@ -702,6 +702,10 @@ NOT RUN**.
 тестами (`Test_P2PCompat`). Полноценный PIHD невозможен против v5.5.2 без
 расширения эталона — это зафиксировано как ограничение, а не «сделано».
 
+**Дополнение (позже, вне этого прогона):** PIHD реализован upstream в ветке
+`staging` — PR #3879 (протокол) и #3882 (синхронизация с фолбэком); в тег
+`v5.5.2` не попал. Разбор протокола и параметров — `PIHD_UPSTREAM.md`.
+
 Тесты: **139 кейсов / 1601 проверка PASS**; `GrinNode.exe` `FFF16B9A…`,
 `Tests.exe` `3718F40B…`.
 
@@ -838,6 +842,6 @@ PIBD и рестарта — **0 повторных `OutputBitmapSegment`** (bit
 | G-38: ложные баны и залипание block sync | PASS (unit: `Test_BlockSyncPolicy`); живой критерий 30 мин — IN PROGRESS (E36) |
 | PIBD resume (journal) | PASS (unit); live replay PASS (0 повторных bitmap-запросов), полное завершение NOT RUN (G-43) |
 | Сохранение состояния между рестартами | PASS (E34: FULLY_SYNCED без нового PIBD) |
-| PIHD | N/A: в эталоне v5.5.2 нет сообщений PIHD (enum до 28); бит 0x80 — только детекция, не рекламируется |
+| PIHD | Не входит в v5.5.2 (enum до 28); в ветке `staging` реализовано целиком (PR #3879/#3882), для совместимости с v5.5.2 не требуется — см. `PIHD_UPSTREAM.md` |
 | Версия ПО | PASS: `Grin++ 1.2.9` (G-25), закреплено тестом |
 | Legacy-фолбэк txhashset.zip | IN PROGRESS: конфиг `PIBD_ENABLED=false`, живой узел `pp-fallback` |
