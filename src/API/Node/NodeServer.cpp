@@ -13,12 +13,16 @@
 #include "Handlers/GetStatusOwnerHandler.h"
 #include "Handlers/GetPeersOwnerHandler.h"
 #include "Handlers/GetConnectedPeersOwnerHandler.h"
+#include "Handlers/GetPmmrIndicesHandler.h"
+#include "Handlers/GetUnspentOutputsHandler.h"
 
 NodeServer::UPtr NodeServer::Create(
     const ServerPtr& pServer,
     const IBlockChain::Ptr& pBlockChain,
     const IP2PServerPtr& pP2PServer,
-    const ITransactionPool::Ptr& pTransactionPool)
+    const ITransactionPool::Ptr& pTransactionPool,
+    const TxHashSetManager::Ptr& pTxHashSetManager,
+    const IDatabasePtr& pDatabase)
 {
     RPCServer::Ptr pForeignServer = RPCServer::Create(pServer, "/v2/foreign", LoggerAPI::LogFile::NODE);
     pForeignServer->AddMethod("get_header", std::make_shared<GetHeaderHandler>(pBlockChain));
@@ -30,6 +34,8 @@ NodeServer::UPtr NodeServer::Create(
     pForeignServer->AddMethod("get_pool_size", std::make_shared<GetPoolSizeHandler>(pTransactionPool));
     pForeignServer->AddMethod("get_stempool_size", std::make_shared<GetStempoolSizeHandler>(pTransactionPool));
     pForeignServer->AddMethod("get_unconfirmed_transactions", std::make_shared<GetUnconfirmedTransactionsHandler>(pTransactionPool));
+    pForeignServer->AddMethod("get_pmmr_indices", std::make_shared<GetPmmrIndicesHandler>(pBlockChain));
+    pForeignServer->AddMethod("get_unspent_outputs", std::make_shared<GetUnspentOutputsHandler>(pTxHashSetManager, pDatabase));
 
     pForeignServer->AddMethod("get_config", std::make_shared<GetConfigHandler>());
     pForeignServer->AddMethod("update_config", std::make_shared<UpdateConfigHandler>());

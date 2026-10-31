@@ -26,7 +26,9 @@ NodeRestServer::UPtr NodeRestServer::Create(const Config& config, std::shared_pt
 		pServer,
 		pNodeContext->m_pBlockChain,
 		pNodeContext->m_pP2PServer,
-		pNodeContext->m_pTransactionPool
+		pNodeContext->m_pTransactionPool,
+		pNodeContext->m_pTxHashSetManager,
+		pNodeContext->m_pDatabase
 	);
 
 	/* Add v1 handlers */
