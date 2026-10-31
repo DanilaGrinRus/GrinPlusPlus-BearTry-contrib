@@ -204,10 +204,21 @@ StateSyncer::EPibdResult StateSyncer::TryPibd(SyncStatus& syncStatus)
 		horizon.RangeProofRoot = pHorizon->GetRangeProofRoot();
 		horizon.KernelRoot = pHorizon->GetKernelRoot();
 		if (m_pibdHorizonHash != horizon.BlockHash) {
-			// New horizon: allow every capable peer to be tried again.
+			// New horizon: allow every capable peer to be tried again. The peer
+			// must be re-picked for the new horizon, otherwise the pointer stays
+			// null and dereferencing it here crashes (regression caught live).
 			m_pibdHorizonHash = horizon.BlockHash;
 			m_pibdPeersTried.clear();
 			m_pibdPeer = nullptr;
+		}
+
+		if (m_pibdPeer == nullptr) {
+			m_pibdPeer = FindPibdPeer(true);
+		}
+
+		if (m_pibdPeer == nullptr) {
+			LOG_DEBUG("No untried PIBD-capable peer connected; using txhashset.zip");
+			return EPibdResult::NotAttempted;
 		}
 
 		if (!m_pPibdSync->Start(horizon, now)) {
