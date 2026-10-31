@@ -171,10 +171,12 @@ TEST_CASE("PibdScheduler::RetriesThenFails")
 	REQUIRE(scheduler.TakeRequests(start).size() == 1);                  // attempt 1
 	REQUIRE(scheduler.TakeRequests(start + std::chrono::seconds(10)).empty());   // still in flight
 	REQUIRE(scheduler.TakeRequests(start + std::chrono::seconds(21)).size() == 1); // attempt 2
+	REQUIRE(scheduler.TakeRequests(start + std::chrono::seconds(62)).size() == 1); // attempt 3
+	REQUIRE(!scheduler.IsFailed());
 	REQUIRE(scheduler.TakeRequests(start + std::chrono::seconds(45)).empty());     // attempt 3 refused
+	REQUIRE(scheduler.TakeRequests(start + std::chrono::seconds(661)).empty());
 	REQUIRE(scheduler.IsFailed());
 	REQUIRE(!scheduler.GetFailure().empty());
-	REQUIRE(scheduler.TakeRequests(start + std::chrono::seconds(46)).empty());
 }
 
 TEST_CASE("PibdScheduler::CompletesThroughMessages")

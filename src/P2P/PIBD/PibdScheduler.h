@@ -61,6 +61,16 @@ public:
 			return {};
 		}
 
+		// Like the Rust fallback timer: a stalled peer must not abort the whole
+		// download after a few segment retries; only a long period without any
+		// accepted response gives up.
+		if (now - m_lastProgress >= m_config.FallbackAfter) {
+			Fail("no PIBD progress for " +
+				std::to_string(std::chrono::duration_cast<std::chrono::seconds>(
+					now - m_lastProgress).count()) + "s");
+			return {};
+		}
+
 		const size_t capacity = (m_config.MaxInFlight > m_inFlight.size())
 			? m_config.MaxInFlight - m_inFlight.size()
 			: 0;
@@ -82,14 +92,19 @@ public:
 				continue;
 			}
 
-			const uint32_t attempts = m_attempts[Key(candidate)] + 1;
+			uint32_t attempts = m_attempts[Key(candidate)] + 1;
 			if (attempts > m_config.MaxAttempts) {
-				Fail("segment " + Describe(candidate) + " exceeded the retry limit");
-				return messages;
+				// Keep retrying with a capped backoff: another peer or a slower
+				// response may still complete this segment. The no-progress timer
+				// above is the only condition that ends the attempt.
+				attempts = 1;
 			}
 
 			m_attempts[Key(candidate)] = attempts;
-			m_inFlight.push_back(Pending{ candidate, now + m_config.Timeout });
+			const auto backoff = (std::min)(
+				m_config.Timeout * (int64_t)attempts,
+				std::chrono::seconds(60));
+			m_inFlight.push_back(Pending{ candidate, now + backoff });
 			messages.push_back(m_session.CreateRequest(candidate));
 			++m_requestsSent;
 		}
