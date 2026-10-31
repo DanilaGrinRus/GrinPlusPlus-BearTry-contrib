@@ -114,28 +114,27 @@
 
 | **G-52** | Legacy txhashset serving на горизонте | `BlockChain::SnapshotTxHashSet`, `TxHashSetManager::SaveSnapshot` | Исторический snapshot падал (`Rewind: Spent output not found`, block 3 316 349). Реализовано: сохранение архива при активации (`TxHashSetArchive`) и выдача сохранённого архива по hash без rewind; диагностика причин | Live-проверка архива/legacy-fallback не завершена (пиры); spent-position gap остаётся для произвольного исторического snapshot | build/unit; E45/E46/E48 (live pending) | **OPEN (частично: archive save/serve)** |
 
-| **G-53** | Node/API: недостающие методы grin v5.5.2 | `src/API/Node/NodeServer.cpp`, `src/API/Node/Handlers/*`, `src/TxPool/*`, `src/PMMR/TxHashSet*`, `src/Server/Node/API/*` | JSON-RPC `/v2/foreign` содержал 7 методов из 13 у grin v5.5.2, `/v2/owner` пуст; REST v1 — легаси Grin++, его каталог `GET /v1/` отставал от реальных маршрутов | Добавлены `get_pool_size`, `get_stempool_size`, `get_unconfirmed_transactions` (c60604f); `/v2/owner`: `get_status`, `get_peers`, `get_connected_peers` (3b4efd4); `get_pmmr_indices`, `get_unspent_outputs` (84f135e); `get_outputs` (8fa265f); `get_kernel` + `ITxHashSet::FindKernelByExcess` (474acc4); обновлён каталог `GET /v1/` (efe27b7). Осталось `/v2/foreign`: `get_blocks`; unit-тесты и живая проверка | Полная сборка `GrinNode.exe` прошла; 10 из 11 методов | **IN PROGRESS** |
+| **G-53** | Node/API: недостающие методы grin v5.5.2 | `src/API/Node/NodeServer.cpp`, `src/API/Node/Handlers/*`, `src/TxPool/*`, `src/PMMR/TxHashSet*`, `src/Server/Node/API/*` | JSON-RPC `/v2/foreign` содержал 7 методов из 13 у grin v5.5.2, `/v2/owner` пуст; REST v1 — легаси Grin++, его каталог `GET /v1/` отставал от реальных маршрутов | Реализованы все 13 методов `/v2/foreign` (`get_pool_size`, `get_stempool_size`, `get_unconfirmed_transactions`, `get_pmmr_indices`, `get_unspent_outputs`, `get_outputs`, `get_kernel` + `ITxHashSet::FindKernelByExcess`, `get_blocks` + общий `PrintableSerialization.h`; c60604f/84f135e/8fa265f/474acc4/fa663d5) и 3 метода `/v2/owner` (`get_status`, `get_peers`, `get_connected_peers`; 3b4efd4); каталог `GET /v1/` обновлён (efe27b7). Unit-тесты — `Test_NodeApiPrintables` (a76dfd5) | E53: полная сборка `GrinNode.exe`/`Tests.exe`, 174 кейса / 1810 проверок PASS; живые вызовы `/v2` на запущенной ноде — не подтверждены | **DONE (unit + build)** |
 
 ---
 
 ## Сводка
 
-**Итого по матрице: 53 записи** — **41 закрыто**, 3 частично (G-09, G-23, G-24),
-3 в работе (G-41, G-51, G-53), 1 открыто (G-52), 3 запланировано (G-44, G-45, G-49),
+**Итого по матрице: 53 записи** — **42 закрыто**, 3 частично (G-09, G-23, G-24),
+2 в работе (G-41, G-51), 1 открыто (G-52), 3 запланировано (G-44, G-45, G-49),
 1 осознанно отложен (G-07), 1 снят по объёму (G-27, PIHD не в v5.5.2).
-41 + 3 + 3 + 1 + 3 + 1 + 1 = 53.
+42 + 3 + 2 + 1 + 3 + 1 + 1 = 53.
 
 * Открыто: **G-52** (legacy txhashset serving на горизонте; код сохранения/
   выдачи архива есть, живая проверка идёт; блокирует G-41). G-04 (PoW edge-bits)
   и G-20 (лимиты парсеров) закрыты — E50; G-21 — E49; G-22 — E47.
 * В работе: G-41 (legacy-фолбэк; зависит от G-52 и пиров), G-51 (аудит-пакет:
   27 карточек, 16 diff-блоков, паритет EN/DE/RU; остались ревизия комментариев,
-  секреты/дампы, чек-лист, финальные hashes/provenance), **G-53** (API grin
-  v5.5.2: каталог `GET /v1/` обновлён; добавлены `/v2/foreign`
-  `get_pool_size`/`get_stempool_size`/`get_unconfirmed_transactions`,
-  `get_pmmr_indices`/`get_unspent_outputs`/`get_outputs`/`get_kernel` и
-  `/v2/owner` `get_status`/`get_peers`/`get_connected_peers` — 10 из 11;
-  осталось `get_blocks`).
+  секреты/дампы, чек-лист, финальные hashes/provenance).
+* Закрыто по API: **G-53** — все 13 методов `/v2/foreign` и 3 метода `/v2/owner`,
+  каталог `GET /v1/` приведён к реальным маршрутам; unit-тесты
+  (`Test_NodeApiPrintables`) и полная сборка — E53. Живые вызовы `/v2` на
+  запущенной ноде остаются за следующим прогоном.
 * Частично: G-09 (PIBD: живая загрузка/активация/догон PASS, resume replay PASS;
   живой serving Rust-клиентом и полное завершение resume не подтверждены),
   G-23 (структурная проверка/rebuild MMR DONE — E48; hash-level ревалидация

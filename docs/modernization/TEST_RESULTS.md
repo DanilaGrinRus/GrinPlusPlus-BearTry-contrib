@@ -1341,3 +1341,40 @@ snapshot. Повторный snapshot *позднего* состояния на
 
 **Тесты:** **172 кейса / 1862 проверки PASS**. Артефакты: `GrinNode.exe`
 `C0FCCBE4…`, `Tests.exe` `1C2A1C91…`.
+
+---
+
+## E53. Node API: паритет с grin v5.5.2 (/v2/foreign и /v2/owner) — DONE (unit + build)
+
+**Реализовано.** /v2/foreign дополнен до 13 методов эталона: get_pool_size,
+get_stempool_size, get_unconfirmed_transactions (c60604f), get_pmmr_indices,
+get_unspent_outputs (84f135e), get_outputs (8fa265f), get_kernel (474acc4),
+get_blocks (fa663d5); /v2/owner получил get_status, get_peers,
+get_connected_peers (3b4efd4). Самоописание GET /v1/ приведено к реальным
+маршрутам, мёртвый mongoose-комментарий удалён (efe27b7).
+
+**Детали.**
+* ITxHashSet::FindKernelByExcess обходит kernel MMR по 1-based диапазону;
+  get_kernel повторяет chain::get_kernel_height (min → previous_header.kernel_mmr_size+1,
+  max → header(max).kernel_mmr_size, высота — бинарный поиск по kernel_mmr_size).
+* get_unspent_outputs опирается на то, что TxHashSet::ApplyBlock удаляет листья
+  выходов/rangeproof-ов при трате, поэтому в MMR остаются только невыплаченные.
+* get_outputs/get_blocks используют общий PrintableSerialization.h
+  (BlockHeaderPrintable с RFC3339, TxKernelPrintable, OutputPrintable со
+  spent-детекцией через PMMR и fallback из блока).
+* get_status отдаёт словарь sync-статусов grin (header_sync/ody_sync/
+  waiting_peers/
+o_sync/...), не легаси-имена /v1/status.
+
+**Тесты.** Test_NodeApiPrintables (2 кейса, 5 проверок-секций): RFC3339,
+KernelPrintable для plain/height-locked/coinbase. Полный набор:
+**174 кейса / 1810 проверок PASS** в изолированном HOME
+(C:\DHW\Gplus\.toolchain\testhome). Для сравнения, прошлый прогон в рабочем
+HOME — 172 / 1862; разница в числе проверок объясняется условными кейсами,
+которые при пустом HOME дают меньше утверждений.
+
+**Сборка.** GrinNode.exe и Tests.exe слинкованы (/W4 /WX), build OK.
+
+**Не подтверждено:** живые вызовы /v2/foreign и /v2/owner на запущенной ноде
+(на момент записи нода не работала или работала на прежнем билде) — это
+остаток за следующим прогоном.
