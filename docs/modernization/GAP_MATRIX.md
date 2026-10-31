@@ -100,6 +100,7 @@
 | **G-38** | Ложные баны пиров и залипание block sync | `servers/src/grin/sync/body_sync.rs:149,191-204`, `header_sync.rs:135-141` | Подтверждено: `BlockSyncer` банил за таймаут, `m_slowPeers` не очищался, окно запросов не ограничивалось высотой пира, seeder/sync молчали. Исправлено по `REQ_G38_FIX.md`: политика вынесена в `BlockSyncPolicy.h` (batch≤100, `min(candidate tip, network, per-connection height)`, retry 6 с/1 с + backoff, cooldown 60 с, `FraudHeight` только при 120 с stale и заявленном TD/высоте выше нашего head); `HeaderSyncer` банит только по правилу Rust; seeder логирует причину отсутствия кандидатов и делает backoff; watchdog пишет причину `WAITING_FOR_PEERS`; в `/v1/status` добавлены `waiting_reason` и счётчики (`requests/timeouts/reassignments/bans_fraud_height/bans_invalid_data`); «медленный» пир больше не банится | unit: `Test_BlockSyncPolicy` (высота/cooldown/правило фрода/счётчики); живой прогон `pp-g38` — IN PROGRESS | **DONE (unit)**, live IN PROGRESS |
 | **G-42** | Legacy state sync банит пиров за таймаут | `StateSyncer::RequestState` | При `txhashset.zip` 10–120 с без прогресса пир банится с `BadTxHashSet` (не `fraud height`), после чего остаётся без пиров; вне объёма G-38 | OPEN (следующая после основной) | — | логи 13:30 | OPEN |
 | **G-43** | PIBD: стопор пира на сегменте | `PibdScheduler`/`PibdSync` | Живой прогон resume: пир перестал отдавать `tree 2 idx 1229` → retry limit → PIBD failed → fallback; журнал replay при этом сработал (0 повторных bitmap-запросов) | OPEN: нужен backoff/ротация пиров и, желательно, докачка с другого пира | лог 13:43 `PIBD failed: segment tree 2 … exceeded the retry limit` | OPEN |
+| **G-44** | PIHD: спящий каркас (вариант B) | `staging`: `chain/src/pihd_params.rs`, `servers/src/grin/sync/header_sync.rs`, PR #3879/#3882 | Полная реализация PIHD сейчас (вариант C) — это 2–3 недели под флагом, но протокол живёт только в `staging` (не в релизе) и живых пиров с `PIHD_HIST` нет, то есть проверять нечего. При этом дешёвая часть (параметры, политика, конфиг, тесты) от будущего формата почти не зависит | Запланировано (вариант B, без сетевого кода): `PihdParams.h` с константами Rust (in-flight 8/2 на пира, таймаут 20 с, cooldown 30 с, 3 провала → block, 3 таймаута + 120 с без прогресса → fallback, сегмент 512 заголовков, `start = idx*512+1`); `PihdPolicy.h` — чистая политика по образцу `BlockSyncPolicy`; `PIHD_MODE = off \| client \| full` (default `off`, по образцу `PIBD_ENABLED`); уточнить комментарий в `Capabilities.h`. Сеть не подключается, `PIHD_HIST` не рекламируется. Детали — `PIHD_UPSTREAM.md` §7 | unit-тесты сегментной арифметики, лимитов и решений политики; сборка `/W4 /WX` | **OPEN (запланировано, не начато)** |
 
 
 ---
@@ -112,6 +113,10 @@
   журнальный resume при этом работает).
 * В работе: G-38 live-критерий (30 мин догона без ручной очистки PEERS-БД и без
   fraud-банов), G-41 (live-проверка legacy-фолбэка).
+* Отложенная подготовка: G-44 — спящий каркас PIHD (параметры, чистая политика,
+  трёхрежимный конфиг, unit-тесты) без сетевого кода и без рекламы `PIHD_HIST`;
+  полная реализация — только когда PIHD выйдет из `staging` в релиз и появятся
+  пиры для живой проверки.
 * Частично: G-09 (PIBD: живая загрузка/активация/догон PASS; журнальный resume
   проверен живьём на воспроизведение — после рестарта 0 повторных bitmap-запросов;
   не проверены живой serving Rust-клиентом и полное завершение resume), G-24
