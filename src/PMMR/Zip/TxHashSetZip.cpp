@@ -13,20 +13,26 @@ TxHashSetZip::TxHashSetZip(const Config& config)
 
 }
 
-bool TxHashSetZip::Extract(const fs::path& path, const BlockHeader& header) const
+fs::path TxHashSetZip::Root(const fs::path& targetRoot) const
 {
+	return targetRoot.empty() ? m_config.GetTxHashSetPath() : targetRoot;
+}
+
+bool TxHashSetZip::Extract(const fs::path& path, const BlockHeader& header, const fs::path& targetRoot) const
+{
+	const fs::path root = Root(targetRoot);
 	try
 	{
 		std::shared_ptr<ZipFile> pZipFile = ZipFile::Load(path);
 
 		// Extract kernel folder.
-		ExtractKernelFolder(*pZipFile);
+		ExtractKernelFolder(*pZipFile, root);
 
 		// Extract output folder.
-		ExtractFolder(*pZipFile, "output", header);
+		ExtractFolder(*pZipFile, "output", header, root);
 
 		// Extract rangeProof folder.
-		ExtractFolder(*pZipFile, "rangeproof", header);
+		ExtractFolder(*pZipFile, "rangeproof", header, root);
 
 		LOG_INFO("Successfully extracted zip file.");
 		return true;
@@ -39,11 +45,11 @@ bool TxHashSetZip::Extract(const fs::path& path, const BlockHeader& header) cons
 	return false;
 }
 
-void TxHashSetZip::ExtractKernelFolder(const ZipFile& zipFile) const
+void TxHashSetZip::ExtractKernelFolder(const ZipFile& zipFile, const fs::path& root) const
 {
 	std::error_code ec;
 
-	const fs::path kernelPath = m_config.GetTxHashSetPath() / "kernel";
+	const fs::path kernelPath = root / "kernel";
 	const bool exists = fs::exists(kernelPath, ec);
 	if (ec)
 	{
@@ -78,11 +84,11 @@ void TxHashSetZip::ExtractKernelFolder(const ZipFile& zipFile) const
 	}
 }
 
-void TxHashSetZip::ExtractFolder(const ZipFile& zipFile, const std::string& folderName, const BlockHeader& header) const
+void TxHashSetZip::ExtractFolder(const ZipFile& zipFile, const std::string& folderName, const BlockHeader& header, const fs::path& root) const
 {
 	std::error_code ec;
 
-	const fs::path dir = m_config.GetTxHashSetPath() / folderName;
+	const fs::path dir = root / folderName;
 	const bool exists = fs::exists(dir, ec);
 	if (ec)
 	{

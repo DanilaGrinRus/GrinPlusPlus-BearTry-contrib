@@ -20,5 +20,6 @@ list_append_parent(
     "Test_PruneList_GetLeafShift.cpp"
     "Test_PruneList_GetShift.cpp"
     "Test_MmrStructure.cpp"
+    "Test_TxHashSetStaging.cpp"
     "LeafSet/Test_LeafSet.cpp"
 )

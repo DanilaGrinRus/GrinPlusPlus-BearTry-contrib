@@ -58,7 +58,7 @@
 
 | ID | Компонент | Эталон | Расхождение | Влияние | P | Действие | Проверка | Статус |
 |---|---|---|---|---|---|---|---|---|
-| G-21 | Атомарная активация TxHashSet | Rust: временный каталог + переключение после валидации | Grin++ пишет в рабочую БД напрямую (`ProcessTransactionHashSet`) | Частичная запись/сбой = повреждённое состояние | **P0** | Staging-область + атомарная активация, rollback | crash-тесты | OPEN |
+| **G-21** | Атомарная активация legacy txhashset | `TxHashSetProcessor`, `TxHashSetManager`, `TxHashSetZip` | ZIP распаковывался прямо в живое состояние до валидации; при ошибке/крахе state терялся | Staging-распаковка в `TXHASHSET.staging`, валидация до установки, atomic swap `live↔staging` с marker `txhashset_activation.pending`, восстановление backup на старте, переоткрытие live при ошибке | unit `Test_TxHashSetStaging` (3 кейса) | **DONE** |
 | G-22 | Бэкап перед миграцией | Rust/процедура миграции | Миграция меняла БД без резервной копии | Реализован `DbBackup` (recursive stream copy, LOCK skipped) перед миграцией v1/v2 → v2/v3; ошибка копии прерывает миграцию; fresh v0 не бэкапится | unit `DbBackup` (2 кейса) | **DONE** |
 | G-23 | Проверка MMR и chain-хранилищ при загрузке | `BlockChainImpl.cpp`, `HeaderMMR`, `MmrStructure` | Структурная проверка размера MMR (`2L−popcount(L)`); при отставании MMR — **перестройка из block DB** (заголовки не теряются), при опережении — усечение лишних листьев; recovery-копия обязательна и проверяется по размеру; цепочка позади checkpoint → отказ старта (без молчаливого усечения) | Хеш/корневая ревалидация (`--validate-on-load`) OPEN | unit `MmrStructure`/`ChainConsistency`/`DbRecovery`; live: MMR −2000 листьев → rebuild, header 3 317 117 (E48) | **PARTIAL (structural/rebuild DONE)** |
 

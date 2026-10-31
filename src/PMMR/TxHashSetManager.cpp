@@ -3,6 +3,7 @@
 #include "TxHashSetImpl.h"
 #include "Zip/TxHashSetZip.h"
 #include "Zip/Zipper.h"
+#include <PMMR/TxHashSetStaging.h>
 
 #include <Common/Util/FileUtil.h>
 #include <Common/Util/StringUtil.h>
@@ -15,7 +16,8 @@
 TxHashSetManager::TxHashSetManager(const Config& config)
 	: m_config(config), m_pTxHashSet(nullptr)
 {
-
+	// Finish or roll back an interrupted legacy activation (G-21).
+	TxHashSetStaging::Recover(config.GetTxHashSetPath());
 }
 
 std::shared_ptr<ITxHashSet> TxHashSetManager::Open(const BlockHeaderPtr& pConfirmedTip)
@@ -48,16 +50,20 @@ std::shared_ptr<ITxHashSet> TxHashSetManager::Open(const BlockHeaderPtr& pConfir
 	return m_pTxHashSet;
 }
 
-std::shared_ptr<ITxHashSet> TxHashSetManager::LoadFromZip(const Config& config, const fs::path& zipFilePath, BlockHeaderPtr pHeader)
+std::shared_ptr<ITxHashSet> TxHashSetManager::LoadFromZip(
+	const Config& config,
+	const fs::path& zipFilePath,
+	BlockHeaderPtr pHeader,
+	const fs::path& targetRoot)
 {
 	FileRemover fileRemover(zipFilePath);
 
-	const fs::path& txHashSetPath = config.GetTxHashSetPath();
+	const fs::path txHashSetPath = targetRoot.empty() ? config.GetTxHashSetPath() : targetRoot;
 	const TxHashSetZip zip(config);
 
 	try
 	{
-		if (zip.Extract(zipFilePath, *pHeader))
+		if (zip.Extract(zipFilePath, *pHeader, txHashSetPath))
 		{
 			LOG_INFO_F("{} extracted successfully", zipFilePath);
 			FileUtil::RemoveFile(zipFilePath);

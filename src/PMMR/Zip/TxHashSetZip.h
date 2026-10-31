@@ -12,11 +12,14 @@ class TxHashSetZip
 public:
 	TxHashSetZip(const Config& config);
 
-	bool Extract(const fs::path& path, const BlockHeader& header) const;
+	// targetRoot empty means the live txhashset path; otherwise extraction is
+	// staged into that directory (G-21 atomic legacy activation).
+	bool Extract(const fs::path& path, const BlockHeader& header, const fs::path& targetRoot = fs::path()) const;
 
 private:
-	void ExtractKernelFolder(const ZipFile& zipFile) const;
-	void ExtractFolder(const ZipFile& zipFile, const std::string& folderName, const BlockHeader& header) const;
+	fs::path Root(const fs::path& targetRoot) const;
+	void ExtractKernelFolder(const ZipFile& zipFile, const fs::path& root) const;
+	void ExtractFolder(const ZipFile& zipFile, const std::string& folderName, const BlockHeader& header, const fs::path& root) const;
 	void ExtractOutputFolder(const ZipFile& zipFile, const BlockHeader& header) const;
 	void ExtractRangeProofFolder(const ZipFile& zipFile, const BlockHeader& header) const;
 

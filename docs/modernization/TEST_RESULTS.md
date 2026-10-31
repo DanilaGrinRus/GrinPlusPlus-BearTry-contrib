@@ -1233,3 +1233,23 @@ TD-only (height больше не считается доказательств�
 
 **Тесты:** 167 кейсов / 1804 проверки PASS. Артефакты: `GrinNode.exe`
 `7997CA50…`, `Tests.exe` `45C652E6…`.
+
+## E49. G-21: атомарная активация legacy `txhashset.zip`
+
+**Реализовано.**
+* `TxHashSetZip`/`TxHashSetManager::LoadFromZip` принимают целевой каталог:
+  zip распаковывается в `NODE/TXHASHSET.staging`, **живое состояние не трогается**.
+* `TxHashSetProcessor::ProcessTxHashSet` валидирует staged-состояние; при ошибке
+  staging удаляется, а живое состояние переоткрывается (узел продолжает работу).
+* При успехе — атомарная замена: marker `NODE/txhashset_activation.pending`,
+  `live → TXHASHSET.backup`, `staging → live`, удаление backup/marker; открытие
+  установленного состояния и публикация block sums/output positions.
+* `TxHashSetManager` при старте вызывает `TxHashSetStaging::Recover`: если live
+  отсутствует — восстанавливает backup, удаляет staging/marker (краш между
+  переименованиями безопасен).
+* Тесты: `Test_TxHashSetStaging` (3 кейса: orphan staging, восстановление backup,
+  сохранение установленного live); набор **170 кейсов / 1822 проверки PASS**.
+* **Ограничение:** это атомарность установки legacy-архива; живой legacy-прогон
+  (G-41) по-прежнему NOT VERIFIED из-за доступности пиров/ G-52.
+
+Артефакты: `GrinNode.exe` `D2BBF889…`, `Tests.exe` `0B80AD8D…`.

@@ -25,7 +25,11 @@ public:
 	std::shared_ptr<const ITxHashSet> GetTxHashSet() const { return m_pTxHashSet; }
 	void SetTxHashSet(ITxHashSetPtr pTxHashSet) { m_pTxHashSet = pTxHashSet; }
 
-	static ITxHashSetPtr LoadFromZip(const Config& config, const fs::path& zipFilePath, BlockHeaderPtr pHeader);
+	static ITxHashSetPtr LoadFromZip(
+		const Config& config,
+		const fs::path& zipFilePath,
+		BlockHeaderPtr pHeader,
+		const fs::path& targetRoot = fs::path());
 	fs::path SaveSnapshot(std::shared_ptr<IBlockDB> pBlockDB, BlockHeaderPtr pHeader) const;
 
 	void Commit() final
