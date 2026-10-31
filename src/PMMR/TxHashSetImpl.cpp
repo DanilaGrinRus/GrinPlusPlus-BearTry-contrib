@@ -352,6 +352,13 @@ void TxHashSet::Rewind(std::shared_ptr<IBlockDB> pBlockDB, const BlockHeader& he
 		for (const auto& input : pBlock->GetInputs()) {
 			auto iter = spentOutputs.find(input.GetCommitment());
 			if (iter == spentOutputs.end()) {
+				LOG_ERROR_F(
+					"Spent output not found for commitment {} in block {} ({} input(s), {} spent position(s), target height {}).",
+					input.GetCommitment(),
+					m_pBlockHeader->GetHeight(),
+					pBlock->GetInputs().size(),
+					spentOutputs.size(),
+					header.GetHeight());
 				throw TXHASHSET_EXCEPTION_F("Spent output not found for {}", input.GetCommitment());
 			}
 

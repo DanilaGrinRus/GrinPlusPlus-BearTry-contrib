@@ -110,6 +110,10 @@ fs::path TxHashSetManager::SaveSnapshot(std::shared_ptr<IBlockDB> pBlockDB, Bloc
 			FileUtil::CopyDirectory(m_config.GetTxHashSetPath(), snapshotDir);
 
 			pFlushedHeader = m_pTxHashSet->GetFlushedBlockHeader();
+			LOG_INFO_F(
+				"TxHashSet snapshot: flushed height {}, requested height {}.",
+				pFlushedHeader != nullptr ? pFlushedHeader->GetHeight() : 0,
+				pHeader->GetHeight());
 		}
 
 		{
