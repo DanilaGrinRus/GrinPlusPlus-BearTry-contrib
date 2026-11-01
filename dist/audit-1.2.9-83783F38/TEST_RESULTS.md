@@ -1439,7 +1439,7 @@ sibling hashes в PibdStateWriter, либо отдавать rangeproof-сегм
 snapshot, а не из prune-состояния.
 
 **Тесты:** **176 кейсов / 1907 проверок PASS**. Артефакты: `GrinNode.exe`
-`A203BE20…`, `Tests.exe` `38B9AF99…`.
+`83783F38…`, `Tests.exe` `38B9AF99…`.
 
 ## E57. G-09: PIBD serving упирается в отсутствующие sibling hashes
 
@@ -1461,7 +1461,7 @@ G-09 остаётся **PARTIAL/FAIL live serving**; для закрытия н�
 snapshot, а не из prune-состояния.
 
 **Тесты:** 176 / 1907 PASS. Артефакты: `GrinNode.exe`
-`A203BE20…`, `Tests.exe` `38B9AF99…`.
+`83783F38…`, `Tests.exe` `38B9AF99…`.
 
 ## E58. G-09: prune-aware proof обязателен; простой обход prune даёт неверный root
 
