@@ -57,7 +57,7 @@ until every line is PASS or explicitly accepted as a limitation.
 | D6 | `AUDIT_README` in EN/DE/RU | `AUDIT_README.en/de/ru.md` | PASS |
 | D7 | Known-limitations section | `REMAINING.md`, this checklist | PASS |
 | D8 | Final artifact + provenance hashes | `AUDIT_README.en.md` | PASS |
-| D9 | Audited package `dist/audit-*` | not packaged | PENDING |
+| D9 | Audited package `dist/audit-*` | `dist/audit-1.2.9-39D2584A` + SHA256SUMS | PASS |
 
 ## E. Sign-off
 
