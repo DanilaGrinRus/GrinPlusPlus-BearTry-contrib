@@ -80,7 +80,7 @@ private:
 			case ESyncStatus::SYNCING_HEADERS: return "header_sync";
 			case ESyncStatus::SYNCING_TXHASHSET: return "txhashset_download";
 			case ESyncStatus::PROCESSING_TXHASHSET: return "txhashset_rangeproofs_validation";
-			case ESyncStatus::TXHASHSET_SYNC_FAILED: return "txhashset_download";
+			case ESyncStatus::TXHASHSET_SYNC_FAILED: return "txhashset_sync_failed";
 			case ESyncStatus::SYNCING_BLOCKS: return "body_sync";
 			case ESyncStatus::WAITING_FOR_PEERS: return "awaiting_peers";
 			case ESyncStatus::NOT_SYNCING: return "no_sync";

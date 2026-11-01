@@ -21,7 +21,7 @@ Added `tests/src/Core/Models/Test_FeatureValidation.cpp`:
 
 Focused run: **3 cases / 3 assertions PASS**.
 
-Full suite: **187 cases / 2069 assertions PASS**.
+Full suite: **187 cases / 2072 assertions PASS**.
 
 An initial full-suite run failed 27 tests because the process inherited the
 default user `%TEMP%` (`C:\Users\nurli\AppData\Local\Temp`) where fixtures could
@@ -42,8 +42,8 @@ not in Grin++ sources and do not fail the build.
 
 Artifacts after rebuild:
 
-- `GrinNode.exe 102F8702EF5A3D116AE9AA2B5A9F4EC1EE7A140B9F9094C44BEFCE2AE3C79B3F`
-- `Tests.exe FBEECC3408453A492C3A6FB32DDAABF3A61D13ADC3CCDC029641FFA3791BAB55`
+- `GrinNode.exe 316CCFF5B5954474A21C35041F985D1570C9828016CC097C6155717E604A3B09`
+- `Tests.exe 70405047C79FB301DDB2879E544B367EC49063CBB8DCC37C01393FFD2B5C953F`
 
 ## Verdict
 
@@ -52,5 +52,5 @@ Artifacts after rebuild:
 | Peer DB survives restart | PASS |
 | Unknown feature rejection | PASS |
 | Truncated payload rejection | PASS |
-| Full suite with project TMP | 187 / 2069 PASS |
+| Full suite with project TMP | 187 / 2072 PASS |
 | Forced full rebuild | PASS (third-party warnings only) |

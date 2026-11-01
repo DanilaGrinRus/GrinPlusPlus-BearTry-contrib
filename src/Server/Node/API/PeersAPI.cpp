@@ -1,7 +1,9 @@
 #include "PeersAPI.h"
 #include "../NodeContext.h"
 
+#include <Core/Global.h>
 #include <Net/Util/HTTPUtil.h>
+#include <Net/Servers/RPC/ApiAccess.h>
 #include <Common/Util/StringUtil.h>
 #include <json/json.h>
 #include <ctime>
@@ -185,11 +187,21 @@ int PeersAPI::Peer_Handler(struct mg_connection* conn, void* pNodeContext)
 		const std::string commandStr = ParseCommand(requestedPeer);
 		if (commandStr == "ban" && method == HTTP::EHTTPMethod::POST)
 		{
+			if (!ApiAccess::Check(conn, ApiAccess::Level::ADMIN, Global::GetConfig().GetRestAPIPort()))
+			{
+				return HTTPUtil::BuildUnauthorizedResponse(conn, "Unauthorized");
+			}
+
 			pServer->m_pP2PServer->BanPeer(ipAddress, EBanReason::ManualBan);
 			return HTTPUtil::BuildSuccessResponse(conn, "");
 		}
 		else if (commandStr == "unban" && method == HTTP::EHTTPMethod::POST)
 		{
+			if (!ApiAccess::Check(conn, ApiAccess::Level::ADMIN, Global::GetConfig().GetRestAPIPort()))
+			{
+				return HTTPUtil::BuildUnauthorizedResponse(conn, "Unauthorized");
+			}
+
 			pServer->m_pP2PServer->UnbanPeer(ipAddress);
 
 			return HTTPUtil::BuildSuccessResponse(conn, "");
