@@ -39,7 +39,6 @@ std::shared_ptr<BlockDB> BlockDB::OpenDB(const Config& config)
 
 	std::vector<ColumnFamilyDescriptor> tableNames = { ColumnFamilyDescriptor(), BLOCK_COLUMN, HEADER_COLUMN, BLOCK_SUMS_COLUMN, OUTPUT_POS_COLUMN, INPUT_BITMAP_COLUMN, SPENT_OUTPUTS_COLUMN };
 	std::unique_ptr<RocksDB> pRocksDB = RocksDBFactory::Open(dbPath, tableNames);
-	pRocksDB->DeleteAll("INPUT_BITMAP");
 
 	return std::make_shared<BlockDB>(config, std::move(pRocksDB));
 }

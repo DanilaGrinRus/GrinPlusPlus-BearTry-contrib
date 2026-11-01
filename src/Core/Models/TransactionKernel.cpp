@@ -60,7 +60,12 @@ void TransactionKernel::Serialize(Serializer& serializer) const
 TransactionKernel TransactionKernel::Deserialize(ByteBuffer& byteBuffer)
 {
 	// Read KernelFeatures (1 byte)
-	const EKernelFeatures features = (EKernelFeatures)byteBuffer.ReadU8();
+	const uint8_t rawFeatures = byteBuffer.ReadU8();
+	if (rawFeatures > (uint8_t)EKernelFeatures::NO_RECENT_DUPLICATE) {
+		throw DESERIALIZATION_EXCEPTION_F("Unknown kernel feature byte {}", rawFeatures);
+	}
+
+	const EKernelFeatures features = (EKernelFeatures)rawFeatures;
 
 	Fee fee;
 	uint64_t lockHeight = 0;

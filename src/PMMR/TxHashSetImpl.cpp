@@ -115,7 +115,10 @@ bool TxHashSet::ApplyBlock(std::shared_ptr<IBlockDB> pBlockDB, const FullBlock& 
 		}
 
 		auto pOutput = m_pOutputPMMR->GetAt(pOutputPosition->GetLeafIndex());
-		assert(pOutput != nullptr);
+		if (pOutput == nullptr) {
+			LOG_WARNING_F("Output position for commitment {} points to a missing leaf", commitment);
+			return false;
+		}
 
 		if (pOutput->IsCoinbase() && pOutputPosition->GetBlockHeight() > maximumBlockHeight) {
 			LOG_WARNING_F("Coinbase {} not mature", input.GetCommitment());

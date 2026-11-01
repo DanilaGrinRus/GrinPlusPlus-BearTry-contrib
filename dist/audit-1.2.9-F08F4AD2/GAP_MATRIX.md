@@ -23,7 +23,7 @@
 | G-04 | PoW edge-bits sanity | `validate_pow_only`: `is_primary()/is_secondary()` + `verify_size` (`chain/src/pipe.rs`, `core/src/pow/cuckatoo.rs`) | Grin++ не отвергал явно недопустимые `edge_bits` (29 secondary, 31–63 primary); значения ≥64 давали сдвиг 64-битного слова | Добавлен `PoWValidator::IsSupportedEdgeBits` и проверка **до** диспетчеризации в Cuckoo; unit-таблица границ | unit `Test_PoWEdgeBits` (11 проверок) | **DONE** |
 | G-05 | Вес блока | `1/21/3`, `MAX_BLOCK_WEIGHT=40000` | нет | — | — | — | кодовое сравнение | ЗАКРЫТО |
 | G-06 | Coinbase/kernel sums/rangeproofs/cut-through/lock heights | `block.validate`, `TxBodyValidator`, `KernelSumValidator` | нет (структурно совпадает) | — | — | — | кодовое сравнение | ЗАКРЫТО |
-| G-07 | Варианты ядер (NRD) | `TODO - NRD` (`BlockValidator.cpp:22`) — у Grin++ нет проверки kernel feature/variant | Если на сети появятся NRD-ядра (не в v5.5.2), проверка будет неполной; для v5.5.2 вреда нет | P2 | Держать как явный TODO; фиксировать при появлении HF | — | OPEN (осознанно) |
+| G-07 | Варианты ядер (NRD) | `KernelFeatures::NoRecentDuplicate` есть в Rust 5.5.2 (`txhashset.rs` recent kernel index); в C++ NRD разбирается, но recent-index/lock enforcement отсутствует | Rust 5.5.2 **поддерживает NRD**; при включённом NRD C++ примет NRD-ядро без проверки relative-lock/duplicate. Это не «не в v5.5.2» | P1 для NRD-enabled сети | Реализовать recent kernel index и проверку NRD правил; до этого считать NRD-сеть неподдержанной | E64 | **OPEN (NRD)** |
 
 ---
 
@@ -121,8 +121,8 @@
 ## Сводка
 
 **Итого по матрице: 53 записи** — **45 закрыто**, 3 частично (G-09, G-23, G-24),
-0 в работе, 0 открыто, 3 запланировано (G-44, G-45, G-49),
-1 осознанно отложен (G-07), 1 снят по объёму (G-27, PIHD не в v5.5.2).
+  0 в работе, 1 открыто (G-07), 3 запланировано (G-44, G-45, G-49),
+  0 отложено, 1 снят по объёму (G-27, PIHD не в v5.5.2).
 45 + 3 + 0 + 0 + 3 + 1 + 1 = 53.
 
 * **G-52 и G-41 закрыты живьём (E54):** архив 3 117 206 023 байт сохранён и

@@ -1438,8 +1438,8 @@ G-09 остаётся **PARTIAL/FAIL live serving**. Нужно либо сох�
 sibling hashes в PibdStateWriter, либо отдавать rangeproof-сегменты из полного
 snapshot, а не из prune-состояния.
 
-**Тесты:** **176 кейсов / 1967 проверок PASS**. Артефакты: `GrinNode.exe`
-`D2604B4C…`, `Tests.exe` `937647DF…`.
+**Тесты:** **176 кейсов / 1973 проверок PASS**. Артефакты: `GrinNode.exe`
+`F08F4AD2…`, `Tests.exe` `437A99AA…`.
 
 ## E57. G-09: PIBD serving упирается в отсутствующие sibling hashes
 
@@ -1460,8 +1460,8 @@ G-09 остаётся **PARTIAL/FAIL live serving**; для закрытия н�
 все требуемые sibling hashes при активации, либо отдавать сегменты из полного
 snapshot, а не из prune-состояния.
 
-**Тесты:** 176 / 1967 PASS. Артефакты: `GrinNode.exe`
-`D2604B4C…`, `Tests.exe` `937647DF…`.
+**Тесты:** 176 / 1973 PASS. Артефакты: `GrinNode.exe`
+`F08F4AD2…`, `Tests.exe` `437A99AA…`.
 
 ## E58. G-09: prune-aware proof обязателен; простой обход prune даёт неверный root
 
@@ -1484,9 +1484,9 @@ serving**; E56/E57/E58 фиксируют весь путь диагностик
 * `AUDIT_CHECKLIST.md` D1–D9 — PASS; D5: 11 standalone + 6 embedded notices;
 * `dist/audit-1.2.9-83783F38` — 21 поставляемый файл + `SHA256SUMS`; все хеши
   сверены (0 mismatch);
-* записанные хеши сборки `GrinNode.exe` `D2604B4C…` и `Tests.exe` `937647DF…`
+* записанные хеши сборки `GrinNode.exe` `F08F4AD2…` и `Tests.exe` `437A99AA…`
   совпадают с `bin/Release/Release`; бинарники не входят в пакет (build artifacts);
-* тесты: **176 кейсов / 1967 проверок PASS**;
+* тесты: **176 кейсов / 1973 проверок PASS**;
 * G-51 закрыт приёмкой владельца; независимый внешний ревьюер не назначен —
   это зафиксировано в чек-листе и не выдаётся за внешний sign-off.
 ## E59. G-09: sidecar хешей не закрывает compacted-поддерево
@@ -1499,7 +1499,7 @@ position 4513785` — этой позиции **нет в присланных �
 нужен либо **полный legacy/libre snapshot** на горизонте, либо Rust-совместимый
 prune-aware proof. Sidecar-эксперимент откатан; code baseline восстановлен.
 
-**Тесты:** 176 / 1967 PASS (Tests `937647DF…`), GrinNode `D2604B4C…`.
+**Тесты:** 176 / 1973 PASS (Tests `437A99AA…`), GrinNode `F08F4AD2…`.
 G-09 — **PARTIAL/FAIL live serving**.
 
 ## E60. G-09: полный snapshot на горизонт недоступен из текущих источников
@@ -1525,8 +1525,8 @@ Rust-ноды на горизонте) или реализация prune-aware p
 P2P-запросами нельзя. G-09 — **PARTIAL / FAIL live serving**, закрыть можно
 только внешним полным snapshot'ом горизонта, снятым до pruning.
 
-**Тесты:** 176 / 1967 PASS. Артефакты: `GrinNode D2604B4C…`,
-`Tests 937647DF…`.
+**Тесты:** 176 / 1973 PASS. Артефакты: `GrinNode F08F4AD2…`,
+`Tests 437A99AA…`.
 
 ## E62. Аудит серверной части PIBD
 
@@ -1536,8 +1536,8 @@ P2P-запросами нельзя. G-09 — **PARTIAL / FAIL live serving**, �
 roots и порядок полей совпадают. Найден и исправлен один реальный дефект:
 `GetKernelSegment` разыменовывал `GetHashAt()` без проверки на `nullptr`.
 Причина G-09 — не серверный протокол, а compacted state без нужных hashes.
-Подробно: `PIBD_SERVER_AUDIT.md`. Тесты: 176 / 1967 PASS; артефакты
-`GrinNode D2604B4C…`, `Tests 937647DF…`.
+Подробно: `PIBD_SERVER_AUDIT.md`. Тесты: 176 / 1973 PASS; артефакты
+`GrinNode F08F4AD2…`, `Tests 437A99AA…`.
 
 ## E63. PMMR-аудит и исправления
 
@@ -1548,4 +1548,30 @@ roots и порядок полей совпадают. Найден и испр�
 SIGSEGV на underflow shifted-index (добавлены bounds checks). Остаётся известный
 блокер F3: `PibdStateWriter` не сохраняет compacted-хеши, поэтому serving на
 текущем state всё ещё невозможен. Подробности: `PMMR_AUDIT.md`.
-Тесты: 176 / 1967 PASS; `GrinNode D2604B4C…`, `Tests 937647DF…`.
+Тесты: 176 / 1973 PASS; `GrinNode F08F4AD2…`, `Tests 437A99AA…`.
+
+## E64. Full audit: NRD, DB и модели
+
+- **G-07/NRD**: Rust 5.5.2 поддерживает `NoRecentDuplicate` ядра и ведёт recent
+  kernel index; C++ только разбирает relative height, но не проверяет NRD
+  relative-lock/duplicate. Документация ошибочно считала NRD отсутствующим в
+  v5.5.2. Статус исправлен на **OPEN (NRD)**, tally — 45 закрыто / 1 открыто.
+- **PeerDB**: `OpenDB` удалял `DB/PEERS` при каждом старте; исправлено, пиры и
+  баны сохраняются.
+- **Features**: неизвестные kernel/output feature-байты принимались; теперь
+  отвергаются как `CorruptedData`, как в Rust.
+- **CoinView**: отсутствующий output возвращал `DEFAULT`; теперь ошибка.
+- **DbCheckpoint**: чтение `uint64_t` по невыровненным адресам заменено на
+  `memcpy` helper.
+- **TxHashSet::ApplyBlock**: `assert` на отсутствующий output заменён на
+  контролируемый `false`.
+- **BlockDB**: убрано бессмысленное `DeleteAll("INPUT_BITMAP")` при старте.
+
+## E65. Сводный аудит всех частей
+
+Оформлен `FULL_AUDIT.md`: модули, исправленные дефекты (PeerDB wipe, неизвестные
+features, CoinView, DbCheckpoint UB, TxHashSet assert, BlockDB wipe, PIBD/PMMR
+null/bounds) и открытые пункты. Главный открытый — **G-07/NRD**: Rust 5.5.2
+поддерживает NRD, C++ не ведёт recent kernel index; NRD-сеть не поддержана.
+G-09 остаётся blocked by data. Тесты: 176 / 1973 PASS; `GrinNode F08F4AD2…`,
+`Tests 437A99AA…`.

@@ -37,6 +37,20 @@ namespace DbCheckpoint
 		return hash;
 	}
 
+	inline uint64_t ReadU64(const uint8_t* p) noexcept
+	{
+		uint64_t value = 0;
+		std::memcpy(&value, p, sizeof(value));
+		return value;
+	}
+
+	inline uint32_t ReadU32(const uint8_t* p) noexcept
+	{
+		uint32_t value = 0;
+		std::memcpy(&value, p, sizeof(value));
+		return value;
+	}
+
 	inline bool Read(const fs::path& path, DbCheckpointData& out)
 	{
 		std::ifstream file(path, std::ios::binary);
@@ -50,22 +64,21 @@ namespace DbCheckpoint
 			return false;
 		}
 
-		const uint64_t storedChecksum =
-			*(reinterpret_cast<const uint64_t*>(bytes + 44));
+		const uint64_t storedChecksum = ReadU64(bytes + 44);
 		if (storedChecksum != Checksum(bytes, 44)) {
 			return false;
 		}
 
-		const uint64_t magic = *(reinterpret_cast<const uint64_t*>(bytes));
-		const uint32_t version = *(reinterpret_cast<const uint32_t*>(bytes + 8));
+		const uint64_t magic = ReadU64(bytes);
+		const uint32_t version = ReadU32(bytes + 8);
 		if (magic != MAGIC || version != VERSION) {
 			return false;
 		}
 
-		out.Sequence = *(reinterpret_cast<const uint64_t*>(bytes + 12));
-		out.MmrLeaves = *(reinterpret_cast<const uint64_t*>(bytes + 20));
-		out.CandidateEntries = *(reinterpret_cast<const uint64_t*>(bytes + 28));
-		out.ConfirmedEntries = *(reinterpret_cast<const uint64_t*>(bytes + 36));
+		out.Sequence = ReadU64(bytes + 12);
+		out.MmrLeaves = ReadU64(bytes + 20);
+		out.CandidateEntries = ReadU64(bytes + 28);
+		out.ConfirmedEntries = ReadU64(bytes + 36);
 
 		// Basic sanity: a chain always has at least genesis, confirmed can not be
 		// ahead of candidate.
