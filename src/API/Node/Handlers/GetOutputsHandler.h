@@ -15,6 +15,8 @@
 #include <optional>
 #include <string>
 #include <vector>
+#include <limits>
+#include "PrintableSerialization.h"
 
 // Grin v5.5.2 foreign API: get_outputs.
 // Params: [[commits], start_height?, end_height?, include_proof?, include_merkle_proof?]
@@ -50,81 +52,114 @@ public:
 			includeProof = params[3].asBool();
 		}
 
-		const auto pTxHashSet = m_pTxHashSetManager->GetTxHashSet();
-		const auto pBlockDB = m_pDatabase->GetBlockDB()->Read();
-
-		Json::Value outputs(Json::arrayValue);
-
-		// By commitment.
-		if (params.size() > 0 && params[0].isArray()) {
-			for (const Json::Value& commitJSON : params[0]) {
-				if (!commitJSON.isString()) {
-					return request.BuildError("INVALID_PARAMS", "Expected commitment hex strings");
-				}
-
-				std::unique_ptr<Commitment> pCommitment;
-				try {
-					pCommitment = std::make_unique<Commitment>(JsonUtil::ConvertToCommitment(commitJSON));
-				} catch (const std::exception&) {
-					return request.BuildError("INVALID_PARAMS", "Invalid commitment hex string");
-				}
-				const Commitment& commitment = *pCommitment;
-
-				std::unique_ptr<OutputLocation> pLocation = pBlockDB->GetOutputPosition(commitment);
-				if (pLocation == nullptr) {
-					continue; // Ignored like the reference client.
-				}
-
-				Json::Value outputJSON;
-				if (BuildOutput(commitment, *pLocation, pTxHashSet, includeProof, outputJSON)) {
-					outputs.append(outputJSON);
-				}
-			}
-		}
-
-		// By block height range.
-		const bool hasRange = params.size() > 1 && !params[1].isNull();
-		if (hasRange) {
-			uint64_t startHeight = JsonUtil::ConvertToUInt64(params[1]);
-			uint64_t endHeight = (params.size() > 2 && !params[2].isNull())
-				? JsonUtil::ConvertToUInt64(params[2])
-				: startHeight;
-			if (endHeight < startHeight) {
-				endHeight = startHeight;
-			}
-			if (endHeight - startHeight >= MaxBlockRange) {
-				endHeight = startHeight + MaxBlockRange - 1;
+		for (int attempt = 0; attempt < 3; attempt++) {
+			const auto snapshot = m_pBlockChain->GetApiStateSnapshot();
+			if (!snapshot.valid || snapshot.tip == nullptr || snapshot.txHashSet == nullptr) {
+				continue;
 			}
 
-			for (uint64_t height = startHeight; height <= endHeight; height++) {
-				std::unique_ptr<FullBlock> pBlock = m_pBlockChain->GetBlockByHeight(height);
-				if (pBlock == nullptr) {
-					continue;
-				}
+			Json::Value outputs(Json::arrayValue);
 
-				for (const TransactionOutput& output : pBlock->GetOutputs()) {
-					std::unique_ptr<OutputLocation> pLocation = pBlockDB->GetOutputPosition(output.GetCommitment());
+			// By commitment. The DB lock is scoped to the lookup; it is never held
+			// while a ChainState lock is acquired (that was the BlockDB/ChainState
+			// ABBA path in A2).
+			if (params.size() > 0 && params[0].isArray()) {
+				if (params[0].size() > MaxCommitments) {
+					return request.BuildError("INVALID_PARAMS", "Too many commitments (max 128)");
+				}
+				for (const Json::Value& commitJSON : params[0]) {
+					if (!commitJSON.isString()) {
+						return request.BuildError("INVALID_PARAMS", "Expected commitment hex strings");
+					}
+
+					std::unique_ptr<Commitment> pCommitment;
+					try {
+						pCommitment = std::make_unique<Commitment>(JsonUtil::ConvertToCommitment(commitJSON));
+					} catch (const std::exception&) {
+						return request.BuildError("INVALID_PARAMS", "Invalid commitment hex string");
+					}
+					const Commitment& commitment = *pCommitment;
+
+					std::unique_ptr<OutputLocation> pLocation;
+					{
+						const auto pBlockDB = m_pDatabase->GetBlockDB()->Read();
+						pLocation = pBlockDB->GetOutputPosition(commitment);
+					}
 					if (pLocation == nullptr) {
-						continue;
+						continue; // Ignored like the reference client.
 					}
 
 					Json::Value outputJSON;
-					if (BuildOutput(output.GetCommitment(), *pLocation, pTxHashSet, includeProof, outputJSON)) {
+					if (BuildOutput(commitment, *pLocation, snapshot.txHashSet, includeProof, outputJSON)) {
 						outputs.append(outputJSON);
 					}
 				}
 			}
+
+			// By block height range.
+			const bool hasRange = params.size() > 1 && !params[1].isNull();
+			if (hasRange) {
+				uint64_t startHeight = JsonUtil::ConvertToUInt64(params[1]);
+				uint64_t endHeight = (params.size() > 2 && !params[2].isNull())
+					? JsonUtil::ConvertToUInt64(params[2])
+					: startHeight;
+				if (endHeight < startHeight) {
+					endHeight = startHeight;
+				}
+				// Clamp the width without overflowing when startHeight is near UINT64_MAX.
+				const uint64_t maxSpan = MaxBlockRange - 1;
+				if (endHeight - startHeight > maxSpan) {
+					endHeight = (startHeight > (std::numeric_limits<uint64_t>::max)() - maxSpan)
+						? (std::numeric_limits<uint64_t>::max)()
+						: startHeight + maxSpan;
+				}
+
+				for (uint64_t height = startHeight;; height++) {
+					// endHeight may be UINT64_MAX; never increment past it (wraparound).
+					const bool lastHeight = (height == endHeight);
+					std::unique_ptr<FullBlock> pBlock = m_pBlockChain->GetBlockByHeight(height);
+					if (pBlock == nullptr) {
+						if (lastHeight) {
+							break;
+						}
+						continue;
+					}
+
+					const uint64_t count = pBlock->GetOutputs().size();
+					const uint64_t cumulative = pBlock->GetHeader()->GetNumOutputs();
+					if (cumulative < count) {
+						return request.BuildError("INTERNAL_ERROR", "Inconsistent output count in block header");
+					}
+					uint64_t leaf = cumulative - count;
+					for (const TransactionOutput& output : pBlock->GetOutputs()) {
+						const OutputLocation location(LeafIndex::At(leaf++), height);
+						outputs.append(PrintableSerialization::BlockOutputPrintable(
+							output, location, snapshot.txHashSet, includeProof));
+					}
+
+					if (lastHeight) {
+						break;
+					}
+				}
+			}
+
+			if (!m_pBlockChain->IsApiStateCurrent(snapshot.sequence)) {
+				continue;
+			}
+
+			Json::Value result;
+			result["Ok"] = outputs;
+			return request.BuildResult(result);
 		}
 
-		Json::Value result;
-		result["Ok"] = outputs;
-		return request.BuildResult(result);
+		return request.BuildError("NODE_BUSY_RETRY", "Chain state changed during the request");
 	}
 
 	bool ContainsSecrets() const noexcept final { return false; }
 
 private:
 	static constexpr uint64_t MaxBlockRange = 100;
+    static constexpr Json::ArrayIndex MaxCommitments = 128;
 
 	bool BuildOutput(
 		const Commitment& commitment,

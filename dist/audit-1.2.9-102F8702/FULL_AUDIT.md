@@ -20,7 +20,7 @@ Live PIBD serving remains separately blocked (G-09).
 
 - `GAP_MATRIX.md`: 53 entries; 45 closed, 3 partial, 1 open (G-07), 3 planned,
   1 N/A.
-- Full suite before this audit: 187 cases / 2066 assertions PASS.
+- Full suite before this audit: 187 cases / 2069 assertions PASS.
 - Build: CMake/Ninja, MSVC `/W4 /WX`, offline sysroot.
 
 ## Module results
@@ -88,9 +88,9 @@ Live PIBD serving remains separately blocked (G-09).
 - Node protocol/consensus/DB audit: **PASS with fixes**, except NRD (open) and
   live PIBD serving (blocked by missing data).
 - No unqualified “all green” claim: G-07 and G-09 remain open/partial.
-- Full suite after fixes: **187 cases / 2066 assertions PASS**.
+- Full suite after fixes: **187 cases / 2069 assertions PASS**.
 
 ## Artifacts
 
-- `GrinNode AD543FC3…`, `Tests AB341E60…`;
-- audit package `dist/audit-1.2.9-AD543FC3`.
+- `GrinNode 102F8702…`, `Tests FBEECC34…`;
+- audit package `dist/audit-1.2.9-102F8702`.

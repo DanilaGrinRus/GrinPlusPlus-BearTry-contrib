@@ -77,6 +77,42 @@ namespace PrintableSerialization
 		return json;
 	}
 
+	// Builds the flat OutputPrintable for an output that is part of a block body
+	// (the block already carries features and the range proof).
+	inline Json::Value BlockOutputPrintable(
+		const TransactionOutput& blockOutput,
+		const OutputLocation& location,
+		const std::shared_ptr<ITxHashSet>& pTxHashSet,
+		const bool includeProof)
+	{
+		bool spent = true;
+		if (pTxHashSet != nullptr) {
+			try {
+				const OutputDTO liveOutput = pTxHashSet->GetOutput(location);
+				spent = liveOutput.GetCommitment() != blockOutput.GetCommitment();
+			} catch (const std::exception&) {
+				spent = true;
+			}
+		}
+
+		Serializer proofSerializer;
+		blockOutput.GetRangeProof().Serialize(proofSerializer);
+
+		Json::Value json;
+		json["output_type"] = (blockOutput.GetFeatures() == EOutputFeatures::COINBASE_OUTPUT)
+			? "Coinbase" : "Transaction";
+		json["commit"] = blockOutput.GetCommitment().ToHex();
+		json["spent"] = spent;
+		json["proof"] = includeProof
+			? Json::Value(blockOutput.GetRangeProof().Format())
+			: Json::Value(Json::nullValue);
+		json["proof_hash"] = Hasher::Blake2b(proofSerializer.GetBytes()).ToHex();
+		json["block_height"] = Json::UInt64(location.GetBlockHeight());
+		json["merkle_proof"] = Json::nullValue;
+		json["mmr_index"] = Json::UInt64(location.GetLeafIndex().GetPosition() + 1);
+		return json;
+	}
+
 	// Builds an OutputPrintable from an OutputLocation. Present PMMR leaves are
 	// unspent; spent outputs are pruned from the PMMR and their body is recovered
 	// from the block DB with spent=true.

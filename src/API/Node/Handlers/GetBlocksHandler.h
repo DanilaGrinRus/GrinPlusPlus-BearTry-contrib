@@ -42,19 +42,9 @@ public:
 
 		const uint64_t startHeight = JsonUtil::ConvertToUInt64(params[0]);
 
-		uint64_t endHeight = 0;
+		std::optional<uint64_t> explicitEndHeight;
 		if (params.size() > 1 && !params[1].isNull()) {
-			endHeight = JsonUtil::ConvertToUInt64(params[1]);
-		} else {
-			const BlockHeaderPtr pTip = m_pBlockChain->GetTipBlockHeader(EChainType::CONFIRMED);
-			if (pTip == nullptr) {
-				return request.BuildError("INTERNAL_ERROR", "Failed to find tip.");
-			}
-			endHeight = pTip->GetHeight();
-		}
-
-		if (endHeight < startHeight) {
-			return request.BuildError("INVALID_PARAMS", "end_height is before start_height");
+			explicitEndHeight = JsonUtil::ConvertToUInt64(params[1]);
 		}
 
 		uint64_t max = BlockTransferLimit;
@@ -68,69 +58,94 @@ public:
 			includeProof = params[3].asBool();
 		}
 
-		const auto pTxHashSet = m_pTxHashSetManager->GetTxHashSet();
-		const auto pBlockDB = m_pDatabase->GetBlockDB()->Read();
-
-		Json::Value blocks(Json::arrayValue);
-		uint64_t lastRetrievedHeight = startHeight;
-
-		for (uint64_t height = startHeight; height <= endHeight; height++) {
-			lastRetrievedHeight = height;
-
-			std::unique_ptr<FullBlock> pBlock = m_pBlockChain->GetBlockByHeight(height);
-			if (pBlock == nullptr) {
+		for (int attempt = 0; attempt < 3; attempt++) {
+			const auto snapshot = m_pBlockChain->GetApiStateSnapshot();
+			if (!snapshot.valid || snapshot.tip == nullptr || snapshot.txHashSet == nullptr) {
 				continue;
 			}
 
-			Json::Value blockJSON;
-			blockJSON["header"] = PrintableSerialization::HeaderPrintable(*pBlock->GetHeader());
-
-			Json::Value inputs(Json::arrayValue);
-			for (const TransactionInput& input : pBlock->GetInputs()) {
-				inputs.append(input.GetCommitment().ToHex());
+			const uint64_t endHeight = explicitEndHeight.value_or(snapshot.tip->GetHeight());
+			if (endHeight < startHeight) {
+				return request.BuildError("INVALID_PARAMS", "end_height is before start_height");
 			}
-			blockJSON["inputs"] = inputs;
+			// max limits returned blocks, not the number of DB lookups for missing
+			// historical blocks. Bound work even across sparse/compacted ranges.
+			if (endHeight - startHeight >= MaxScannedHeights) {
+				return request.BuildError("QUERY_TOO_WIDE", "Request at most 10000 heights per call");
+			}
 
-			Json::Value outputs(Json::arrayValue);
-			for (const TransactionOutput& output : pBlock->GetOutputs()) {
-				const std::unique_ptr<OutputLocation> pLocation = pBlockDB->GetOutputPosition(output.GetCommitment());
-				if (pLocation == nullptr) {
+			Json::Value blocks(Json::arrayValue);
+			uint64_t lastRetrievedHeight = startHeight;
+
+			for (uint64_t height = startHeight;; height++) {
+				lastRetrievedHeight = height;
+				// endHeight may be UINT64_MAX; never increment past it (wraparound).
+				const bool lastHeight = (height == endHeight);
+
+				std::unique_ptr<FullBlock> pBlock = m_pBlockChain->GetBlockByHeight(height);
+				if (pBlock == nullptr) {
+					if (lastHeight) {
+						break;
+					}
 					continue;
 				}
 
-				const std::optional<Json::Value> printable = PrintableSerialization::OutputPrintable(
-					output.GetCommitment(), *pLocation, pTxHashSet, m_pBlockChain, includeProof);
-				if (printable.has_value()) {
-					outputs.append(*printable);
+				Json::Value blockJSON;
+				blockJSON["header"] = PrintableSerialization::HeaderPrintable(*pBlock->GetHeader());
+
+				Json::Value inputs(Json::arrayValue);
+				for (const TransactionInput& input : pBlock->GetInputs()) {
+					inputs.append(input.GetCommitment().ToHex());
+				}
+				blockJSON["inputs"] = inputs;
+
+				Json::Value outputs(Json::arrayValue);
+				const uint64_t count = pBlock->GetOutputs().size();
+				const uint64_t cumulative = pBlock->GetHeader()->GetNumOutputs();
+				if (cumulative < count) {
+					return request.BuildError("INTERNAL_ERROR", "Inconsistent output count in block header");
+				}
+				uint64_t leaf = cumulative - count;
+				for (const TransactionOutput& output : pBlock->GetOutputs()) {
+					const OutputLocation location(LeafIndex::At(leaf++), height);
+					outputs.append(PrintableSerialization::BlockOutputPrintable(
+						output, location, snapshot.txHashSet, includeProof));
+				}
+				blockJSON["outputs"] = outputs;
+
+				Json::Value kernels(Json::arrayValue);
+				for (const TransactionKernel& kernel : pBlock->GetKernels()) {
+					kernels.append(PrintableSerialization::KernelPrintable(kernel));
+				}
+				blockJSON["kernels"] = kernels;
+
+				blocks.append(blockJSON);
+				if (blocks.size() >= max || lastHeight) {
+					break;
 				}
 			}
-			blockJSON["outputs"] = outputs;
 
-			Json::Value kernels(Json::arrayValue);
-			for (const TransactionKernel& kernel : pBlock->GetKernels()) {
-				kernels.append(PrintableSerialization::KernelPrintable(kernel));
+			if (!m_pBlockChain->IsApiStateCurrent(snapshot.sequence)) {
+				continue;
 			}
-			blockJSON["kernels"] = kernels;
 
-			blocks.append(blockJSON);
-			if (blocks.size() >= max) {
-				break;
-			}
+			Json::Value listing;
+			listing["last_retrieved_height"] = Json::UInt64(lastRetrievedHeight);
+			listing["blocks"] = blocks;
+
+			Json::Value result;
+			result["Ok"] = listing;
+			return request.BuildResult(result);
 		}
 
-		Json::Value listing;
-		listing["last_retrieved_height"] = Json::UInt64(lastRetrievedHeight);
-		listing["blocks"] = blocks;
-
-		Json::Value result;
-		result["Ok"] = listing;
-		return request.BuildResult(result);
+		return request.BuildError("NODE_BUSY_RETRY", "Chain state changed during the request");
 	}
 
 	bool ContainsSecrets() const noexcept final { return false; }
 
 private:
 	static constexpr uint64_t BlockTransferLimit = 1000;
+    static constexpr uint64_t MaxScannedHeights = 10000;
 
 	IBlockChain::Ptr m_pBlockChain;
 	TxHashSetManager::Ptr m_pTxHashSetManager;
