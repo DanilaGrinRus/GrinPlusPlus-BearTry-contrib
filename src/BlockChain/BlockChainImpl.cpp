@@ -23,6 +23,7 @@
 #include <PMMR/TxHashSet.h>
 #include <filesystem.h>
 #include <algorithm>
+#include <thread>
 
 BlockChain::BlockChain(
 	std::shared_ptr<ITransactionPool> pTransactionPool,
@@ -32,6 +33,16 @@ BlockChain::BlockChain(
 
 }
 
+BlockChain::StateWriteGuard::StateWriteGuard(BlockChain& chain)
+	: m_chain(chain), m_lock(chain.m_stateWriteMutex)
+{
+	m_chain.m_stateSequence.fetch_add(1, std::memory_order_release);
+}
+
+BlockChain::StateWriteGuard::~StateWriteGuard()
+{
+	m_chain.m_stateSequence.fetch_add(1, std::memory_order_release);
+}
 BlockChain::~BlockChain()
 {
 	Global::SetCoinView(nullptr);
@@ -303,6 +314,7 @@ std::shared_ptr<BlockChain> BlockChain::Create(
 
 void BlockChain::ResyncChain()
 {
+	StateWriteGuard writeGuard(*this);
 	ChainResyncer(m_pChainState).ResyncChain();
 }
 
@@ -323,6 +335,7 @@ uint64_t BlockChain::GetTotalDifficulty(const EChainType chainType) const
 
 EBlockChainStatus BlockChain::AddBlock(const FullBlock& block)
 {
+	StateWriteGuard writeGuard(*this);
 	return BlockProcessor(m_pChainState).ProcessBlock(block);
 }
 
@@ -378,6 +391,7 @@ fs::path BlockChain::SnapshotTxHashSet(BlockHeaderPtr pBlockHeader)
 
 EBlockChainStatus BlockChain::ProcessTransactionHashSet(const Hash& blockHash, const fs::path& path, SyncStatus& syncStatus)
 {
+	StateWriteGuard writeGuard(*this);
 	try
 	{
 		const bool success = TxHashSetProcessor(Global::GetConfig(), *this, m_pChainState).ProcessTxHashSet(blockHash, path, syncStatus);
@@ -394,6 +408,44 @@ EBlockChainStatus BlockChain::ProcessTransactionHashSet(const Hash& blockHash, c
 	return EBlockChainStatus::INVALID;
 }
 
+IBlockChain::ApiStateSnapshot BlockChain::GetApiStateSnapshot() const
+{
+	for (int attempt = 0; attempt < 5; attempt++) {
+		const uint64_t sequence = m_stateSequence.load(std::memory_order_acquire);
+		if ((sequence & 1) != 0) {
+			std::this_thread::yield();
+			continue;
+		}
+
+		auto pReader = m_pChainState->Read();
+		const BlockHeaderPtr pTip = pReader->GetTipBlockHeader(EChainType::CONFIRMED);
+		std::shared_ptr<ITxHashSet> pTxHashSet = std::const_pointer_cast<ITxHashSet>(
+			pReader->GetTxHashSetManager()->GetTxHashSet());
+
+		if (m_stateSequence.load(std::memory_order_acquire) != sequence) {
+			continue;
+		}
+
+		if (pTip == nullptr || pTxHashSet == nullptr) {
+			return {};
+		}
+
+		ApiStateSnapshot snapshot;
+		snapshot.valid = true;
+		snapshot.sequence = sequence;
+		snapshot.tip = pTip;
+		snapshot.txHashSet = pTxHashSet;
+		return snapshot;
+	}
+
+	return {};
+}
+
+bool BlockChain::IsApiStateCurrent(const uint64_t sequence) const
+{
+	const uint64_t current = m_stateSequence.load(std::memory_order_acquire);
+	return current == sequence && (current & 1) == 0;
+}
 std::shared_ptr<ITxHashSet> BlockChain::GetTxHashSet()
 {
 	return std::const_pointer_cast<ITxHashSet>(m_pChainState->Read()->GetTxHashSetManager()->GetTxHashSet());
@@ -412,6 +464,7 @@ void BlockChain::OpenTxHashSet()
 }
 EBlockChainStatus BlockChain::ProcessExistingTxHashSet(const Hash& blockHash, SyncStatus& syncStatus)
 {
+	StateWriteGuard writeGuard(*this);
 	try {
 		const bool success = TxHashSetProcessor(Global::GetConfig(), *this, m_pChainState)
 			.ProcessExistingTxHashSet(blockHash, syncStatus);

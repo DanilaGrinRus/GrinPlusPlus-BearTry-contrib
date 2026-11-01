@@ -41,6 +41,17 @@ class IBlockChain
 public:
 	using Ptr = std::shared_ptr<IBlockChain>;
 
+	// Coherent read-only view for API handlers. The sequence is even while the
+	// chain is quiescent and odd while a mutation is in progress. The caller
+	// must call IsApiStateCurrent() after its last read and retry otherwise.
+	struct ApiStateSnapshot
+	{
+		bool valid = false;
+		uint64_t sequence = 0;
+		BlockHeaderPtr tip = nullptr;
+		std::shared_ptr<ITxHashSet> txHashSet = nullptr;
+	};
+
 	virtual ~IBlockChain() = default;
 
 	virtual void ResyncChain() = 0;
@@ -69,6 +80,9 @@ public:
 
 	// Currently installed txhashset (nullptr when none is open).
 	virtual std::shared_ptr<ITxHashSet> GetTxHashSet() = 0;
+	virtual ApiStateSnapshot GetApiStateSnapshot() const = 0;
+	virtual bool IsApiStateCurrent(const uint64_t sequence) const = 0;
+
 	virtual EBlockChainStatus AddTransaction(TransactionPtr pTransaction, const EPoolType poolType) = 0;
 	virtual TransactionPtr GetTransactionByKernelHash(const Hash& kernelHash) const = 0;
 

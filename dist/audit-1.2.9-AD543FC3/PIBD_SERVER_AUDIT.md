@@ -80,5 +80,5 @@ format. Details and evidence: `TEST_RESULTS.md` E56–E61.
 
 - `Test_PibdServing` wire round-trip and live-state tests;
 - `Test_PibdServing::ServesStateThatValidates`;
-- full suite 182 cases / 2029 assertions PASS;
-- artifacts `GrinNode 0A5A2D5B…`, `Tests F9C39B57…`.
+- full suite 187 cases / 2066 assertions PASS;
+- artifacts `GrinNode AD543FC3…`, `Tests AB341E60…`.

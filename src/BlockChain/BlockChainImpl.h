@@ -9,6 +9,7 @@
 #include <Database/Database.h>
 #include <PMMR/TxHashSetManager.h>
 #include <P2P/SyncStatus.h>
+#include <atomic>
 #include <cstdint>
 #include <mutex>
 
@@ -47,6 +48,9 @@ public:
 	void CloseTxHashSet() final;
 	void OpenTxHashSet() final;
 	std::shared_ptr<ITxHashSet> GetTxHashSet() final;
+	ApiStateSnapshot GetApiStateSnapshot() const final;
+	bool IsApiStateCurrent(const uint64_t sequence) const final;
+
 	EBlockChainStatus AddTransaction(TransactionPtr pTransaction, const EPoolType poolType) final;
 	TransactionPtr GetTransactionByKernelHash(const Hash& kernelHash) const final;
 
@@ -69,6 +73,17 @@ public:
 	bool HasOrphan(const Hash& blockHash) const final;
 
 private:
+	class StateWriteGuard
+	{
+	public:
+		explicit StateWriteGuard(BlockChain& chain);
+		~StateWriteGuard();
+
+	private:
+		BlockChain& m_chain;
+		std::unique_lock<std::mutex> m_lock;
+	};
+
 	BlockChain(
 		std::shared_ptr<ITransactionPool> pTransactionPool,
 		std::shared_ptr<Locked<ChainState>> pChainState
@@ -76,4 +91,7 @@ private:
 
 	std::shared_ptr<ITransactionPool> m_pTransactionPool;
 	std::shared_ptr<Locked<ChainState>> m_pChainState;
+
+	mutable std::atomic<uint64_t> m_stateSequence{ 0 };
+	mutable std::mutex m_stateWriteMutex;
 };
