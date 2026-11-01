@@ -147,7 +147,15 @@ public:
 	// PIBD serving must return it when the bitmap requires the leaf.
 	std::unique_ptr<DATA_TYPE> GetRawAt(const LeafIndex& leaf_idx) const
 	{
+		if (leaf_idx.GetPosition() >= GetSize() ||
+			m_pPruneList->IsCompacted(leaf_idx.GetIndex())) {
+			return nullptr;
+		}
+
 		const uint64_t shift = m_pPruneList->GetLeafShift(leaf_idx.GetIndex());
+		if (shift > leaf_idx.Get() || leaf_idx.Get() - shift >= m_pDataFile->GetSize()) {
+			return nullptr;
+		}
 		const uint64_t shifted_idx = leaf_idx.Get() - shift;
 
 		try {

@@ -210,7 +210,8 @@ void MessageProcessor::ProcessMessageInternal(const std::shared_ptr<Connection>&
 				}
 
 				const BlockHeaderPtr pFlushedHeader = pState->GetFlushedBlockHeader();
-				if (pFlushedHeader == nullptr || pFlushedHeader->GetHash() != request.GetBlockHash()) {
+				if (pFlushedHeader == nullptr || pFlushedHeader->GetHeight() == 0 ||
+					pFlushedHeader->GetHash() != request.GetBlockHash()) {
 					LOG_DEBUG_F(
 						"Ignoring {} from {}: requested horizon is not our flushed state",
 						MessageTypes::ToString(header.GetMessageType()),

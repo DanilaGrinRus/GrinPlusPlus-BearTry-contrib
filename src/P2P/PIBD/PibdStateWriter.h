@@ -148,6 +148,25 @@ private:
 			hasData[(size_t)pos0] = (hasData[(size_t)leftChild] || hasData[(size_t)rightChild]) ? 1 : 0;
 		}
 
+		// A spent leaf that is the sibling of an unspent leaf is a boundary
+		// hash-only leaf: the segment carries its hash but no data. Persist it at
+		// its unshifted position so serving can prove the parent. Leaves inside a
+		// fully pruned subtree remain represented only by that subtree root.
+		for (uint64_t pos0 = 0; pos0 < mmrSize; ++pos0) {
+			if (!MMRUtil::IsLeaf(pos0) || hashes[(size_t)pos0].has_value()) {
+				continue;
+			}
+
+			const int64_t parentPos = parent[(size_t)pos0];
+			if (parentPos < 0 || hasData[(size_t)parentPos] == 0) {
+				continue;
+			}
+
+			const auto stored = storedHashes.find(pos0);
+			if (stored != storedHashes.end()) {
+				hashes[(size_t)pos0] = stored->second;
+			}
+		}
 		if (leafData.empty()) {
 			throw SegmentException(
 				ESegmentError::MissingHash,

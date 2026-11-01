@@ -126,6 +126,14 @@ inline Hash ComputePrunedTreeRoot(
 				Serializer serializer;
 				leaf->second->Serialize(serializer);
 				hashes[(size_t)pos0] = MMRHashUtil::HashLeafWithIndex(serializer.GetBytes(), pos0);
+			} else {
+				// Hash-only boundary leaf: no data, but its hash may be carried
+				// by the segment. It must never be a pruned internal position.
+				const int64_t parentPos = parent[(size_t)pos0];
+				const auto stored = storedHashes.find(pos0);
+				if (stored != storedHashes.end() && parentPos >= 0 && hasData[(size_t)parentPos] != 0) {
+					hashes[(size_t)pos0] = stored->second;
+				}
 			}
 
 			++leafIndex;

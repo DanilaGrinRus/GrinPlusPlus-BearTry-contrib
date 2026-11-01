@@ -68,12 +68,20 @@ public:
 		std::vector<T> leaves;
 		for (uint64_t pos0 = range.first; ; ++pos0) {
 			if (MMRUtil::IsLeaf(pos0)) {
-				if (bitmap == nullptr || IsSegmentLeafRequired(pos0, mmrSize, *bitmap)) {
-					std::optional<T> leaf = leafAt(pos0);
-					if (leaf.has_value()) {
+				const bool required = bitmap == nullptr || IsSegmentLeafRequired(pos0, mmrSize, *bitmap);
+				std::optional<T> leaf = leafAt(pos0);
+				if (leaf.has_value()) {
+					if (required) {
 						leafPositions.push_back(pos0);
 						leaves.push_back(std::move(leaf.value()));
 					}
+				} else if (required) {
+					throw SegmentException(
+						ESegmentError::MissingLeaf,
+						"Source is missing required leaf data at position " + std::to_string(pos0));
+				} else if (std::optional<Hash> hash = hashAt(pos0)) {
+					hashPositions.push_back(pos0);
+					hashes.push_back(std::move(*hash));
 				}
 			} else if (bitmap != nullptr) {
 				std::optional<Hash> hash = hashAt(pos0);
@@ -90,16 +98,23 @@ public:
 
 		std::optional<uint64_t> startPos;
 		if (bitmap != nullptr && leaves.empty() && hashes.empty()) {
-			// Fully pruned segment: only include the first unpruned parent hash.
+			// Fully pruned segment: walk the whole family branch to the first
+			// stored ancestor. Rust does not assume branch[0] is present.
 			const std::vector<std::pair<uint64_t, uint64_t>> branch =
 				MMRUtil::FamilyBranch(range.second, mmrSize);
-			if (!branch.empty()) {
-				std::optional<Hash> hash = hashAt(branch[0].first);
+			for (const auto& ancestor : branch) {
+				std::optional<Hash> hash = hashAt(ancestor.first);
 				if (hash.has_value()) {
-					hashPositions.push_back(branch[0].first);
+					hashPositions.push_back(ancestor.first);
 					hashes.push_back(std::move(hash.value()));
-					startPos = branch[0].first + 1;
+					startPos = ancestor.first + 1;
+					break;
 				}
+			}
+
+			if (!startPos.has_value()) {
+				throw SegmentException(
+					ESegmentError::MissingHash, "No stored ancestor for the pruned segment");
 			}
 		}
 
