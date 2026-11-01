@@ -174,16 +174,18 @@ public:
 	template<class TMMR>
 	static std::optional<Hash> LookupHash(const std::shared_ptr<TMMR>& pMMR, const uint64_t pos0)
 	{
-		std::unique_ptr<Hash> pHash = pMMR->GetHashAt(Index::At(pos0));
-		if (pHash != nullptr) {
-			return std::optional<Hash>(std::move(*pHash));
+		try {
+			std::unique_ptr<Hash> pHash = pMMR->GetHashAt(Index::At(pos0));
+			if (pHash != nullptr) {
+				return std::optional<Hash>(std::move(*pHash));
+			}
+		} catch (const std::exception&) {
+			// Missing/compacted hashes are a normal serving outcome, not a crash.
 		}
 
-		pHash = pMMR->GetHashAtIgnoringPrune(Index::At(pos0));
-		if (pHash != nullptr) {
-			return std::optional<Hash>(std::move(*pHash));
-		}
-
+		// A compacted node has no readable hash. Rust get_from_file() also returns
+		// None for compacted internal positions; only a stored pruned-root hash is
+		// readable through the normal non-compacted path above.
 		return std::nullopt;
 	}
 private:

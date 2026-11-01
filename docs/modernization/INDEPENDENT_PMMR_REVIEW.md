@@ -67,6 +67,37 @@ usable source yet.
 
 ## Artifacts after the IsCompacted fix
 
-- `GrinNode 728A1E5E…`
-- `Tests 0AE6BD43…`
-- full suite **187 / 2078 PASS**
+- `GrinNode 2EC593DC…`
+- `Tests 82B8858C…`
+- full suite **187 / 2092 PASS**
+
+## Addendum: second external audit
+
+Confirmed and fixed:
+
+- `AppendOnlyFile::Read` now rejects out-of-range and boundary-spanning reads;
+  `DataFile::GetDataAt` therefore throws instead of reading past the mapping.
+- `MMRHashUtil::GetHashAt`/`GetShiftedIndex` reject `shift > pos` and shifted
+  indices outside the hash file.
+- `GetHashAtIgnoringPrune` was removed from serving. For a compacted internal
+  position it could return a different node; `LookupHash` now returns nullopt
+  (as Rust `get_from_file` does). The service catches read errors and reports a
+  missing hash instead of crashing.
+
+Not confirmed:
+
+- The claimed leaf-set unit bug in `PibdStateWriter` is not present:
+  `BitmapFile::Set(const Roaring&)` consumes 1-based **MMR positions** and
+  converts them with `Index::At(value - 1)` to leaf indices. The writer's
+  `pos0 + 1` is therefore consistent with the leaf-set file format.
+
+Still open:
+
+- leaf-hash in `SegmentGenerator` (the first patch crashed the synthetic test);
+- serving gate on FULLY_SYNCED/complete state;
+- `FirstUnprunedParent` start-position on fully pruned segments;
+- root/Validate coverage for all server segments.
+
+Verification: full suite **187 / 2092 PASS** after the safe-read changes; a
+wallet slatepack test failed once and passed on rerun (known randomized fixture).
+`GrinNode 2EC593DC…`, `Tests 82B8858C…`.
