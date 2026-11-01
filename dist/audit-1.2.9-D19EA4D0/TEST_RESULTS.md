@@ -1501,3 +1501,18 @@ prune-aware proof. Sidecar-эксперимент откатан; code baseline 
 
 **Тесты:** 176 / 1937 PASS (Tests `DD8DF666…`), GrinNode `D19EA4D0…`.
 G-09 — **PARTIAL/FAIL live serving**.
+
+## E60. G-09: полный snapshot на горизонт недоступен из текущих источников
+
+Попытка варианта 1: использовать local `pp-net` (legacy state, hash-файлы 184 МБ)
+как источник полного snapshot. Сервер на запрос архива ответил:
+`Snapshot TxHashSet for height 3314880 failed: Rewind: Spent output not found
+for Commitment{08336ff8...}` — state `pp-net` тоже pruned, истории на горизонт
+не хватает. Внешние пиры Rust 5.5.2 legacy-архив не отдают, а `pp-net` локального
+архива не имеет.
+
+Таким образом **ни PIBD-сегменты, ни sidecar, ни pp-net snapshot не содержат
+полного горизонта**. G-09 остаётся PARTIAL/FAIL live serving; следующий
+источник — только специально сохранённый полный snapshot (например, со стороны
+Rust-ноды на горизонте) или реализация prune-aware proof при наличии
+недостающих hashes.
