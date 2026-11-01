@@ -190,6 +190,10 @@ void Connection::HandleReceivedBody(MessageHeader msg_header, const asio::error_
 
             GetPeer()->UpdateLastContactTime();
             m_lastReceived = std::chrono::system_clock::now();
+            // The async receive path is the normal path after the handshake; the
+            // synchronous ReceiveSync counter is not used here. Count every fully
+            // received message so ExceedsRateLimit sees actual traffic.
+            m_pSocket->GetRateCounter().AddMessageReceived();
 
             auto pMessageProcessor = m_pMessageProcessor.lock();
             if (pMessageProcessor != nullptr) {

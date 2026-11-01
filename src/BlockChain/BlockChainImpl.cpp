@@ -159,8 +159,7 @@ std::shared_ptr<BlockChain> BlockChain::Create(
 		if (hasCheckpoint) {
 			// A chain index shorter than the checkpoint cannot be rebuilt from
 			// headers alone (fork choice is lost): stop instead of truncating.
-			if (candidateEntries < checkpoint.CandidateEntries ||
-				confirmedEntries < checkpoint.ConfirmedEntries) {
+			if (candidateEntries < checkpoint.CandidateEntries) {
 				throw std::runtime_error(
 					"Chain index is behind the checkpoint; refusing to truncate. "
 					"Restore NODE/recovery-* or resync from a peer.");

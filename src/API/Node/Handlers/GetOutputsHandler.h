@@ -1,6 +1,7 @@
 #pragma once
 
 #include <BlockChain/BlockChain.h>
+#include <Core/Exceptions/TxHashSetException.h>
 #include <Core/Models/Features.h>
 #include <Core/Models/FullBlock.h>
 #include <Core/Models/TransactionOutput.h>
@@ -90,8 +91,11 @@ public:
 					}
 
 					Json::Value outputJSON;
-					if (BuildOutput(commitment, *pLocation, snapshot.txHashSet, includeProof, outputJSON)) {
+					std::string buildError;
+					if (BuildOutput(commitment, *pLocation, snapshot.txHashSet, includeProof, outputJSON, buildError)) {
 						outputs.append(outputJSON);
+					} else if (!buildError.empty()) {
+						return request.BuildError("INTERNAL_ERROR", buildError);
 					}
 				}
 			}
@@ -133,8 +137,12 @@ public:
 					uint64_t leaf = cumulative - count;
 					for (const TransactionOutput& output : pBlock->GetOutputs()) {
 						const OutputLocation location(LeafIndex::At(leaf++), height);
-						outputs.append(PrintableSerialization::BlockOutputPrintable(
-							output, location, snapshot.txHashSet, includeProof));
+						try {
+							outputs.append(PrintableSerialization::BlockOutputPrintable(
+								output, location, snapshot.txHashSet, includeProof));
+						} catch (const std::exception& e) {
+							return request.BuildError("INTERNAL_ERROR", e.what());
+						}
 					}
 
 					if (lastHeight) {
@@ -166,7 +174,8 @@ private:
 		const OutputLocation& location,
 		const std::shared_ptr<ITxHashSet>& pTxHashSet,
 		const bool includeProof,
-		Json::Value& outputJSON) const
+		Json::Value& outputJSON,
+		std::string& error) const
 	{
 		EOutputFeatures features = EOutputFeatures::DEFAULT;
 		std::optional<RangeProof> rangeProof;
@@ -178,8 +187,12 @@ private:
 				features = output.GetFeatures();
 				rangeProof = output.GetRangeProof();
 				spent = false;
-			} catch (const std::exception&) {
+			} catch (const TxHashSetException&) {
+				// Expected: the output was pruned/spent; recover it from the block.
 				spent = true;
+			} catch (const std::exception& e) {
+				error = e.what();
+				return false;
 			}
 		}
 

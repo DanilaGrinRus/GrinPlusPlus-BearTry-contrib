@@ -183,11 +183,28 @@ bool Socket::SendSync(const std::vector<uint8_t>& message, const bool incrementC
 
 void Socket::SendAsync(const std::vector<uint8_t>& message)
 {
-    std::lock_guard<std::mutex> queueLock(m_writeQueueMutex);
-    bool first_in_queue = m_writeQueue.empty();
-    m_writeQueue.push_back(message);
+    bool firstInQueue = false;
+    bool overflow = false;
+    {
+        std::lock_guard<std::mutex> queueLock(m_writeQueueMutex);
+        if (message.size() > MAX_WRITE_QUEUE_BYTES ||
+            m_queuedBytes > MAX_WRITE_QUEUE_BYTES - message.size()) {
+            overflow = true;
+        } else {
+            firstInQueue = m_writeQueue.empty();
+            m_writeQueue.push_back(message);
+            m_queuedBytes += message.size();
+        }
+    }
 
-    if (!first_in_queue) {
+    if (overflow) {
+        // A slow peer must not grow an unbounded write queue and exhaust memory.
+        LOG_WARNING_F("Write queue limit exceeded for {}; closing connection", *this);
+        CloseSocket();
+        return;
+    }
+
+    if (!firstInQueue) {
         // There is already an async_write in process.
         // It will send this message when it completes.
         return;
@@ -210,11 +227,15 @@ void Socket::HandleSent(const asio::error_code& ec, size_t)
     m_rateCounter.AddMessageSent();
 
     if (!m_writeQueue.empty()) {
+        const size_t sentSize = m_writeQueue.front().size();
+        m_queuedBytes = sentSize > m_queuedBytes ? 0 : m_queuedBytes - sentSize;
         m_writeQueue.pop_front();
     }
 
     if (ec) {
         LOG_INFO_F("Failed to send message to {}: {}", *this, ec.message());
+        m_writeQueue.clear();
+        m_queuedBytes = 0;
     } else if (!m_writeQueue.empty()) {
         m_activeWrite = m_writeQueue.front();
 
