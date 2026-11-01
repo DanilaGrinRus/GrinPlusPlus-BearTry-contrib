@@ -26,6 +26,11 @@ public:
 		return m_pLockedHashFile->Read()->GetSize();
 	}
 
+	std::unique_ptr<Hash> GetHashAt(const Index& index) const final
+	{
+		return std::make_unique<Hash>(m_pLockedHashFile->Read()->GetDataAt(index.Get()));
+	}
+
 	void Commit() final;
 	void Rollback() noexcept final;
 

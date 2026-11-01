@@ -14,6 +14,7 @@
 // Forward Declarations
 class Config;
 class BlockHeader;
+class Index;
 
 class IHeaderMMR : public Traits::IBatchable
 {
@@ -31,6 +32,8 @@ public:
 	// Raw number of 32-byte nodes in the on-disk MMR file; used for structural
 	// validation before any heights are trusted (G-23).
 	virtual uint64_t GetNodeCount() const = 0;
+	// Raw stored hash at a 0-based MMR position; used for full hash revalidation.
+	virtual std::unique_ptr<Hash> GetHashAt(const Index& index) const = 0;
 };
 
 namespace HeaderMMRAPI

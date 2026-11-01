@@ -13,6 +13,9 @@
 #include "DbCheckpoint.h"
 #include <BlockChain/DbRecovery.h>
 #include <PMMR/Common/MmrStructure.h>
+#include "../PMMR/Common/MMRHashUtil.h"
+#include <PMMR/Common/LeafIndex.h>
+#include <Core/Serialization/Serializer.h>
 #include <Database/DbBackup.h>
 
 #include <Consensus.h>
@@ -233,6 +236,53 @@ std::shared_ptr<BlockChain> BlockChain::Create(
 			}
 		}
 	}
+	// G-23: full hash revalidation. The structural repair above only makes
+	// sizes agree; this pass verifies every candidate header, its chain link,
+	// and the exact leaf hash stored in header_mmr.bin. A mismatch is fatal and
+	// never rewrites the stores.
+	DbCheckpointData validationCheckpoint;
+	const bool hasValidationCheckpoint = DbCheckpoint::Read(
+		config.GetChainPath() / "chain.checkpoint", validationCheckpoint);
+	if (hasValidationCheckpoint) {
+		// Hash validation is a durable-store check; a fresh/test database may
+		// legitimately not have a checkpoint or a populated header MMR yet.
+		auto pChainReader = pChainStore->Read();
+		auto pDbReader = pDatabase->Read();
+		auto pHeaderReader = pHeaderMMR->Read();
+		const uint64_t validatedCandidateEntries =
+			pChainReader->GetCandidateChain()->GetHeight() + 1;
+		if (pHeaderReader->GetLeafCount() != validatedCandidateEntries) {
+			throw std::runtime_error("Header MMR leaf count does not match the candidate chain");
+		}
+
+		Hash previousHash;
+		for (uint64_t height = 0; height < validatedCandidateEntries; ++height) {
+			const auto pIndex = pChainReader->GetCandidateChain()->GetByHeight(height);
+			if (pIndex == nullptr) {
+				throw std::runtime_error("Candidate chain is missing an entry at height " + std::to_string(height));
+			}
+
+			const BlockHeaderPtr pHeader = pDbReader->GetBlockHeader(pIndex->GetHash());
+			if (pHeader == nullptr || pHeader->GetHeight() != height ||
+				pHeader->GetHash() != pIndex->GetHash()) {
+				throw std::runtime_error("Block header/hash mismatch at height " + std::to_string(height));
+			}
+			if (height > 0 && pHeader->GetPreviousHash() != previousHash) {
+				throw std::runtime_error("Candidate chain link mismatch at height " + std::to_string(height));
+			}
+
+			Serializer serializer;
+			pHeader->GetProofOfWork().SerializeCycle(serializer);
+			const uint64_t position = LeafIndex::At(height).GetPosition();
+			const Hash expected = MMRHashUtil::HashLeafWithIndex(serializer.vec(), position);
+			const std::unique_ptr<Hash> actual = pHeaderReader->GetHashAt(Index::At(position));
+			if (actual == nullptr || *actual != expected) {
+				throw std::runtime_error("Header MMR hash mismatch at height " + std::to_string(height));
+			}
+
+			previousHash = pHeader->GetHash();
+		}
+	}
 	auto pChainState = ChainState::Create(
 		config,
 		pChainStore,
@@ -243,6 +293,19 @@ std::shared_ptr<BlockChain> BlockChain::Create(
 		genesisBlock
 	);
 	Global::SetCoinView(std::make_shared<CoinView>(*pChainState));
+
+	// G-23: if a TxHashSet is open, its three MMR roots must match the exact
+	// header it was flushed at. Do not accept a state whose roots were corrupted.
+	{
+		auto pReader = pChainState->Read();
+		auto pTxHashSet = pReader->GetTxHashSetManager()->GetTxHashSet();
+		if (pTxHashSet != nullptr) {
+			const BlockHeaderPtr pFlushed = pTxHashSet->GetFlushedBlockHeader();
+			if (pFlushed != nullptr && !pTxHashSet->ValidateRoots(*pFlushed)) {
+				throw std::runtime_error("TxHashSet MMR roots do not match its flushed header");
+			}
+		}
+	}
 
 	// Migrate database
 	const uint8_t db_version = pDatabase->Read()->GetVersion();
