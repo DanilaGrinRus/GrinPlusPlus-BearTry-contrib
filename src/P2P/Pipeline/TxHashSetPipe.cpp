@@ -106,7 +106,9 @@ void TxHashSetPipe::Thread_ProcessTxHashSet(TxHashSetPipe& pipeline, Connection:
 		size_t bytesReceived = 0;
 		std::vector<uint8_t> buffer(BUFFER_SIZE, 0);
 		while (bytesReceived < zipped_size) {
-			const int bytesToRead = (std::min)((int)(zipped_size - bytesReceived), BUFFER_SIZE);
+			const size_t bytesToRead = (size_t)(std::min<uint64_t>(
+				zipped_size - bytesReceived,
+				(uint64_t)BUFFER_SIZE));
 
 			const bool received = pConnection->ReceiveSync(buffer, bytesToRead);
 			if (!received || !Global::IsRunning()) {
@@ -151,9 +153,18 @@ void TxHashSetPipe::Thread_ProcessTxHashSet(TxHashSetPipe& pipeline, Connection:
 
 		LOG_TRACE("END");
 	}
+	catch (std::exception& e)
+	{
+		LOG_ERROR_F(
+			"Exception thrown while downloading/processing TxHashSet from {} (size {}): {}",
+			*pConnection, zipped_size, e.what());
+		pipeline.m_pSyncStatus->UpdateStatus(ESyncStatus::TXHASHSET_SYNC_FAILED);
+		pConnection->BanPeer(EBanReason::BadTxHashSet);
+		FileUtil::RemoveFile(txHashSetPath);
+	}
 	catch (...)
 	{
-		LOG_ERROR_F("Exception thrown while downloading/processing TxHashSet from {}", *pConnection);
+		LOG_ERROR_F("Unknown exception while downloading/processing TxHashSet from {}", *pConnection);
 		pipeline.m_pSyncStatus->UpdateStatus(ESyncStatus::TXHASHSET_SYNC_FAILED);
 		pConnection->BanPeer(EBanReason::BadTxHashSet);
 		FileUtil::RemoveFile(txHashSetPath);

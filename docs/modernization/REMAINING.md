@@ -1,9 +1,9 @@
 # REMAINING — что закрыто и что осталось
 
-Обновлено: 01.11.2026, после E49. Источник истины по доказательствам —
-`TEST_RESULTS.md` (E1–E49), `GAP_MATRIX.md`, `ACCEPTANCE_REPORT.md`.
-Текущий тестовый срез: **170 кейсов / 1822 проверки PASS**,
-`GrinNode D2BBF889…`, `Tests 0B80AD8D…`.
+Обновлено: 01.11.2026, после E54. Источник истины —
+`TEST_RESULTS.md` (E1–E54), `GAP_MATRIX.md`, `ACCEPTANCE_REPORT.md`.
+Текущий срез: **174 кейса / 1879 проверок PASS**,
+`GrinNode 39D2584A…`, `Tests 607EB484…`.
 
 ## 1. Закрыто (PASS, с доказательствами)
 
@@ -14,9 +14,11 @@
 | P2P capabilities/handshake, PIHD не рекламируется | E30/E33, unit |
 | PIBD wire: горизонт 720, `BitmapBlock` 64 чанка, MSB-first, корни | оракул `grin_chain 5.5.2`, E31/E32/E35 |
 | PIBD download → staging → активация → валидация | E32/E34/E42 |
-| Полный цикл с горизонта → `FULLY_SYNCED` (testnet) | E42, `evidence/g38_full_horizon_fully_synced.json` |
+| Полный цикл с горизонта → `FULLY_SYNCED` (testnet) | E42, E53 |
 | Resume журнала (рестарт + ротация пира) | E41/E42 |
-| G-43: ротация по нулевому прогрессу/скорости, 3 круга с backoff | unit `SlowPeerRateFails`, E40–E42 |
+| **G-52: сохранение и живая выдача архива на горизонте** | E54 (3,1 ГБ, extraction + validation) |
+| **G-41: живой legacy `txhashset.zip` fallback** | E54 (`FULLY_SYNCED` 3 317 664) |
+| G-43: ротация по нулевому прогрессу/скорости, 3 круга с backoff | unit, E40–E42 |
 | G-38: reassignment вместо бана; FraudHeight только по TD | E37/E42/E48 |
 | G-42: legacy-пир ротируется, не банится | E41/E42 |
 | G-46/G-47: починка хранилищ, NULL-guard Ping | E39 |
@@ -24,55 +26,52 @@
 | G-23 (структурная): `2L−popcount(L)`, rebuild MMR из block DB | E44/E48 |
 | G-16: лимит `txhashset.zip` 8 GiB | E44, unit |
 | G-17: rate limiting 500/мин (существующее) | обзор кода |
-| G-22: бэкап БД перед миграцией | E47, `Test_DbBackup` |
 | G-21: staging-распаковка legacy zip, atomic swap, marker recovery | E49, `Test_TxHashSetStaging` |
-| Recovery-копии + `db_repaired`/`db_last_repair` | E44, unit |
-| G-50: повторный DNS-discovery | живой прогон |
+| G-22: бэкап БД перед миграцией | E47, `Test_DbBackup` |
+| G-50: DNS-discovery + цель 8 outbound вместо MIN_PEERS | E52, `Test_SeederPolicy` |
 | G-04: допустимые PoW edge-bits (29, 31–63) | E50, `Test_PoWEdgeBits` |
 | G-20: лимиты PIBD/segment-парсеров | E50, `Test_Segment` |
-| G-50: цель 8 outbound вместо MIN_PEERS | E52, `Test_SeederPolicy`, живой прогон 7–8 пиров |
 | G-25: версия 1.2.9 | unit + `/v1/status` |
-| Аудит-дельта EN/DE/RU | 27 карточек, 8 полей, 16 diff-блоков, `PARITY OK` |
+| Recovery-копии + `db_repaired`/`db_last_repair` | E44, unit |
+| fsync-порядок MMR/chain/checkpoint | E51 |
+| Аудит-дельта EN/DE/RU | 29 карточек, 8 полей, 18 diff-блоков, `PARITY OK` |
 
-## 2. Открыто / IN PROGRESS (полный список)
+## 2. В работе / частично
 
-| # | Статус | Что осталось | Критерий закрытия |
-|---|---|---|---|
-| 1 | **IN PROGRESS** | **Замер полного синка с нуля** на `pp-archsrv` (тот же прогон используется для G-52/G-41): старт 31.10 23:55:27, идёт фаза заголовков; далее PIBD → валидация → архив → догон | `FULLY_SYNCED` и записанное суммарное время в `sync_timing.txt` / `TEST_RESULTS` |
-| 2 | **OPEN (частично)** | **G-52**: исторический snapshot/serving. Код сохранения архива на горизонте и выдачи по hash добавлен; **живая передача архива не проверена**; разрыв spent-позиций остаётся для произвольных исторических snapshot (block 3 316 349) | loopback/Rust legacy-клиент получает архив, валидирует, доходит до `FULLY_SYNCED` |
-| 3 | **OPEN** | **G-41**: живой legacy `txhashset.zip` fallback | `FULLY_SYNCED` по legacy-пути с реальным пиром |
-| 4 | **OPEN** | **Живой PIBD serving** Rust-клиенту (unit `Test_PibdServing` есть) | Rust-клиент запрашивает сегменты и собирает состояние |
-| 5 | **PARTIAL** | **G-23 hash-level**: побайтовая/корневая ревалидация MMR | опция `--validate-on-load` + тест |
-| 6 | **OPEN** | **fsync-порядок** между `header_mmr.bin`/chain/checkpoint | документированный порядок + crash-тест |
-| 9 | **OPEN** | **G-07** NRD | реализация либо осознанный отказ + тест |
-| 10 | **OPEN** | **G-49** ускорение валидации rangeproofs | замеры до/после (`PERF_RANGEPROOF.md`) |
-| 11 | **OPEN** | **Дифференциальные/fuzz-тесты** C++ vs Rust сверх живого interop | набор + отчёт |
-| 12 | **OPEN** | **G-51** аудит-пакет | ревизия комментариев (`AUDIT_COMMENTS.md`), скан секретов/дампов, лицензии, финальные hashes/provenance, чек-лист, `dist/audit-*` |
-| 15 | **PARTIAL** | **G-24** воспроизводимая сборка: offline-sysroot и `/W4 /WX` сделаны, **CI-проводка и перенос пина vcpkg** остаются | CI + пин vcpkg |
-| 13 | **PLANNED** | **G-44** спящий каркас PIHD | вне текущего объёма; PIHD для v5.5.2 — N/A |
-| 14 | **PLANNED** | **G-45** mainnet dry-run | вне объёма (DEV/testnet) |
+| Статус | Пункт | Что осталось |
+|---|---|---|
+| **IN PROGRESS** | **G-51** аудит-пакет | лицензии/notices, README EN/DE/RU, финальные hashes/provenance, подпись `AUDIT_CHECKLIST.md`, `dist/audit-*` |
+| **PARTIAL** | **G-09** | живой PIBD-serving Rust-клиенту и полное завершение resume (unit/живой цикл есть) |
+| **PARTIAL** | **G-23** hash-level | побайтовая/корневая ревалидация MMR (`--validate-on-load`) |
+| **PARTIAL** | **G-24** | CI-проводка + пин vcpkg (offline build/`/W4 /WX` готовы) |
 
-## 3. Текущий живой прогон
+## 3. Запланировано / отложено / N/A
 
-* `pp-archsrv`, старт **31.10.2026 23:55:27**, HOME
-  `C:\DHW\.tmp\interop\pp-archsrv`, REST `13424`.
-* Цель прогона: полный синк с нуля + PIBD на горизонте 3 314 160 →
-  сохранение архива → legacy-клиент `pp-resume` на том же горизонте.
-* После полного синка снять итоговое время и обновить E50/`ACCEPTANCE_REPORT`.
+| Статус | Пункт |
+|---|---|
+| PLANNED | **G-44** спящий каркас PIHD (2–3 дня, без сети) |
+| PLANNED | **G-45** mainnet dry-run (финальный гейт) |
+| PLANNED | **G-49** ускорение валидации rangeproofs (31 мин → ~6–7) |
+| DEFERRED | **G-07** NRD (осознанно отложен) |
+| N/A | **G-27** PIHD в v5.5.2 (сообщений нет; бит 0x80 только детектируется) |
 
-## 4. Что НЕ является остатком
+## 4. Отдельный остаток после E54
 
-* **PIHD** — N/A для grin v5.5.2 (сообщений PIHD нет; бит 0x80 только
-  детектируется). Зафиксировано в E33/G-27.
-* **Mainnet** — вне объёма задачи (testnet/DEV).
+Сервер `pp-archsrv` после активации архива сам остался в `SYNCING_BLOCKS`
+на горизонте 3 314 160; legacy-клиент догнался через внешних пиров. Нужен
+отдельный разбор block sync после активации состояния (G-52/G-41 это уже
+не блокирует).
+
 ## 5. Вне матрицы (фазы 5–7)
 
-Эти работы не входят в 52 записи `GAP_MATRIX`, но нужны для приёмки:
-
-* замер полного синка с нуля — **идёт** (`pp-archsrv`, старт 31.10 23:55:27);
-* fsync-порядок `header_mmr.bin` / chain / `chain.checkpoint` — **сделан** (E51): flush трёх файлов до checkpoint, temp flush до rename; каталоги Windows не флашатся (ограничение).
 * fuzz + ASan/UBSan/TSan;
 * differential-fixtures C++ ↔ Rust;
 * reorg-сценарии;
 * регресс кошелька/API/GUI;
 * CI-проводка + пин vcpkg (G-24 частично).
+
+## 6. Итог по матрице
+
+**43 закрыто + 3 частично (G-09, G-23, G-24) + 1 в работе (G-51) + 0 открыто
++ 3 запланировано (G-44, G-45, G-49) + 1 отложено (G-07) + 1 N/A (G-27) = 52.**
+Критический путь **G-52 → G-41 закрыт**.

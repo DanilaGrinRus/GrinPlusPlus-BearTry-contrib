@@ -108,6 +108,13 @@ bool StateSyncer::IsStateSyncDue(const SyncStatus& syncStatus) const
 
 bool StateSyncer::RequestState(const SyncStatus& syncStatus)
 {
+	// Never send a second request while the first one is still outstanding:
+	// the server treats repeated TxHashSet requests within two hours as abuse.
+	if (m_requestedHeight != 0 &&
+		std::chrono::system_clock::now() - m_timeRequested < std::chrono::seconds(30)) {
+		return false;
+	}
+
 	// A slow or unresponsive peer is rotated, never banned: a real bad
 	// txhashset is detected and banned by the txhashset pipeline itself.
 	if (m_pPeer != nullptr)

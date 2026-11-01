@@ -34,8 +34,13 @@ public:
 		// A peer that is alive but too slow must also trigger rotation: if fewer
 		// than MinSegmentsPerWindow are accepted during RateWindow we fail the
 		// attempt so the caller can pick another peer.
-		std::chrono::seconds RateWindow{ 180 };
-		size_t MinSegmentsPerWindow = 10;
+		// A slow but alive peer often sends in bursts; a short window used to
+		// abort the whole attempt after one quiet 180s period. Keep the rate
+		// guard only for a genuinely dead peer: 10 minutes and at least one
+		// accepted segment, while the no-progress timer (660s) still bounds a
+		// completely silent peer.
+		std::chrono::seconds RateWindow{ 600 };
+		size_t MinSegmentsPerWindow = 1;
 	};
 
 	PibdScheduler(PibdDownload::Horizon horizon, const Clock::time_point now, Config config = Config())

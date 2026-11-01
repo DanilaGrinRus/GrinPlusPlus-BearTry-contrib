@@ -73,7 +73,7 @@ void Zipper::AddFile(zipFile zf, const fs::path& sourceFile, const fs::path& des
 			zip_fileinfo zfi;
 			fs::path fileName = destDir / sourceFile.filename();
 
-			if (ZIP_OK == zipOpenNewFileInZip(zf, fileName.string().c_str(), &zfi, nullptr, 0, nullptr, 0, nullptr, 0, Z_NO_COMPRESSION))
+			if (ZIP_OK == zipOpenNewFileInZip(zf, fileName.generic_string().c_str(), &zfi, nullptr, 0, nullptr, 0, nullptr, 0, Z_NO_COMPRESSION))
 			{
 				if (zipWriteInFileInZip(zf, size == 0 ? "" : buffer.data(), (unsigned int)size))
 				{
