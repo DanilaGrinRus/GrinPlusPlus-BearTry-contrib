@@ -10,6 +10,7 @@ list_append_parent(
     "Test_PibdStateWriter.cpp"
     "Test_PibdActivation.cpp"
     "Test_PibdServing.cpp"
+    "Test_PibdFullSweep.cpp"
     "Test_PibdLiveVector.cpp"
     "Test_PibdOracleVector.cpp"
     "Test_PibdResume.cpp"

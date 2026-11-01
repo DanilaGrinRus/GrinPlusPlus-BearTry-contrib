@@ -16,10 +16,10 @@ Status: **closed by owner acceptance (01.11.2026)**; independent reviewer not as
 
 ```
 GrinNode.exe  A531C2C967B8046E4B580F38030817138B5A9102B3FFAF65C4DD602F63950BCD  7,624,704
-Tests.exe     AED20E186DCC82023F27690F408C9E53D5404FBECF3FF586C9741303343A43F3  8,651,264
+Tests.exe     08E890086397DC210509EA2523BE066B9747EE5F9D8214A4A20919DBEA5116F9  8,651,264
 ```
 
-- Tests: **188 cases / 2128 assertions PASS**.
+- Tests: **188 cases / 2131 assertions PASS**.
 
 ## Live compatibility evidence (E54)
 

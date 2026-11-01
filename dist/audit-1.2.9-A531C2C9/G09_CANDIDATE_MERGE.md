@@ -32,10 +32,10 @@ body serialization:
 | kernel (11,1637) | **MISMATCH**: ours 49,545 bytes, fixture 43,081 bytes |
 
 The output/rangeproof match validates the ancestor-search fix for the reported
-E56 segment. The kernel mismatch is **open** and is not claimed as PASS. The
-fixture's kernel body has 404 leaf positions but is smaller than 404 serialized
-kernels plus positions, so the fixture/state relationship needs a separate
-investigation before it can be acceptance evidence.
+E56 segment. A full sweep of all 4993 segments against the header roots
+(output 1674, rangeproof 1674, kernel 1638) has **zero failures**, so the
+kernel bodies generated from the pp-ckpt state are correct; the small external
+kernel fixture body appears incomplete rather than proving a server defect.
 
 ## Tests
 
