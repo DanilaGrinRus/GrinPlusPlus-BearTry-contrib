@@ -172,7 +172,12 @@ public:
 				return std::optional<TransactionKernel>(std::move(*pKernel));
 			},
 			[this](const uint64_t pos0) -> std::optional<Hash> {
-				return std::optional<Hash>(*m_pKernelMMR->GetHashAt(Index::At(pos0)));
+				std::unique_ptr<Hash> pHash = m_pKernelMMR->GetHashAt(Index::At(pos0));
+				if (pHash == nullptr) {
+					return std::nullopt;
+				}
+
+				return std::optional<Hash>(std::move(*pHash));
 			});
 	}
 

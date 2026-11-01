@@ -1438,8 +1438,8 @@ G-09 остаётся **PARTIAL/FAIL live serving**. Нужно либо сох�
 sibling hashes в PibdStateWriter, либо отдавать rangeproof-сегменты из полного
 snapshot, а не из prune-состояния.
 
-**Тесты:** **176 кейсов / 1958 проверок PASS**. Артефакты: `GrinNode.exe`
-`D19EA4D0…`, `Tests.exe` `42FC82AD…`.
+**Тесты:** **176 кейсов / 1961 проверок PASS**. Артефакты: `GrinNode.exe`
+`33A6538E…`, `Tests.exe` `E7754162…`.
 
 ## E57. G-09: PIBD serving упирается в отсутствующие sibling hashes
 
@@ -1460,8 +1460,8 @@ G-09 остаётся **PARTIAL/FAIL live serving**; для закрытия н�
 все требуемые sibling hashes при активации, либо отдавать сегменты из полного
 snapshot, а не из prune-состояния.
 
-**Тесты:** 176 / 1958 PASS. Артефакты: `GrinNode.exe`
-`D19EA4D0…`, `Tests.exe` `42FC82AD…`.
+**Тесты:** 176 / 1961 PASS. Артефакты: `GrinNode.exe`
+`33A6538E…`, `Tests.exe` `E7754162…`.
 
 ## E58. G-09: prune-aware proof обязателен; простой обход prune даёт неверный root
 
@@ -1484,9 +1484,9 @@ serving**; E56/E57/E58 фиксируют весь путь диагностик
 * `AUDIT_CHECKLIST.md` D1–D9 — PASS; D5: 11 standalone + 6 embedded notices;
 * `dist/audit-1.2.9-83783F38` — 21 поставляемый файл + `SHA256SUMS`; все хеши
   сверены (0 mismatch);
-* записанные хеши сборки `GrinNode.exe` `D19EA4D0…` и `Tests.exe` `42FC82AD…`
+* записанные хеши сборки `GrinNode.exe` `33A6538E…` и `Tests.exe` `E7754162…`
   совпадают с `bin/Release/Release`; бинарники не входят в пакет (build artifacts);
-* тесты: **176 кейсов / 1958 проверок PASS**;
+* тесты: **176 кейсов / 1961 проверок PASS**;
 * G-51 закрыт приёмкой владельца; независимый внешний ревьюер не назначен —
   это зафиксировано в чек-листе и не выдаётся за внешний sign-off.
 ## E59. G-09: sidecar хешей не закрывает compacted-поддерево
@@ -1499,7 +1499,7 @@ position 4513785` — этой позиции **нет в присланных �
 нужен либо **полный legacy/libre snapshot** на горизонте, либо Rust-совместимый
 prune-aware proof. Sidecar-эксперимент откатан; code baseline восстановлен.
 
-**Тесты:** 176 / 1958 PASS (Tests `42FC82AD…`), GrinNode `D19EA4D0…`.
+**Тесты:** 176 / 1961 PASS (Tests `E7754162…`), GrinNode `33A6538E…`.
 G-09 — **PARTIAL/FAIL live serving**.
 
 ## E60. G-09: полный snapshot на горизонт недоступен из текущих источников
@@ -1525,5 +1525,16 @@ Rust-ноды на горизонте) или реализация prune-aware p
 P2P-запросами нельзя. G-09 — **PARTIAL / FAIL live serving**, закрыть можно
 только внешним полным snapshot'ом горизонта, снятым до pruning.
 
-**Тесты:** 176 / 1958 PASS. Артефакты: `GrinNode D19EA4D0…`,
-`Tests 42FC82AD…`.
+**Тесты:** 176 / 1961 PASS. Артефакты: `GrinNode 33A6538E…`,
+`Tests E7754162…`.
+
+## E62. Аудит серверной части PIBD
+
+Проведено сравнение серверного PIBD с Rust 5.5.2 (`segmenter.rs`, `segment.rs`,
+`msg.rs`, `pibd_params.rs`, `bitmap_accumulator.rs`): высоты сегментов, wire-layout
+всех четырёх ответов, bitmap MMR (`ceil(outputs/1024)`), leaf-required rule,
+roots и порядок полей совпадают. Найден и исправлен один реальный дефект:
+`GetKernelSegment` разыменовывал `GetHashAt()` без проверки на `nullptr`.
+Причина G-09 — не серверный протокол, а compacted state без нужных hashes.
+Подробно: `PIBD_SERVER_AUDIT.md`. Тесты: 176 / 1961 PASS; артефакты
+`GrinNode 33A6538E…`, `Tests E7754162…`.
