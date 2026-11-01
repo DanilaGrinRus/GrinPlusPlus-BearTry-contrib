@@ -396,7 +396,7 @@ EBlockChainStatus BlockChain::ProcessTransactionHashSet(const Hash& blockHash, c
 
 std::shared_ptr<ITxHashSet> BlockChain::GetTxHashSet()
 {
-	return m_pChainState->Write()->GetTxHashSetManager()->GetTxHashSet();
+	return std::const_pointer_cast<ITxHashSet>(m_pChainState->Read()->GetTxHashSetManager()->GetTxHashSet());
 }
 void BlockChain::CloseTxHashSet()
 {

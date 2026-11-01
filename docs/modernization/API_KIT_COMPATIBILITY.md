@@ -105,4 +105,4 @@ Do not apply the overlay. Port in this order:
    kit tests adapted to this tree.
 4. Full build/tests plus PIBD serving regression after each step.
 
-P0 (routes + ApiAccess + protected shutdown) is now merged and live-verified;\nsee `VERIFICATION_P0.md`. G-53 remains **PARTIAL** until P1 config/locks and\nP2 KernelIndex/pagination are merged.
+P0 (routes + ApiAccess + protected shutdown) is merged and live-verified.\nP1 config transaction, read-lock and genesis guard are also merged. Remaining:\nstate-epoch/ABBA synchronization and P2 KernelIndex/pagination. G-53 remains\n**PARTIAL**.

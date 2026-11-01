@@ -52,7 +52,7 @@ std::shared_ptr<Locked<ChainState>> ChainState::Create(
 {
 	std::shared_ptr<const Chain> pCandidateChain = pChainStore->Read()->GetCandidateChain();
 	const uint64_t candidateHeight = pCandidateChain->GetTip()->GetHeight();
-	if (candidateHeight == 0)
+	if (candidateHeight == 0 && pDatabase->Read()->GetBlockHeader(genesisBlock.GetHash()) == nullptr)
 	{
 		auto locked = MultiLocker().Lock(*pDatabase, *pHeaderMMR);
 		std::get<0>(locked)->AddBlockHeader(genesisBlock.GetHeader());
