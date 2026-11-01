@@ -130,6 +130,30 @@ namespace
 	}
 }
 
+TEST_CASE("PibdSegmentService::RangeProofSegmentWireRoundTrip")
+{
+	const fs::path stateDir = fs::temp_directory_path() / "pibd-serving-rangeproof-wire";
+	std::error_code error;
+	fs::remove_all(stateDir, error);
+
+	WriteTestState(stateDir);
+	std::shared_ptr<OutputPMMR> pOutputPMMR = OutputPMMR::Load(stateDir);
+	std::shared_ptr<RangeProofPMMR> pRangeProofPMMR = RangeProofPMMR::Load(stateDir);
+	std::shared_ptr<KernelMMR> pKernelMMR = KernelMMR::Load(stateDir);
+	PibdSegmentService service(pOutputPMMR, pRangeProofPMMR, pKernelMMR);
+	const Segment<RangeProof> segment =
+		service.GetRangeProofSegment(SegmentIdentifier(PibdParams::RANGEPROOF_SEGMENT_HEIGHT, 0));
+	Serializer serializer;
+	segment.Serialize(serializer);
+	ByteBuffer buffer(serializer.GetBytes());
+	const Segment<RangeProof> decoded = Segment<RangeProof>::Deserialize(buffer);
+	REQUIRE(decoded.GetLeafPositions().size() == segment.GetLeafPositions().size());
+	REQUIRE(decoded.GetLeafData().size() == segment.GetLeafData().size());
+	REQUIRE(decoded.GetHashes().size() == segment.GetHashes().size());
+	REQUIRE(buffer.GetRemainingSize() == 0);
+	fs::remove_all(stateDir, error);
+}
+
 TEST_CASE("PibdSegmentService::ServesStateThatValidates")
 {
 	const fs::path stateDir = fs::temp_directory_path() / "pibd-serving-test";
