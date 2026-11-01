@@ -47,8 +47,8 @@ New-Item -ItemType Directory -Force 'C:\DHW\.tmp\testhome' | Out-Null
 bin\Release\Release\Tests.exe --reporter compact
 ```
 
-Ожидаемый результат на текущем срезе: `Passed all 176 test cases with 1907 assertions.`
-(актуальное число, хеши артефактов и оговорки — в последней записи `TEST_RESULTS.md`).
+Ожидаемый результат на текущем срезе: `Passed all 192 test cases with 2207 assertions.`
+(актуальное число, хеши артефактов и оговорки — в последней записи `TEST_RESULTS.md`). Локальный воспроизводимый gate: `pwsh tools/build/ci.ps1`; пины и ограничения — `BUILD_PINS.md`.
 
 ## 4. Ограничения
 
