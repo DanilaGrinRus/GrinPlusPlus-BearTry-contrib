@@ -11,15 +11,23 @@
 #include <Common/Logger.h>
 #include <Core/Global.h>
 #include <Net/Util/HTTPUtil.h>
+#include <Net/Servers/RPC/ApiAccess.h>
 
 static int Shutdown_Handler(struct mg_connection* conn, void*)
 {
+	if (!ApiAccess::Check(conn, ApiAccess::Level::ADMIN, Global::GetConfig().GetRestAPIPort()))
+	{
+		return HTTPUtil::BuildUnauthorizedResponse(conn, "Unauthorized");
+	}
+
 	Global::Shutdown();
 	return HTTPUtil::BuildSuccessResponse(conn, "");
 }
 
 NodeRestServer::UPtr NodeRestServer::Create(const Config& config, std::shared_ptr<NodeContext> pNodeContext)
 {
+	ApiAccess::Initialize(config.GetDataDirectory());
+
 	const uint16_t port = config.GetRestAPIPort();
 	ServerPtr pServer = Server::Create(EServerType::LOCAL, std::make_optional<uint16_t>(port));
 	NodeServer::UPtr pV2Server = NodeServer::Create(

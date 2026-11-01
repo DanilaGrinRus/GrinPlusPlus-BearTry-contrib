@@ -44,9 +44,10 @@ NodeServer::UPtr NodeServer::Create(
     pForeignServer->AddMethod("get_blocks", std::make_shared<GetBlocksHandler>(pBlockChain, pTxHashSetManager, pDatabase));
 
     pForeignServer->AddMethod("get_config", std::make_shared<GetConfigHandler>());
-    pForeignServer->AddMethod("update_config", std::make_shared<UpdateConfigHandler>());
 
     RPCServer::Ptr pOwnerServer = RPCServer::Create(pServer, "/v2/owner", LoggerAPI::LogFile::NODE);
+    pOwnerServer->AddMethod("get_config", std::make_shared<GetConfigHandler>());
+    pOwnerServer->AddMethod("update_config", std::make_shared<UpdateConfigHandler>());
     pOwnerServer->AddMethod("get_status", std::make_shared<GetStatusOwnerHandler>(pBlockChain, pP2PServer));
     pOwnerServer->AddMethod("get_peers", std::make_shared<GetPeersOwnerHandler>(pP2PServer));
     pOwnerServer->AddMethod("get_connected_peers", std::make_shared<GetConnectedPeersOwnerHandler>(pP2PServer));

@@ -180,5 +180,7 @@ public:
 		}		
 	}
 
+	ApiAccess::Level GetAccessLevel() const noexcept final { return ApiAccess::Level::ADMIN; }
+
 	bool ContainsSecrets() const noexcept final { return false; }
 };

@@ -73,6 +73,16 @@ private:
 				auto iter = instance.m_methods.find(method);
 				if (iter != instance.m_methods.end())
 				{
+					if (iter->second->GetAccessLevel() != ApiAccess::Level::PUBLIC &&
+						!ApiAccess::Check(pConnection, iter->second->GetAccessLevel(), instance.m_pServer->GetPortNumber()))
+					{
+						RPC_LOG_ERROR_F(instance.m_logFile, "Unauthorized access to method: {}", method);
+						return request.BuildError(
+							RPC::ErrorCode::UNAUTHORIZED,
+							"Unauthorized: valid API secret required"
+						);
+					}
+
 					if (!iter->second->ContainsSecrets())
 					{
 						RPC_LOG_INFO_F(instance.m_logFile, "REQUEST: {}", request.ToString());
