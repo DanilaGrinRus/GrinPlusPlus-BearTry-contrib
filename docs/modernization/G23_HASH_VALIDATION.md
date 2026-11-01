@@ -24,10 +24,10 @@ hash pass runs only for a state that claims durability through
 
 ## Evidence
 
-- Full suite: **191 cases / 2200 assertions PASS**.
+- Full suite: **192 cases / 2207 assertions PASS**.
 - Live `pp-archsrv` startup with a 3.3M-header chain: API became ready in
   **75.4 s**, no hash mismatch; status `SYNCING_HEADERS`, header 3 318 961.
-- `GrinNode F197C7D2…`, `Tests ED64D384…`.
+- `GrinNode F197C7D2…`, `Tests F25A02A0…`.
 
 ## Still open
 

@@ -8,9 +8,9 @@ until every line is PASS or explicitly accepted as a limitation.
 | # | Item | Evidence | Status |
 |---|---|---|---|
 | A1 | Clean offline build with `/W4 /WX` | `BUILD.md` (current: 171 cases / 1839 assertions) | PASS |
-| A2 | Full unit suite on the final binary | `Tests.exe`, `TEST_RESULTS.md` | PASS (191 / 2200) |
+| A2 | Full unit suite on the final binary | `Tests.exe`, `TEST_RESULTS.md` | PASS (192 / 2207) |
 | A3 | No new compiler warnings | build log | PASS |
-| A4 | Final artifact SHA-256 | `BUILD.md`, `AUDIT_README.en.md` | PASS (F197C7D2… / ED64D384…) |
+| A4 | Final artifact SHA-256 | `BUILD.md`, `AUDIT_README.en.md` | PASS (F197C7D2… / F25A02A0…) |
 | A5 | Reproducible build entry point (offline sysroot) | `tools/build/build.ps1` | PASS |
 | A6 | CI wiring + vcpkg pin | G-24 partial, phases 5–7 | NOT DONE |
 
