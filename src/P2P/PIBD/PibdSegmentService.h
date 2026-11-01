@@ -111,12 +111,7 @@ public:
 				return std::optional<OutputIdentifier>(std::move(*pOutput));
 			},
 			[this](const uint64_t pos0) -> std::optional<Hash> {
-				std::unique_ptr<Hash> pHash = m_pOutputPMMR->GetHashAt(Index::At(pos0));
-				if (pHash == nullptr) {
-					return std::nullopt;
-				}
-
-				return std::optional<Hash>(std::move(*pHash));
+				return LookupHash(m_pOutputPMMR, pos0);
 			});
 	}
 
@@ -142,12 +137,7 @@ public:
 				return std::optional<RangeProof>(std::move(*pRangeProof));
 			},
 			[this](const uint64_t pos0) -> std::optional<Hash> {
-				std::unique_ptr<Hash> pHash = m_pRangeProofPMMR->GetHashAt(Index::At(pos0));
-				if (pHash == nullptr) {
-					return std::nullopt;
-				}
-
-				return std::optional<Hash>(std::move(*pHash));
+				return LookupHash(m_pRangeProofPMMR, pos0);
 			});
 	}
 
@@ -181,6 +171,21 @@ public:
 			});
 	}
 
+	template<class TMMR>
+	static std::optional<Hash> LookupHash(const std::shared_ptr<TMMR>& pMMR, const uint64_t pos0)
+	{
+		std::unique_ptr<Hash> pHash = pMMR->GetHashAt(Index::At(pos0));
+		if (pHash != nullptr) {
+			return std::optional<Hash>(std::move(*pHash));
+		}
+
+		pHash = pMMR->GetHashAtIgnoringPrune(Index::At(pos0));
+		if (pHash != nullptr) {
+			return std::optional<Hash>(std::move(*pHash));
+		}
+
+		return std::nullopt;
+	}
 private:
 	std::shared_ptr<OutputPMMR> m_pOutputPMMR;
 	std::shared_ptr<RangeProofPMMR> m_pRangeProofPMMR;

@@ -99,6 +99,33 @@ public:
 		return std::make_unique<Hash>(std::move(hash));
 	}
 
+	// Rust ReadonlyPMMR::get_hash() reads non-leaf hashes via get_from_file(),
+	// ignoring the remove/prune log. A compacted node can still have a hash
+	// stored in the file (full archive snapshot); serving proofs needs it.
+	std::unique_ptr<Hash> GetHashAtIgnoringPrune(const Index& mmrIndex) const
+	{
+		if (m_pHashFile == nullptr || mmrIndex.Get() >= GetSize()) {
+			return nullptr;
+		}
+
+		try {
+			const uint64_t shift = m_pPruneList != nullptr ? m_pPruneList->GetShift(mmrIndex) : 0;
+			if (shift > mmrIndex.Get()) {
+				return nullptr;
+			}
+
+			const uint64_t fileIndex = mmrIndex.Get() - shift;
+			if (fileIndex >= m_pHashFile->GetSize()) {
+				return nullptr;
+			}
+
+			return std::make_unique<Hash>(m_pHashFile->GetDataAt(fileIndex));
+		}
+		catch (std::exception&) {
+			return nullptr;
+		}
+	}
+
 	std::vector<Hash> GetLastLeafHashes(const uint64_t numHashes) const final
 	{
 		return MMRHashUtil::GetLastLeafHashes(m_pHashFile, m_pLeafSet, m_pPruneList, numHashes);
