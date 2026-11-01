@@ -434,5 +434,5 @@ documentation-only commits are tracked in the evidence map, not as cards.
 ## Excluded from the delta
 
 - G-44 (PIHD dormant scaffold), G-45 (mainnet dry-run), G-49 (rangeproof
-  performance), G-51 (this package): planned, no code changes yet.
+  performance), G-51 (this package): closed (audit package; owner acceptance 01.11.2026).
 - Documentation-only commits (`docs: …`): listed in the evidence map, not as cards.

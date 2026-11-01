@@ -431,5 +431,5 @@ stehen in der Nachweiskarte, nicht als Karten.
 
 ## Ausgeschlossen aus dem Delta
 
-- G-44 (PIHD-Stillstand-Scaffold), G-45 (Mainnet-Dry-Run), G-49 (Rangeproof-Performance), G-51 (dieses Paket): geplant, noch keine Codeänderungen.
+- G-44 (PIHD-Stillstand-Scaffold), G-45 (Mainnet-Dry-Run), G-49 (Rangeproof-Performance), G-51 (dieses Paket): abgeschlossen (Auditpaket; Eigentümer-Abnahme 01.11.2026).
 - Reine Dokumentations-Commits (`docs: …`): in der Nachweiskarte gelistet, nicht als Karten.

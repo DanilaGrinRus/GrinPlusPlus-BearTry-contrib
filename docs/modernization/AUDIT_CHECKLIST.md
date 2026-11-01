@@ -1,6 +1,6 @@
 # AUDIT_CHECKLIST — handover checklist
 
-Status: **open**; items are checked only with evidence. G-51 remains IN PROGRESS
+Status: **final** — G-51 closed by owner acceptance (01.11.2026); independent reviewer not assigned. Items are checked only with evidence.
 until every line is PASS or explicitly accepted as a limitation.
 
 ## A. Build and tests

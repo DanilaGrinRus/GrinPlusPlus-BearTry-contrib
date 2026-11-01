@@ -74,5 +74,6 @@ are not copied into source, docs or the audit package.
 * Priority files were read manually; the remaining changed files were covered by
   the automated rules above, not line-by-line.
 * DE/RU translations of this report are still pending; EN is canonical.
-* G-51 stays **IN PROGRESS** until the final build/hashes and the auditor
-  checklist (`AUDIT_CHECKLIST.md`) are signed off.
+* G-51 was closed by owner acceptance (01.11.2026); the independent reviewer
+
+  `dist/audit-1.2.9-83783F38`.

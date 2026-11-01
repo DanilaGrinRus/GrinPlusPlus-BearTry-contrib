@@ -1,7 +1,7 @@
 # REMAINING — что закрыто и что осталось
 
 Обновлено: 01.11.2026, после E54. Источник истины —
-`TEST_RESULTS.md` (E1–E54), `GAP_MATRIX.md`, `ACCEPTANCE_REPORT.md`.
+`TEST_RESULTS.md` (E1–E59), `GAP_MATRIX.md`, `ACCEPTANCE_REPORT.md`.
 Текущий срез: **176 кейсов / 1907 проверок PASS**,
 `GrinNode 83783F38…`, `Tests 38B9AF99…`.
 

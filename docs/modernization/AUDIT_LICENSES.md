@@ -43,4 +43,4 @@ have added local license files.**
 The MIT project license is compatible with the bundled licenses (MIT, BSD-2/3,
 BSL-1.0, zlib-style, Public Domain/IETF terms). `THIRD_PARTY_NOTICES.md` maps
 every dependency, and the three previously missing notices (klib, sha3,
-rfc6234) are now present. D5 is **PASS**; G-51 still needs external sign-off.
+rfc6234) are now present. D5 is **PASS**; G-51 is closed by owner acceptance (01.11.2026; independent reviewer not assigned).

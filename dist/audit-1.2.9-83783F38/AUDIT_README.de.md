@@ -1,15 +1,15 @@
 # Grin++ 1.2.9 — Kompatibilitäts-Auditpaket (DE)
 
-Status: **bereit für externes Review**; unabhängige Abnahme offen.
+Status: **durch Eigentümer-Abnahme geschlossen (01.11.2026)**; unabhängiger Prüfer nicht benannt.
 
 ## Inhalt
 
-- `GAP_MATRIX.md` — 53 Einträge gegen grin v5.5.2 (`dbaff34`): 44 geschlossen,
-  3 teilweise (G-09, G-23, G-24), 1 in Arbeit (G-51), 0 offen, 3 geplant
+- `GAP_MATRIX.md` — 53 Einträge gegen grin v5.5.2 (`dbaff34`): 45 geschlossen,
+  3 teilweise (G-09, G-23, G-24), 0 in Arbeit, 0 offen, 3 geplant
   (G-44, G-45, G-49), 1 zurückgestellt (G-07), 1 N/A (G-27).
 - `AUDIT_DELTA.en/de/ru` — 29 Karten, 8 Pflichtfelder, je 18 Diff-Blöcke,
   `check_audit_delta.ps1` PARITY OK, 0 TODO.
-- `TEST_RESULTS.md` — E1–E54 inkl. Live-Lauf G-52 → G-41.
+- `TEST_RESULTS.md` — E1–E59 inkl. Live-Lauf G-52 → G-41 und G-51-Abschlussprüfung.
 - `REMAINING.md`, `ACCEPTANCE_REPORT.md`, `DB_CONSISTENCY.md`,
   `AUDIT_COMMENTS.md`, `AUDIT_CHECKLIST.md`.
 - Release-Build-Artefakte (SHA-256; nicht im Paket enthalten, gegen `bin/Release/Release` verifiziert):
