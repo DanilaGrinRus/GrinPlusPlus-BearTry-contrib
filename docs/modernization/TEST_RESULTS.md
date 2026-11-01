@@ -1439,4 +1439,26 @@ sibling hashes в PibdStateWriter, либо отдавать rangeproof-сегм
 snapshot, а не из prune-состояния.
 
 **Тесты:** **176 кейсов / 1907 проверок PASS**. Артефакты: `GrinNode.exe`
-`79812A28…`, `Tests.exe` `38B9AF99…`.
+`A203BE20…`, `Tests.exe` `38B9AF99…`.
+
+## E57. G-09: PIBD serving упирается в отсутствующие sibling hashes
+
+После реального фикса `Socket.cpp` (mutex + активный буфер) клиент принимал
+`RangeProofSegment` без ошибок десериализации и прошёл **4068/4990** сегментов.
+Затем PIBD остановился: `PIBD failed: no PIBD progress within the fallback window`
+(11:57:56). Сервер в это время:
+
+```
+Failed to serve Msg::GetRangeProofSegment: Source is missing the sibling hash at position 4988922
+Failed to serve Msg::GetOutputSegment:     Source is missing the sibling hash at position 4993018
+Failed to serve Msg::GetRangeProofSegment: Source is missing the sibling hash at position 4984827
+```
+
+То есть дефект не в кадре (socket fix подтверждён), а в **prune-state/serving**:
+`PibdStateWriter`/PMMR не содержат hash, нужный `SegmentGenerator` для proof.
+G-09 остаётся **PARTIAL/FAIL live serving**; для закрытия нужно либо сохранять
+все требуемые sibling hashes при активации, либо отдавать сегменты из полного
+snapshot, а не из prune-состояния.
+
+**Тесты:** 176 / 1907 PASS. Артефакты: `GrinNode.exe`
+`A203BE20…`, `Tests.exe` `38B9AF99…`.

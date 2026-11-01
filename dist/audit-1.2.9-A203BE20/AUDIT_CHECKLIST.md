@@ -10,7 +10,7 @@ until every line is PASS or explicitly accepted as a limitation.
 | A1 | Clean offline build with `/W4 /WX` | `BUILD.md` (current: 171 cases / 1839 assertions) | PASS |
 | A2 | Full unit suite on the final binary | `Tests.exe`, `TEST_RESULTS.md` | PASS (176 / 1907) |
 | A3 | No new compiler warnings | build log | PASS |
-| A4 | Final artifact SHA-256 | `BUILD.md`, `AUDIT_README.en.md` | PASS (79812A28… / 38B9AF99…) |
+| A4 | Final artifact SHA-256 | `BUILD.md`, `AUDIT_README.en.md` | PASS (A203BE20… / 38B9AF99…) |
 | A5 | Reproducible build entry point (offline sysroot) | `tools/build/build.ps1` | PASS |
 | A6 | CI wiring + vcpkg pin | G-24 partial, phases 5–7 | NOT DONE |
 
