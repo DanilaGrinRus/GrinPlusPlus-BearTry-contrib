@@ -12,11 +12,11 @@
 - `TEST_RESULTS.md` — E1–E54, включая живой прогон G-52 → G-41.
 - `REMAINING.md`, `ACCEPTANCE_REPORT.md`, `DB_CONSISTENCY.md`,
   `AUDIT_COMMENTS.md`, `AUDIT_CHECKLIST.md`.
-- Артефакты (SHA-256):
+- Артефакты Release-сборки (SHA-256; не входят в пакет, сверены с `bin/Release/Release`):
 
 ```
 GrinNode.exe  83783F3877C60D03D9750467797263F37B9F0ED7CA854430858AAD7B7CB0B613  7 624 704
-Tests.exe     38B9AF99205EA1FC3247305FAE133F0FA8C8F3A6B01E4F564B0818B361DE555F  8 643 072
+Tests.exe     38B9AF99205EA1FC3247305FAE133F0FA8C8F3A6B01E4F564B0818B361DE555F  8 651 264
 ```
 
 - Тесты: **176 кейсов / 1907 проверок PASS**.
@@ -36,7 +36,7 @@ Tests.exe     38B9AF99205EA1FC3247305FAE133F0FA8C8F3A6B01E4F564B0818B361DE555F  
 - G-09: живой PIBD-serving Rust-клиенту и полное завершение resume не проверены.
 - G-23: hash-level ревалидация MMR (`--validate-on-load`) отсутствует.
 - G-24: CI и пин vcpkg открыты; offline MSVC-сборка проверена.
-- G-51: внешняя приёмка, пакет лицензий/notices и `dist/audit-*` открыты.
+- G-51 закрыт приёмкой владельца (01.11.2026); независимый ревьюер не назначен. Пакет лицензий/notices (`D5`) и `dist/audit-*` (`D9`) готовы.
 - Block sync сервера после активации архива остался на горизонте; клиент взял
   блоки у внешних пиров. Нужен отдельный разбор.
 - Произвольные исторические snapshot ниже горизонта сознательно не

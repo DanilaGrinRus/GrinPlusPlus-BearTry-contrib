@@ -49,14 +49,14 @@ until every line is PASS or explicitly accepted as a limitation.
 
 | # | Item | Evidence | Status |
 |---|---|---|---|
-| D1 | `GAP_MATRIX` 53 entries, tally correct | 44 closed + 3 partial + 1 in work + 0 open + 3 planned + 1 deferred + 1 N/A | PASS |
+| D1 | `GAP_MATRIX` 53 entries, tally correct | 45 closed + 3 partial + 0 in work + 0 open + 3 planned + 1 deferred + 1 N/A | PASS |
 | D2 | `AUDIT_DELTA.en/de/ru` parity | 29 cards, 8 fields, 18 diff blocks, 0 TODO | PASS |
 | D3 | Comment review | `AUDIT_COMMENTS.md` | PASS (static/priority) |
 | D4 | Secret/dump scan | `AUDIT_COMMENTS.md` §5 | PASS |
 | D5 | License/notices | `AUDIT_LICENSES.md` + `THIRD_PARTY_NOTICES.md`: 11 standalone + 6 embedded, all mapped | PASS |
 | D6 | `AUDIT_README` in EN/DE/RU | `AUDIT_README.en/de/ru.md` | PASS |
 | D7 | Known-limitations section | `REMAINING.md`, this checklist | PASS |
-| D8 | Final artifact + provenance hashes | `AUDIT_README.en.md` | PASS |
+| D8 | Final artifact + provenance hashes | `AUDIT_README.en.md`; binaries not shipped, hashes verified against the local build | PASS |
 | D9 | Audited package `dist/audit-*` | `dist/audit-1.2.9-83783F38` + SHA256SUMS | PASS |
 
 ## E. Sign-off
@@ -65,6 +65,7 @@ until every line is PASS or explicitly accepted as a limitation.
 |---|---|---|---|
 | Author/engineer | DSH C++ Grin++ work | 01.11.2026 | partial (see pending) |
 | Independent reviewer | — | — | not assigned |
+| Package owner acceptance | DSH C++ Grin++ work (owner) | 01.11.2026 | accepted; independent reviewer not assigned |
 
 **Handover rule:** no item marked PASS without a reproducible command or an
 evidence file; "works on my machine" and a successful build alone are not PASS.

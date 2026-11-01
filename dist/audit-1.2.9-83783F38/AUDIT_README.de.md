@@ -12,11 +12,11 @@ Status: **bereit für externes Review**; unabhängige Abnahme offen.
 - `TEST_RESULTS.md` — E1–E54 inkl. Live-Lauf G-52 → G-41.
 - `REMAINING.md`, `ACCEPTANCE_REPORT.md`, `DB_CONSISTENCY.md`,
   `AUDIT_COMMENTS.md`, `AUDIT_CHECKLIST.md`.
-- Artefakte (SHA-256):
+- Release-Build-Artefakte (SHA-256; nicht im Paket enthalten, gegen `bin/Release/Release` verifiziert):
 
 ```
 GrinNode.exe  83783F3877C60D03D9750467797263F37B9F0ED7CA854430858AAD7B7CB0B613  7.624.704
-Tests.exe     38B9AF99205EA1FC3247305FAE133F0FA8C8F3A6B01E4F564B0818B361DE555F  8.643.072
+Tests.exe     38B9AF99205EA1FC3247305FAE133F0FA8C8F3A6B01E4F564B0818B361DE555F  8.651.264
 ```
 
 - Tests: **176 Fälle / 1907 Assertions PASS**.
@@ -37,7 +37,7 @@ Tests.exe     38B9AF99205EA1FC3247305FAE133F0FA8C8F3A6B01E4F564B0818B361DE555F  
   nicht verifiziert.
 - G-23: Hash-Level-MMR-Revalidierung (`--validate-on-load`) fehlt.
 - G-24: CI-Anbindung und vcpkg-Pin offen; Offline-MSVC-Build ist verifiziert.
-- G-51: externe Abnahme, Lizenz-/Notice-Paket und `dist/audit-*` offen.
+- G-51 durch Eigentümer-Abnahme geschlossen (01.11.2026); unabhängiger Prüfer nicht benannt. Lizenz-/Notice-Paket (`D5`) und `dist/audit-*` (`D9`) sind vollständig.
 - Block-Sync des Servers nach der Archiv-Aktivierung blieb am Horizont stehen;
   der Client holte die Blöcke von externen Peers. Separate Analyse offen.
 - Beliebig alte historische Snapshots unterhalb des Horizonts bleiben bewusst

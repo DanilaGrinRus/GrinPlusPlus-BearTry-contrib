@@ -12,11 +12,11 @@ Status: **ready for external review**; independent sign-off is still open.
 - `TEST_RESULTS.md` — E1–E54 evidence, including the live G-52 → G-41 run.
 - `REMAINING.md`, `ACCEPTANCE_REPORT.md`, `DB_CONSISTENCY.md`,
   `AUDIT_COMMENTS.md`, `AUDIT_CHECKLIST.md`.
-- Artifacts (SHA-256):
+- Release build artifacts (SHA-256; not shipped in this package, verified against `bin/Release/Release`):
 
 ```
 GrinNode.exe  83783F3877C60D03D9750467797263F37B9F0ED7CA854430858AAD7B7CB0B613  7,624,704
-Tests.exe     38B9AF99205EA1FC3247305FAE133F0FA8C8F3A6B01E4F564B0818B361DE555F  8,643,072
+Tests.exe     38B9AF99205EA1FC3247305FAE133F0FA8C8F3A6B01E4F564B0818B361DE555F  8,651,264
 ```
 
 - Tests: **176 cases / 1907 assertions PASS**.
@@ -37,7 +37,7 @@ Tests.exe     38B9AF99205EA1FC3247305FAE133F0FA8C8F3A6B01E4F564B0818B361DE555F  
   verified (unit/live cycle only).
 - G-23 hash-level MMR revalidation (`--validate-on-load`) is not implemented.
 - G-24 CI wiring and vcpkg pin are open; the offline MSVC build is verified.
-- G-51 needs external sign-off, license/notice packaging and `dist/audit-*`.
+- G-51 closed by owner acceptance (01.11.2026); independent reviewer not assigned. License/notices (`D5`) and `dist/audit-*` (`D9`) are complete.
 - Server block sync after archive activation stalled at the horizon while the
   client caught up from external peers; a separate diagnosis is pending.
 - Arbitrary historical snapshots older than the horizon remain unsupported by
