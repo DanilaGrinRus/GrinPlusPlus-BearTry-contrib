@@ -184,9 +184,19 @@ void MessageProcessor::ProcessMessageInternal(const std::shared_ptr<Connection>&
 		case GetRangeProofSegment:
 		case GetKernelSegment:
 		{
-			// Serve PIBD segments from the current txhashset. Only the flushed
-			// header of the installed state can be served; requests for another
-			// horizon are ignored.
+			// Serve PIBD segments only from a fully settled node. Advertising
+			// segments while headers/state/body sync is still running would send
+			// partial or mid-migration state to peers.
+			if (m_pSyncStatus == nullptr || m_pSyncStatus->GetStatus() != ESyncStatus::NOT_SYNCING) {
+				LOG_DEBUG_F(
+					"Ignoring {} from {}: node is not fully synced",
+					MessageTypes::ToString(header.GetMessageType()),
+					pConnection);
+				break;
+			}
+
+			// Only the flushed header of the installed state can be served;
+			// requests for another horizon are ignored.
 			try {
 				const SegmentRequestMessage request =
 					SegmentRequestMessage::Deserialize(byteBuffer, header.GetMessageType());

@@ -67,9 +67,9 @@ usable source yet.
 
 ## Artifacts after the IsCompacted fix
 
-- `GrinNode 2EC593DC…`
-- `Tests 82B8858C…`
-- full suite **187 / 2092 PASS**
+- `GrinNode 3D05CE6F…`
+- `Tests 0AAB7BCA…`
+- full suite **187 / 2100 PASS**
 
 ## Addendum: second external audit
 
@@ -98,6 +98,21 @@ Still open:
 - `FirstUnprunedParent` start-position on fully pruned segments;
 - root/Validate coverage for all server segments.
 
-Verification: full suite **187 / 2092 PASS** after the safe-read changes; a
+Verification: full suite **187 / 2100 PASS** after the safe-read changes; a
 wallet slatepack test failed once and passed on rerun (known randomized fixture).
-`GrinNode 2EC593DC…`, `Tests 82B8858C…`.
+`GrinNode 3D05CE6F…`, `Tests 0AAB7BCA…`.
+
+## Addendum 2: leaf-set verification and serving gate
+
+The leaf-set unit claim is now **definitively refuted** by a test:
+`BitmapFile::Set(const Roaring&)` converts 1-based MMR positions with
+`Index::At(value - 1)`. A test with positions `1, 2, 65, 121` yields leaf-set
+membership for leaves `0, 1, 33, 63` and excludes leaf `2`; it passes.
+
+Serving is now gated: PIBD segment responses are sent only when
+`SyncStatus::GetStatus() == NOT_SYNCING`. While headers/state/body are syncing,
+the request is ignored with a debug reason instead of returning partial state.
+
+Remaining: leaf-hash generator port, `FirstUnprunedParent` start-position on
+fully pruned segments, and full root/Validate coverage. Full suite is
+**187 / 2100 PASS**; `GrinNode 3D05CE6F…`, `Tests 0AAB7BCA…`.

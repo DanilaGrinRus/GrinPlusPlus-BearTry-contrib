@@ -30,23 +30,24 @@ Reference: `reference/grin-5.5.2/core/src/core/pmmr/pmmr.rs`,
 
 ## Findings
 
-### F1 (fixed): `GetHashAt` refused compacted nodes, unlike Rust
+### F1 (superseded): prune-ignoring hash reads were wrong for serving
 
-`PruneableMMR::GetHashAt` returned `nullptr` whenever
-`PruneList::IsCompacted(index)` was true. Rust `ReadonlyPMMR::get_hash` for
-non-leaf positions calls `get_from_file`, which reads the stored hash and
-ignores the remove/prune log. A full archive state can therefore still contain
-the hash of a compacted position, but C++ refused to expose it.
+An earlier attempt added `GetHashAtIgnoringPrune` and used it as a PIBD-serving
+fallback. The independent audit showed that Rust `get_from_file` returns `None`
+for a compacted internal position: it does not recover the node through a
+shifted index. The fallback could therefore return a different node and produce
+a valid-looking but wrong segment root.
 
-Added `GetHashAtIgnoringPrune`, used only as a fallback by PIBD serving
-(`PibdSegmentService::LookupHash`). Normal PMMR reads keep the prune-aware
-behavior.
+The fallback was removed. `PibdSegmentService::LookupHash` now uses only the
+prune-aware `GetHashAt`; a missing/compacted hash returns `nullopt`, and read
+errors are caught. Pruned-root hashes remain readable through the normal path.
 
-### F2 (fixed): fallback could segfault on a shifted index underflow
+### F2 (superseded): shifted reads and bounds
 
-The first implementation computed `fileIndex = pos - shift` without bounds
-checks. `DataFile::GetDataAt` on an out-of-range index caused SIGSEGV in
-`Test_PibdServing` (not a catchable exception). The lookup now checks:
+The first fallback also computed `fileIndex = pos - shift` without bounds
+checks. `AppendOnlyFile::Read` and `MMRHashUtil::GetHashAt/GetShiftedIndex` now
+reject underflow, out-of-range and boundary-spanning reads; `DataFile::GetDataAt`
+throws. A regression test covers OOB reads.
 
 - `mmrIndex < GetSize()`;
 - `shift <= pos`;
@@ -82,5 +83,5 @@ rather than changed.
 ## Evidence
 
 - `Test_PibdServing` wire/live tests; `Test_MmrStructure`;
-- full suite 187 cases / 2092 assertions PASS;
-- artifacts `GrinNode 2EC593DC…`, `Tests 82B8858C…`.
+- full suite 187 cases / 2100 assertions PASS;
+- artifacts `GrinNode 3D05CE6F…`, `Tests 0AAB7BCA…`.
