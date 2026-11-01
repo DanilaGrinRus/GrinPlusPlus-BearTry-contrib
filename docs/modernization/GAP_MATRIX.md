@@ -32,7 +32,7 @@
 | ID | Компонент | Эталон | Расхождение | Влияние | P | Действие | Проверка | Статус |
 |---|---|---|---|---|---|---|---|---|
 | G-08 | Набор сообщений | IDs 0..28 (`p2p/src/msg.rs:67-97`) | IDs 21/22 заняты несовместимыми `GetKernels/Kernels` (никуда не отправляются); 23-28 отсутствуют | Любая попытка использовать 21/22 будет принята Rust-нодой как PIBD-запрос | P0 | Убрать коллизию, завести таблицу 21-28 с размерами из Rust | `static_assert`/компиляция TU | **DONE-C** |
-| G-09 | PIBD (клиент+сервер) | `pibd.rs`, `desegmenter.rs`, `txhashset.rs`, `p2p/src/protocol.rs:21-28` | Загрузка/активация/догон PASS (E42); **live serving FAIL**: sibling hash 4513785 отсутствует в сегментах, PIBD-state, sidecar и pp-net (E56–E61). Внешние пиры архив не отдают; полного snapshot нет | Нужен внешний полный snapshot горизонта до pruning | E32–E34/E41/E42/E55–E63 | **PARTIAL (FAIL live serving; blocked by missing data)** |
+| G-09 | PIBD (клиент+сервер) | `pibd.rs`, `desegmenter.rs`, `txhashset.rs`, `p2p/src/protocol.rs:21-28` | Загрузка/активация/догон PASS (E42); **live serving FAIL**: sibling hash 4513785 отсутствует в сегментах, PIBD-state, sidecar и pp-net (E56–E61). Внешние пиры архив не отдают; полного snapshot нет | Нужен внешний полный snapshot горизонта до pruning | E32–E34/E41/E42/E55–E63 | **PARTIAL (offline 4993/4993 PASS; live serving NOT VERIFIED; E80)** |
 | G-10 | Capabilities | `HEADER_HIST..PIBD_HIST_1` (`p2p/src/types.rs:381-399`) | Объявлены только 0x01/0x02/0x04; 0x08/0x10/0x20/0x40 отсутствуют | Невозможно корректно негодовать возможности; PIBD/BLOCK_HIST не рекламируются | P0 | Добавлен полный набор битов + `ADVERTISED` (PIBD/PIBD_1/BLOCK_HIST выключены до реализации) | `static_assert` в TU | **DONE-C** |
 | G-11 | Неизвестные типы сообщений | читать и отбрасывать (`default_max_msg_size`) | Grin++ рвал соединение на любом неизвестном типе (лимит 0) | Прямая несовместимость с новыми сообщениями; дисконнект от Rust-пиров при будущих расширениях | P1 | `MessageHeader`: неизвестный тип → лимит `MAX_BLOCK_SIZE*4` (как Rust) | компиляция TU | **DONE-C** |
 | G-12 | Проверка genesis в handshake | `BadHandshake` при ином genesis (`p2p/src/handshake.rs`) | Grin++ читал genesis пира и **не сравнивал** | Подключение к peer другой сети → поток «плохих» блоков/баны честных пиров | P1 | Сравнение с `Global::GetGenesisHash()` в Hand и Shake | только чтение кода (DONE-R) | **DONE-R** |
@@ -60,7 +60,7 @@
 |---|---|---|---|---|---|---|---|---|
 | **G-21** | Атомарная активация legacy txhashset | `TxHashSetProcessor`, `TxHashSetManager`, `TxHashSetZip` | ZIP распаковывался прямо в живое состояние до валидации; при ошибке/крахе state терялся | Staging-распаковка в `TXHASHSET.staging`, валидация до установки, atomic swap `live↔staging` с marker `txhashset_activation.pending`, восстановление backup на старте, переоткрытие live при ошибке | unit `Test_TxHashSetStaging` (3 кейса) | **DONE** |
 | G-22 | Бэкап перед миграцией | Rust/процедура миграции | Миграция меняла БД без резервной копии | Реализован `DbBackup` (recursive stream copy, LOCK skipped) перед миграцией v1/v2 → v2/v3; ошибка копии прерывает миграцию; fresh v0 не бэкапится | unit `DbBackup` (2 кейса) | **DONE** |
-| G-23 | Проверка MMR и chain-хранилищ при загрузке | `BlockChainImpl.cpp`, `HeaderMMR`, `MmrStructure` | Структурная проверка размера MMR (`2L−popcount(L)`); при отставании MMR — **перестройка из block DB** (заголовки не теряются), при опережении — усечение лишних листьев; recovery-копия обязательна и проверяется по размеру; цепочка позади checkpoint → отказ старта (без молчаливого усечения) | Хеш/корневая ревалидация (`--validate-on-load`) OPEN | unit `MmrStructure`/`ChainConsistency`/`DbRecovery`; live: MMR −2000 листьев → rebuild, header 3 317 117 (E48) | **PARTIAL (structural/rebuild DONE)** |
+| G-23 | Проверка MMR и chain-хранилищ при загрузке | `BlockChainImpl.cpp`, `HeaderMMR`, `MmrStructure` | Структурная проверка размера MMR (`2L−popcount(L)`); при отставании MMR — **перестройка из block DB** (заголовки не теряются), при опережении — усечение лишних листьев; recovery-копия обязательна и проверяется по размеру; цепочка позади checkpoint → отказ старта (без молчаливого усечения) | Хеш/корневая ревалидация DONE (E82); fault-injection OPEN | unit `MmrStructure`/`ChainConsistency`/`DbRecovery`; live: MMR −2000 листьев → rebuild, header 3 317 117 (E48) | **PARTIAL (structural/rebuild + hash revalidation DONE; fault injection OPEN)** |
 
 ---
 
@@ -114,7 +114,7 @@
 
 | **G-52** | Исторический TxHashSet archive: сохранение/выдача на горизонте | `TxHashSetManager`, `TxHashSetZip`, `TxHashSetPipe`, `TxHashSetArchive` | Архив на горизонте не сохранялся (leafset/leaf, int overflow, `\` в zip), исторический rewind падал на spent-gap. Теперь архив сохраняется при активации, отдаётся по hash без rewind и успешно принимается legacy-клиентом | живая выдача + валидация (E54) | **DONE** (архив на горизонте; произвольные более старые snapshot по-прежнему не поддерживаются) |
 
-| **G-53** | Node/API: недостающие методы grin v5.5.2 | `src/API/Node/NodeServer.cpp`, `src/API/Node/Handlers/*`, `src/TxPool/*`, `src/PMMR/TxHashSet*`, `src/Server/Node/API/*` | JSON-RPC `/v2/foreign` содержал 7 методов из 13 у grin v5.5.2, `/v2/owner` пуст; REST v1 — легаси Grin++, его каталог `GET /v1/` отставал от реальных маршрутов | Реализованы все 13 методов `/v2/foreign` (`get_pool_size`, `get_stempool_size`, `get_unconfirmed_transactions`, `get_pmmr_indices`, `get_unspent_outputs`, `get_outputs`, `get_kernel` + `ITxHashSet::FindKernelByExcess`, `get_blocks` + общий `PrintableSerialization.h`; c60604f/84f135e/8fa265f/474acc4/fa663d5) и 3 метода `/v2/owner` (`get_status`, `get_peers`, `get_connected_peers`; 3b4efd4); каталог `GET /v1/` обновлён (efe27b7). Unit-тесты — `Test_NodeApiPrintables` (a76dfd5) | E53: полная сборка `GrinNode.exe`/`Tests.exe`, 174 кейса / 1810 проверок PASS; живые вызовы `/v2` на запущенной ноде — не подтверждены | **PARTIAL (P0/P1 + unspent pagination done; KernelIndex/get_blocks/get_outputs pagination pending, E67/E71)** |
+| **G-53** | Node/API: недостающие методы grin v5.5.2 | `src/API/Node/NodeServer.cpp`, `src/API/Node/Handlers/*`, `src/TxPool/*`, `src/PMMR/TxHashSet*`, `src/Server/Node/API/*` | JSON-RPC `/v2/foreign` содержал 7 методов из 13 у grin v5.5.2, `/v2/owner` пуст; REST v1 — легаси Grin++, его каталог `GET /v1/` отставал от реальных маршрутов | Реализованы все 13 методов `/v2/foreign` (`get_pool_size`, `get_stempool_size`, `get_unconfirmed_transactions`, `get_pmmr_indices`, `get_unspent_outputs`, `get_outputs`, `get_kernel` + `ITxHashSet::FindKernelByExcess`, `get_blocks` + общий `PrintableSerialization.h`; c60604f/84f135e/8fa265f/474acc4/fa663d5) и 3 метода `/v2/owner` (`get_status`, `get_peers`, `get_connected_peers`; 3b4efd4); каталог `GET /v1/` обновлён (efe27b7). Unit-тесты — `Test_NodeApiPrintables` (a76dfd5) | E53: полная сборка `GrinNode.exe`/`Tests.exe`, 174 кейса / 1810 проверок PASS; живые вызовы `/v2` на запущенной ноде — не подтверждены | **PARTIAL (KernelIndex/get_kernel done; live /v2/reorg/pagination pending, E81)** |
 
 ---
 
@@ -133,13 +133,13 @@
   финальные hashes/provenance и `dist/audit-1.2.9-83783F38`; внешний ревьюер не назначен).
 * **G-53 (PARTIAL):** реализованы все 13 методов `/v2/foreign` и 3 метода `/v2/owner`,
   каталог `GET /v1/` приведён к реальным маршрутам (unit + build — E53);
-  snapshot/pagination и auth — E70–E73. Живые вызовы `/v2`, KernelIndex и
-  get_kernel остаются — E67/E71/E72; строка G-53 остаётся PARTIAL.
+  snapshot/pagination и auth — E70–E73. Живые вызовы `/v2`, reorg и pagination остаются — E81; KernelIndex и позиции
+  get_kernel реализованы. Строка G-53 остаётся PARTIAL.
 * Частично: G-09 (PIBD: живая загрузка/активация/догон PASS, resume replay PASS;
   живой serving Rust-клиентом и полное завершение resume не подтверждены),
-  G-23 (структурная проверка/rebuild MMR DONE — E48; hash-level ревалидация
-  OPEN), G-24 (offline build DONE; CI-проводка и пин vcpkg — вне матрицы, фазы 5–7),
-  G-53 (API: реализация есть; live `/v2`, KernelIndex и полный state — нет).
+  G-23 (структурная проверка/rebuild + hash-level ревалидация DONE — E48/E82;
+  fault-injection/полный PMMR sweep OPEN), G-24 (offline build DONE; CI-проводка и пин vcpkg — вне матрицы, фазы 5–7),
+  G-53 (API: KernelIndex/get_kernel есть; live `/v2`, reorg/pagination и полный state — нет).
 * Запланировано: G-44 (спящий каркас PIHD), G-45 (mainnet dry-run), G-49
   (ускорение rangeproof-валидации; `PERF_RANGEPROOF.md`).
 * Открыто: G-07 (NRD; recent kernel index, E64/E65). N/A: G-27 (PIHD в v5.5.2).

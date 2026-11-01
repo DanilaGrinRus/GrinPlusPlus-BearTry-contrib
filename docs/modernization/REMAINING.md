@@ -47,10 +47,10 @@
 | Статус | Пункт | Что осталось |
 |---|---|---|
 | **DONE** | **G-51** аудит-пакет | закрыто приёмкой владельца 01.11.2026; внешний независимый ревьюер не назначен; пакет `dist/audit-1.2.9-83783F38` + SHA256SUMS |
-| **PARTIAL (FAIL live)** | **G-09** | anchor-search/leaf-hash фикс не слит в дерево; полный Rust-клиент и полный state не подтверждены (E74–E76, внешний G-09-аудит 02.11) |
-| **PARTIAL** | **G-23** hash-level | побайтовая/корневая ревалидация MMR (`--validate-on-load`) |
+| **PARTIAL (offline PASS)** | **G-09** | anchor-search + leaf-hash фикс слиты; offline 4993/4993 сегментов PASS; live Rust-клиент/смена H/полный state — NOT VERIFIED (E77/E80) |
+| **PARTIAL** | **G-23** hash-level | hash/root ревалидация заголовков и TxHashSet реализована; fault-injection/полный PMMR sweep — NOT VERIFIED (E82) |
 | **PARTIAL** | **G-24** | CI-проводка + пин vcpkg (offline build/`/W4 /WX` готовы) |
-| **PARTIAL** | **G-53** API | KernelIndex/get_kernel, live `/v2`, полный state (E67/E71/E72) |
+| **PARTIAL** | **G-53** API | KernelIndex/get_kernel и позиции PMMR реализованы; live `/v2`/reorg/pagination — NOT VERIFIED (E78/E81) |
 
 ## 3. Запланировано / отложено / N/A
 
