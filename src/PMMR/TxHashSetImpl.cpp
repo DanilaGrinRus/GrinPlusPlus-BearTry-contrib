@@ -11,6 +11,8 @@
 #include <Database/BlockDb.h>
 #include <Common/Logger.h>
 #include <P2P/SyncStatus.h>
+#include <exception>
+#include <mutex>
 #include <thread>
 
 TxHashSet::TxHashSet(
@@ -345,37 +347,42 @@ std::optional<std::pair<TransactionKernel, uint64_t>> TxHashSet::FindKernelByExc
 	const std::optional<uint64_t>& maxIndex) const
 {
 	const uint64_t numKernels = m_pKernelMMR->GetNumKernels();
-	if (numKernels == 0) {
+	if (numKernels == 0)
+	{
 		return std::nullopt;
 	}
 
-	// 1-based kernel MMR indices map to 0-based leaf indices.
-	uint64_t firstLeaf = 0;
-	if (minIndex.has_value()) {
-		firstLeaf = *minIndex == 0 ? 0 : *minIndex - 1;
+	// Grin treats minIndex/maxIndex as 1-based PMMR node positions, not leaf
+	// indices: kernel_mmr_size is a node count and the returned mmr_index is a
+	// 1-based node position. Walk backwards like Rust find_kernel.
+	uint64_t firstIndex = minIndex.value_or(1);
+	if (firstIndex == 0) {
+		firstIndex = 1;
 	}
 
-	uint64_t lastLeaf = numKernels - 1;
-	if (maxIndex.has_value()) {
-		lastLeaf = *maxIndex == 0 ? 0 : *maxIndex - 1;
-	}
-
-	if (firstLeaf > lastLeaf) {
+	uint64_t lastIndex = maxIndex.value_or(m_pKernelMMR->GetSize());
+	lastIndex = (std::min)(lastIndex, m_pKernelMMR->GetSize());
+	if (firstIndex > lastIndex) {
 		return std::nullopt;
 	}
 
-	lastLeaf = (std::min)(lastLeaf, numKernels - 1);
+	for (uint64_t index = lastIndex; ; --index) {
+		const uint64_t pos0 = index - 1;
+		if (MMRUtil::IsLeaf(pos0)) {
+			std::unique_ptr<TransactionKernel> pKernel =
+				m_pKernelMMR->GetKernelAt(LeafIndex::From(Index::At(pos0)));
+			if (pKernel != nullptr && pKernel->GetExcessCommitment() == excess) {
+				return std::make_pair(*pKernel, index);
+			}
+		}
 
-	for (uint64_t leaf = firstLeaf; leaf <= lastLeaf; leaf++) {
-		std::unique_ptr<TransactionKernel> pKernel = m_pKernelMMR->GetKernelAt(LeafIndex::At(leaf));
-		if (pKernel != nullptr && pKernel->GetExcessCommitment() == excess) {
-			return std::make_pair(*pKernel, leaf + 1);
+		if (index == firstIndex) {
+			break;
 		}
 	}
 
 	return std::nullopt;
 }
-
 void TxHashSet::Rewind(std::shared_ptr<IBlockDB> pBlockDB, const BlockHeader& header)
 {
 	std::vector<uint64_t> leavesToAdd;
@@ -417,10 +424,30 @@ void TxHashSet::Rewind(std::shared_ptr<IBlockDB> pBlockDB, const BlockHeader& he
 void TxHashSet::Commit()
 {
 	std::vector<std::thread> threads;
-	threads.emplace_back(std::thread([this] { this->m_pKernelMMR->Commit(); }));
-	threads.emplace_back(std::thread([this] { this->m_pOutputPMMR->Commit(); }));
-	threads.emplace_back(std::thread([this] { this->m_pRangeProofPMMR->Commit(); }));
+	std::exception_ptr firstError;
+	std::mutex errorMutex;
+
+	const auto commitOne = [&firstError, &errorMutex](const auto& pMMR) {
+		try {
+			pMMR->Commit();
+		} catch (...) {
+			std::lock_guard<std::mutex> lock(errorMutex);
+			if (!firstError) {
+				firstError = std::current_exception();
+			}
+		}
+	};
+
+	threads.emplace_back(std::thread([this, &commitOne] { commitOne(this->m_pKernelMMR); }));
+	threads.emplace_back(std::thread([this, &commitOne] { commitOne(this->m_pOutputPMMR); }));
+	threads.emplace_back(std::thread([this, &commitOne] { commitOne(this->m_pRangeProofPMMR); }));
 	ThreadUtil::JoinAll(threads);
+
+	if (firstError) {
+		// Never publish the block header backup or a checkpoint after a partial
+		// multi-tree commit. The caller must treat this state as failed.
+		std::rethrow_exception(firstError);
+	}
 
 	m_pBlockHeaderBackup = m_pBlockHeader;
 }

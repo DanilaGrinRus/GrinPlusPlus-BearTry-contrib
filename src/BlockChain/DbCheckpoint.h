@@ -121,20 +121,31 @@ namespace DbCheckpoint
 		}
 
 		// The checkpoint itself must be durable before it replaces the old one.
-		FileSync::Flush(temp);
+		if (!FileSync::Flush(temp)) {
+			std::error_code removeError;
+			fs::remove(temp, removeError);
+			return false;
+		}
 
+#ifdef _WIN32
+		// Replace the old checkpoint atomically. Never delete it first: a crash
+		// or rename failure between the two steps would leave no valid checkpoint.
+		if (!MoveFileExW(
+				temp.wstring().c_str(),
+				path.wstring().c_str(),
+				MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
+			std::error_code removeError;
+			fs::remove(temp, removeError);
+			return false;
+		}
+#else
 		std::error_code ec;
 		fs::rename(temp, path, ec);
 		if (ec) {
-			// Windows does not always replace an existing target with rename().
-			fs::remove(path, ec);
-			ec.clear();
-			fs::rename(temp, path, ec);
-			if (ec) {
-				fs::remove(temp, ec);
-				return false;
-			}
+			fs::remove(temp, ec);
+			return false;
 		}
+#endif
 
 		return true;
 	}

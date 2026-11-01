@@ -253,10 +253,14 @@ void ChainState::Commit()
 	if (!m_chainStoreWriter.IsNull() && !m_headerMMRWriter.IsNull())
 	{
 		// Make the writes durable before the checkpoint is renamed into place.
+		// A failed flush must not be followed by a checkpoint that claims the
+		// data is durable; leave the previous checkpoint in place.
 		const fs::path chainPath = m_config.GetChainPath();
-		FileSync::Flush(chainPath / "header_mmr.bin");
-		FileSync::Flush(chainPath / "candidate.chain");
-		FileSync::Flush(chainPath / "confirmed.chain");
+		if (!FileSync::Flush(chainPath / "header_mmr.bin") ||
+			!FileSync::Flush(chainPath / "candidate.chain") ||
+			!FileSync::Flush(chainPath / "confirmed.chain")) {
+			throw std::runtime_error("Failed to flush chain stores before publishing the DB checkpoint");
+		}
 		DbCheckpointData checkpoint;
 		checkpoint.Sequence = ++m_checkpointSequence;
 		const uint64_t candidateEntries =
@@ -271,7 +275,7 @@ void ChainState::Commit()
 			m_chainStoreWriter.GetShared()->GetConfirmedChain()->GetHeight() + 1;
 
 		if (!DbCheckpoint::Write(m_config.GetChainPath() / "chain.checkpoint", checkpoint)) {
-			LOG_WARNING("Failed to write the DB checkpoint.");
+			throw std::runtime_error("Failed to publish the DB checkpoint");
 		}
 	}
 }

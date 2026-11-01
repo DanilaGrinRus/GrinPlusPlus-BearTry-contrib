@@ -67,9 +67,9 @@ usable source yet.
 
 ## Artifacts after the IsCompacted fix
 
-- `GrinNode 2EEB3D31…`
-- `Tests EBBCDD08…`
-- full suite **187 / 2112 PASS**
+- `GrinNode 7BAC50B9…`
+- `Tests 2E874076…`
+- full suite **188 / 2122 PASS**
 
 ## Addendum: second external audit
 
@@ -98,9 +98,9 @@ Still open:
 - `FirstUnprunedParent` start-position on fully pruned segments;
 - root/Validate coverage for all server segments.
 
-Verification: full suite **187 / 2112 PASS** after the safe-read changes; a
+Verification: full suite **188 / 2122 PASS** after the safe-read changes; a
 wallet slatepack test failed once and passed on rerun (known randomized fixture).
-`GrinNode 2EEB3D31…`, `Tests EBBCDD08…`.
+`GrinNode 7BAC50B9…`, `Tests 2E874076…`.
 
 ## Addendum 2: leaf-set verification and serving gate
 
@@ -115,4 +115,4 @@ the request is ignored with a debug reason instead of returning partial state.
 
 Remaining: leaf-hash generator port, `FirstUnprunedParent` start-position on
 fully pruned segments, and full root/Validate coverage. Full suite is
-**187 / 2112 PASS**; `GrinNode 2EEB3D31…`, `Tests EBBCDD08…`.
+**188 / 2122 PASS**; `GrinNode 7BAC50B9…`, `Tests 2E874076…`.
