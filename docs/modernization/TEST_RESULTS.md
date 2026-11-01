@@ -1438,8 +1438,8 @@ G-09 остаётся **PARTIAL/FAIL live serving**. Нужно либо сох�
 sibling hashes в PibdStateWriter, либо отдавать rangeproof-сегменты из полного
 snapshot, а не из prune-состояния.
 
-**Тесты:** **176 кейсов / 1907 проверок PASS**. Артефакты: `GrinNode.exe`
-`83783F38…`, `Tests.exe` `38B9AF99…`.
+**Тесты:** **176 кейсов / 1937 проверок PASS**. Артефакты: `GrinNode.exe`
+`D19EA4D0…`, `Tests.exe` `DD8DF666…`.
 
 ## E57. G-09: PIBD serving упирается в отсутствующие sibling hashes
 
@@ -1460,8 +1460,8 @@ G-09 остаётся **PARTIAL/FAIL live serving**; для закрытия н�
 все требуемые sibling hashes при активации, либо отдавать сегменты из полного
 snapshot, а не из prune-состояния.
 
-**Тесты:** 176 / 1907 PASS. Артефакты: `GrinNode.exe`
-`83783F38…`, `Tests.exe` `38B9AF99…`.
+**Тесты:** 176 / 1937 PASS. Артефакты: `GrinNode.exe`
+`D19EA4D0…`, `Tests.exe` `DD8DF666…`.
 
 ## E58. G-09: prune-aware proof обязателен; простой обход prune даёт неверный root
 
@@ -1484,8 +1484,20 @@ serving**; E56/E57/E58 фиксируют весь путь диагностик
 * `AUDIT_CHECKLIST.md` D1–D9 — PASS; D5: 11 standalone + 6 embedded notices;
 * `dist/audit-1.2.9-83783F38` — 21 поставляемый файл + `SHA256SUMS`; все хеши
   сверены (0 mismatch);
-* записанные хеши сборки `GrinNode.exe` `83783F38…` и `Tests.exe` `38B9AF99…`
+* записанные хеши сборки `GrinNode.exe` `D19EA4D0…` и `Tests.exe` `DD8DF666…`
   совпадают с `bin/Release/Release`; бинарники не входят в пакет (build artifacts);
-* тесты: **176 кейсов / 1907 проверок PASS**;
+* тесты: **176 кейсов / 1937 проверок PASS**;
 * G-51 закрыт приёмкой владельца; независимый внешний ревьюер не назначен —
   это зафиксировано в чек-листе и не выдаётся за внешний sign-off.
+## E59. G-09: sidecar хешей не закрывает compacted-поддерево
+
+При активации PIBD-state writer записал `pmmr_serving_hash.bin`:
+output / rangeproof по **240 617 688 B** (6 015 442 записи). Тест всех сегментов
+всё равно падает на **output idx 1100**: `Source is missing the sibling hash at
+position 4513785` — этой позиции **нет в присланных сегментах**, поэтому sidecar
+её не содержит. То есть простой sidecar не может восстановить compacted-хеш;
+нужен либо **полный legacy/libre snapshot** на горизонте, либо Rust-совместимый
+prune-aware proof. Sidecar-эксперимент откатан; code baseline восстановлен.
+
+**Тесты:** 176 / 1937 PASS (Tests `DD8DF666…`), GrinNode `D19EA4D0…`.
+G-09 — **PARTIAL/FAIL live serving**.
