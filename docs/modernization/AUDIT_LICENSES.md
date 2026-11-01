@@ -6,8 +6,8 @@ dependency's license and notice is present.
 
 ## Method
 
-Scanned each directory under `deps/` for a standalone `LICENSE*`, `COPYING*`
-or `NOTICE*` file (depth 1, case variants). Header-only dependencies often
+Scanned each directory under `deps/` recursively for a standalone `LICENSE*`,
+`COPYING*` or `NOTICE*` file (case variants). Header-only dependencies often
 carry the license in the source header; that is **not** a substitute for the
 distribution notice and was not counted as present.
 
@@ -26,14 +26,16 @@ distribution notice and was not counted as present.
 | klib | **MISSING** |
 | Catch2 | **MISSING** |
 | rfc6234 | **MISSING** |
-| scheduler | **MISSING** |
+| scheduler | `include/scheduler/License.txt` |
 | scrypt | **MISSING** |
 | sha3 | **MISSING** |
-| spdlog | **MISSING** |
+| spdlog | `LICENSE.rst` |
 | chachapoly | **MISSING** |
 | libsqlite3 | **MISSING** |
 
-**17 dependencies, 6 with a standalone license file, 11 missing.**
+**17 dependencies: 8 with a standalone license file, 9 without. Seven of the
+nine carry the full license text in their source headers; rfc6234, sha3 and klib
+need an explicit notice (`THIRD_PARTY_NOTICES.md`).**
 
 ## Required before handover
 
