@@ -1404,3 +1404,39 @@ HOME — 172 / 1862; разница в числе проверок объясн�
 
 **Тесты:** **174 кейса / 1879 проверок PASS**. Артефакты: `GrinNode.exe`
 `39D2584A…`, `Tests.exe` `607EB484…`.
+
+## E55. Живая выдача PIBD: найден дефект RangeProofSegment (G-09 остаётся PARTIAL)
+
+Попытка живого PIBD-serving с отдельного C++-клиента против нашего узла:
+* сервер принял `GetOutputSegment`, `GetRangeProofSegment`, `GetKernelSegment`
+  и отдал `OutputBitmapSegment`, `OutputSegment`;
+* клиент получил `RangeProofSegment`, но `ProcessMessage` упал:
+  `Deserialization exception ... Proof of size 20998 exceeds the maximum`,
+  после чего соединение закрыто (`resource deadlock would occur`), PIBD
+  остановился на 8/4989 сегментах.
+
+Значит **живой PIBD serving не работает для rangeproof-сегментов**; unit-тесты
+покрывали bitmap/output и сериализацию, но не реальный rangeproof-сегмент от
+PibdSegmentService. G-09 остаётся **PARTIAL**, live serving Rust/иному клиенту не
+подтверждён. Нужен разбор `Segment<RangeProof>`/`SegmentGenerator` на живом
+сегменте (позиции листьев/hash-позиции) перед повторным прогоном.
+
+**Лицензии/аудит:** D5 PASS (11 standalone + 6 embedded notices, все 17
+зависимостей), пакет `dist/audit-1.2.9-39D2584A` готов; G-51 ждёт внешней
+подписи. Тесты 174 / 1879 PASS; артефакты без изменений.
+
+## E56. G-09: точный дефект rangeproof-сегмента и актуализация артефактов
+
+Перебор всех **1673** rangeproof-сегментов live state 3 314 880 дал точку отказа:
+**idx 1100** — `Source is missing the sibling hash at position 4513785`. То есть
+prune-состояние после PIBD не содержит hash, нужный `SegmentGenerator` для
+построения proof; сервер не может корректно отдать этот сегмент (клиент получает
+desync/`Proof of size ... exceeds the maximum`). Это не TCP и не `RangeProof`
+сериализация: wire- и live-state round-trip тесты проходят.
+
+G-09 остаётся **PARTIAL/FAIL live serving**. Нужно либо сохранять недостающие
+sibling hashes в PibdStateWriter, либо отдавать rangeproof-сегменты из полного
+snapshot, а не из prune-состояния.
+
+**Тесты:** **176 кейсов / 1907 проверок PASS**. Артефакты: `GrinNode.exe`
+`79812A28…`, `Tests.exe` `38B9AF99…`.

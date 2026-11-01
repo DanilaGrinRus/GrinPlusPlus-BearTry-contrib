@@ -154,6 +154,32 @@ TEST_CASE("PibdSegmentService::RangeProofSegmentWireRoundTrip")
 	fs::remove_all(stateDir, error);
 }
 
+TEST_CASE("PibdSegmentService::RangeProofSegmentLiveState")
+{
+	const fs::path stateDir = "C:/DHW/.tmp/interop/pp-archsrv/.GrinPP/FLOONET/NODE/TXHASHSET";
+	if (!fs::exists(stateDir)) {
+		return;
+	}
+
+	std::shared_ptr<OutputPMMR> pOutputPMMR = OutputPMMR::Load(stateDir);
+	std::shared_ptr<RangeProofPMMR> pRangeProofPMMR = RangeProofPMMR::Load(stateDir);
+	std::shared_ptr<KernelMMR> pKernelMMR = KernelMMR::Load(stateDir);
+	PibdSegmentService service(pOutputPMMR, pRangeProofPMMR, pKernelMMR);
+	const Segment<RangeProof> segment =
+		service.GetRangeProofSegment(SegmentIdentifier(PibdParams::RANGEPROOF_SEGMENT_HEIGHT, 0));
+	INFO("leaves=" << segment.GetLeafData().size() << " hashes=" << segment.GetHashes().size());
+	if (!segment.GetLeafData().empty()) {
+		INFO("first proof bytes=" << segment.GetLeafData().front().GetProofBytes().size());
+	}
+	Serializer serializer;
+	segment.Serialize(serializer);
+	INFO("serialized=" << serializer.GetBytes().size());
+	ByteBuffer buffer(serializer.GetBytes());
+	const Segment<RangeProof> decoded = Segment<RangeProof>::Deserialize(buffer);
+	REQUIRE(decoded.GetLeafData().size() == segment.GetLeafData().size());
+	REQUIRE(buffer.GetRemainingSize() == 0);
+}
+
 TEST_CASE("PibdSegmentService::ServesStateThatValidates")
 {
 	const fs::path stateDir = fs::temp_directory_path() / "pibd-serving-test";

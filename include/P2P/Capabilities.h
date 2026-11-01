@@ -46,10 +46,11 @@ public:
 		FAST_SYNC_NODE = (TXHASHET_HIST | PEER_LIST),
 		ARCHIVE_NODE = (HEADER_HIST | TXHASHET_HIST | PEER_LIST),
 
-		// Capabilities this node advertises today. PIBD serving is implemented
-		// (bitmap, output, rangeproof and kernel segments), so both PIBD bits are
-		// advertised; BLOCK_HIST stays off until archival serving exists.
-		ADVERTISED = (FAST_SYNC_NODE | PIBD_HIST | PIBD_HIST_1),
+		// Capabilities this node advertises today. We serve the full header
+		// history and PIBD segments (bitmap, output, rangeproof, kernel), so
+		// HEADER_HIST and both PIBD bits are advertised; BLOCK_HIST stays off
+		// until archival block serving exists.
+		ADVERTISED = (HEADER_HIST | FAST_SYNC_NODE | PIBD_HIST | PIBD_HIST_1),
 	};
 
 	Capabilities(const uint32_t value)
