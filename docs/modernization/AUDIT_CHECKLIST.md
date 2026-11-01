@@ -53,7 +53,7 @@ until every line is PASS or explicitly accepted as a limitation.
 | D2 | `AUDIT_DELTA.en/de/ru` parity | 29 cards, 8 fields, 18 diff blocks, 0 TODO | PASS |
 | D3 | Comment review | `AUDIT_COMMENTS.md` | PASS (static/priority) |
 | D4 | Secret/dump scan | `AUDIT_COMMENTS.md` §5 | PASS |
-| D5 | License/notices | repository LICENSE = MIT; third-party notices reviewed informally | PARTIAL |
+| D5 | License/notices | `AUDIT_LICENSES.md`: 11/17 bundled deps lack a standalone license file | **FAIL** |
 | D6 | `AUDIT_README` in EN/DE/RU | `AUDIT_README.en/de/ru.md` | PASS |
 | D7 | Known-limitations section | `REMAINING.md`, this checklist | PASS |
 | D8 | Final artifact + provenance hashes | `AUDIT_README.en.md` | PASS |
