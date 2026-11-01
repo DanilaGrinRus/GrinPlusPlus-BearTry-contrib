@@ -8,9 +8,9 @@ until every line is PASS or explicitly accepted as a limitation.
 | # | Item | Evidence | Status |
 |---|---|---|---|
 | A1 | Clean offline build with `/W4 /WX` | `BUILD.md` (current: 171 cases / 1839 assertions) | PASS |
-| A2 | Full unit suite on the final binary | `Tests.exe`, `TEST_RESULTS.md` | PASS (rebuild after the last code change needed) |
+| A2 | Full unit suite on the final binary | `Tests.exe`, `TEST_RESULTS.md` | PASS (174 / 1879) |
 | A3 | No new compiler warnings | build log | PASS |
-| A4 | Final artifact SHA-256 | `BUILD.md`, this package | PENDING (final rebuild) |
+| A4 | Final artifact SHA-256 | `BUILD.md`, `AUDIT_README.en.md` | PASS (39D2584A… / 607EB484…) |
 | A5 | Reproducible build entry point (offline sysroot) | `tools/build/build.ps1` | PASS |
 | A6 | CI wiring + vcpkg pin | G-24 partial, phases 5–7 | NOT DONE |
 
@@ -25,9 +25,9 @@ until every line is PASS or explicitly accepted as a limitation.
 | B5 | Resume replay after restart | E41/E42 | PASS |
 | B6 | DB checkpoint / no-loss repair | E43/E44/E48 | PASS |
 | B7 | Atomic legacy activation | E49, `Test_TxHashSetStaging` | PASS |
-| B8 | Full sync from zero timing | `pp-archsrv`, in progress | IN PROGRESS |
-| B9 | Live archive serving (G-52) | same run, archive/legacy test | NOT VERIFIED |
-| B10 | Live legacy fallback (G-41) | depends on B9 | NOT VERIFIED |
+| B8 | Full sync from zero timing | E53 (~2 h 54 min; block DB pre-populated) | PASS with caveat |
+| B9 | Live archive serving (G-52) | E54, 3,117,206,023-byte archive validated | PASS |
+| B10 | Live legacy fallback (G-41) | E54, FULLY_SYNCED 3,317,664 | PASS |
 | B11 | Live PIBD serving to a Rust client (G-09) | unit only | NOT VERIFIED |
 
 ## C. Compatibility and safety
@@ -49,15 +49,15 @@ until every line is PASS or explicitly accepted as a limitation.
 
 | # | Item | Evidence | Status |
 |---|---|---|---|
-| D1 | `GAP_MATRIX` 52 entries, tally correct | 41 closed + 3 partial + 2 in work + 1 open + 3 planned + 1 deferred + 1 N/A | PASS |
-| D2 | `AUDIT_DELTA.en/de/ru` parity | `check_audit_delta.ps1`: 29 cards, 8 fields, 18 diff blocks, 0 TODO | PASS |
+| D1 | `GAP_MATRIX` 53 entries, tally correct | 44 closed + 3 partial + 1 in work + 0 open + 3 planned + 1 deferred + 1 N/A | PASS |
+| D2 | `AUDIT_DELTA.en/de/ru` parity | 29 cards, 8 fields, 18 diff blocks, 0 TODO | PASS |
 | D3 | Comment review | `AUDIT_COMMENTS.md` | PASS (static/priority) |
 | D4 | Secret/dump scan | `AUDIT_COMMENTS.md` §5 | PASS |
-| D5 | License/notices | repository LICENSE/COPYING | PENDING |
-| D6 | `AUDIT_README` in EN/DE/RU | not written | PENDING |
+| D5 | License/notices | repository LICENSE = MIT; third-party notices reviewed informally | PARTIAL |
+| D6 | `AUDIT_README` in EN/DE/RU | `AUDIT_README.en/de/ru.md` | PASS |
 | D7 | Known-limitations section | `REMAINING.md`, this checklist | PASS |
-| D8 | Final artifact + provenance hashes | after final rebuild | PENDING |
-| D9 | Audited package `dist/audit-*` | after D8 | PENDING |
+| D8 | Final artifact + provenance hashes | `AUDIT_README.en.md` | PASS |
+| D9 | Audited package `dist/audit-*` | not packaged | PENDING |
 
 ## E. Sign-off
 
