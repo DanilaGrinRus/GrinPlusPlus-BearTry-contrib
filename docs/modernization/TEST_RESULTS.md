@@ -1438,8 +1438,8 @@ G-09 остаётся **PARTIAL/FAIL live serving**. Нужно либо сох�
 sibling hashes в PibdStateWriter, либо отдавать rangeproof-сегменты из полного
 snapshot, а не из prune-состояния.
 
-**Тесты:** **176 кейсов / 1973 проверок PASS**. Артефакты: `GrinNode.exe`
-`F08F4AD2…`, `Tests.exe` `437A99AA…`.
+**Тесты:** **179 кейсов / 1991 проверок PASS**. Артефакты: `GrinNode.exe`
+`103EF7FC…`, `Tests.exe` `F48E5138…`.
 
 ## E57. G-09: PIBD serving упирается в отсутствующие sibling hashes
 
@@ -1460,8 +1460,8 @@ G-09 остаётся **PARTIAL/FAIL live serving**; для закрытия н�
 все требуемые sibling hashes при активации, либо отдавать сегменты из полного
 snapshot, а не из prune-состояния.
 
-**Тесты:** 176 / 1973 PASS. Артефакты: `GrinNode.exe`
-`F08F4AD2…`, `Tests.exe` `437A99AA…`.
+**Тесты:** 179 / 1991 PASS. Артефакты: `GrinNode.exe`
+`103EF7FC…`, `Tests.exe` `F48E5138…`.
 
 ## E58. G-09: prune-aware proof обязателен; простой обход prune даёт неверный root
 
@@ -1484,9 +1484,9 @@ serving**; E56/E57/E58 фиксируют весь путь диагностик
 * `AUDIT_CHECKLIST.md` D1–D9 — PASS; D5: 11 standalone + 6 embedded notices;
 * `dist/audit-1.2.9-83783F38` — 21 поставляемый файл + `SHA256SUMS`; все хеши
   сверены (0 mismatch);
-* записанные хеши сборки `GrinNode.exe` `F08F4AD2…` и `Tests.exe` `437A99AA…`
+* записанные хеши сборки `GrinNode.exe` `103EF7FC…` и `Tests.exe` `F48E5138…`
   совпадают с `bin/Release/Release`; бинарники не входят в пакет (build artifacts);
-* тесты: **176 кейсов / 1973 проверок PASS**;
+* тесты: **179 кейсов / 1991 проверок PASS**;
 * G-51 закрыт приёмкой владельца; независимый внешний ревьюер не назначен —
   это зафиксировано в чек-листе и не выдаётся за внешний sign-off.
 ## E59. G-09: sidecar хешей не закрывает compacted-поддерево
@@ -1499,7 +1499,7 @@ position 4513785` — этой позиции **нет в присланных �
 нужен либо **полный legacy/libre snapshot** на горизонте, либо Rust-совместимый
 prune-aware proof. Sidecar-эксперимент откатан; code baseline восстановлен.
 
-**Тесты:** 176 / 1973 PASS (Tests `437A99AA…`), GrinNode `F08F4AD2…`.
+**Тесты:** 179 / 1991 PASS (Tests `F48E5138…`), GrinNode `103EF7FC…`.
 G-09 — **PARTIAL/FAIL live serving**.
 
 ## E60. G-09: полный snapshot на горизонт недоступен из текущих источников
@@ -1525,8 +1525,8 @@ Rust-ноды на горизонте) или реализация prune-aware p
 P2P-запросами нельзя. G-09 — **PARTIAL / FAIL live serving**, закрыть можно
 только внешним полным snapshot'ом горизонта, снятым до pruning.
 
-**Тесты:** 176 / 1973 PASS. Артефакты: `GrinNode F08F4AD2…`,
-`Tests 437A99AA…`.
+**Тесты:** 179 / 1991 PASS. Артефакты: `GrinNode 103EF7FC…`,
+`Tests F48E5138…`.
 
 ## E62. Аудит серверной части PIBD
 
@@ -1536,8 +1536,8 @@ P2P-запросами нельзя. G-09 — **PARTIAL / FAIL live serving**, �
 roots и порядок полей совпадают. Найден и исправлен один реальный дефект:
 `GetKernelSegment` разыменовывал `GetHashAt()` без проверки на `nullptr`.
 Причина G-09 — не серверный протокол, а compacted state без нужных hashes.
-Подробно: `PIBD_SERVER_AUDIT.md`. Тесты: 176 / 1973 PASS; артефакты
-`GrinNode F08F4AD2…`, `Tests 437A99AA…`.
+Подробно: `PIBD_SERVER_AUDIT.md`. Тесты: 179 / 1991 PASS; артефакты
+`GrinNode 103EF7FC…`, `Tests F48E5138…`.
 
 ## E63. PMMR-аудит и исправления
 
@@ -1548,7 +1548,7 @@ roots и порядок полей совпадают. Найден и испр�
 SIGSEGV на underflow shifted-index (добавлены bounds checks). Остаётся известный
 блокер F3: `PibdStateWriter` не сохраняет compacted-хеши, поэтому serving на
 текущем state всё ещё невозможен. Подробности: `PMMR_AUDIT.md`.
-Тесты: 176 / 1973 PASS; `GrinNode F08F4AD2…`, `Tests 437A99AA…`.
+Тесты: 179 / 1991 PASS; `GrinNode 103EF7FC…`, `Tests F48E5138…`.
 
 ## E64. Full audit: NRD, DB и модели
 
@@ -1573,5 +1573,18 @@ SIGSEGV на underflow shifted-index (добавлены bounds checks). Ост�
 features, CoinView, DbCheckpoint UB, TxHashSet assert, BlockDB wipe, PIBD/PMMR
 null/bounds) и открытые пункты. Главный открытый — **G-07/NRD**: Rust 5.5.2
 поддерживает NRD, C++ не ведёт recent kernel index; NRD-сеть не поддержана.
-G-09 остаётся blocked by data. Тесты: 176 / 1973 PASS; `GrinNode F08F4AD2…`,
-`Tests 437A99AA…`.
+G-09 остаётся blocked by data. Тесты: 179 / 1991 PASS; `GrinNode 103EF7FC…`,
+`Tests F48E5138…`.
+
+## E66. P1-верификация: persistence, negative wire, clean rebuild
+
+- PeerDB: маркер `DB/PEERS/keep.marker` выжил после старта ноды — фикс
+  `remove_all` подтверждён.
+- Negative wire: 3 новых теста (неизвестный output/kernel feature, обрезанный
+  kernel) PASS.
+- Полный набор: **179 / 1991 PASS** (первый запуск упал из-за дефолтного
+  `%TEMP%`; с `TMP=C:\DHW\.tmp\deps` — PASS).
+- Принудительный `MSBuild /t:Rebuild` обоих таргетов — exit 0; предупреждения
+  только в pinned `deps/reproc`, не в исходниках Grin++.
+- Артефакты: `GrinNode 103EF7FC…`, `Tests F48E5138…`. Подробно:
+  `VERIFICATION_P1.md`.
