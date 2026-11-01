@@ -1588,3 +1588,18 @@ G-09 остаётся blocked by data. Тесты: 179 / 1991 PASS; `GrinNode 10
   только в pinned `deps/reproc`, не в исходниках Grin++.
 - Артефакты: `GrinNode 103EF7FC…`, `Tests F48E5138…`. Подробно:
   `VERIFICATION_P1.md`.
+
+## E67. Сверка с GrinPlusPlus-API-Integration-Kit
+
+Кит (SHA-256 `6CC1732C…`, база `baeeac3`) содержит 65 изменённых/новых файлов;
+0 совпадают с текущим деревом, 15 файлов отсутствуют, cumulative patch **не
+применяется** (`tests/src/Core/CMakeLists.txt`). Это отдельная API-ветка, не
+drop-in overlay.
+
+Критичные расхождения: `/v2/foreign` у нас экспортирует `update_config`
+(в ките — только owner), у owner нет `get_config`/`update_config`, нет
+`ApiAccess` (Bearer/X-API-Secret, PUBLIC/PRIVATE/ADMIN, защита `/v1/shutdown`),
+нет chain-bound `KernelIndex`, config update не транзакционный, отсутствуют
+self-lock/ABBA/pagination/position-limit тесты. Кит **не исправляет G-09**.
+G-53 переведён в **PARTIAL**; порядок порта — P0 routes/auth, P1 config/locks,
+P2 KernelIndex/pagination. Подробно: `API_KIT_COMPATIBILITY.md`.

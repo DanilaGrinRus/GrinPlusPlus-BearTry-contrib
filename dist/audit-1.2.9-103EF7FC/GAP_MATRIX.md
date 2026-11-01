@@ -114,13 +114,13 @@
 
 | **G-52** | Исторический TxHashSet archive: сохранение/выдача на горизонте | `TxHashSetManager`, `TxHashSetZip`, `TxHashSetPipe`, `TxHashSetArchive` | Архив на горизонте не сохранялся (leafset/leaf, int overflow, `\` в zip), исторический rewind падал на spent-gap. Теперь архив сохраняется при активации, отдаётся по hash без rewind и успешно принимается legacy-клиентом | живая выдача + валидация (E54) | **DONE** (архив на горизонте; произвольные более старые snapshot по-прежнему не поддерживаются) |
 
-| **G-53** | Node/API: недостающие методы grin v5.5.2 | `src/API/Node/NodeServer.cpp`, `src/API/Node/Handlers/*`, `src/TxPool/*`, `src/PMMR/TxHashSet*`, `src/Server/Node/API/*` | JSON-RPC `/v2/foreign` содержал 7 методов из 13 у grin v5.5.2, `/v2/owner` пуст; REST v1 — легаси Grin++, его каталог `GET /v1/` отставал от реальных маршрутов | Реализованы все 13 методов `/v2/foreign` (`get_pool_size`, `get_stempool_size`, `get_unconfirmed_transactions`, `get_pmmr_indices`, `get_unspent_outputs`, `get_outputs`, `get_kernel` + `ITxHashSet::FindKernelByExcess`, `get_blocks` + общий `PrintableSerialization.h`; c60604f/84f135e/8fa265f/474acc4/fa663d5) и 3 метода `/v2/owner` (`get_status`, `get_peers`, `get_connected_peers`; 3b4efd4); каталог `GET /v1/` обновлён (efe27b7). Unit-тесты — `Test_NodeApiPrintables` (a76dfd5) | E53: полная сборка `GrinNode.exe`/`Tests.exe`, 174 кейса / 1810 проверок PASS; живые вызовы `/v2` на запущенной ноде — не подтверждены | **DONE (unit + build)** |
+| **G-53** | Node/API: недостающие методы grin v5.5.2 | `src/API/Node/NodeServer.cpp`, `src/API/Node/Handlers/*`, `src/TxPool/*`, `src/PMMR/TxHashSet*`, `src/Server/Node/API/*` | JSON-RPC `/v2/foreign` содержал 7 методов из 13 у grin v5.5.2, `/v2/owner` пуст; REST v1 — легаси Grin++, его каталог `GET /v1/` отставал от реальных маршрутов | Реализованы все 13 методов `/v2/foreign` (`get_pool_size`, `get_stempool_size`, `get_unconfirmed_transactions`, `get_pmmr_indices`, `get_unspent_outputs`, `get_outputs`, `get_kernel` + `ITxHashSet::FindKernelByExcess`, `get_blocks` + общий `PrintableSerialization.h`; c60604f/84f135e/8fa265f/474acc4/fa663d5) и 3 метода `/v2/owner` (`get_status`, `get_peers`, `get_connected_peers`; 3b4efd4); каталог `GET /v1/` обновлён (efe27b7). Unit-тесты — `Test_NodeApiPrintables` (a76dfd5) | E53: полная сборка `GrinNode.exe`/`Tests.exe`, 174 кейса / 1810 проверок PASS; живые вызовы `/v2` на запущенной ноде — не подтверждены | **PARTIAL (API kit audit: route/security/auth/KernelIndex gaps, E67)** |
 
 ---
 
 ## Сводка
 
-**Итого по матрице: 53 записи** — **45 закрыто**, 3 частично (G-09, G-23, G-24),
+**Итого по матрице: 53 записи** — **44 закрыто**, 4 частично (G-09, G-23, G-24, G-53),
   0 в работе, 1 открыто (G-07), 3 запланировано (G-44, G-45, G-49),
   0 отложено, 1 снят по объёму (G-27, PIHD не в v5.5.2).
 45 + 3 + 0 + 0 + 3 + 1 + 1 = 53.
