@@ -53,11 +53,11 @@ until every line is PASS or explicitly accepted as a limitation.
 | D2 | `AUDIT_DELTA.en/de/ru` parity | 29 cards, 8 fields, 18 diff blocks, 0 TODO | PASS |
 | D3 | Comment review | `AUDIT_COMMENTS.md` | PASS (static/priority) |
 | D4 | Secret/dump scan | `AUDIT_COMMENTS.md` §5 | PASS |
-| D5 | License/notices | repository LICENSE = MIT; third-party notices reviewed informally | PARTIAL |
+| D5 | License/notices | `AUDIT_LICENSES.md` + `THIRD_PARTY_NOTICES.md`: 11 standalone + 6 embedded, all mapped | PASS |
 | D6 | `AUDIT_README` in EN/DE/RU | `AUDIT_README.en/de/ru.md` | PASS |
 | D7 | Known-limitations section | `REMAINING.md`, this checklist | PASS |
 | D8 | Final artifact + provenance hashes | `AUDIT_README.en.md` | PASS |
-| D9 | Audited package `dist/audit-*` | not packaged | PENDING |
+| D9 | Audited package `dist/audit-*` | `dist/audit-1.2.9-39D2584A` + SHA256SUMS | PASS |
 
 ## E. Sign-off
 

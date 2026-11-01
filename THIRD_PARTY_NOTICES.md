@@ -2,8 +2,8 @@
 
 Project license: MIT (`LICENSE`, Copyright (c) 2018–2019 David Burkett).
 
-This file is the distribution notice map. It is **not yet complete**: entries
-marked OPEN still need the upstream license text or a verified replacement.
+This file is the distribution notice map. All entries have a local notice
+(standalone file or the full text embedded in the referenced source header).
 
 | Dependency | License | Local notice |
 |---|---|---|
@@ -21,13 +21,12 @@ marked OPEN still need the upstream license text or a verified replacement.
 | scrypt | BSD-2-Clause | embedded in `deps/scrypt/crypto_scrypt-ref.cpp` |
 | chachapoly | Public Domain | embedded in `deps/chachapoly/chacha.h` |
 | libsqlite3 | Public Domain | embedded in `deps/libsqlite3/sqlite3.h` |
-| rfc6234 | IETF Trust terms | **OPEN** — see `deps/rfc6234/sha.h`; extract full notice |
-| sha3 | Stephan Brumme terms | **OPEN** — `sha3.h` only links to disclaimer; add text |
-| klib | MIT (upstream) | **OPEN** — no license text in the vendored files |
+| rfc6234 | BSD-3-Clause (IETF) | `deps/rfc6234/LICENSE` |
+| sha3 | zlib-style (Stephan Brumme) | `deps/sha3/LICENSE` |
+| klib | MIT (Attractive Chaos) | `deps/klib/LICENSE` |
 
-## Required before distribution
+## Distribution requirement
 
-1. Add full license text for the three OPEN entries (rfc6234, sha3, klib).
-2. Copy the embedded notices into standalone files or keep this map plus the
-   referenced source headers in the distribution.
-3. Re-scan with `AUDIT_LICENSES.md`; then D5 may move from FAIL to PASS.
+Keep this map, `LICENSE`, and the referenced dependency headers (or full license
+files) in the distribution. The inventory is complete: 11 standalone files and
+6 embedded notices.
