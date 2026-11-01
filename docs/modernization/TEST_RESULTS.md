@@ -1404,3 +1404,23 @@ HOME — 172 / 1862; разница в числе проверок объясн�
 
 **Тесты:** **174 кейса / 1879 проверок PASS**. Артефакты: `GrinNode.exe`
 `39D2584A…`, `Tests.exe` `607EB484…`.
+
+## E55. Живая выдача PIBD: найден дефект RangeProofSegment (G-09 остаётся PARTIAL)
+
+Попытка живого PIBD-serving с отдельного C++-клиента против нашего узла:
+* сервер принял `GetOutputSegment`, `GetRangeProofSegment`, `GetKernelSegment`
+  и отдал `OutputBitmapSegment`, `OutputSegment`;
+* клиент получил `RangeProofSegment`, но `ProcessMessage` упал:
+  `Deserialization exception ... Proof of size 20998 exceeds the maximum`,
+  после чего соединение закрыто (`resource deadlock would occur`), PIBD
+  остановился на 8/4989 сегментах.
+
+Значит **живой PIBD serving не работает для rangeproof-сегментов**; unit-тесты
+покрывали bitmap/output и сериализацию, но не реальный rangeproof-сегмент от
+PibdSegmentService. G-09 остаётся **PARTIAL**, live serving Rust/иному клиенту не
+подтверждён. Нужен разбор `Segment<RangeProof>`/`SegmentGenerator` на живом
+сегменте (позиции листьев/hash-позиции) перед повторным прогоном.
+
+**Лицензии/аудит:** D5 PASS (11 standalone + 6 embedded notices, все 17
+зависимостей), пакет `dist/audit-1.2.9-39D2584A` готов; G-51 ждёт внешней
+подписи. Тесты 174 / 1879 PASS; артефакты без изменений.

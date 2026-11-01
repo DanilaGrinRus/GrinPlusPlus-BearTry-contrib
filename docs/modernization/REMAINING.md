@@ -42,7 +42,7 @@
 | Статус | Пункт | Что осталось |
 |---|---|---|
 | **IN PROGRESS** | **G-51** аудит-пакет | лицензии/notices, README EN/DE/RU, финальные hashes/provenance, подпись `AUDIT_CHECKLIST.md`, `dist/audit-*` |
-| **PARTIAL** | **G-09** | живой PIBD-serving Rust-клиенту и полное завершение resume (unit/живой цикл есть) |
+| **PARTIAL (FAIL live)** | **G-09** | живая выдача PIBD: `RangeProofSegment` не десериализуется (`Proof of size 20998`, E55); Rust/иной клиент не подтверждён |
 | **PARTIAL** | **G-23** hash-level | побайтовая/корневая ревалидация MMR (`--validate-on-load`) |
 | **PARTIAL** | **G-24** | CI-проводка + пин vcpkg (offline build/`/W4 /WX` готовы) |
 
