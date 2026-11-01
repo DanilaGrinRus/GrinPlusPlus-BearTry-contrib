@@ -138,6 +138,13 @@ public:
 
 	bool IsCompacted(const Index& index) const
 	{
+		// Rust backend::is_compacted() first checks leaf_set.includes(pos):
+		// an unspent leaf is never compacted, even if its subtree is marked pruned.
+		if (MMRUtil::IsLeaf(index.Get()) && m_pLeafSet != nullptr &&
+			m_pLeafSet->Contains(LeafIndex::From(index))) {
+			return false;
+		}
+
 		return m_pPruneList->IsCompacted(index);
 	}
 

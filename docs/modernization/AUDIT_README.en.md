@@ -15,11 +15,11 @@ Status: **closed by owner acceptance (01.11.2026)**; independent reviewer not as
 - Release build artifacts (SHA-256; not shipped in this package, verified against `bin/Release/Release`):
 
 ```
-GrinNode.exe  316CCFF5B5954474A21C35041F985D1570C9828016CC097C6155717E604A3B09  7,624,704
-Tests.exe     70405047C79FB301DDB2879E544B367EC49063CBB8DCC37C01393FFD2B5C953F  8,651,264
+GrinNode.exe  728A1E5EBD6EEBF75657D99BDAC402AEAE504F4142F09A4DECF513667DB4D4E9  7,624,704
+Tests.exe     0AE6BD4345E8B49EC70F405B6D94B06723EFF135DC71BF1D79B513CD36878820  8,651,264
 ```
 
-- Tests: **187 cases / 2072 assertions PASS**.
+- Tests: **187 cases / 2078 assertions PASS**.
 
 ## Live compatibility evidence (E54)
 

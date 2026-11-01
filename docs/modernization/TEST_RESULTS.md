@@ -1438,8 +1438,8 @@ G-09 остаётся **PARTIAL/FAIL live serving**. Нужно либо сох�
 sibling hashes в PibdStateWriter, либо отдавать rangeproof-сегменты из полного
 snapshot, а не из prune-состояния.
 
-**Тесты:** **187 кейсов / 2072 проверок PASS**. Артефакты: `GrinNode.exe`
-`316CCFF5…`, `Tests.exe` `70405047…`.
+**Тесты:** **187 кейсов / 2078 проверок PASS**. Артефакты: `GrinNode.exe`
+`728A1E5E…`, `Tests.exe` `0AE6BD43…`.
 
 ## E57. G-09: PIBD serving упирается в отсутствующие sibling hashes
 
@@ -1460,8 +1460,8 @@ G-09 остаётся **PARTIAL/FAIL live serving**; для закрытия н�
 все требуемые sibling hashes при активации, либо отдавать сегменты из полного
 snapshot, а не из prune-состояния.
 
-**Тесты:** 187 / 2072 PASS. Артефакты: `GrinNode.exe`
-`316CCFF5…`, `Tests.exe` `70405047…`.
+**Тесты:** 187 / 2078 PASS. Артефакты: `GrinNode.exe`
+`728A1E5E…`, `Tests.exe` `0AE6BD43…`.
 
 ## E58. G-09: prune-aware proof обязателен; простой обход prune даёт неверный root
 
@@ -1484,9 +1484,9 @@ serving**; E56/E57/E58 фиксируют весь путь диагностик
 * `AUDIT_CHECKLIST.md` D1–D9 — PASS; D5: 11 standalone + 6 embedded notices;
 * `dist/audit-1.2.9-83783F38` — 21 поставляемый файл + `SHA256SUMS`; все хеши
   сверены (0 mismatch);
-* записанные хеши сборки `GrinNode.exe` `316CCFF5…` и `Tests.exe` `70405047…`
+* записанные хеши сборки `GrinNode.exe` `728A1E5E…` и `Tests.exe` `0AE6BD43…`
   совпадают с `bin/Release/Release`; бинарники не входят в пакет (build artifacts);
-* тесты: **187 кейсов / 2072 проверок PASS**;
+* тесты: **187 кейсов / 2078 проверок PASS**;
 * G-51 закрыт приёмкой владельца; независимый внешний ревьюер не назначен —
   это зафиксировано в чек-листе и не выдаётся за внешний sign-off.
 ## E59. G-09: sidecar хешей не закрывает compacted-поддерево
@@ -1499,7 +1499,7 @@ position 4513785` — этой позиции **нет в присланных �
 нужен либо **полный legacy/libre snapshot** на горизонте, либо Rust-совместимый
 prune-aware proof. Sidecar-эксперимент откатан; code baseline восстановлен.
 
-**Тесты:** 187 / 2072 PASS (Tests `70405047…`), GrinNode `316CCFF5…`.
+**Тесты:** 187 / 2078 PASS (Tests `0AE6BD43…`), GrinNode `728A1E5E…`.
 G-09 — **PARTIAL/FAIL live serving**.
 
 ## E60. G-09: полный snapshot на горизонт недоступен из текущих источников
@@ -1525,8 +1525,8 @@ Rust-ноды на горизонте) или реализация prune-aware p
 P2P-запросами нельзя. G-09 — **PARTIAL / FAIL live serving**, закрыть можно
 только внешним полным snapshot'ом горизонта, снятым до pruning.
 
-**Тесты:** 187 / 2072 PASS. Артефакты: `GrinNode 316CCFF5…`,
-`Tests 70405047…`.
+**Тесты:** 187 / 2078 PASS. Артефакты: `GrinNode 728A1E5E…`,
+`Tests 0AE6BD43…`.
 
 ## E62. Аудит серверной части PIBD
 
@@ -1536,8 +1536,8 @@ P2P-запросами нельзя. G-09 — **PARTIAL / FAIL live serving**, �
 roots и порядок полей совпадают. Найден и исправлен один реальный дефект:
 `GetKernelSegment` разыменовывал `GetHashAt()` без проверки на `nullptr`.
 Причина G-09 — не серверный протокол, а compacted state без нужных hashes.
-Подробно: `PIBD_SERVER_AUDIT.md`. Тесты: 187 / 2072 PASS; артефакты
-`GrinNode 316CCFF5…`, `Tests 70405047…`.
+Подробно: `PIBD_SERVER_AUDIT.md`. Тесты: 187 / 2078 PASS; артефакты
+`GrinNode 728A1E5E…`, `Tests 0AE6BD43…`.
 
 ## E63. PMMR-аудит и исправления
 
@@ -1548,7 +1548,7 @@ roots и порядок полей совпадают. Найден и испр�
 SIGSEGV на underflow shifted-index (добавлены bounds checks). Остаётся известный
 блокер F3: `PibdStateWriter` не сохраняет compacted-хеши, поэтому serving на
 текущем state всё ещё невозможен. Подробности: `PMMR_AUDIT.md`.
-Тесты: 187 / 2072 PASS; `GrinNode 316CCFF5…`, `Tests 70405047…`.
+Тесты: 187 / 2078 PASS; `GrinNode 728A1E5E…`, `Tests 0AE6BD43…`.
 
 ## E64. Full audit: NRD, DB и модели
 
@@ -1573,8 +1573,8 @@ SIGSEGV на underflow shifted-index (добавлены bounds checks). Ост�
 features, CoinView, DbCheckpoint UB, TxHashSet assert, BlockDB wipe, PIBD/PMMR
 null/bounds) и открытые пункты. Главный открытый — **G-07/NRD**: Rust 5.5.2
 поддерживает NRD, C++ не ведёт recent kernel index; NRD-сеть не поддержана.
-G-09 остаётся blocked by data. Тесты: 187 / 2072 PASS; `GrinNode 316CCFF5…`,
-`Tests 70405047…`.
+G-09 остаётся blocked by data. Тесты: 187 / 2078 PASS; `GrinNode 728A1E5E…`,
+`Tests 0AE6BD43…`.
 
 ## E66. P1-верификация: persistence, negative wire, clean rebuild
 
@@ -1582,11 +1582,11 @@ G-09 остаётся blocked by data. Тесты: 187 / 2072 PASS; `GrinNode 31
   `remove_all` подтверждён.
 - Negative wire: 3 новых теста (неизвестный output/kernel feature, обрезанный
   kernel) PASS.
-- Полный набор: **187 / 2072 PASS** (первый запуск упал из-за дефолтного
+- Полный набор: **187 / 2078 PASS** (первый запуск упал из-за дефолтного
   `%TEMP%`; с `TMP=C:\DHW\.tmp\deps` — PASS).
 - Принудительный `MSBuild /t:Rebuild` обоих таргетов — exit 0; предупреждения
   только в pinned `deps/reproc`, не в исходниках Grin++.
-- Артефакты: `GrinNode 316CCFF5…`, `Tests 70405047…`. Подробно:
+- Артефакты: `GrinNode 728A1E5E…`, `Tests 0AE6BD43…`. Подробно:
   `VERIFICATION_P1.md`.
 
 ## E67. Сверка с GrinPlusPlus-API-Integration-Kit
@@ -1611,8 +1611,8 @@ Host/Origin), включена проверка в `RPCServer`, `update_config` 
 и добавлен owner (вместе с `get_config`), `/v1/shutdown` требует ADMIN.
 Live: owner config без токена → `-32001`, с токеном → результат; foreign
 `update_config` → `-32601`; shutdown без токена → HTTP 401, с токеном — shutdown.
-Тесты: `Test_ApiAccess` 3/23 PASS; full **187 / 2072 PASS**;
-`GrinNode 316CCFF5…`, `Tests 70405047…`. Подробно: `VERIFICATION_P0.md`.
+Тесты: `Test_ApiAccess` 3/23 PASS; full **187 / 2078 PASS**;
+`GrinNode 728A1E5E…`, `Tests 0AE6BD43…`. Подробно: `VERIFICATION_P0.md`.
 
 ## E70. P1: config transaction, read-lock и genesis guard
 
@@ -1627,7 +1627,7 @@ Live: owner config без токена → `-32001`, с токеном → ре�
   его ещё нет в BlockDB (защита от повторной вставки при рестарте).
 - Live-старт после изменений: API ответил (`chain=0`, `DOWNLOADING_TXHASHSET`),
   процесс поднялся; затем остановлен.
-- Full suite: **187 / 2072 PASS**; `GrinNode 316CCFF5…`, `Tests 70405047…`.
+- Full suite: **187 / 2078 PASS**; `GrinNode 728A1E5E…`, `Tests 0AE6BD43…`.
 
 ## E71. P2: state snapshot и unspent pagination
 
@@ -1638,7 +1638,7 @@ sequence. `get_unspent_outputs` переведён на snapshot + `PlanScan`: 1
 start, exclusive end, cap 10 000 outputs / 8 192 positions, корректные
 `last_retrieved_index`/`highest_index`, без удержания BlockDB reader.
 Live-вызов вернул `Ok` (genesis coinbase). Тесты: `Test_UnspentPagination`
-5/34 PASS; full **187 / 2072 PASS**; `GrinNode 316CCFF5…`, `Tests 70405047…`.
+5/34 PASS; full **187 / 2078 PASS**; `GrinNode 728A1E5E…`, `Tests 0AE6BD43…`.
 Осталось P2: KernelIndex и pagination для `get_blocks`/`get_outputs`.
 
 ## E72. P2: get_blocks/get_outputs и live API
@@ -1647,7 +1647,7 @@ Live-вызов вернул `Ok` (genesis coinbase). Тесты: `Test_UnspentP
 лимит 1000 блоков / 10 000 высот, cap 128 commitments / 100 высот, безопасная
 арифметика границ, `BlockOutputPrintable`. Live: `get_blocks [0,null,1,false]` →
 `Ok` (empty blocks), `get_outputs [[],0,0,false]` → `Ok` (empty). Полный набор:
-**187 / 2072 PASS**; `GrinNode 316CCFF5…`, `Tests 70405047…`.
+**187 / 2078 PASS**; `GrinNode 728A1E5E…`, `Tests 0AE6BD43…`.
 Внешние пиры на момент проверки: 3 318 570; сервер state — genesis, поэтому
 G-09 serving пока не проверяем (нужен полный state на текущий горизонт).
 
@@ -1657,6 +1657,18 @@ G-09 serving пока не проверяем (нужен полный state н�
 HTTP 401); `TXHASHSET_SYNC_FAILED` отдаётся как `txhashset_sync_failed`.
 `TxHashSetAPI`/`DefaultNodeClient` больше не держат `BlockDB` reader во время
 PMMR-скана: reader освобождается до `GetOutputsByLeafIndex`/pool-вызова.
-Full suite: **187 / 2072 PASS**; `GrinNode 316CCFF5…`, `Tests 70405047…`.
+Full suite: **187 / 2078 PASS**; `GrinNode 728A1E5E…`, `Tests 0AE6BD43…`.
 Осталось API: KernelIndex/get_kernel и полный state-epoch/ABBA для остальных
 хендлеров.
+
+## E74. Независимый PMMR-разбор: оценка и IsCompacted
+
+Пользовательский независимый разбор подтверждён: генератор сегментов не кладёт
+hash листа при отсутствии данных (реальный баг), Rust `is_compacted` проверяет
+leaf_set before prune, PibdStateWriter хранит компактный hash-файл. Исправлен
+`PruneableMMR::IsCompacted` (unspent leaf не compacted) — suite **187 / 2078 PASS**.
+Попытка сразу добавить leaf-hash в генератор дала SIGSEGV в synthetic-тесте,
+поэтому откатана; нужен отдельный безопасный порт с root-validation тестом.
+Sidecar-претензия устарела (эксперимент откатан). G-09 требует и generator fix,
+и полный state; archive-нода всё ещё `body_sync current=0`.
+`GrinNode 728A1E5E…`, `Tests 0AE6BD43…`. Подробно: `INDEPENDENT_PMMR_REVIEW.md`.
