@@ -1462,3 +1462,16 @@ snapshot, а не из prune-состояния.
 
 **Тесты:** 176 / 1907 PASS. Артефакты: `GrinNode.exe`
 `A203BE20…`, `Tests.exe` `38B9AF99…`.
+
+## E58. G-09: prune-aware proof обязателен; простой обход prune даёт неверный root
+
+Попытка читать compacted sibling hash «как Rust get_from_file» (в обход
+`PruneList::IsCompacted`) скомпилировалась, но живой клиент получил:
+`Segment proof does not reconstruct the combined MMR root`. То есть hash,
+прочитанный по shifted-индексу, не является нужным sibling root; простой обход
+prune **некорректен**. Изменение откатано, чтобы не оставлять неверный serving.
+
+Требуется полноценная Rust-совместимая генерация proof с учётом compacted
+поддеревьев (`SegmentProof::generate` + prune-aware `get_hash`), либо выдача
+сегментов из полного (не-pruned) snapshot. G-09 остаётся **PARTIAL/FAIL live
+serving**; E56/E57/E58 фиксируют весь путь диагностики.
