@@ -40,7 +40,7 @@ NodeServer::UPtr NodeServer::Create(
     pForeignServer->AddMethod("get_pmmr_indices", std::make_shared<GetPmmrIndicesHandler>(pBlockChain));
     pForeignServer->AddMethod("get_unspent_outputs", std::make_shared<GetUnspentOutputsHandler>(pBlockChain, pTxHashSetManager, pDatabase));
     pForeignServer->AddMethod("get_outputs", std::make_shared<GetOutputsHandler>(pBlockChain, pTxHashSetManager, pDatabase));
-    pForeignServer->AddMethod("get_kernel", std::make_shared<GetKernelHandler>(pBlockChain, pTxHashSetManager));
+    pForeignServer->AddMethod("get_kernel", std::make_shared<GetKernelHandler>(pBlockChain, pTxHashSetManager, pDatabase));
     pForeignServer->AddMethod("get_blocks", std::make_shared<GetBlocksHandler>(pBlockChain, pTxHashSetManager, pDatabase));
 
     pForeignServer->AddMethod("get_config", std::make_shared<GetConfigHandler>());

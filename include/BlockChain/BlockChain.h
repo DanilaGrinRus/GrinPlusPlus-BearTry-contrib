@@ -80,6 +80,7 @@ public:
 
 	// Currently installed txhashset (nullptr when none is open).
 	virtual std::shared_ptr<ITxHashSet> GetTxHashSet() = 0;
+	virtual bool EnsureKernelIndex() = 0;
 	virtual ApiStateSnapshot GetApiStateSnapshot() const = 0;
 	virtual bool IsApiStateCurrent(const uint64_t sequence) const = 0;
 

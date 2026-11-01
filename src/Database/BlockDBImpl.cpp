@@ -7,6 +7,10 @@
 #include <Core/Models/BlockSums.h>
 #include <Core/Models/OutputLocation.h>
 #include <Database/DatabaseException.h>
+#include <Database/KernelIndexState.h>
+#include <Crypto/Hasher.h>
+#include <cstdio>
+#include <cstring>
 #include <Common/Logger.h>
 #include <Common/Util/StringUtil.h>
 #include <utility>
@@ -300,6 +304,157 @@ void BlockDB::ClearSpentPositions()
 	LOG_WARNING("Deleting all spent positions.");
 
 	m_pRocksDB->DeleteAll("SPENT_OUTPUTS");
+}
+
+namespace
+{
+	constexpr char KERNEL_POS_PREFIX[] = "KERNELPOS/";
+	constexpr char KERNEL_POS_STATE_KEY[] = "KERNELIDX/STATE";
+	constexpr char KERNEL_POS_TABLE[] = "default";
+
+	std::string GenerationPrefix(const uint64_t generation)
+	{
+		char generationHex[17] = {};
+		std::snprintf(generationHex, sizeof(generationHex), "%016llx", static_cast<unsigned long long>(generation));
+		std::string prefix(KERNEL_POS_PREFIX);
+		prefix.append(generationHex);
+		prefix.push_back('/');
+		return prefix;
+	}
+
+	std::string KernelPositionKey(const uint64_t generation, const Commitment& kernelExcess)
+	{
+		std::string key = GenerationPrefix(generation);
+		key.append(reinterpret_cast<const char*>(kernelExcess.data()), kernelExcess.size());
+		return key;
+	}
+
+}
+
+std::unique_ptr<KernelIndexState> BlockDB::GetKernelIndexState() const
+{
+	return m_pRocksDB->Get<KernelIndexState>(KERNEL_POS_TABLE, rocksdb::Slice(KERNEL_POS_STATE_KEY));
+}
+
+void BlockDB::SetKernelIndexState(const KernelIndexState& state)
+{
+	m_pRocksDB->Put(
+		KERNEL_POS_TABLE,
+		DBEntry<KernelIndexState>(rocksdb::Slice(KERNEL_POS_STATE_KEY), state));
+}
+
+void BlockDB::AddKernelPosition(const uint64_t generation, const Commitment& kernelExcess, const OutputLocation& location)
+{
+	const std::string key = KernelPositionKey(generation, kernelExcess);
+	m_pRocksDB->Put(KERNEL_POS_TABLE, DBEntry<OutputLocation>(rocksdb::Slice(key), location));
+}
+
+std::unique_ptr<OutputLocation> BlockDB::GetKernelPosition(const uint64_t generation, const Commitment& kernelExcess) const
+{
+	const std::string key = KernelPositionKey(generation, kernelExcess);
+	return m_pRocksDB->Get<OutputLocation>(KERNEL_POS_TABLE, rocksdb::Slice(key));
+}
+
+void BlockDB::RemoveKernelPositions(const uint64_t generation, const std::vector<Commitment>& kernelExcesses)
+{
+	std::vector<std::string> keys;
+	keys.reserve(kernelExcesses.size());
+	for (const Commitment& kernelExcess : kernelExcesses) {
+		keys.push_back(KernelPositionKey(generation, kernelExcess));
+	}
+
+	if (!keys.empty()) {
+		m_pRocksDB->Delete(KERNEL_POS_TABLE, keys);
+	}
+}
+
+void BlockDB::ClearKernelPositions(const uint64_t generation)
+{
+	LOG_WARNING_F("Deleting kernel positions for generation {}.", generation);
+
+	const std::string prefix = GenerationPrefix(generation);
+	auto pIterator = m_pRocksDB->GetIterator(KERNEL_POS_TABLE);
+	std::vector<std::string> keys;
+	for (pIterator->Seek(prefix); pIterator->Valid(); pIterator->Next()) {
+		const rocksdb::Slice key = pIterator->key();
+		if (key.size() < prefix.size() || key.ToString().rfind(prefix, 0) != 0) {
+			break;
+		}
+
+		keys.emplace_back(key.data(), key.size());
+	}
+
+	if (!keys.empty()) {
+		m_pRocksDB->Delete(KERNEL_POS_TABLE, keys);
+	}
+}
+
+void BlockDB::ClearAllKernelPositions()
+{
+	LOG_WARNING("Deleting all kernel positions.");
+
+	auto pIterator = m_pRocksDB->GetIterator(KERNEL_POS_TABLE);
+	std::vector<std::string> keys;
+	for (pIterator->Seek(KERNEL_POS_PREFIX); pIterator->Valid(); pIterator->Next()) {
+		const rocksdb::Slice key = pIterator->key();
+		if (key.size() < sizeof(KERNEL_POS_PREFIX) - 1 ||
+			key.ToString().rfind(KERNEL_POS_PREFIX, 0) != 0) {
+			break;
+		}
+
+		keys.emplace_back(key.data(), key.size());
+	}
+
+	if (!keys.empty()) {
+		m_pRocksDB->Delete(KERNEL_POS_TABLE, keys);
+	}
+
+	m_pRocksDB->Delete(KERNEL_POS_TABLE, rocksdb::Slice(KERNEL_POS_STATE_KEY));
+}
+
+uint64_t BlockDB::GetKernelPositionCount(const uint64_t generation) const
+{
+	const std::string prefix = GenerationPrefix(generation);
+	uint64_t count = 0;
+	auto pIterator = m_pRocksDB->GetIterator(KERNEL_POS_TABLE);
+	for (pIterator->Seek(prefix); pIterator->Valid(); pIterator->Next()) {
+		const rocksdb::Slice key = pIterator->key();
+		if (key.size() < prefix.size() || key.ToString().rfind(prefix, 0) != 0) {
+			break;
+		}
+
+		count++;
+	}
+
+	return count;
+}
+
+Hash BlockDB::GetKernelPositionChecksum(const uint64_t generation) const
+{
+	const std::string prefix = GenerationPrefix(generation);
+	Hash checksum;
+	auto pIterator = m_pRocksDB->GetIterator(KERNEL_POS_TABLE);
+	for (pIterator->Seek(prefix); pIterator->Valid(); pIterator->Next()) {
+		const rocksdb::Slice key = pIterator->key();
+		const std::string keyString = key.ToString();
+		if (keyString.size() != prefix.size() + 33 || keyString.rfind(prefix, 0) != 0) {
+			break;
+		}
+
+		const auto pLocation = m_pRocksDB->Get<OutputLocation>(KERNEL_POS_TABLE, key);
+		if (pLocation == nullptr) {
+			// A missing value is corruption, not an empty index.
+			return Hash(std::vector<uint8_t>(32, 0xFF));
+		}
+
+		const std::vector<uint8_t> excessBytes(
+			keyString.begin() + static_cast<std::ptrdiff_t>(prefix.size()),
+			keyString.end());
+		const Commitment excess{CBigInteger<33>(excessBytes)};
+		checksum = KernelIndexXorHash(checksum, excess, *pLocation);
+	}
+
+	return checksum;
 }
 
 void BlockDB::OnInitWrite(const bool batch)

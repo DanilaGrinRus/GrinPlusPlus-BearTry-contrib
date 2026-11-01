@@ -7,8 +7,8 @@
 
 Обновлено: 01.11.2026, после E54. Источник истины —
 `TEST_RESULTS.md` (E1–E59), `GAP_MATRIX.md`, `ACCEPTANCE_REPORT.md`.
-Текущий срез: **188 кейсов / 2128 проверок PASS**,
-`GrinNode A531C2C9…`, `Tests AED20E18…`.
+Текущий срез: **191 кейсов / 2191 проверок PASS**,
+`GrinNode A1249FB8…`, `Tests E102CE8E…`.
 
 ## 1. Закрыто (PASS, с доказательствами)
 

@@ -34,6 +34,9 @@ public:
 	std::vector<Hash> GetLastRangeProofHashes(const uint64_t numberOfRangeProofs) const final;
 	OutputRange GetOutputsByLeafIndex(std::shared_ptr<const IBlockDB> pBlockDB, const uint64_t startIndex, const uint64_t maxNumOutputs) const final;
 	std::vector<OutputDTO> GetOutputsByMMRIndex(std::shared_ptr<const IBlockDB> pBlockDB, const uint64_t startIndex, const uint64_t lastIndex) const final;
+	uint64_t GetNumKernels() const final;
+	std::unique_ptr<TransactionKernel> GetKernelByLeafIndex(const uint64_t leafIndex) const final;
+
 	OutputDTO GetOutput(const OutputLocation& location) const final;
 	std::optional<std::pair<TransactionKernel, uint64_t>> FindKernelByExcess(
 		const Commitment& excess,

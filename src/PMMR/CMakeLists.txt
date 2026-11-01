@@ -3,6 +3,7 @@ set(TARGET_NAME PMMR)
 # PMMR
 file(GLOB SOURCE_CODE
     "HeaderMMRImpl.cpp"
+    "KernelIndex.cpp"
     "KernelMMR.cpp"
     "OutputPMMR.cpp"
     "RangeProofPMMR.cpp"

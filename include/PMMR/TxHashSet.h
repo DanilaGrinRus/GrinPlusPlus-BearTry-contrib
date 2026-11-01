@@ -123,6 +123,9 @@ public:
 	//
 	// Get Output by OutputLocation
 	//
+	virtual uint64_t GetNumKernels() const = 0;
+	virtual std::unique_ptr<TransactionKernel> GetKernelByLeafIndex(const uint64_t leafIndex) const = 0;
+
 	virtual OutputDTO GetOutput(const OutputLocation& location) const = 0;
 
 	//

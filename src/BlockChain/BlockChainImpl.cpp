@@ -9,6 +9,7 @@
 #include "ChainResyncer.h"
 #include "CoinView.h"
 #include "ChainConsistency.h"
+#include <PMMR/KernelIndex.h>
 #include "DbCheckpoint.h"
 #include <BlockChain/DbRecovery.h>
 #include <PMMR/Common/MmrStructure.h>
@@ -305,10 +306,18 @@ std::shared_ptr<BlockChain> BlockChain::Create(
 		}
 	}
 
-	return std::shared_ptr<BlockChain>(new BlockChain(
+	auto pBlockChain = std::shared_ptr<BlockChain>(new BlockChain(
 		pTransactionPool,
 		pChainState
 	));
+	if (!pBlockChain->EnsureKernelIndex()) {
+		// The index is an optimization; get_kernel has a bounded direct-scan
+		// fallback. Never prevent the node from starting because the index could
+		// not be built (e.g. during first-run/genesis or a test database).
+		LOG_WARNING("Kernel index is unavailable; get_kernel will use the direct scan.");
+	}
+
+	return pBlockChain;
 }
 
 void BlockChain::ResyncChain()
@@ -407,6 +416,39 @@ EBlockChainStatus BlockChain::ProcessTransactionHashSet(const Hash& blockHash, c
 	return EBlockChainStatus::INVALID;
 }
 
+bool BlockChain::EnsureKernelIndex()
+{
+	StateWriteGuard writeGuard(*this);
+
+	std::shared_ptr<IBlockDB> pBlockDB;
+	BlockHeaderPtr pTip;
+	std::shared_ptr<ITxHashSet> pTxHashSet;
+	std::shared_ptr<const Chain> pConfirmedChain;
+
+	{
+		auto pState = m_pChainState->Write();
+		pTip = pState->GetTipBlockHeader(EChainType::CONFIRMED);
+		if (pTip == nullptr) {
+			return false;
+		}
+		pBlockDB = pState->GetBlockDB();
+		pTxHashSet = pState->GetTxHashSetManager()->GetTxHashSet();
+		if (pTxHashSet == nullptr) {
+			return false;
+		}
+		pConfirmedChain = pState->GetChainStore()->GetConfirmedChain();
+
+		auto getHeader = [&pBlockDB, &pConfirmedChain](const uint64_t height) -> BlockHeaderPtr {
+			const auto pIndex = pConfirmedChain->GetByHeight(height);
+			if (pIndex == nullptr) {
+				return nullptr;
+			}
+			return pBlockDB->GetBlockHeader(pIndex->GetHash());
+		};
+
+		return KernelIndex::Ensure(pBlockDB, pTxHashSet, pTip, getHeader);
+	}
+}
 IBlockChain::ApiStateSnapshot BlockChain::GetApiStateSnapshot() const
 {
 	for (int attempt = 0; attempt < 5; attempt++) {

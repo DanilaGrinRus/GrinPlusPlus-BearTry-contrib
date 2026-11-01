@@ -330,6 +330,16 @@ std::vector<OutputDTO> TxHashSet::GetOutputsByMMRIndex(std::shared_ptr<const IBl
 	return outputs;
 }
 
+uint64_t TxHashSet::GetNumKernels() const
+{
+	return m_pKernelMMR->GetNumKernels();
+}
+
+std::unique_ptr<TransactionKernel> TxHashSet::GetKernelByLeafIndex(const uint64_t leafIndex) const
+{
+	return m_pKernelMMR->GetKernelAt(LeafIndex::At(leafIndex));
+}
+
 OutputDTO TxHashSet::GetOutput(const OutputLocation& location) const
 {
 	std::unique_ptr<OutputIdentifier> pOutput = m_pOutputPMMR->GetAt(location.GetLeafIndex());

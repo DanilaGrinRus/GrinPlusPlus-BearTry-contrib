@@ -48,6 +48,8 @@ public:
 	void CloseTxHashSet() final;
 	void OpenTxHashSet() final;
 	std::shared_ptr<ITxHashSet> GetTxHashSet() final;
+	bool EnsureKernelIndex() final;
+
 	ApiStateSnapshot GetApiStateSnapshot() const final;
 	bool IsApiStateCurrent(const uint64_t sequence) const final;
 

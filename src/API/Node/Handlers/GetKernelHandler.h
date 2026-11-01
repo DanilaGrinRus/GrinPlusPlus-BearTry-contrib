@@ -4,6 +4,9 @@
 #include <Core/Models/Features.h>
 #include <Core/Models/TransactionKernel.h>
 #include <Crypto/Crypto.h>
+#include <Database/Database.h>
+#include <Database/BlockDb.h>
+#include <Database/KernelIndexState.h>
 #include <PMMR/TxHashSetManager.h>
 #include <Net/Clients/RPC/RPC.h>
 #include <Net/Servers/RPC/RPCMethod.h>
@@ -21,8 +24,11 @@
 class GetKernelHandler : public RPCMethod
 {
 public:
-	GetKernelHandler(const IBlockChain::Ptr& pBlockChain, const TxHashSetManager::Ptr& pTxHashSetManager)
-		: m_pBlockChain(pBlockChain), m_pTxHashSetManager(pTxHashSetManager) { }
+	GetKernelHandler(
+		const IBlockChain::Ptr& pBlockChain,
+		const TxHashSetManager::Ptr& pTxHashSetManager,
+		const IDatabasePtr& pDatabase)
+		: m_pBlockChain(pBlockChain), m_pTxHashSetManager(pTxHashSetManager), m_pDatabase(pDatabase) { }
 	~GetKernelHandler() = default;
 
 	RPC::Response Handle(const RPC::Request& request) const final
@@ -81,19 +87,70 @@ public:
 			return request.BuildError("INTERNAL_ERROR", "TxHashSet is not available.");
 		}
 
-		const auto kernelWithIndex = pTxHashSet->FindKernelByExcess(excess, minIndex, maxIndex);
-		if (!kernelWithIndex.has_value()) {
-			return request.BuildError("NOT_FOUND", "Kernel not found");
+		const TransactionKernel* pKernel = nullptr;
+		std::optional<TransactionKernel> indexedKernel;
+		uint64_t mmrIndex = 0;
+		uint64_t height = 0;
+
+		// Fast path: persistent excess -> PMMR position index, bound to the exact
+		// tip/root/count. Any mismatch falls back to the bounded direct scan.
+		{
+			std::unique_ptr<OutputLocation> pLocation;
+			std::unique_ptr<KernelIndexState> pIndexState;
+			{
+				const auto pBlockDB = m_pDatabase->GetBlockDB()->Read();
+				pIndexState = pBlockDB->GetKernelIndexState();
+				if (pIndexState != nullptr) {
+					pLocation = pBlockDB->GetKernelPosition(pIndexState->GetGeneration(), excess);
+				}
+			}
+
+			const bool stateMatches =
+				pIndexState != nullptr && pLocation != nullptr &&
+				pIndexState->GetTipHash() == pTip->GetHash() &&
+				pIndexState->GetTipHeight() == headHeight &&
+				pIndexState->GetKernelRoot() == pTip->GetKernelRoot() &&
+				pIndexState->GetKernelCount() == pTip->GetNumKernels() &&
+				pIndexState->GetEntryCount() == pTip->GetNumKernels() &&
+				pTxHashSet->GetNumKernels() == pTip->GetNumKernels();
+
+			if (stateMatches) {
+				const uint64_t leaf = pLocation->GetLeafIndex().Get();
+				const uint64_t indexedPosition = pLocation->GetLeafIndex().GetPosition() + 1;
+				const bool inRange =
+					(!minIndex.has_value() || indexedPosition >= minIndex.value()) &&
+					(!maxIndex.has_value() || indexedPosition <= maxIndex.value());
+
+				std::unique_ptr<TransactionKernel> pIndexedKernel =
+					pTxHashSet->GetKernelByLeafIndex(leaf);
+				const BlockHeaderPtr pHeightHeader =
+					m_pBlockChain->GetBlockHeaderByHeight(pLocation->GetBlockHeight(), EChainType::CONFIRMED);
+				if (pIndexedKernel != nullptr && pHeightHeader != nullptr &&
+					pIndexedKernel->GetExcessCommitment() == excess && inRange &&
+					pLocation->GetBlockHeight() <= headHeight) {
+					indexedKernel.emplace(std::move(*pIndexedKernel));
+					pKernel = &indexedKernel.value();
+					mmrIndex = indexedPosition;
+					height = pLocation->GetBlockHeight();
+				}
+			}
 		}
 
-		const TransactionKernel& kernel = kernelWithIndex->first;
-		const uint64_t mmrIndex = kernelWithIndex->second;
+		if (pKernel == nullptr) {
+			const auto kernelWithIndex = pTxHashSet->FindKernelByExcess(excess, minIndex, maxIndex);
+			if (!kernelWithIndex.has_value()) {
+				return request.BuildError("NOT_FOUND", "Kernel not found");
+			}
 
-		const uint64_t height = FindHeightForKernelIndex(mmrIndex, headHeight);
-		if (height == std::numeric_limits<uint64_t>::max()) {
-			return request.BuildError("INTERNAL_ERROR", "Failed to locate the kernel height.");
+			pKernel = &kernelWithIndex->first;
+			mmrIndex = kernelWithIndex->second;
+			height = FindHeightForKernelIndex(mmrIndex, headHeight);
+			if (height == std::numeric_limits<uint64_t>::max()) {
+				return request.BuildError("INTERNAL_ERROR", "Failed to locate the kernel height.");
+			}
 		}
 
+		const TransactionKernel& kernel = *pKernel;
 		Json::Value kernelJSON;
 		kernelJSON["features"] = KernelFeatures::ToString(kernel.GetFeatures());
 		kernelJSON["fee_shift"] = Json::UInt(kernel.GetFeeShift());
@@ -139,4 +196,5 @@ private:
 
 	IBlockChain::Ptr m_pBlockChain;
 	TxHashSetManager::Ptr m_pTxHashSetManager;
+	IDatabasePtr m_pDatabase;
 };

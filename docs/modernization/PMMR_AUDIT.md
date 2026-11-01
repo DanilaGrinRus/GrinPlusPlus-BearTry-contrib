@@ -83,5 +83,5 @@ rather than changed.
 ## Evidence
 
 - `Test_PibdServing` wire/live tests; `Test_MmrStructure`;
-- full suite 188 cases / 2131 assertions PASS;
-- artifacts `GrinNode A531C2C9…`, `Tests 08E89008…`.
+- full suite 191 cases / 2191 assertions PASS;
+- artifacts `GrinNode A1249FB8…`, `Tests E102CE8E…`.

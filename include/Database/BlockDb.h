@@ -3,6 +3,7 @@
 #include <Core/Models/BlockHeader.h>
 #include <Core/Models/SpentOutput.h>
 #include <Core/Traits/Batchable.h>
+#include <Database/KernelIndexState.h>
 #include <unordered_map>
 #include <memory>
 
@@ -65,4 +66,15 @@ public:
 	virtual void AddSpentPositions(const Hash& blockHash, const std::vector<SpentOutput>& outputPositions) = 0;
 	virtual std::unordered_map<Commitment, OutputLocation> GetSpentPositions(const Hash& blockHash) const = 0;
 	virtual void ClearSpentPositions() = 0;
+
+	// Persistent kernel excess -> PMMR position index.
+	virtual std::unique_ptr<KernelIndexState> GetKernelIndexState() const = 0;
+	virtual void SetKernelIndexState(const KernelIndexState& state) = 0;
+	virtual void AddKernelPosition(uint64_t generation, const Commitment& kernelExcess, const OutputLocation& location) = 0;
+	virtual std::unique_ptr<OutputLocation> GetKernelPosition(uint64_t generation, const Commitment& kernelExcess) const = 0;
+	virtual void RemoveKernelPositions(uint64_t generation, const std::vector<Commitment>& kernelExcesses) = 0;
+	virtual void ClearKernelPositions(uint64_t generation) = 0;
+	virtual void ClearAllKernelPositions() = 0;
+	virtual uint64_t GetKernelPositionCount(uint64_t generation) const = 0;
+	virtual Hash GetKernelPositionChecksum(uint64_t generation) const = 0;
 };
