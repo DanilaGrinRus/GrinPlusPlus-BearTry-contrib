@@ -71,10 +71,14 @@ public:
 				const bool required = bitmap == nullptr || IsSegmentLeafRequired(pos0, mmrSize, *bitmap);
 				std::optional<T> leaf = leafAt(pos0);
 				if (leaf.has_value()) {
-					if (required) {
-						leafPositions.push_back(pos0);
-						leaves.push_back(std::move(leaf.value()));
-					}
+					// Match grin Segment::from_pmmr: when leaf data is
+					// available it is sent even if the bitmap marks the output
+					// as spent. The receiver applies the leaf and then removes
+					// it from the leaf set. Omitting it here leaves a hole in
+					// the sequential PMMR and later causes
+					// "missing left sibling in tree".
+					leafPositions.push_back(pos0);
+					leaves.push_back(std::move(leaf.value()));
 				} else if (required) {
 					throw SegmentException(
 						ESegmentError::MissingLeaf,

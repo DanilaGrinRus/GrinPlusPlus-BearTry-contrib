@@ -68,13 +68,25 @@
   поведение при скачке времени, fairness/retry. Лимит остаётся per-connection,
   не глобальным.
 
-## G-09: что по-прежнему не доказано
+## G-09: live ordinary Rust node
 
-- H и roots взяты из C++ REST, не из независимо синхронизированной Rust-цепочки.
-- Обычная Rust 5.5.2-нода: выбор H → PIBD → десегментация → активация →
-  рестарт → догон — **NOT VERIFIED**.
-- Негативный тест изменения proof/root/ID не выполнен.
-- Прошлые timeout/reset и `Output Commitment not found` не объяснены.
+**Статус: PASS для изолированного сценария 03.11.2026.**
+
+- Обычная Rust 5.5.2-нода дошла до `no_sync` на tip
+  `2945348e…` / H=`3318655`; C++-нода имела тот же tip, один inbound и ноль
+  outbound.
+- PIBD: **10 203 442 / 10 203 442** leaves; output/rangeproof/kernel roots
+  прошли проверку; rangeproof и kernel validation, state save и body sync до
+  C++ tip завершились.
+- Найденная причина прошлых рестартов:
+  `missing left sibling in tree` на output segment 1648. C++ не отправлял
+  данные листьев, помеченных bitmap как spent, хотя Rust `Segment::from_pmmr`
+  их отправляет. Исправлено в `SegmentGenerator`; `PibdTreeAssembler` теперь
+  фильтрует листья по bitmap.
+- Подробности и evidence: `G09_LIVE_PASS_2026-11-03.md`.
+- **Ограничения:** заголовки Rust были предварительно загружены (headers
+  preseeded), автоматическое создание следующих архивных горизонтов, reorg,
+  restart во время serving, негативный proof/root-тест и mainnet не покрыты.
 
 ## Не начиналось в этом срезе
 
@@ -86,10 +98,10 @@
 
 ## Актуальные артефакты
 
-- `GrinNode.exe`: SHA-256 `A3E35660D1EBC4DB1AACCA4694340F850205649CFCDA2D8E089A939D01184538`,
-  **7 744 512 B = 7 563.0 KiB**.
-- `Tests.exe`: SHA-256 `EC80635F9B75B01CA1DB1D7939190304E9CD51B034DC7AC06A7A0B4E05E73166`.
-- Suite: **203 / 3676 PASS** (`C:\DHW\.tmp\tests-proof-boundaries.log`).
+- `GrinNode.exe`: SHA-256 `92A8B53B3797D6856ED0B80AF4A24413321DB6945FB5A28404EDBA9BEDA4C434`,
+  **7 745 024 B = 7 563.5 KiB**.
+- `Tests.exe`: SHA-256 `B218A0B1D6D5732FC7C7623086DB4E77CE2A60E6B222A478993821F91BFA479C`.
+- Suite: **205 / 3697 PASS** (`C:\DHW\.tmp\tests-proof-boundaries.log`).
 - Wire PASS: `C:\DHW\.tmp\pibd-wire-lease.log`.
 - Active-sync kernel PASS: `C:\DHW\.tmp\pibd-kernel-lease-active.log`.
 - PIBD-state startup: `Could not rebuild NRD index` — 0 в логе; block sync

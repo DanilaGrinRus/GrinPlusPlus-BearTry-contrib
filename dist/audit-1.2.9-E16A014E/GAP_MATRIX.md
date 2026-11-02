@@ -169,12 +169,14 @@
   cooldown. `PIHD_HIST` не рекламируется, серверной части нет; со staging Rust
   client-mode пока несовместим (Rust требует бит у запрашивающего). Остаются
   in-flight 8/2, serving, live PIHD peer, snapshot guard/cache/rate-limit (PIBD).
+* **G-09 live (03.11.2026): PASS.** Rust 5.5.2 `no_sync` на H=3 318 655 / `2945348e…`; PIBD 10 203 442/10 203 442, roots/rangeproof/kernel/body sync завершены. Причина прошлых рестартов — missing left sibling на output idx 1648; fix в SegmentGenerator. Ограничения: headers preseeded, reorg/restart/negative/mainnet открыты.
+
 * **G-09 serving (02.11.2026):** контролируемый P2P + Rust identity-checked
   прогон на H=3 315 600 — PASS: 7/7 bitmap, 1673/1673 output, 1673/1673
   rangeproof, 1637/1637 kernel. Roots взяты из C++ REST, независимое
   подтверждение H и обычная Rust-нода остаются NOT VERIFIED.
-* Актуальная сборка: suite **203 / 3676 PASS**; `GrinNode A3E35660…`,
-  `Tests 524FC297…`; exe 7 744 512 B.
+* Актуальная сборка: suite **205 / 3697 PASS**; `GrinNode 92A8B53B…`,
+  `Tests 524FC297…`; exe 7 745 024 B.
 * **P0 crypto (02.11.2026): PARTIAL.** Кэш Bulletproofs теперь включает точные байты proof; batch валидирует пустые/разные длины и не пишет кэш до успеха. Нужны реальный warmed/cold proof-тест, Rust-дифференциал и fuzz.
 * **P0 NRD (02.11.2026): PARTIAL.** Rebuild идёт из kernel PMMR + header chain, без полных block bodies; неполный индекс fail-closed и отвергает NRD-блок. Live PIBD-state стартовал без предупреждений rebuild; нужны end-to-end NRD/reorg и сверка с Rust.
 * **PIBD snapshot (02.11.2026): PARTIAL.** `ApiStateSnapshot` удерживает read lease на всё построение ответа; bitmap-кэш ключуется H+size+output root; лимит 500/мин на connection. Нужен контролируемый concurrent apply/reorg тест и глобальный backpressure.

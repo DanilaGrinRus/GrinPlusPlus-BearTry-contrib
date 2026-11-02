@@ -1,12 +1,12 @@
 # AUDIT_DELTA (EN) — Grin++ 1.2.9 → Grin v5.5.2 compatibility
 **Current snapshot 2026-11-02.** Baseline 1.2.9 `5f511e6`; working tree HEAD `a49dfe0`. Source metrics:
 
-- C++ added: **+17,093 lines**; deleted **−594**; 187 files;
-- diff/new C++ text volume: **≈ +721.7 KiB**;
-- final `GrinNode.exe`: **7,744,512 B = 7,563.0 KiB = 7.38 MiB**;
+- C++ added: **+17,142 lines**; deleted **−594**; 187 files;
+- diff/new C++ text volume: **≈ +725.0 KiB**;
+- final `GrinNode.exe`: **7,745,024 B = 7,563.5 KiB = 7.38 MiB**;
 - **exe growth vs 1.2.9: NOT MEASURED** — no original binary is preserved; 7.7 MB is the final size, not a delta;
-- artifacts: `GrinNode A3E35660…`, `Tests EC80635F…`; suite **203 / 3,676 PASS**.
-- **G-09 stage 1:** identity-checked P2P + Rust run at H=3,315,600 — PASS (7/7, 1673/1673, 1673/1673, 1637/1637); roots came from C++ REST, independent H confirmation and ordinary Rust node remain NOT VERIFIED.
+- artifacts: `GrinNode 92A8B53B…`, `Tests B218A0B1…`; suite **205 / 3,697 PASS**.
+- **G-09 live (2026-11-03): PASS for the isolated scenario.** Ordinary Rust 5.5.2 reached `no_sync` at H=3,318,655 / hash `2945348e…`, with the same C++ tip, 1 inbound / 0 outbound; PIBD 10,203,442/10,203,442, roots/rangeproof/kernel validation/body sync completed. The previous restarts were caused by `missing left sibling` at output segment 1648 and fixed by sending available leaves in `SegmentGenerator`. Limits: headers preseeded, reorg/restart/negative/mainnet not covered.
 - **PIBD/PIHD guard:** height cap 13, `idx*capacity` overflow check, PIHD response bound to connection/peer, fallback on no chain-height progress; PIBD responses use one `ApiStateSnapshot` with sequence retry, bitmap/root cached by output root, 500 requests/min per connection. PIHD is experimental, `PIHD_HIST` is not advertised; concurrent apply/reorg snapshot test remains open.
 
 Baseline: Grin++ 1.2.9 (`5f511e6`). Delta updated: 2026-11-02, HEAD `a49dfe0` (G-09/G-23/G-53/G-07/G-24).

@@ -1,12 +1,12 @@
 # AUDIT_DELTA (RU) — Grin++ 1.2.9 → совместимость с Grin v5.5.2
 **Актуальный срез 02.11.2026.** База 1.2.9 `5f511e6`; рабочее дерево HEAD `a49dfe0`. Метрики исходников:
 
-- добавлено C++: **+17 093 строки**; удалено **−594**; 187 файлов;
-- объём diff/новых C++ файлов: **≈ +721.7 KiB**;
-- итоговый `GrinNode.exe`: **7 744 512 B = 7 563.0 KiB = 7.38 MiB**;
+- добавлено C++: **+17 142 строки**; удалено **−594**; 187 файлов;
+- объём diff/новых C++ файлов: **≈ +725.0 KiB**;
+- итоговый `GrinNode.exe`: **7 745 024 B = 7 563.5 KiB = 7.38 MiB**;
 - **прирост exe относительно 1.2.9: NOT MEASURED** — исходный бинарник отсутствует; 7.7 MB это итоговый размер, не дельта;
-- артефакты: `GrinNode A3E35660…`, `Tests EC80635F…`; suite **203 / 3676 PASS**.
-- **G-09 stage 1:** identity-checked P2P + Rust-прогон на H=3 315 600 — PASS (7/7, 1673/1673, 1673/1673, 1637/1637); roots взяты из C++ REST, независимое подтверждение H и обычная Rust-нода — NOT VERIFIED.
+- артефакты: `GrinNode 92A8B53B…`, `Tests B218A0B1…`; suite **205 / 3697 PASS**.
+- **G-09 live (03.11.2026): PASS для изолированного сценария.** Обычная Rust 5.5.2-нода дошла до `no_sync` на H=3 318 655 / hash `2945348e…`, с тем же C++ tip, 1 inbound / 0 outbound; PIBD 10 203 442/10 203 442, roots/rangeproof/kernel validation/body sync завершены. Причина прошлых рестартов — `missing left sibling` на output segment 1648; исправлена отправка листьев в `SegmentGenerator`. Ограничения: headers preseeded, reorg/restart/negative/mainnet не покрыты.
 - **PIBD/PIHD guard:** height-cap 13, overflow-check `idx*capacity`, привязка PIHD-ответа к connection/peer, fallback при отсутствии роста chain height; PIBD-ответ строится по одному `ApiStateSnapshot` с retry при смене sequence, bitmap/root кешируются по output root, лимит 500 запросов/мин на connection. PIHD experimental, `PIHD_HIST` не рекламируется; конкурентный apply/reorg-тест snapshot ещё открыт.
 
 Базовая точка: Grin++ 1.2.9 (`5f511e6`). Дельта обновлена: 02.11.2026, HEAD `a49dfe0` (G-09/G-23/G-53/G-07/G-24).

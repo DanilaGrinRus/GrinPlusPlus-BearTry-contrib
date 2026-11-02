@@ -122,7 +122,14 @@ public:
 		std::vector<std::pair<uint64_t, T>> leaves;
 		leaves.reserve(segment.GetLeafPositions().size());
 		for (size_t i = 0; i < segment.GetLeafPositions().size(); ++i) {
-			leaves.emplace_back(segment.GetLeafPositions()[i], segment.GetLeafData()[i]);
+			const uint64_t pos0 = segment.GetLeafPositions()[i];
+			// A serving peer may include data for spent leaves too (grin's
+			// Segment::from_pmmr does). The bitmap still defines which leaves
+			// belong to the unspent set that this assembler publishes.
+			if (m_bitmap != nullptr && !IsSegmentLeafRequired(pos0, m_mmrSize, *m_bitmap)) {
+				continue;
+			}
+			leaves.emplace_back(pos0, segment.GetLeafData()[i]);
 		}
 
 		for (size_t i = 0; i < segment.GetHashPositions().size(); ++i) {

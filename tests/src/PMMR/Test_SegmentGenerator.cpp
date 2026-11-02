@@ -40,6 +40,29 @@ namespace
 
 		return InMemoryPmmr<GenLeaf>(std::move(leaves));
 	}
+
+	// Emulates a compact PMMR: leaf data exists only for bitmap entries.
+	Segment<GenLeaf> GeneratePrunedFromCompactSource(
+		const InMemoryPmmr<GenLeaf>& mmr,
+		const SegmentIdentifier& identifier,
+		const SegmentBitmap& bitmap)
+	{
+		return SegmentGenerator<GenLeaf>::GenerateFromSource(
+			identifier,
+			mmr.GetSize(),
+			&bitmap,
+			[&mmr, &bitmap](const uint64_t pos0) -> std::optional<GenLeaf> {
+				const uint64_t leafIdx = MMRUtil::GetNumLeaves(pos0 + 1) - 1;
+				const bool required = IsSegmentLeafRequired(pos0, mmr.GetSize(), bitmap);
+				if (!required && !bitmap.Contains(leafIdx)) {
+					return std::nullopt;
+				}
+				return std::optional<GenLeaf>(mmr.GetLeafData(pos0));
+			},
+			[&mmr](const uint64_t pos0) -> std::optional<Hash> {
+				return std::optional<Hash>(mmr.GetHash(pos0));
+			});
+	}
 }
 
 TEST_CASE("InMemoryPmmr::Shape")
@@ -168,7 +191,7 @@ TEST_CASE("SegmentGenerator::PrunedSegmentsValidateWithBitmap")
 	REQUIRE(required == 2);
 	for (uint64_t idx = 0; idx < required; ++idx) {
 		const Segment<GenLeaf> segment =
-			SegmentGenerator<GenLeaf>::Generate(mmr, SegmentIdentifier(2, idx), &bitmap);
+			GeneratePrunedFromCompactSource(mmr, SegmentIdentifier(2, idx), bitmap);
 		INFO("pruned height 2 segment idx=" << idx);
 		REQUIRE(segment.GetLeafData().size() < 4);   // pruning actually removed leaves
 		REQUIRE_NOTHROW(segment.ValidateWithBitmap(mmrSize, bitmap, root));
@@ -186,7 +209,7 @@ TEST_CASE("SegmentGenerator::FullyPrunedSegmentUsesStoredParentHash")
 
 	// Height 1, idx 1: leaves 2 and 3, both pruned.
 	const Segment<GenLeaf> segment =
-		SegmentGenerator<GenLeaf>::Generate(mmr, SegmentIdentifier(1, 1), &bitmap);
+		GeneratePrunedFromCompactSource(mmr, SegmentIdentifier(1, 1), bitmap);
 	REQUIRE(segment.GetLeafData().empty());
 	REQUIRE(!segment.GetHashes().empty());
 
@@ -196,7 +219,7 @@ TEST_CASE("SegmentGenerator::FullyPrunedSegmentUsesStoredParentHash")
 
 	// A wrong stored hash must not validate.
 	std::vector<Hash> tampered = segment.GetHashes();
-	tampered[0] = root;
+	tampered.back() = root;
 	const Segment<GenLeaf> bad(
 		segment.GetIdentifier(),
 		segment.GetHashPositions(),
@@ -206,4 +229,19 @@ TEST_CASE("SegmentGenerator::FullyPrunedSegmentUsesStoredParentHash")
 		segment.GetProof()
 	);
 	REQUIRE_THROWS_AS(bad.ValidateWithBitmap(mmrSize, bitmap, root), SegmentException);
+}
+
+TEST_CASE("SegmentGenerator::SendsAvailableLeafDataEvenWhenBitmapIsClear")
+{
+	// grin Segment::from_pmmr sends leaf data whenever the backend has it,
+	// regardless of the bitmap bit. The receiver then removes spent leaves from
+	// its leaf set. Omitting such a leaf creates a gap in the sequential PMMR.
+	const InMemoryPmmr<GenLeaf> mmr = MakePmmr(8);
+	VectorSegmentBitmap bitmap(8);
+	bitmap.Set(0, true);
+
+	const Segment<GenLeaf> segment =
+		SegmentGenerator<GenLeaf>::Generate(mmr, SegmentIdentifier(2, 1), &bitmap);
+	REQUIRE(segment.GetLeafData().size() == 4);
+	REQUIRE_NOTHROW(segment.ValidateWithBitmap(mmr.GetSize(), bitmap, mmr.GetRoot()));
 }
