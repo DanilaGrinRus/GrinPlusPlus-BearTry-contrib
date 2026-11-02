@@ -23,7 +23,7 @@
 | G-04 | PoW edge-bits sanity | `validate_pow_only`: `is_primary()/is_secondary()` + `verify_size` (`chain/src/pipe.rs`, `core/src/pow/cuckatoo.rs`) | Grin++ не отвергал явно недопустимые `edge_bits` (29 secondary, 31–63 primary); значения ≥64 давали сдвиг 64-битного слова | Добавлен `PoWValidator::IsSupportedEdgeBits` и проверка **до** диспетчеризации в Cuckoo; unit-таблица границ | unit `Test_PoWEdgeBits` (11 проверок) | **DONE** |
 | G-05 | Вес блока | `1/21/3`, `MAX_BLOCK_WEIGHT=40000` | нет | — | — | — | кодовое сравнение | ЗАКРЫТО |
 | G-06 | Coinbase/kernel sums/rangeproofs/cut-through/lock heights | `block.validate`, `TxBodyValidator`, `KernelSumValidator` | нет (структурно совпадает) | — | — | — | кодовое сравнение | ЗАКРЫТО |
-| G-07 | Варианты ядер (NRD) | `KernelFeatures::NoRecentDuplicate` есть в Rust 5.5.2 (`txhashset.rs` recent kernel index); в C++ NRD разбирается, но recent-index/lock enforcement отсутствует | Rust 5.5.2 **поддерживает NRD**; при включённом NRD C++ примет NRD-ядро без проверки relative-lock/duplicate. Это не «не в v5.5.2» | P1 для NRD-enabled сети | Реализовать recent kernel index и проверку NRD правил; до этого считать NRD-сеть неподдержанной | E64 | **OPEN (NRD)** |
+| G-07 | Варианты ядер (NRD) | `KernelFeatures::NoRecentDuplicate` есть в Rust 5.5.2 (`txhashset.rs` recent kernel index); в C++ реализованы relative-height/duplicate правила и recent-index | Persistent incremental index, full block/reorg NRD-тест и live NRD peer — OPEN | P1 для NRD-enabled сети | Довести persisted index и интеграционные NRD-тесты | E64/E84 | **PARTIAL (rules implemented; integration OPEN)** |
 
 ---
 
@@ -120,8 +120,8 @@
 
 ## Сводка
 
-**Итого по матрице: 53 записи** — **44 закрыто**, 4 частично (G-09, G-23, G-24, G-53),
-  0 в работе, 1 открыто (G-07), 3 запланировано (G-44, G-45, G-49),
+**Итого по матрице: 53 записи** — **44 закрыто**, 5 частично (G-07, G-09, G-23, G-24, G-53),
+  0 в работе, 0 открыто, 3 запланировано (G-44, G-45, G-49),
   0 отложено, 1 снят по объёму (G-27, PIHD не в v5.5.2).
 44 + 4 + 0 + 1 + 3 + 0 + 1 = 53.
 
@@ -159,7 +159,7 @@
   реализовано целиком (PR #3879/#3882), для совместимости с v5.5.2 не требуется —
   разбор в `PIHD_UPSTREAM.md`.
 * Сборка и тесты проверяемы исполнением: `/W4 /WX`, актуальный прогон — E76:
-  192 кейсов / 2207 проверок PASS; `GrinNode F197C7D2…`, `Tests F25A02A0…`.
+  194 кейсов / 2224 проверок PASS; `GrinNode D15174D9…`, `Tests 1D38C73B…`.
 * Не подтверждено: живой serving Rust-клиенту, legacy-фолбэк (G-41), reorg,
   crash/fuzz, **mainnet (G-45)**. Живой журнальный resume: replay подтверждён,
   полное завершение — G-43.

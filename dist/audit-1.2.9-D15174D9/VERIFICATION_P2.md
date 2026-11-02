@@ -33,12 +33,12 @@ genesis coinbase output. Node stopped afterwards.
 
 - New `Test_UnspentPagination`: 5 cases / 34 assertions PASS (bounded range,
   end beyond MMR, empty/out-of-range, scan cap, extreme indices).
-- Full suite: **191 cases / 2200 assertions PASS**.
+- Full suite: **194 cases / 2224 assertions PASS**.
 
 ## Artifacts
 
-- `GrinNode F197C7D28D9F764FE73FE1387CEEC3F3415ED1A6BC3E6CE21560EA78362A1551`
-- `Tests ED64D3844A643C129CA589B6826C1379331DB7C83049D72E87FD04542D309220`
+- `GrinNode D15174D98E75D706C781DAD760C1410AEC069784A30B1F4FB1D1270259779B74`
+- `Tests 1D38C73B96563E0DC00613FA023A1E937817200B91445C741776E0B0CB776E9B`
 
 ## Remaining P2
 

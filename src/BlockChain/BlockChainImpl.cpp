@@ -305,6 +305,11 @@ std::shared_ptr<BlockChain> BlockChain::Create(
 				throw std::runtime_error("TxHashSet MMR roots do not match its flushed header");
 			}
 		}
+
+		const BlockHeaderPtr pConfirmedTip = pReader->GetTipBlockHeader(EChainType::CONFIRMED);
+		if (pTxHashSet != nullptr && pConfirmedTip != nullptr) {
+			const_cast<ITxHashSet*>(pTxHashSet.get())->RebuildRecentKernelIndex(pDatabase->Read().GetShared(), *pConfirmedTip);
+		}
 	}
 
 	// Migrate database
@@ -468,6 +473,13 @@ EBlockChainStatus BlockChain::ProcessTransactionHashSet(const Hash& blockHash, c
 		const bool success = TxHashSetProcessor(Global::GetConfig(), *this, m_pChainState).ProcessTxHashSet(blockHash, path, syncStatus);
 		if (success)
 		{
+			auto pReader = m_pChainState->Read();
+			auto pTxHashSet = pReader->GetTxHashSetManager()->GetTxHashSet();
+			const BlockHeaderPtr pTip = pReader->GetTipBlockHeader(EChainType::CONFIRMED);
+			if (pTxHashSet != nullptr && pTip != nullptr) {
+				const_cast<ITxHashSet*>(pTxHashSet.get())->RebuildRecentKernelIndex(
+					pReader->GetBlockDB().GetShared(), *pTip);
+			}
 			return EBlockChainStatus::SUCCESS;
 		}
 	}
@@ -573,6 +585,13 @@ EBlockChainStatus BlockChain::ProcessExistingTxHashSet(const Hash& blockHash, Sy
 		const bool success = TxHashSetProcessor(Global::GetConfig(), *this, m_pChainState)
 			.ProcessExistingTxHashSet(blockHash, syncStatus);
 		if (success) {
+			auto pReader = m_pChainState->Read();
+			auto pTxHashSet = pReader->GetTxHashSetManager()->GetTxHashSet();
+			const BlockHeaderPtr pTip = pReader->GetTipBlockHeader(EChainType::CONFIRMED);
+			if (pTxHashSet != nullptr && pTip != nullptr) {
+				const_cast<ITxHashSet*>(pTxHashSet.get())->RebuildRecentKernelIndex(
+					pReader->GetBlockDB().GetShared(), *pTip);
+			}
 			return EBlockChainStatus::SUCCESS;
 		}
 	}

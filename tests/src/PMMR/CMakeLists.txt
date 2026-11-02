@@ -22,6 +22,7 @@ list_append_parent(
     "Test_PruneList_GetShift.cpp"
     "Test_MmrStructure.cpp"
     "Test_HeaderMMRValidation.cpp"
+    "Test_NrdRules.cpp"
     "Test_KernelLookup.cpp"
     "Test_TxHashSetStaging.cpp"
     "LeafSet/Test_LeafSet.cpp"

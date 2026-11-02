@@ -16,6 +16,7 @@ public:
 private:
 	static void VerifyBody(const FullBlock& block);
 	static void VerifyWeight(const FullBlock& block);
+	static void VerifyKernelFeatures(const FullBlock& block);
 	static void VerifyKernelLockHeights(const FullBlock& block);
 	static void VerifyCoinbase(const FullBlock& block);
 };

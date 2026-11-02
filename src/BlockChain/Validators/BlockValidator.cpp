@@ -20,7 +20,7 @@ void BlockValidator::VerifySelfConsistent(const FullBlock& block)
 		return;
 	}
 
-	// TODO - NRD: Verify kernel variants
+	VerifyKernelFeatures(block);
 	VerifyWeight(block);
 	VerifyKernelLockHeights(block);
 	VerifyBody(block);
@@ -41,6 +41,19 @@ void BlockValidator::VerifyBody(const FullBlock& block)
 	}
 }
 
+void BlockValidator::VerifyKernelFeatures(const FullBlock& block)
+{
+	const uint64_t height = block.GetHeight();
+	const uint16_t version = block.GetHeader()->GetVersion();
+	for (const TransactionKernel& kernel : block.GetKernels()) {
+		if (kernel.GetFeatures() == EKernelFeatures::NO_RECENT_DUPLICATE && version < 3) {
+			throw BAD_DATA_EXCEPTION_F(
+				EBanReason::BadBlock,
+				"NRD kernel {} in block {} is not valid before header version 3",
+				kernel.GetExcessCommitment(), height);
+		}
+	}
+}
 void BlockValidator::VerifyWeight(const FullBlock& block)
 {
 	if (block.CalcWeight() > Consensus::MAX_BLOCK_WEIGHT) {

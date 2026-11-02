@@ -124,6 +124,10 @@ public:
 	// Get Output by OutputLocation
 	//
 	virtual uint64_t GetNumKernels() const = 0;
+	// Rebuild the in-memory NRD recent-kernel index (last 2 weeks) from block history.
+	virtual void RebuildRecentKernelIndex(
+		const std::shared_ptr<const IBlockDB>& pBlockDB,
+		const BlockHeader& tip) = 0;
 	virtual std::unique_ptr<TransactionKernel> GetKernelByLeafIndex(const uint64_t leafIndex) const = 0;
 
 	virtual OutputDTO GetOutput(const OutputLocation& location) const = 0;

@@ -11,6 +11,9 @@
 #include <Database/BlockDb.h>
 #include <Common/Logger.h>
 #include <P2P/SyncStatus.h>
+#include <Consensus.h>
+#include <PMMR/NrdRules.h>
+#include <PMMR/Common/LeafIndex.h>
 #include <exception>
 #include <mutex>
 #include <thread>
@@ -157,9 +160,46 @@ bool TxHashSet::ApplyBlock(std::shared_ptr<IBlockDB> pBlockDB, const FullBlock& 
 
 	pBlockDB->RemoveOutputPositions(block.GetInputCommitments());
 
+	// Validate NRD relative-height rules before mutating any outputs. The rule is
+	// enforced for NRD kernels; non-NRD kernels are unaffected.
+	{
+		std::map<Commitment, uint64_t> blockKernelHeights;
+		for (const TransactionKernel& kernel : block.GetKernels()) {
+			if (kernel.GetFeatures() != EKernelFeatures::NO_RECENT_DUPLICATE) {
+				continue;
+			}
+
+			const Commitment& excess = kernel.GetExcessCommitment();
+			if (!NrdRules::RecordBlockKernel(blockKernelHeights, excess, block.GetHeight())) {
+				LOG_WARNING_F("Duplicate NRD kernel {} in block {}", excess, block.GetHeight());
+				return false;
+			}
+
+			const auto iter = m_recentNrdKernels.find(excess);
+			if (iter != m_recentNrdKernels.end() && !iter->second.empty()) {
+				const uint64_t previousHeight = iter->second.back().Height;
+				const uint64_t cutoff = block.GetHeight() > 2 * Consensus::WEEK_HEIGHT
+					? block.GetHeight() - 2 * Consensus::WEEK_HEIGHT
+					: 0;
+				if (!NrdRules::IsRelativeHeightSatisfied(
+						previousHeight, block.GetHeight(), kernel.GetLockHeight(), cutoff)) {
+					LOG_WARNING_F(
+						"NRD relative height violation for kernel {} at height {} (previous {})",
+						excess, block.GetHeight(), previousHeight);
+					return false;
+				}
+			}
+ 
+		}
+	}
+
 	// Append new kernels
 	for (const TransactionKernel& kernel : block.GetKernels()) {
+		const uint64_t position = m_pKernelMMR->GetSize();
 		m_pKernelMMR->ApplyKernel(kernel);
+		if (kernel.GetFeatures() == EKernelFeatures::NO_RECENT_DUPLICATE) {
+			ApplyNrd(kernel, position, block.GetHeight());
+		}
 	}
 
 	m_pBlockHeader = block.GetHeader();
@@ -330,6 +370,83 @@ std::vector<OutputDTO> TxHashSet::GetOutputsByMMRIndex(std::shared_ptr<const IBl
 	return outputs;
 }
 
+void TxHashSet::ApplyNrd(const TransactionKernel& kernel, const uint64_t position, const uint64_t height)
+{
+	auto& positions = m_recentNrdKernels[kernel.GetExcessCommitment()];
+	const uint64_t cutoff = height > 2 * Consensus::WEEK_HEIGHT
+		? height - 2 * Consensus::WEEK_HEIGHT
+		: 0;
+	positions.erase(
+		std::remove_if(
+			positions.begin(),
+			positions.end(),
+			[cutoff](const RecentKernelPosition& entry) { return entry.Height < cutoff; }),
+		positions.end());
+	positions.push_back(RecentKernelPosition{ position, height });
+}
+
+void TxHashSet::RemoveNrdAtOrAbove(const Commitment& excess, const uint64_t minimumPosition)
+{
+	auto iter = m_recentNrdKernels.find(excess);
+	if (iter == m_recentNrdKernels.end()) {
+		return;
+	}
+
+	auto& positions = iter->second;
+	positions.erase(
+		std::remove_if(
+			positions.begin(),
+			positions.end(),
+			[minimumPosition](const RecentKernelPosition& entry) {
+				return entry.MmrPosition >= minimumPosition;
+			}),
+		positions.end());
+	if (positions.empty()) {
+		m_recentNrdKernels.erase(iter);
+	}
+}
+
+void TxHashSet::RebuildRecentKernelIndex(
+	const std::shared_ptr<const IBlockDB>& pBlockDB,
+	const BlockHeader& tip)
+{
+	m_recentNrdKernels.clear();
+	if (pBlockDB == nullptr) {
+		return;
+	}
+
+	const uint64_t cutoff = tip.GetHeight() > 2 * Consensus::WEEK_HEIGHT
+		? tip.GetHeight() - 2 * Consensus::WEEK_HEIGHT
+		: 0;
+
+	std::vector<std::unique_ptr<FullBlock>> blocks;
+	BlockHeaderPtr pHeader = std::make_shared<BlockHeader>(tip);
+	while (pHeader != nullptr && pHeader->GetHeight() >= cutoff) {
+		std::unique_ptr<FullBlock> pBlock = pBlockDB->GetBlock(pHeader->GetHash());
+		if (pBlock == nullptr) {
+			LOG_WARNING_F("Could not rebuild NRD index: block {} is missing", pHeader->GetHash());
+			return;
+		}
+		blocks.push_back(std::move(pBlock));
+		if (pHeader->GetHeight() == 0) {
+			break;
+		}
+		pHeader = pBlockDB->GetBlockHeader(pHeader->GetPreviousHash());
+	}
+
+	for (auto iter = blocks.rbegin(); iter != blocks.rend(); ++iter) {
+		const FullBlock& block = **iter;
+		const BlockHeader& header = *block.GetHeader();
+		const uint64_t firstLeaf = header.GetNumKernels() - block.GetKernels().size();
+		uint64_t leaf = firstLeaf;
+		for (const TransactionKernel& kernel : block.GetKernels()) {
+			if (kernel.GetFeatures() == EKernelFeatures::NO_RECENT_DUPLICATE) {
+				ApplyNrd(kernel, LeafIndex::At(leaf).GetPosition(), header.GetHeight());
+			}
+			++leaf;
+		}
+	}
+}
 uint64_t TxHashSet::GetNumKernels() const
 {
 	return m_pKernelMMR->GetNumKernels();
@@ -400,6 +517,19 @@ void TxHashSet::Rewind(std::shared_ptr<IBlockDB> pBlockDB, const BlockHeader& he
 		auto pBlock = pBlockDB->GetBlock(m_pBlockHeader->GetHash());
 		if (pBlock == nullptr) {
 			throw TXHASHSET_EXCEPTION_F("Block not found for {}", *m_pBlockHeader);
+		}
+
+		// Remove NRD entries introduced by the block being rewound. The previous
+		// header kernel MMR size is the exact cut point.
+		const BlockHeaderPtr pPreviousHeader =
+			pBlockDB->GetBlockHeader(pBlock->GetPreviousHash());
+		if (pPreviousHeader != nullptr) {
+			for (const TransactionKernel& kernel : pBlock->GetKernels()) {
+				if (kernel.GetFeatures() == EKernelFeatures::NO_RECENT_DUPLICATE) {
+					RemoveNrdAtOrAbove(
+						kernel.GetExcessCommitment(), pPreviousHeader->GetKernelMMRSize());
+				}
+			}
 		}
 
 		std::unordered_map<Commitment, OutputLocation> spentOutputs = pBlockDB->GetSpentPositions(m_pBlockHeader->GetHash());

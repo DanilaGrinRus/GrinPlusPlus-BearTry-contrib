@@ -8,6 +8,8 @@
 #include <Core/Config.h>
 #include <shared_mutex>
 #include <string>
+#include <map>
+#include <vector>
 
 class TxHashSet : public ITxHashSet
 {
@@ -36,6 +38,9 @@ public:
 	std::vector<OutputDTO> GetOutputsByMMRIndex(std::shared_ptr<const IBlockDB> pBlockDB, const uint64_t startIndex, const uint64_t lastIndex) const final;
 	uint64_t GetNumKernels() const final;
 	std::unique_ptr<TransactionKernel> GetKernelByLeafIndex(const uint64_t leafIndex) const final;
+	void RebuildRecentKernelIndex(
+		const std::shared_ptr<const IBlockDB>& pBlockDB,
+		const BlockHeader& tip) final;
 
 	OutputDTO GetOutput(const OutputLocation& location) const final;
 	std::optional<std::pair<TransactionKernel, uint64_t>> FindKernelByExcess(
@@ -60,4 +65,15 @@ private:
 
 	BlockHeaderPtr m_pBlockHeader;
 	BlockHeaderPtr m_pBlockHeaderBackup;
+
+	struct RecentKernelPosition
+	{
+		uint64_t MmrPosition = 0;
+		uint64_t Height = 0;
+	};
+	std::map<Commitment, std::vector<RecentKernelPosition>> m_recentNrdKernels;
+
+	bool CheckAndStageNrd(const TransactionKernel& kernel, const uint64_t height);
+	void ApplyNrd(const TransactionKernel& kernel, const uint64_t position, const uint64_t height);
+	void RemoveNrdAtOrAbove(const Commitment& excess, const uint64_t minimumPosition);
 };
