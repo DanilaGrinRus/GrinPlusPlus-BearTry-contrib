@@ -1,0 +1,37 @@
+{
+  "schema": "line3-independent-kernelindex-duplicate-excess/v1",
+  "generated_utc": "2026-11-03T07:5x:00Z",
+  "method": "independent recount by line3 from the copied kernel PMMR binary: 114-byte V1 entries, excess at offset 17..49 (33 bytes); uniqueness keyed by 128-bit MD5 fingerprint of the 33-byte excess (collision probability negligible for n=3.35M); multiplicity tracked exactly for duplicate groups",
+  "source": {
+    "path": "C:\\DHW\\.tmp\\g09-live-01\\cpp-profile\\NODE\\TXHASHSET\\kernel\\pmmr_data.bin",
+    "sha256": "D4D73A0DB6BCA8CD6E801C8C82BD1F8B3F7379DD43363D7A9B3D3D90E31E9108",
+    "bytes": 382425882,
+    "modified": false
+  },
+  "copy": {
+    "path": "C:\\DHW\\.tmp\\line2-nrd-kernelindex\\copy\\kernel_pmmr_data.bin",
+    "sha256": "D4D73A0DB6BCA8CD6E801C8C82BD1F8B3F7379DD43363D7A9B3D3D90E31E9108",
+    "copy_equals_source": true
+  },
+  "counts": {
+    "total_kernel_leaves": 3354613,
+    "unique_excess_commitments": 3354326,
+    "extra_occurrences": 287,
+    "duplicate_excess_commitments": 284,
+    "multiplicity_histogram": { "2_total": 281, "3_total": 3 },
+    "matches_line2_json": true,
+    "matches_g09_node_log": true
+  },
+  "line2_evidence": {
+    "path": "tools/audit/nrd/evidence/kernelindex-duplicate-excess-g09-20261103.json",
+    "sha256": "CDEC6A9EEDCF4E2429DF49B263CA12FE435DC32B4B294AF721FDF59EA83F652A"
+  },
+  "consequences": {
+    "db_key_semantics": "KERNELPOS/<generation>/<excess> Put overwrites earlier positions; GetKernelPositionCount counts unique keys",
+    "rebuild_verification": "checksum over all leaves vs read-back over unique keys => duplicate-excess chains can never publish the index",
+    "runtime": "node correctly falls back to direct scan; get_kernel then traverses the dangling-pointer direct-scan path (GetKernelHandler.h:139-153)",
+    "rust_semantics": "no persistent excess index; find_kernel scans backwards for the LATEST matching excess within [min,max]"
+  },
+  "status": "confirmed; production fix/tests deferred pending first full G09 live + Lead build-10 approval",
+  "constraints": "read-only; no fixture writes; no source/build/commit; independent verification only"
+}

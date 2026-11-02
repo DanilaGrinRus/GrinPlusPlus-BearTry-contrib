@@ -67,28 +67,60 @@ checksums; state was missing and rebuilt at 04:14:18 (generation 1).
   mismatch, because the verification checksum was computed over duplicates but
   the read-back checksum is over unique keys.
 
-Therefore the **287 shortfall is consistent with 287 duplicate excess occurrences
-beyond the first** on this fixture (if no other DB/state corruption). The node's
-refusal to publish and fallback to direct scan is correct defensive behavior —
-but it routes `get_kernel` into finding A.
+Therefore the **287 shortfall is exactly the duplicate-excess effect** on this
+fixture. The node's refusal to publish and fallback to direct scan is correct
+defensive behavior — but it routes `get_kernel` into finding A.
 
-### Not yet proven / next steps (owner: line2 / kernel index; line3 assists)
+### PROVEN by line2 + independent line3 recount (2026-11-03)
 
-1. Count duplicates on a copy of the fixture: open
-   `C:\DHW\.tmp\g09-live-01\cpp-profile\NODE` (CHAIN/TXHASHSET) and enumerate
-   kernel leaves (`GetKernelByLeafIndex`) — count total vs unique excess,
-   duplicates should be **287**; identical-excess positions and heights recorded.
-   (No RocksDB dump tool was available to line3; no DB copy was modified.)
-2. Compare Rust semantics for duplicate excess: what position does Rust
-   `get_kernel` return, does it reject duplicate excess, and how do
-   `min_height`/`max_height` behave.
-3. Decide fix: key by leaf index (or generation+leaf) and add a secondary
-   excess→position mapping; or store all positions and define deterministic
-   choice; version/migrate the table; keep fail-closed verification.
-4. Tests: duplicate-excess fixture, reorg/restore, restart, get_kernel range;
-   normal harness + ASan where linkable (real-DB path is likely normal-only).
-5. **No consensus/G-09 claim** from this finding; it is an index integrity and
-   API-correctness issue.
+Line2 evidence:
+`tools/audit/nrd/evidence/kernelindex-duplicate-excess-g09-20261103.json`
+(sha256 `CDEC6A9EEDCF4E2429DF49B263CA12FE435DC32B4B294AF721FDF59EA83F652A`).
+Copied kernel PMMR: source == copy sha256
+`D4D73A0DB6BCA8CD6E801C8C82BD1F8B3F7379DD43363D7A9B3D3D90E31E9108`,
+382,425,882 B, original hash unchanged.
+
+Line3 independent recount (114-byte V1 entries, excess offset 17..49, 128-bit
+fingerprint + exact multiplicity; evidence
+`evidence/line3/kernelindex-duplicate-excess-independent-20261103.json`):
+
+```
+total=3354613 unique=3354326 extras=287 duplicate_excesses=284
+multiplicity 2x=281, 3x=3
+```
+
+Exactly matches line2 and the g09 Node.log count `3354326/3354613`. Consequences
+confirmed:
+
+- rebuild verification (count==leaves, checksum over every leaf vs unique-key
+  read-back) can **never** publish on this chain — correct fail-closed;
+- runtime falls back to direct scan; `get_kernel` numeric results via fallback
+  match Rust latest-in-range semantics, but every call hits the dangling-pointer
+  path from finding A;
+- Rust `find_kernel` scans backward and returns the **latest** matching excess
+  within `[min_index, max_index]`; there is no persistent excess→position index
+  in Rust. Any C++ index must reproduce latest-in-range, not one-position-per-excess.
+- No consensus/G-09 claim; this is an index-availability/performance and
+  API-correctness issue.
+
+### Fix design (deferred until first full G09 live + Lead build-10 approval)
+
+1. **A (recommended):** primary index keyed by unique kernel position
+   (MMR pos/leaf) storing excess+height, plus secondary excess→positions so
+   `get_kernel` selects the **latest** position within `[min,max]`; count/checksum
+   over every leaf; schema/version bump + generation rebuild/migration.
+2. **B (smaller):** canonical latest-position per excess with duplicate-aware
+   state validation (total leaves vs unique entries stored separately) and
+   handler fallback to direct scan when the range/canonical position is
+   ambiguous; preserves Rust semantics but does not index earlier positions.
+3. Do **not** merely relax verification while keeping count==kernelCount —
+   range behavior with duplicates becomes ambiguous.
+
+Tests to bind after fix: duplicate-excess fixture/synthetic chain (281×2 + 3×3),
+total-leaves vs unique-keys, latest-in-range `get_kernel` with min/max, reorg /
+restore / restart, migration/version bump; handler hoist regression via task-9
+draft. Real-DB paths are normal-only (BlockChain→Database→rocksdb ASan boundary);
+ASan only where linkable.
 
 ## C. TransactionInput V3 deserialize (code observation, NOT reproduced)
 
