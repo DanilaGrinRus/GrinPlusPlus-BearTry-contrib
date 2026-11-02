@@ -1,5 +1,5 @@
 # AUDIT_DELTA (EN) — Grin++ 1.2.9 → Grin v5.5.2 compatibility
-**Current snapshot 2026-11-02.** Baseline 1.2.9 `5f511e6`; working tree HEAD `54d8076`. Source metrics:
+**Current snapshot 2026-11-02.** Baseline 1.2.9 `5f511e6`; working tree HEAD `49698ab`. Source metrics:
 
 - C++ added: **+17,010 lines**; deleted **−594**; 187 files;
 - diff/new C++ text volume: **≈ +717.7 KiB**;
@@ -9,7 +9,7 @@
 - **G-09 stage 1:** identity-checked P2P + Rust run at H=3,315,600 — PASS (7/7, 1673/1673, 1673/1673, 1637/1637); roots came from C++ REST, independent H confirmation and ordinary Rust node remain NOT VERIFIED.
 - **PIBD/PIHD guard:** height cap 13, `idx*capacity` overflow check, PIHD response bound to connection/peer, fallback on no chain-height progress; PIBD responses use one `ApiStateSnapshot` with sequence retry, bitmap/root cached by output root, 500 requests/min per connection. PIHD is experimental, `PIHD_HIST` is not advertised; concurrent apply/reorg snapshot test remains open.
 
-Baseline: Grin++ 1.2.9 (`5f511e6`). Delta updated: 2026-11-02, HEAD `54d8076` (G-09/G-23/G-53/G-07/G-24).
+Baseline: Grin++ 1.2.9 (`5f511e6`). Delta updated: 2026-11-02, HEAD `49698ab` (G-09/G-23/G-53/G-07/G-24).
 Companion documents: `AUDIT_PACKAGE.md` (package rules), `GAP_MATRIX.md`
 (status of every gap), `TEST_RESULTS.md` (E1–E84 evidence), `DB_CONSISTENCY.md`
 (chain-store design).
@@ -446,7 +446,7 @@ documentation-only commits are tracked in the evidence map, not as cards.
   performance), G-51 (this package): closed (audit package; owner acceptance 01.11.2026).
 - Documentation-only commits (`docs: …`): listed in the evidence map, not as cards.
 
-## Update 2026-11-02 — HEAD `54d8076`
+## Update 2026-11-02 — HEAD `49698ab`
 
 Baseline unchanged (`5f511e6`). This snapshot includes the G-09 candidate merge,
 G-23 hash revalidation, KernelIndex/get_kernel, NRD rules and the local CI gate.
