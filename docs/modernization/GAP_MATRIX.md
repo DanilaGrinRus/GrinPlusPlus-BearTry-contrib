@@ -138,8 +138,11 @@
   **Новые подтверждённые риски (fix deferred, task-9):** `GetKernelHandler` direct-scan
   fallback использует указатель на локальный `std::optional` после выхода из if-блока
   (use-after-scope, UB; indexed path безопасен); kernel-index shortfall 287 на fixture
-  согласуется с перезаписью duplicate-excess ключей `KERNELPOS/<gen>/<excess>`. Это
-  API/index correctness, не консенсус/PIBD/G-09.
+  подтверждён read-only: 3,354,613 leaves / 3,354,326 unique, 281 duplicate×2 + 3×3;
+  RocksDB `Put` по excess перезаписывает позиции, поэтому rebuild verification не
+  сходится и нода уходит в direct scan. Rust ищет latest occurrence в диапазоне;
+  нужен key-by-position + secondary excess map (или duplicate-aware canonical).
+  Это API/index correctness, не консенсус/PIBD/G-09.
 * Частично: G-09 (PIBD: живая загрузка/активация/догон PASS, resume replay PASS;
   живой serving Rust-клиентом и полное завершение resume не подтверждены),
   G-23 (структурная проверка/rebuild + hash-level ревалидация DONE — E48/E82;

@@ -59,7 +59,7 @@ advert 2/15, Nrd 30/428, KernelIndex 3/48, paired NRD 11/11/0. Только дл
 | Rebuild interruption/kill | NOT VERIFIED | child kill works; test-side restore fragile |
 | D2 mainnet NRD | PARTIAL | block path wired; txpool/index policy OPEN |
 | API `get_kernel` direct scan | CONFIRMED UB, fix deferred | local optional dangles after fallback if-block; indexed path safe; task-9; not G-09/consensus blocker |
-| Kernel-index duplicate excess | CONFIRMED mechanism, fix deferred | 287 shortfall consistent with overwritten duplicate-excess keys; read-only count pending; not consensus/PIBD defect claim |
+| Kernel-index duplicate excess | CONFIRMED, fix deferred | fixture: 3,354,613 leaves / 3,354,326 unique; 281×2 + 3×3 = 287 extras; RocksDB Put overwrites excess keys, verification impossible; fallback direct scan; task-9 design A/B; not consensus/PIBD defect claim |
 
 ## L3 — ASan/fuzz/CI
 

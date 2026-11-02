@@ -108,8 +108,31 @@ defensive: the isolated profile's `.api_secret` must be owner-only. Correct
 action is fixing the isolated profile ACL (without publishing secrets or
 weakening the check globally), not code change.
 
+## E. Task-9 draft regression harness (pattern-level failing-before)
+
+Lead approved a draft harness outside the compiled tree:
+`C:\DHW\.tmp\task9-api-harness` (README, `Test_GetKernelHandlerLifetime.cpp`
+skeleton for the real handler, `repro_lifetime_pattern.cpp`,
+`build_pattern_repro.ps1`). No CMake/default-suite changes; tree untouched.
+
+Pattern-level ASan build (MSVC 14.44, `/Od /Ob0 /fsanitize=address`) result:
+
+```
+buggy=16045690984833335030 fixed=12
+```
+
+- the buggy shape (block-local optional → pointer → scope exit → dereference)
+  returns the deterministic stack-poison value, demonstrating the UB;
+- the hoisted-optional fixed shape returns 12;
+- MSVC ASan did not emit `stack-use-after-scope` for this pattern here, so the
+  real-handler regression must assert correct JSON/behavior (and use ASan only
+  if the toolchain actually reports the class);
+- this is **pattern-level**, not a build-09 API reproduction. Real-handler run
+  remains **planned** until the fake-based test is wired with Lead approval and
+  line2's fix.
+
 ## Evidence / constraints
 
 - Log slice: `evidence/line3/g09-kernel-index-log-20261103.txt`
 - Fixture: `C:\DHW\.tmp\g09-live-01\cpp-profile` (NODE/CHAIN, TXHASHSET)
-- No files in fixture modified; no build/commit; no ASan run for these findings.
+- No files in fixture modified; no build/commit; no real-handler ASan run yet.

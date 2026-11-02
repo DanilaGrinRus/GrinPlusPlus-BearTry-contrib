@@ -1,0 +1,58 @@
+{
+  "schema": "nrd-kernelindex-duplicate-excess-audit/v1",
+  "generated_local": "2026-11-03T06:5x+07:00",
+  "task": "task-9 read-only phase",
+  "fixture": {
+    "root_original_untouched": "C:\\DHW\\.tmp\\g09-live-01\\cpp-profile",
+    "copied_artifact": "C:\\DHW\\.tmp\\line2-nrd-kernelindex\\copy\\kernel_pmmr_data.bin",
+    "source_file": "NODE/TXHASHSET/kernel/pmmr_data.bin",
+    "source_bytes": 382425882,
+    "source_sha256_before": "D4D73A0DB6BCA8CD6E801C8C82BD1F8B3F7379DD43363D7A9B3D3D90E31E9108",
+    "source_sha256_after": "D4D73A0DB6BCA8CD6E801C8C82BD1F8B3F7379DD43363D7A9B3D3D90E31E9108",
+    "copy_sha256": "D4D73A0DB6BCA8CD6E801C8C82BD1F8B3F7379DD43363D7A9B3D3D90E31E9108",
+    "copy_equals_source": true,
+    "entry_size_bytes": 114,
+    "entry_layout": "C++ KernelMMR KERNEL_SIZE=114, protocol V1: features(1) + Fee(8) + lockHeight(8) + excess(33) + signature(64); excess read at offset 17..49"
+  },
+  "counts": {
+    "total_kernel_leaves": 3354613,
+    "unique_excess_commitments": 3354326,
+    "shortfall_total_minus_unique": 287,
+    "duplicate_excess_count": 284,
+    "duplicate_multiplicity_extra_histogram": {
+      "one_extra_occurrence_2_total": 281,
+      "two_extra_occurrences_3_total": 3
+    },
+    "extra_occurrences_sum": 287,
+    "db_unique_key_count_from_g09_log": 3354326,
+    "total_from_g09_log": 3354613,
+    "predicted_db_count_matches_log": true
+  },
+  "correlation": "The RocksDB kernel-position table keys by excess, so 287 extra kernel leaves over 284 duplicate excesses overwrite earlier positions. GetKernelPositionCount counts unique keys = 3354326, exactly the logged count; rebuild checksum XORs all 3354613 leaves, so read-back checksum (unique keys) always differs. The 287 shortfall is fully explained; no additional duplicate mechanism is needed.",
+  "rust_semantics": {
+    "reference": "C:/Users/nurli/AppData/Local/Temp/grin55-minpeers",
+    "find_kernel": "chain/src/txhashset/txhashset.rs:459-479 - scans backwards from max_index to min_index and returns the LATEST matching excess within the range.",
+    "get_kernel_height": "chain/src/chain.rs:1551-1602 - converts min_height/max_height to MMR index bounds (min_index = previous_header.kernel_mmr_size+1 unless height 0/None; max_index = header.kernel_mmr_size for max_height<=head), calls find_kernel, then get_header_for_kernel_index for the block height.",
+    "persistent_index": "Rust has no persistent excess->position kernel index used by get_kernel; the scan is over the kernel PMMR. Duplicate excess commitments are not a consensus error in the kernel set; NRD has its own recent-kernel rules.",
+    "implication": "A correct C++ index must reproduce latest-position-within-[min,max] semantics for duplicate excesses, not assume one position per excess."
+  },
+  "cpp_consequence": {
+    "rebuild": "src/PMMR/KernelIndex.cpp:93-95 AddKernelPosition for every leaf; BlockDBImpl keys KERNELPOS/<gen>/<excess> with RocksDB Put (duplicate overwrites); lines 113-123 require count==expectedKernels and checksum==all-leaf XOR, so a chain with duplicate excesses can never publish the index.",
+    "startup": "src/BlockChain/BlockChainImpl.cpp:434-438 logs 'Kernel index is unavailable; get_kernel will use the direct scan' and continues.",
+    "get_kernel": "src/API/Node/Handlers/GetKernelHandler.h falls back to the bounded direct scan when the index state does not match; direct scan matches Rust latest-in-range semantics.",
+    "not_a_wrong_result_on_fixture": "With the current handler fallback, duplicate-excess chains lose the index optimization but get_kernel results still come from the direct scan, which matches Rust. The index availability/performance invariant is broken, not block/kernel consensus.",
+    "interaction_with_lifetime_bug": "On this fixture the index is unavailable, so EVERY get_kernel uses the direct-scan fallback. The fallback currently returns a pointer to a block-local std::optional (GetKernelHandler.h:139-153), so the dangling-pointer bug is live-relevant for duplicate-excess chains; fixing only the index or only the pointer leaves a risk."
+  },
+  "lifetime_bug": {
+    "file": "src/API/Node/Handlers/GetKernelHandler.h",
+    "lines": "139-153",
+    "description": "pKernel = &kernelWithIndex->first; kernelWithIndex is destroyed at the end of the if-block; line 153 dereferences pKernel.",
+    "indexed_path": "safe (indexedKernel is declared at function scope, lines 90-91/131-132)."
+  },
+  "design_options_for_deferred_fix": [
+    "A (recommended): primary index keyed by unique kernel position (MMR pos or leaf index) storing excess+height; secondary excess->positions mapping so get_kernel can select the latest position within [min,max]; state/schema version bumped and generation rebuild/migration; preserves total-entry count/checksum over every leaf.",
+    "B (smaller): keep single latest-position per excess, but define count/checksum over canonical unique entries, store total leaves and unique entries separately in state, and make the handler use the index only when the canonical latest position satisfies the range (otherwise direct scan). This preserves Rust latest-in-range semantics but needs duplicate-aware state validation and does not index earlier positions.",
+    "Do not merely relax verification and keep count==kernelCount: stateMatches/get_kernel range behavior with duplicates would become ambiguous."
+  ],
+  "status": "read-only audit complete; production fix/tests deferred until first full G09 live completes and Lead approves build-10. No source/build/commit changes."
+}
