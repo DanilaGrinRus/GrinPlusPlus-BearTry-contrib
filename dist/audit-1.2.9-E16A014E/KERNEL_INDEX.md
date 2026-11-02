@@ -32,12 +32,12 @@ compared before returning. Any mismatch falls back to
   generation.
 - `KernelIndex ignores an interrupted unpublished rebuild`.
 - `KernelIndex rebuilds when the state record is stale`.
-- Full suite: **194 cases / 2224 assertions PASS**.
+- Full suite: **194 cases / 2227 assertions PASS**.
 
 ## Artifacts
 
-- `GrinNode D15174D9…`
-- `Tests 1D38C73B…`
+- `GrinNode E16A014E…`
+- `Tests CC6472B1…`
 
 ## Limits
 

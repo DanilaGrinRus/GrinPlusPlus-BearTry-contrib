@@ -105,6 +105,41 @@ bool TxHashSet::ApplyBlock(std::shared_ptr<IBlockDB> pBlockDB, const FullBlock& 
 	// Validate inputs
 	const uint64_t maximumBlockHeight = Consensus::GetMaxCoinbaseHeight(block.GetHeight());
 
+	// Validate NRD relative-height rules before mutating any outputs. The rule is
+	// enforced for NRD kernels; non-NRD kernels are unaffected.
+	{
+		std::map<Commitment, uint64_t> blockKernelHeights;
+		for (const TransactionKernel& kernel : block.GetKernels()) {
+			if (kernel.GetFeatures() != EKernelFeatures::NO_RECENT_DUPLICATE) {
+				continue;
+			}
+
+			const Commitment& excess = kernel.GetExcessCommitment();
+			if (!NrdRules::RecordBlockKernel(blockKernelHeights, excess, block.GetHeight())) {
+				LOG_WARNING_F("Duplicate NRD kernel {} in block {}", excess, block.GetHeight());
+				return false;
+			}
+
+			const auto iter = m_recentNrdKernels.find(excess);
+			if (iter != m_recentNrdKernels.end() && !iter->second.empty()) {
+				const uint64_t previousHeight = iter->second.back().Height;
+				const uint64_t cutoff = block.GetHeight() > 2 * Consensus::WEEK_HEIGHT
+					? block.GetHeight() - 2 * Consensus::WEEK_HEIGHT
+					: 0;
+				if (!NrdRules::IsRelativeHeightSatisfied(
+						previousHeight, block.GetHeight(), kernel.GetLockHeight(), cutoff)) {
+					LOG_WARNING_F(
+						"NRD relative height violation for kernel {} at height {} (previous {})",
+						excess, block.GetHeight(), previousHeight);
+					return false;
+				}
+			}
+ 
+		}
+	}
+
+
+
 	Roaring blockInputBitmap;
 
 	// Prune inputs
@@ -159,39 +194,6 @@ bool TxHashSet::ApplyBlock(std::shared_ptr<IBlockDB> pBlockDB, const FullBlock& 
 	}
 
 	pBlockDB->RemoveOutputPositions(block.GetInputCommitments());
-
-	// Validate NRD relative-height rules before mutating any outputs. The rule is
-	// enforced for NRD kernels; non-NRD kernels are unaffected.
-	{
-		std::map<Commitment, uint64_t> blockKernelHeights;
-		for (const TransactionKernel& kernel : block.GetKernels()) {
-			if (kernel.GetFeatures() != EKernelFeatures::NO_RECENT_DUPLICATE) {
-				continue;
-			}
-
-			const Commitment& excess = kernel.GetExcessCommitment();
-			if (!NrdRules::RecordBlockKernel(blockKernelHeights, excess, block.GetHeight())) {
-				LOG_WARNING_F("Duplicate NRD kernel {} in block {}", excess, block.GetHeight());
-				return false;
-			}
-
-			const auto iter = m_recentNrdKernels.find(excess);
-			if (iter != m_recentNrdKernels.end() && !iter->second.empty()) {
-				const uint64_t previousHeight = iter->second.back().Height;
-				const uint64_t cutoff = block.GetHeight() > 2 * Consensus::WEEK_HEIGHT
-					? block.GetHeight() - 2 * Consensus::WEEK_HEIGHT
-					: 0;
-				if (!NrdRules::IsRelativeHeightSatisfied(
-						previousHeight, block.GetHeight(), kernel.GetLockHeight(), cutoff)) {
-					LOG_WARNING_F(
-						"NRD relative height violation for kernel {} at height {} (previous {})",
-						excess, block.GetHeight(), previousHeight);
-					return false;
-				}
-			}
- 
-		}
-	}
 
 	// Append new kernels
 	for (const TransactionKernel& kernel : block.GetKernels()) {
