@@ -526,35 +526,31 @@ bool BlockChain::EnsureKernelIndex()
 }
 IBlockChain::ApiStateSnapshot BlockChain::GetApiStateSnapshot() const
 {
-	for (int attempt = 0; attempt < 5; attempt++) {
-		const uint64_t sequence = m_stateSequence.load(std::memory_order_acquire);
-		if ((sequence & 1) != 0) {
-			std::this_thread::yield();
-			continue;
-		}
-
-		auto pReader = m_pChainState->Read();
-		const BlockHeaderPtr pTip = pReader->GetTipBlockHeader(EChainType::CONFIRMED);
-		std::shared_ptr<ITxHashSet> pTxHashSet = std::const_pointer_cast<ITxHashSet>(
-			pReader->GetTxHashSetManager()->GetTxHashSet());
-
-		if (m_stateSequence.load(std::memory_order_acquire) != sequence) {
-			continue;
-		}
-
-		if (pTip == nullptr || pTxHashSet == nullptr) {
-			return {};
-		}
-
-		ApiStateSnapshot snapshot;
-		snapshot.valid = true;
-		snapshot.sequence = sequence;
-		snapshot.tip = pTip;
-		snapshot.txHashSet = pTxHashSet;
-		return snapshot;
+	// Hold the mutation lock for as long as the caller keeps the returned
+	// lease. The snapshot therefore references a txhashset that cannot be
+	// replaced or mutated while a serving/API response is being assembled.
+	std::unique_lock<std::mutex> lock(m_stateWriteMutex);
+	const uint64_t sequence = m_stateSequence.load(std::memory_order_acquire);
+	if ((sequence & 1) != 0) {
+		return {};
 	}
 
-	return {};
+	auto pReader = m_pChainState->Read();
+	const BlockHeaderPtr pTip = pReader->GetTipBlockHeader(EChainType::CONFIRMED);
+	std::shared_ptr<ITxHashSet> pTxHashSet = std::const_pointer_cast<ITxHashSet>(
+		pReader->GetTxHashSetManager()->GetTxHashSet());
+
+	if (pTip == nullptr || pTxHashSet == nullptr) {
+		return {};
+	}
+
+	ApiStateSnapshot snapshot;
+	snapshot.valid = true;
+	snapshot.sequence = sequence;
+	snapshot.tip = pTip;
+	snapshot.txHashSet = pTxHashSet;
+	snapshot.lease = std::make_shared<StateReadLease>(std::move(lock));
+	return snapshot;
 }
 
 bool BlockChain::IsApiStateCurrent(const uint64_t sequence) const
@@ -568,11 +564,13 @@ std::shared_ptr<ITxHashSet> BlockChain::GetTxHashSet()
 }
 void BlockChain::CloseTxHashSet()
 {
+	StateWriteGuard writeGuard(*this);
 	m_pChainState->Write()->GetTxHashSetManager()->Close();
 }
 
 void BlockChain::OpenTxHashSet()
 {
+	StateWriteGuard writeGuard(*this);
 	const BlockHeaderPtr pTip = GetTipBlockHeader(EChainType::CONFIRMED);
 	if (pTip != nullptr) {
 		m_pChainState->Write()->GetTxHashSetManager()->Open(pTip);

@@ -1,11 +1,11 @@
 # AUDIT_DELTA (EN) — Grin++ 1.2.9 → Grin v5.5.2 compatibility
 **Current snapshot 2026-11-02.** Baseline 1.2.9 `5f511e6`; working tree HEAD `54d8076`. Source metrics:
 
-- C++ added: **+16,765 lines**; deleted **−550**; 184 files;
-- diff/new C++ text volume: **≈ +705.6 KiB**;
-- final `GrinNode.exe`: **7,742,464 B = 7,561.0 KiB = 7.38 MiB**;
+- C++ added: **+17,010 lines**; deleted **−594**; 187 files;
+- diff/new C++ text volume: **≈ +717.7 KiB**;
+- final `GrinNode.exe`: **7,741,952 B = 7,560.5 KiB = 7.38 MiB**;
 - **exe growth vs 1.2.9: NOT MEASURED** — no original binary is preserved; 7.7 MB is the final size, not a delta;
-- artifacts: `GrinNode 0374EC4F…`, `Tests 7D5ED40B…`; suite **198 / 2,277 PASS**.
+- artifacts: `GrinNode 9DC493E2…`, `Tests 96505A75…`; suite **200 / 2,302 PASS**.
 - **G-09 stage 1:** identity-checked P2P + Rust run at H=3,315,600 — PASS (7/7, 1673/1673, 1673/1673, 1637/1637); roots came from C++ REST, independent H confirmation and ordinary Rust node remain NOT VERIFIED.
 - **PIBD/PIHD guard:** height cap 13, `idx*capacity` overflow check, PIHD response bound to connection/peer, fallback on no chain-height progress; PIBD responses use one `ApiStateSnapshot` with sequence retry, bitmap/root cached by output root, 500 requests/min per connection. PIHD is experimental, `PIHD_HIST` is not advertised; concurrent apply/reorg snapshot test remains open.
 

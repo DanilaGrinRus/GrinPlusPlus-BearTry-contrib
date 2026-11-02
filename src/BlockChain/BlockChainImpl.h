@@ -86,6 +86,18 @@ private:
 		std::unique_lock<std::mutex> m_lock;
 	};
 
+	class StateReadLease final : public IBlockChain::ApiStateSnapshot::ReadLease
+	{
+	public:
+		explicit StateReadLease(std::unique_lock<std::mutex>&& lock)
+			: m_lock(std::move(lock))
+		{
+		}
+
+	private:
+		std::unique_lock<std::mutex> m_lock;
+	};
+
 	BlockChain(
 		std::shared_ptr<ITransactionPool> pTransactionPool,
 		std::shared_ptr<Locked<ChainState>> pChainState

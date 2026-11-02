@@ -38,9 +38,9 @@ Do not report this as 4993 or as the audit H.
 
 ## Artifacts
 
-- Post-guard C++ GrinNode SHA-256: `0374EC4F6C8B0DEC1444E1AAA4994279EC12D02504AF09334BA99FB4F5B8B5E1`
+- Post-guard C++ GrinNode SHA-256: `9DC493E201481362FE371F2B6A9AC59A542373EB56502FE95C4C4DAD3D5F1EA7`
 - Rust wire client SHA-256: `A2561FE6E2AC4CAD76AF73DAA02BCE2972CA00E086853332BCB590289FB6B1D9`
-- Post-guard full identity run: `C:\DHW\.tmp\pibd-wire-still2.log`
+- Post-guard full identity run (read lease + bitmap cache): `C:\DHW\.tmp\pibd-wire-lease.log`
 - Earlier identity run: `C:\DHW\.tmp\pibd-wire-full-identity.log`
 - Client binary: `C:\Users\nurli\AppData\Local\Temp\pibd-wire-audit\target\release\pibd-wire-audit.exe`
 - Header JSON used for roots: `C:\DHW\.tmp\interop\block3315600.json`
@@ -53,9 +53,9 @@ Do not report this as 4993 or as the audit H.
    fetched from a Rust header chain. Identity and segment validation passed, but root
    provenance still needs an independent header source. This is the main remaining caveat.
 2. This does not exercise ordinary Rust node `awaiting_peers`/state activation.
-3. The post-guard run used a **quiescent** C++ state (external peers disabled), because the
-   API-sequence guard intentionally refuses a response if the state changes during assembly.
-   Serving while blocks/reorg are actively changing needs a dedicated concurrent test.
+3. The full identity run used a **quiescent** C++ state (external peers disabled) to make the
+   reference H unambiguous. A separate active-`SYNCING_BLOCKS` kernel-only run passed
+   1637/1637 with the same read lease; a controlled mid-build apply/reorg test is still open.
 4. Negative mutation test (flip proof byte / wrong root) was not run in this pass.
 5. An earlier full run hit a transient C++ connection reset at kernel ~403; the clean rerun
    completed 1637/1637, so this needs separate crash/fault investigation.

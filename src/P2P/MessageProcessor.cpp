@@ -236,13 +236,12 @@ void MessageProcessor::ProcessMessageInternal(const std::shared_ptr<Connection>&
 					break;
 				}
 
-				// Build the entire response from one API snapshot and re-check the
-				// state sequence after the expensive segment/root reads. A block
-				// apply/reorg in between forces a retry; the response is never
-				// assembled from two different states.
+				// Build the entire response from one API snapshot. The snapshot
+				// owns a read lease over the chain mutation lock; it is released
+				// only after the response bytes are prepared, before network send.
 				bool served = false;
 				for (int attempt = 0; attempt < 3 && !served; ++attempt) {
-					const IBlockChain::ApiStateSnapshot snapshot = m_pBlockChain->GetApiStateSnapshot();
+					IBlockChain::ApiStateSnapshot snapshot = m_pBlockChain->GetApiStateSnapshot();
 					if (!snapshot.valid || snapshot.txHashSet == nullptr) {
 						LOG_DEBUG_F("Cannot serve {}: no API state snapshot",
 							MessageTypes::ToString(header.GetMessageType()));
@@ -268,7 +267,7 @@ void MessageProcessor::ProcessMessageInternal(const std::shared_ptr<Connection>&
 					}
 
 					PibdSegmentService service(
-						pState->GetOutputPMMR(), pState->GetRangeProofPMMR(), pState->GetKernelMMR());
+						pState->GetOutputPMMR(), pState->GetRangeProofPMMR(), pState->GetKernelMMR(), blockHash);
 
 					std::shared_ptr<SegmentResponseMessage> pResponse;
 					switch (header.GetMessageType()) {
@@ -308,6 +307,9 @@ void MessageProcessor::ProcessMessageInternal(const std::shared_ptr<Connection>&
 						continue;
 					}
 
+					// Drop the read lease before the asynchronous network send;
+					// the response owns its serialized data.
+					snapshot.lease.reset();
 					pConnection->SendAsync(*pResponse);
 					served = true;
 				}

@@ -75,7 +75,7 @@ bool Connection::ExceedsRateLimit() const
 bool Connection::AllowPibdRequest()
 {
     std::lock_guard<std::mutex> lock(m_pibdRateMutex);
-    const auto now = system_clock::now();
+    const auto now = std::chrono::steady_clock::now();
     while (!m_pibdRequests.empty() &&
         m_pibdRequests.front() + std::chrono::seconds(60) <= now) {
         m_pibdRequests.pop_front();

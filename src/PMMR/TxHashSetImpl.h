@@ -72,6 +72,7 @@ private:
 		uint64_t Height = 0;
 	};
 	std::map<Commitment, std::vector<RecentKernelPosition>> m_recentNrdKernels;
+	bool m_recentNrdIndexComplete = false;
 
 	bool CheckAndStageNrd(const TransactionKernel& kernel, const uint64_t height);
 	void ApplyNrd(const TransactionKernel& kernel, const uint64_t position, const uint64_t height);

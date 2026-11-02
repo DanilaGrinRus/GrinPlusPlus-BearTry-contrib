@@ -35,10 +35,12 @@ public:
 	PibdSegmentService(
 		std::shared_ptr<OutputPMMR> pOutputPMMR,
 		std::shared_ptr<RangeProofPMMR> pRangeProofPMMR,
-		std::shared_ptr<KernelMMR> pKernelMMR)
+		std::shared_ptr<KernelMMR> pKernelMMR,
+		Hash horizonHash = Hash())
 		: m_pOutputPMMR(std::move(pOutputPMMR)),
 		m_pRangeProofPMMR(std::move(pRangeProofPMMR)),
-		m_pKernelMMR(std::move(pKernelMMR))
+		m_pKernelMMR(std::move(pKernelMMR)),
+		m_horizonHash(std::move(horizonHash))
 	{
 	}
 
@@ -49,12 +51,48 @@ public:
 	// to it together with the bitmap accumulator root.
 	Hash GetOutputMmrRoot() const { return m_pOutputPMMR->Root(m_pOutputPMMR->GetSize()); }
 
-	Hash GetBitmapMmrRoot() const { return BuildBitmapMmr().GetRoot(); }
+	Hash GetBitmapMmrRoot() const
+	{
+		const uint64_t size = m_pOutputPMMR->GetSize();
+		const Hash outputRoot = m_pOutputPMMR->Root(size);
+		GetOutputBitmap();
+		{
+			std::lock_guard<std::mutex> lock(s_bitmapCacheMutex);
+			if (s_bitmapCache.valid && s_bitmapCache.horizonHash == m_horizonHash &&
+				s_bitmapCache.size == size && s_bitmapCache.outputRoot == outputRoot &&
+				s_bitmapCache.hasRoot) {
+				return s_bitmapCache.bitmapRoot;
+			}
+		}
 
-	// Unspent outputs, one bit per output leaf index.
+		const Hash bitmapRoot = BuildBitmapMmr().GetRoot();
+		{
+			std::lock_guard<std::mutex> lock(s_bitmapCacheMutex);
+			if (s_bitmapCache.valid && s_bitmapCache.horizonHash == m_horizonHash &&
+				s_bitmapCache.size == size && s_bitmapCache.outputRoot == outputRoot) {
+				s_bitmapCache.bitmapRoot = bitmapRoot;
+				s_bitmapCache.hasRoot = true;
+			}
+		}
+		return bitmapRoot;
+	}
+
+	// Unspent outputs, one bit per output leaf index. The cache key contains
+	// horizon hash + MMR size + output root, so it cannot be reused for a
+	// different state or a reorg.
 	VectorSegmentBitmap GetOutputBitmap() const
 	{
-		const uint64_t numLeaves = MMRUtil::GetNumLeaves(m_pOutputPMMR->GetSize());
+		const uint64_t size = m_pOutputPMMR->GetSize();
+		const Hash outputRoot = m_pOutputPMMR->Root(size);
+		{
+			std::lock_guard<std::mutex> lock(s_bitmapCacheMutex);
+			if (s_bitmapCache.valid && s_bitmapCache.horizonHash == m_horizonHash &&
+				s_bitmapCache.size == size && s_bitmapCache.outputRoot == outputRoot) {
+				return s_bitmapCache.bitmap;
+			}
+		}
+
+		const uint64_t numLeaves = MMRUtil::GetNumLeaves(size);
 		VectorSegmentBitmap bitmap(numLeaves);
 		for (uint64_t leafIndex = 0; leafIndex < numLeaves; ++leafIndex) {
 			if (m_pOutputPMMR->IsUnpruned(LeafIndex::At(leafIndex))) {
@@ -62,6 +100,15 @@ public:
 			}
 		}
 
+		{
+			std::lock_guard<std::mutex> lock(s_bitmapCacheMutex);
+			s_bitmapCache.horizonHash = m_horizonHash;
+			s_bitmapCache.size = size;
+			s_bitmapCache.outputRoot = outputRoot;
+			s_bitmapCache.bitmap = bitmap;
+			s_bitmapCache.hasRoot = false;
+			s_bitmapCache.valid = true;
+		}
 		return bitmap;
 	}
 
@@ -193,7 +240,22 @@ public:
 		return std::nullopt;
 	}
 private:
+	struct BitmapCacheEntry
+	{
+		bool valid = false;
+		bool hasRoot = false;
+		Hash horizonHash;
+		uint64_t size = 0;
+		Hash outputRoot;
+		Hash bitmapRoot;
+		VectorSegmentBitmap bitmap;
+	};
+
+	inline static std::mutex s_bitmapCacheMutex;
+	inline static BitmapCacheEntry s_bitmapCache;
+
 	std::shared_ptr<OutputPMMR> m_pOutputPMMR;
 	std::shared_ptr<RangeProofPMMR> m_pRangeProofPMMR;
 	std::shared_ptr<KernelMMR> m_pKernelMMR;
+	Hash m_horizonHash;
 };

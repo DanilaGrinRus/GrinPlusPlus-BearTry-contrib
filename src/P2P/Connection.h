@@ -116,7 +116,7 @@ private:
 	mutable LRUCache<Hash, Hash> m_advertisedBlocks;
 	mutable std::mutex m_mutex;
 	std::mutex m_pibdRateMutex;
-	std::deque<std::chrono::system_clock::time_point> m_pibdRequests;
+	std::deque<std::chrono::steady_clock::time_point> m_pibdRequests;
 };
 
 typedef std::shared_ptr<Connection> ConnectionPtr;

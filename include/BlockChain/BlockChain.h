@@ -41,15 +41,21 @@ class IBlockChain
 public:
 	using Ptr = std::shared_ptr<IBlockChain>;
 
-	// Coherent read-only view for API handlers. The sequence is even while the
-	// chain is quiescent and odd while a mutation is in progress. The caller
-	// must call IsApiStateCurrent() after its last read and retry otherwise.
+	// Coherent read-only view for API handlers. The returned lease keeps the
+	// chain mutation lock held until the caller releases it, so the txhashset
+	// and PMMR contents cannot change while a response is assembled.
 	struct ApiStateSnapshot
 	{
+		struct ReadLease
+		{
+			virtual ~ReadLease() = default;
+		};
+
 		bool valid = false;
 		uint64_t sequence = 0;
 		BlockHeaderPtr tip = nullptr;
 		std::shared_ptr<ITxHashSet> txHashSet = nullptr;
+		std::shared_ptr<ReadLease> lease = nullptr;
 	};
 
 	virtual ~IBlockChain() = default;

@@ -115,6 +115,13 @@ bool TxHashSet::ApplyBlock(std::shared_ptr<IBlockDB> pBlockDB, const FullBlock& 
 			}
 
 			const Commitment& excess = kernel.GetExcessCommitment();
+			if (!m_recentNrdIndexComplete) {
+				LOG_ERROR_F(
+					"Cannot validate NRD kernel at height {}: recent-kernel index is incomplete",
+					block.GetHeight());
+				return false;
+			}
+
 			if (!NrdRules::RecordBlockKernel(blockKernelHeights, excess, block.GetHeight())) {
 				LOG_WARNING_F("Duplicate NRD kernel {} in block {}", excess, block.GetHeight());
 				return false;
@@ -412,6 +419,9 @@ void TxHashSet::RebuildRecentKernelIndex(
 	const std::shared_ptr<const IBlockDB>& pBlockDB,
 	const BlockHeader& tip)
 {
+	// Do not publish a partially rebuilt index. While incomplete, ApplyBlock
+	// rejects NRD-bearing blocks instead of accepting them without history.
+	m_recentNrdIndexComplete = false;
 	m_recentNrdKernels.clear();
 	if (pBlockDB == nullptr) {
 		return;
@@ -436,9 +446,20 @@ void TxHashSet::RebuildRecentKernelIndex(
 		pHeader = pBlockDB->GetBlockHeader(pHeader->GetPreviousHash());
 	}
 
+	if (blocks.empty() ||
+		blocks.back()->GetHeader()->GetHeight() != cutoff) {
+		LOG_WARNING_F("Could not rebuild NRD index: history does not reach cutoff {}", cutoff);
+		return;
+	}
+
 	for (auto iter = blocks.rbegin(); iter != blocks.rend(); ++iter) {
 		const FullBlock& block = **iter;
 		const BlockHeader& header = *block.GetHeader();
+		if (header.GetNumKernels() < block.GetKernels().size()) {
+			LOG_WARNING_F("Could not rebuild NRD index: kernel count underflow at {}", header.GetHeight());
+			return;
+		}
+
 		const uint64_t firstLeaf = header.GetNumKernels() - block.GetKernels().size();
 		uint64_t leaf = firstLeaf;
 		for (const TransactionKernel& kernel : block.GetKernels()) {
@@ -448,6 +469,8 @@ void TxHashSet::RebuildRecentKernelIndex(
 			++leaf;
 		}
 	}
+
+	m_recentNrdIndexComplete = true;
 }
 uint64_t TxHashSet::GetNumKernels() const
 {
