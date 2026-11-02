@@ -42,8 +42,8 @@ advert 2/15, Nrd 30/428, KernelIndex 3/48, paired NRD 11/11/0. Только дл
 | L1-01 контракт | PASS (review) | `G09_ARCHIVE_SERVING.md` |
 | L1-02 opt-in/archive server | PARTIAL | build-09 compiled; default-off; archive H=3315600; capabilities dynamic |
 | L1-03 advertised tip | PASS (code/unit) | atomic snapshot + Pong header-head fix; advert 2/15 PASS; restart peer-wait root cause evidenced |
-| L1-04 fixture/horizon | BLOCKED/PARTIAL | header 3320005 ⇒ Rust H=3317040 vs archive 3315600; 7C wrong-H refusal in progress |
-| L1-05 full PIBD/no_sync | IN PROGRESS | 7B trimmed fixture: Rust header_sync from zero (bounded run); no PASS until activation/body sync/no_sync |
+| L1-04 wrong-H refusal | PASS (bounded) | build-09: Rust H=3317040 vs C++ archive H=3315600; exact-hash refusals, no segments/wrong data/crash; fallback NOT VERIFIED |
+| L1-05 full PIBD/no_sync | IN PROGRESS | 7B trimmed fixture: Rust header_sync from zero; no PASS until activation/body sync/no_sync |
 | L1-06 restart/reorg/negative/resources | NOT VERIFIED | после первого полного PIBD |
 | L1-07 Output Commitment | NOT VERIFIED | нужен repro/диагноз |
 | L1-08 ordinary live G-09 | NOT VERIFIED | fixed-H PASS — только историческое evidence |
@@ -58,13 +58,15 @@ advert 2/15, Nrd 30/428, KernelIndex 3/48, paired NRD 11/11/0. Только дл
 | Real bodyless NRD state | NOT VERIFIED | short-chain HF3 header-version constraint; no production hook |
 | Rebuild interruption/kill | NOT VERIFIED | child kill works; test-side restore fragile |
 | D2 mainnet NRD | PARTIAL | block path wired; txpool/index policy OPEN |
+| API `get_kernel` direct scan | CONFIRMED UB, fix deferred | local optional dangles after fallback if-block; indexed path safe; task-9; not G-09/consensus blocker |
+| Kernel-index duplicate excess | CONFIRMED mechanism, fix deferred | 287 shortfall consistent with overwritten duplicate-excess keys; read-only count pending; not consensus/PIBD defect claim |
 
 ## L3 — ASan/fuzz/CI
 
 | ID | Статус | Доказательство |
 |---|---|---|
 | Isolation/fast-fail | PASS | isolated HOME/TMP; profile unchanged; 0xC0000409 root cause NOT VERIFIED |
-| ASan | audit pending build-09 | build-08 ASan source-bound only; rocksdb/DB gap |
+| ASan | PASS subset (build-09) | source manifest `CF78C188…`, TestsMini `12C3D16C…`; 0 reports; rocksdb/DB gap |
 | Fuzz | PASS smoke | bounded fuzz; coverage-guided fuzzing absent |
 | CI | PARTIAL | pipeline PASS_WITH_UNCOVERED; hosted deployment NOT VERIFIED |
 | TestMain UAF | FIXED (test) | production Global lifetime hazard NOT VERIFIED |

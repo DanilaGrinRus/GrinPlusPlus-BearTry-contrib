@@ -1,0 +1,36 @@
+# G09-live-01 kernel index failure log slice
+# source: C:\DHW\.tmp\g09-live-01\cpp-profile\LOGS\Node.log
+# full sha256: 29184C03BE47CAE03962F5509FE2EF3890E9A1EC649C675AC652EA5C52AF213B
+# size: 1732184 bytes
+# mtime: 2026-11-03T06:34:05.4606255+07:00
+# fixture profile: C:\DHW\.tmp\g09-live-01\cpp-profile
+# captured: 2026-11-02T23:49:56.5399032Z
+
+[11/03/26 04:14:18.331+07:00] [info] [THREAD:10940] Ensure(61) - Kernel index state is missing; building it from the chain.
+[11/03/26 04:14:18.331+07:00] [warning] [THREAD:10940] ClearKernelPositions(373) - Deleting kernel positions for generation 1.
+[11/03/26 04:15:54.636+07:00] [warning] [THREAD:10940] Ensure(121) - Kernel index rebuild verification failed: count 3354326/3354613, checksum 4a153183089ac2eae9674ef332f5b9d342cf70b8ca93d946f39c7de4bff160fd vs 435c08762bd958aec5b20f5ccfb99af7e74b6ef5dca54da8354bde97f2bfb992.
+[11/03/26 04:15:54.661+07:00] [warning] [THREAD:10940] Create(438) - Kernel index is unavailable; get_kernel will use the direct scan.
+[11/03/26 05:15:41.103+07:00] [info] [THREAD:18164] Ensure(61) - Kernel index state is missing; building it from the chain.
+[11/03/26 05:15:41.103+07:00] [warning] [THREAD:18164] ClearKernelPositions(373) - Deleting kernel positions for generation 1.
+[11/03/26 05:17:14.576+07:00] [warning] [THREAD:18164] Ensure(121) - Kernel index rebuild verification failed: count 3354326/3354613, checksum 4a153183089ac2eae9674ef332f5b9d342cf70b8ca93d946f39c7de4bff160fd vs 435c08762bd958aec5b20f5ccfb99af7e74b6ef5dca54da8354bde97f2bfb992.
+[11/03/26 05:17:14.619+07:00] [warning] [THREAD:18164] Create(438) - Kernel index is unavailable; get_kernel will use the direct scan.
+[11/03/26 05:32:23.409+07:00] [info] [THREAD:18520] Ensure(61) - Kernel index state is missing; building it from the chain.
+[11/03/26 05:32:23.409+07:00] [warning] [THREAD:18520] ClearKernelPositions(373) - Deleting kernel positions for generation 1.
+[11/03/26 05:33:38.695+07:00] [warning] [THREAD:18520] Ensure(121) - Kernel index rebuild verification failed: count 3354326/3354613, checksum 4a153183089ac2eae9674ef332f5b9d342cf70b8ca93d946f39c7de4bff160fd vs 435c08762bd958aec5b20f5ccfb99af7e74b6ef5dca54da8354bde97f2bfb992.
+[11/03/26 05:33:38.729+07:00] [warning] [THREAD:18520] Create(438) - Kernel index is unavailable; get_kernel will use the direct scan.
+[11/03/26 05:43:43.393+07:00] [info] [THREAD:33284] Ensure(61) - Kernel index state is missing; building it from the chain.
+[11/03/26 05:43:43.393+07:00] [warning] [THREAD:33284] ClearKernelPositions(373) - Deleting kernel positions for generation 1.
+[11/03/26 05:45:10.290+07:00] [warning] [THREAD:33284] Ensure(121) - Kernel index rebuild verification failed: count 3354326/3354613, checksum 4a153183089ac2eae9674ef332f5b9d342cf70b8ca93d946f39c7de4bff160fd vs 435c08762bd958aec5b20f5ccfb99af7e74b6ef5dca54da8354bde97f2bfb992.
+[11/03/26 05:45:10.340+07:00] [warning] [THREAD:33284] Create(438) - Kernel index is unavailable; get_kernel will use the direct scan.
+[11/03/26 06:14:44.720+07:00] [info] [THREAD:24872] Ensure(61) - Kernel index state is missing; building it from the chain.
+[11/03/26 06:14:44.720+07:00] [warning] [THREAD:24872] ClearKernelPositions(373) - Deleting kernel positions for generation 1.
+[11/03/26 06:16:03.500+07:00] [warning] [THREAD:24872] Ensure(121) - Kernel index rebuild verification failed: count 3354326/3354613, checksum 4a153183089ac2eae9674ef332f5b9d342cf70b8ca93d946f39c7de4bff160fd vs 435c08762bd958aec5b20f5ccfb99af7e74b6ef5dca54da8354bde97f2bfb992.
+[11/03/26 06:16:03.526+07:00] [warning] [THREAD:24872] Create(438) - Kernel index is unavailable; get_kernel will use the direct scan.
+[11/03/26 06:21:41.296+07:00] [info] [THREAD:31324] Ensure(61) - Kernel index state is missing; building it from the chain.
+[11/03/26 06:21:41.296+07:00] [warning] [THREAD:31324] ClearKernelPositions(373) - Deleting kernel positions for generation 1.
+[11/03/26 06:22:56.691+07:00] [warning] [THREAD:31324] Ensure(121) - Kernel index rebuild verification failed: count 3354326/3354613, checksum 4a153183089ac2eae9674ef332f5b9d342cf70b8ca93d946f39c7de4bff160fd vs 435c08762bd958aec5b20f5ccfb99af7e74b6ef5dca54da8354bde97f2bfb992.
+[11/03/26 06:22:56.717+07:00] [warning] [THREAD:31324] Create(438) - Kernel index is unavailable; get_kernel will use the direct scan.
+[11/03/26 06:25:12.064+07:00] [info] [THREAD:30476] Ensure(61) - Kernel index state is missing; building it from the chain.
+[11/03/26 06:25:12.064+07:00] [warning] [THREAD:30476] ClearKernelPositions(373) - Deleting kernel positions for generation 1.
+[11/03/26 06:26:49.864+07:00] [warning] [THREAD:30476] Ensure(121) - Kernel index rebuild verification failed: count 3354326/3354613, checksum 4a153183089ac2eae9674ef332f5b9d342cf70b8ca93d946f39c7de4bff160fd vs 435c08762bd958aec5b20f5ccfb99af7e74b6ef5dca54da8354bde97f2bfb992.
+[11/03/26 06:26:49.891+07:00] [warning] [THREAD:30476] Create(438) - Kernel index is unavailable; get_kernel will use the direct scan.

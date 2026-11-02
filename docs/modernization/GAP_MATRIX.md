@@ -135,6 +135,11 @@
   каталог `GET /v1/` приведён к реальным маршрутам (unit + build — E53);
   snapshot/pagination и auth — E70–E73. Живые вызовы `/v2`, reorg и pagination остаются — E81; KernelIndex и позиции
   get_kernel реализованы. Строка G-53 остаётся PARTIAL.
+  **Новые подтверждённые риски (fix deferred, task-9):** `GetKernelHandler` direct-scan
+  fallback использует указатель на локальный `std::optional` после выхода из if-блока
+  (use-after-scope, UB; indexed path безопасен); kernel-index shortfall 287 на fixture
+  согласуется с перезаписью duplicate-excess ключей `KERNELPOS/<gen>/<excess>`. Это
+  API/index correctness, не консенсус/PIBD/G-09.
 * Частично: G-09 (PIBD: живая загрузка/активация/догон PASS, resume replay PASS;
   живой serving Rust-клиентом и полное завершение resume не подтверждены),
   G-23 (структурная проверка/rebuild + hash-level ревалидация DONE — E48/E82;
