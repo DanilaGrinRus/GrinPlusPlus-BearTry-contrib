@@ -25,6 +25,7 @@ param(
     [switch]$SkipBuild,
     [switch]$RunFullSuite,
     [switch]$ParallelRegressions,
+    [int]$PortWaitSeconds = 120,
     [string]$AsanTestsMini = '',
     [switch]$AsanSourceCurrent,
     [string]$AsanTree = 'C:\DHW\.tmp\asan-line3\gpp-tree',
@@ -93,26 +94,52 @@ $stages['unit-regressions'] = [ordered]@{
     groups = if ($reg) { @($reg.groups | ForEach-Object { [ordered]@{ group = $_.group; status = $_.status; sha_match = $_.sha_match } }) } else { @() }
 }
 
-# 3 - optional full suite (serialized; fixed wallet-manager port)
+# 3 - optional full suite: exclusive lock + fixed wallet-port preflight
 if ($RunFullSuite) {
     $env:ASAN_OPTIONS = ''
-    $fullId = "$RunId-full"
-    & pwsh -NoProfile -ExecutionPolicy Bypass -File (Join-Path $Repo 'tools\build\run-tests-isolated.ps1') `
-        -ExePath $TestsExe -RunId $fullId -RunRoot (Join-Path $RunRoot 'full') -EvidenceRoot $evDir -KeepBinary | Out-Null
-    $fullManifestPath = Join-Path (Join-Path $RunRoot 'full') ($fullId + '\manifest.json')
-    $full = if (Test-Path -LiteralPath $fullManifestPath) { Get-Content -LiteralPath $fullManifestPath -Raw | ConvertFrom-Json } else { $null }
-    $stdout = if ($full) { $full.instances[0].stdout_path } else { $null }
-    $failLines = if ($stdout -and (Test-Path -LiteralPath $stdout)) { @(Select-String -Path $stdout -Pattern 'FAILED:' | ForEach-Object { $_.Line.Trim() } | Select-Object -Unique) } else { @() }
-    $knownEnvPatterns = 'Test_CreateWallet|Test_Login|Test_EstimateFee|Test_Receive|Test_Slatepack|mg_start|Tor'
-    $envLike = ($failLines | Where-Object { $_ -match $knownEnvPatterns }).Count
-    $stages['full-suite'] = [ordered]@{
-        name = 'full-suite'; status = if ($full -and $full.instances[0].exit_code.decimal -eq 0) { 'PASS' } elseif ($envLike -gt 0) { 'FAIL_ENV_DEPENDENT' } else { 'FAIL' }
-        exit_code = if ($full) { $full.instances[0].exit_code.decimal } else { $null }
-        summary = if ($full) { @($full.instances[0].summary_lines | Select-Object -Last 2) } else { @() }
-        failing_tests = $failLines
-        known_wallet_port_or_tor = $envLike
-        manifest = $fullManifestPath
-        note = 'Full suite serialized. Wallet manager binds fixed 127.0.0.1:3421; concurrent runs/TIME_WAIT cause mg_start failures. Slatepack decrypt paths showed rare full-suite-only failures (line3 stress: 3/5 full PASS, 2/5 FAIL; 8/8 Slatepack-only PASS).'
+    $lockPath = Join-Path 'C:\DHW\.tmp' 'wallet-port-3421.lock'
+    $lock = $null; $waited = 0; $busy = $null
+    try {
+        while ($true) {
+            try { $lock = [IO.File]::Open($lockPath, [IO.FileMode]::CreateNew, [IO.FileAccess]::Write, [IO.FileShare]::None); break } catch { }
+            $waited += 5
+            if ($waited -ge $PortWaitSeconds) { break }
+            Start-Sleep -Seconds 5
+        }
+        $busy = Get-NetTCPConnection -LocalPort 3421 -ErrorAction SilentlyContinue |
+            Where-Object { $_.State -eq 'Listen' -or $_.State -eq 'Established' } | Select-Object -First 1
+        if (-not $lock -or $busy) {
+            $stages['full-suite'] = [ordered]@{
+                name = 'full-suite'; status = 'ENV_CONFLICT'
+                reason = "wallet-manager port 127.0.0.1:3421 busy or lock timeout after ${waited}s; full suite NOT run (no PASS/FAIL claim)"
+                port_3421_busy = [bool]$busy; lock_acquired = [bool]$lock; waited_seconds = $waited
+            }
+        } else {
+            $fullId = "$RunId-full"
+            & pwsh -NoProfile -ExecutionPolicy Bypass -File (Join-Path $Repo 'tools\build\run-tests-isolated.ps1') `
+                -ExePath $TestsExe -RunId $fullId -RunRoot (Join-Path $RunRoot 'full') -EvidenceRoot $evDir -KeepBinary | Out-Null
+            $fullManifestPath = Join-Path (Join-Path $RunRoot 'full') ($fullId + '\manifest.json')
+            $full = if (Test-Path -LiteralPath $fullManifestPath) { Get-Content -LiteralPath $fullManifestPath -Raw | ConvertFrom-Json } else { $null }
+            $stdout = if ($full) { $full.instances[0].stdout_path } else { $null }
+            $failLines = if ($stdout -and (Test-Path -LiteralPath $stdout)) { @(Select-String -Path $stdout -Pattern 'FAILED:' | ForEach-Object { $_.Line.Trim() } | Select-Object -Unique) } else { @() }
+            $envPortPatterns = 'Test_CreateWallet|Test_Login|Test_EstimateFee|mg_start|Tor'
+            $envLike = ($failLines | Where-Object { $_ -match $envPortPatterns }).Count
+            $slatepackLike = ($failLines | Where-Object { $_ -match 'Test_Slatepack|DecryptSlatepack' }).Count
+            $stages['full-suite'] = [ordered]@{
+                name = 'full-suite'; status = if ($full -and $full.instances[0].exit_code.decimal -eq 0) { 'PASS' } elseif ($envLike -gt 0 -and $slatepackLike -eq 0) { 'FAIL_ENV_DEPENDENT' } else { 'FAIL' }
+                exit_code = if ($full) { $full.instances[0].exit_code.decimal } else { $null }
+                summary = if ($full) { @($full.instances[0].summary_lines | Select-Object -Last 2) } else { @() }
+                failing_tests = $failLines
+                known_wallet_port_or_tor = $envLike
+                slatepack_like_failures = $slatepackLike
+                manifest = $fullManifestPath
+                port_preflight = 'exclusive lock acquired; 127.0.0.1:3421 had no Listen/Established sockets'
+                note = 'Full suite exclusive (lock + port 3421 preflight). Only pure wallet-port/Tor failures are ENV_DEPENDENT; rare Slatepack-decrypt failures are NOT blanket-attributed to environment and remain FAIL/open flake.'
+            }
+        }
+    } finally {
+        if ($lock) { $lock.Dispose() }
+        Remove-Item -LiteralPath $lockPath -Force -ErrorAction SilentlyContinue
     }
 } else {
     $stages['full-suite'] = [ordered]@{ name = 'full-suite'; status = 'NOT RUN'; reason = '-RunFullSuite not set' }
@@ -134,7 +161,10 @@ if (Test-Path -LiteralPath (Join-Path $AsanTree 'include')) {
             if (-not $tre.ContainsKey($k) -or (Get-FileSha $rep[$k]) -ne (Get-FileSha $tre[$k])) { $mismatch++ }
         }
     }
-    $asanStale = ($mismatch -gt 0) -or (-not $AsanSourceCurrent)
+    $asanStale = ($mismatch -gt 0)
+    $asmSourceManifest = $null
+    $bm = 'C:\DHW\.tmp\asan-line3\gpp-build\build_manifest.json'
+    if (Test-Path -LiteralPath $bm) { $asmSourceManifest = (Get-Content -LiteralPath $bm -Raw | ConvertFrom-Json).source_manifest_sha256 }
 }
 if (-not $AsanTestsMini) {
     $stages['asan-subset'] = [ordered]@{ name = 'asan-subset'; status = 'NOT RUN'; reason = 'no ASan TestsMini provided' }
@@ -145,7 +175,38 @@ if (-not $AsanTestsMini) {
     $env:ASAN_OPTIONS = 'detect_leaks=0'; $env:GRINPP_NRD_CASES = Join-Path $Repo 'tools\audit\nrd\cases\nrd_cases.json'
     & pwsh -NoProfile -ExecutionPolicy Bypass -File (Join-Path $Repo 'tools\fuzz\run_asan_teardown_regression.ps1') -ExePath $AsanTestsMini -RunId $asanId -KeepBinary | Out-Null
     $asanExit = $LASTEXITCODE
-    $stages['asan-subset'] = [ordered]@{ name = 'asan-subset'; status = if ($asanExit -eq 0) { 'PASS' } else { 'FAIL' }; exit_code = $asanExit; asan_testsmini_sha256 = (Get-FileSha $AsanTestsMini); note = 'teardown regression + subset evidence from prior ASan filtered runs' }
+    $asanFilters = [ordered]@{
+        'nrd'     = 'Nrd*'
+        'archive' = 'PibdArchiveServer::*'
+        'segment' = 'Segment*'
+        'p2p'     = 'Capabilities::*,MessageTypes::*,GrinVersion::*,P2P::AdvertisedTip*'
+    }
+    $asanRuns = @()
+    foreach ($k in $asanFilters.Keys) {
+        $rid = "$RunId-asan-$k"
+        & pwsh -NoProfile -ExecutionPolicy Bypass -File (Join-Path $Repo 'tools\build\run-tests-isolated.ps1') `
+            -ExePath $AsanTestsMini -RunId $rid -RunRoot (Join-Path $RunRoot 'asan') -EvidenceRoot $evDir -KeepBinary -ExeArgs $asanFilters[$k] | Out-Null
+        $rex = $LASTEXITCODE
+        $rmp = Join-Path (Join-Path $RunRoot 'asan') ($rid + '\manifest.json')
+        $rm = if (Test-Path -LiteralPath $rmp) { Get-Content -LiteralPath $rmp -Raw | ConvertFrom-Json } else { $null }
+        $asanRuns += [ordered]@{
+            filter = $asanFilters[$k]; run_id = $rid; exit_code = $rex
+            status = if ($rex -eq 0 -and $rm -and $rm.instances[0].exit_code.decimal -eq 0) { 'PASS' } else { 'FAIL' }
+            sha_match = [bool]($rm -and $rm.binary.source_sha256 -eq (Get-FileSha $AsanTestsMini))
+            summary = if ($rm) { @($rm.instances[0].summary_lines | Select-Object -Last 2) } else { @() }
+        }
+    }
+    $asanFailed = @($asanRuns | Where-Object { $_.status -ne 'PASS' -or -not $_.sha_match })
+    $stages['asan-subset'] = [ordered]@{
+        name = 'asan-subset'; status = if ($asanExit -eq 0 -and $asanFailed.Count -eq 0) { 'PASS' } else { 'FAIL' }
+        exit_code = $asanExit; asan_testsmini_sha256 = (Get-FileSha $AsanTestsMini)
+        source_manifest = $asmSourceManifest
+        source_mismatch_count = $mismatch
+        teardown_regression = if ($asanExit -eq 0) { 'PASS' } else { 'FAIL' }
+        runs = $asanRuns
+        blocked = @('Test_NrdPreCommit', 'Test_NrdFalseBan', 'Test_NrdBatchSafety', 'Test_KernelIndex') # Link: BlockChain->Database->non-ASan rocksdb
+        note = 'ASan rebuilt from current compiled sources; subset + zero-test teardown only. Blocked tests stay covered by the normal-binary suite.'
+    }
 }
 
 # 5 - fuzz smoke (advisory, bounded, never a safety claim)

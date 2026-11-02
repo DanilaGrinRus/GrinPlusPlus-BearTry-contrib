@@ -1,0 +1,1 @@
+iteration=99 seed=20261103 base=truncated_central_directory.zip bytes=279

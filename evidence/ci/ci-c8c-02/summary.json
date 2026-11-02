@@ -1,0 +1,168 @@
+{
+  "schema": "gpp-line3-ci-pipeline/v1",
+  "run_id": "ci-c8c-02",
+  "created_utc": "2026-11-02T22:49:22.9955152Z",
+  "repo": "C:\\DHW\\Gplus\\src\\grinplusplus",
+  "overall_result": "PASS_WITH_UNCOVERED",
+  "failed_stages": [],
+  "not_run_stages": [
+    "normal-build",
+    "asan-subset"
+  ],
+  "stages": {
+    "provenance": {
+      "name": "provenance",
+      "status": "PASS",
+      "git_head": "cb510302f5bebc0d64c5d6a1c0571046a63593ef",
+      "git_status_porcelain": [
+        " M docs/modernization/NRD_DIFFERENTIAL.md",
+        " M tools/audit/nrd/rust-oracle/Cargo.lock",
+        " M tools/audit/nrd/rust-oracle/Cargo.toml",
+        " M tools/audit/nrd/rust-oracle/src/main.rs",
+        " M tools/build/ci-pipeline.ps1",
+        "?? evidence/line3/asan-c8c-archive-01/",
+        "?? evidence/line3/asan-c8c-nrd-01/",
+        "?? evidence/line3/asan-c8c-p2p-01/",
+        "?? evidence/line3/asan-c8c-segment-01/",
+        "?? evidence/line3/asan-c8c-teardown-01/",
+        "?? evidence/line3/full-asan-20261103-054256/",
+        "?? evidence/line3/linked-asan-build-20261103-054836/",
+        "?? tools/audit/nrd/evidence/cpp-nrd-differential-report-paired-nrd-paired-v5-c8c386-20261103-054716.json",
+        "?? tools/audit/nrd/evidence/isolated/nrd-paired-v5-c8c386-20261103-054716/",
+        "?? tools/audit/nrd/evidence/paired-differential-report-nrd-paired-v5-c8c386-20261103-054716.json",
+        "?? tools/audit/nrd/evidence/rust-oracle-c8c386-v4.json",
+        "?? tools/audit/nrd/evidence/rust-oracle-c8c386-v5.json"
+      ],
+      "tests_exe": "C:\\DHW\\.tmp\\line1-build-07\\Tests-C8C386BE576A.exe",
+      "tests_sha256": "C8C386BE576A62604404E0FA02E56EE9E8F06B50EA0B15AD109F36F5AFF5B7FE",
+      "tests_bytes": 9241600,
+      "tests_pe_ts": "0x6AE90EE9",
+      "expected_tests_sha": "C8C386BE576A62604404E0FA02E56EE9E8F06B50EA0B15AD109F36F5AFF5B7FE",
+      "tests_sha_match": true,
+      "grin_node_exe": "C:\\DHW\\Gplus\\src\\grinplusplus\\bin\\Release\\Release\\GrinNode.exe",
+      "grin_node_sha256": "F9EF06B4CB0962B50E6DDBD186E1C61F5872FAFF9E41A779EE7C317A2ED25BDA",
+      "expected_grin_node_sha": "F9EF06B4CB0962B50E6DDBD186E1C61F5872FAFF9E41A779EE7C317A2ED25BDA",
+      "grin_node_sha_match": true
+    },
+    "normal-build": {
+      "name": "normal-build",
+      "status": "NOT RUN",
+      "reason": "provided binary; build not performed in this invocation"
+    },
+    "unit-regressions": {
+      "name": "unit-regressions",
+      "status": "PASS",
+      "exit_code": 0,
+      "evidence": "C:\\DHW\\Gplus\\src\\grinplusplus\\evidence\\ci\\ci-c8c-02\\ci-c8c-02-reg\\regressions.json",
+      "groups": [
+        {
+          "group": "advertised-tip",
+          "status": "PASS",
+          "sha_match": true
+        },
+        {
+          "group": "false-ban",
+          "status": "PASS",
+          "sha_match": true
+        },
+        {
+          "group": "nrd-rollback-reorg",
+          "status": "PASS",
+          "sha_match": true
+        },
+        {
+          "group": "rebuild-interruption",
+          "status": "PASS",
+          "sha_match": true
+        }
+      ]
+    },
+    "full-suite": {
+      "name": "full-suite",
+      "status": "PASS",
+      "exit_code": 0,
+      "summary": [
+        "Running Tests...",
+        "All tests passed (4013 assertions in 245 test cases)"
+      ],
+      "failing_tests": null,
+      "known_wallet_port_or_tor": 0,
+      "slatepack_like_failures": 0,
+      "manifest": "C:\\DHW\\.tmp\\ci-iso\\full\\ci-c8c-02-full\\manifest.json",
+      "port_preflight": "exclusive lock acquired; 127.0.0.1:3421 had no Listen/Established sockets",
+      "note": "Full suite exclusive (lock + port 3421 preflight). Only pure wallet-port/Tor failures are ENV_DEPENDENT; rare Slatepack-decrypt failures are NOT blanket-attributed to environment and remain FAIL/open flake."
+    },
+    "asan-subset": {
+      "name": "asan-subset",
+      "status": "NOT RUN (STALE)",
+      "reason": "ASan source binding does not match current compiled sources (mismatch=3); rebuild requires explicit build authorization",
+      "asan_testsmini": "C:\\DHW\\.tmp\\asan-line3\\fuzz-linked\\TestsMini.exe",
+      "source_mismatch_count": 3
+    },
+    "fuzz-smoke": {
+      "name": "fuzz-smoke",
+      "status": "PASS (ADVISORY)",
+      "exit_code": 0,
+      "iterations": 100,
+      "max_seconds": 20.0,
+      "targets": [
+        "bytebuffer",
+        "zip",
+        "nrd_rules"
+      ],
+      "evidence": "C:\\DHW\\.tmp\\asan-line3\\runs\\ci-c8c-02-fuzz\\manifest.json",
+      "note": "Bounded mutation smoke; coverage not measured; source binding may be stale (see asan-subset stage). Not a safety proof."
+    },
+    "untested-zones": {
+      "name": "untested-zones",
+      "status": "REPORTED",
+      "zones": [
+        {
+          "zone": "rocksdb/database/chainstate under ASan",
+          "status": "NOT COVERED",
+          "close_criterion": "ASan-rebuilt rocksdb + C++ sysroot and full Tests.exe under ASan"
+        },
+        {
+          "zone": "coverage-guided fuzzing",
+          "status": "NOT AVAILABLE",
+          "close_criterion": "clang-cl/libFuzzer or external clang runner with coverage publication"
+        },
+        {
+          "zone": "snapshot activation fault injection",
+          "status": "NOT COVERED",
+          "close_criterion": "crash/failure before/after staging, rename/commit, disk-full harness"
+        },
+        {
+          "zone": "NRD transitions fault injection",
+          "status": "PARTIAL (unit simulations)",
+          "close_criterion": "read-error during rebuild, interruption before commit, reorg rollback under ASan fault injection"
+        },
+        {
+          "zone": "wallet/Tor environment determinism",
+          "status": "ENV-DEPENDENT",
+          "close_criterion": "serialize fixed port 3421 or allocate per-run ports; deterministic full-suite evidence"
+        },
+        {
+          "zone": "ordinary-binary live G-09",
+          "status": "NOT VERIFIED",
+          "close_criterion": "live chain/peer acceptance evidence"
+        },
+        {
+          "zone": "historical Tests.exe 0xC0000409",
+          "status": "NOT VERIFIED",
+          "close_criterion": "preserved binary/dump + reproducible scenario"
+        },
+        {
+          "zone": "crafted-zip ProcessTxHashSet end-to-end",
+          "status": "NOT VERIFIED",
+          "close_criterion": "line2/line1 end-to-end harness evidence"
+        }
+      ]
+    }
+  },
+  "notes": [
+    "Stages are independent evidence. PASS of normal build/unit/asan/fuzz does not prove live-network compatibility.",
+    "ASan/fuzz stages are never converted to PASS when their source binding is stale.",
+    "Wallet/full suite must be serialized: fixed 127.0.0.1:3421."
+  ]
+}

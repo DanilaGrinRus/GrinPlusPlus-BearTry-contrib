@@ -56,6 +56,16 @@ public:
 	static TestServer::Ptr Create();
 	static TestServer::Ptr CreateWithWallet();
 
+	// Opens the existing AUTOMATED_TESTING data dirs without deleting/recreating
+	// them. Used by restart tests; the previous TestServer must be destroyed
+	// first and must have had SetPreserveDataOnDestruct(true).
+	static TestServer::Ptr OpenExisting();
+
+	// Restart tests need the data dirs to survive TestServer destruction.
+	void SetPreserveDataOnDestruct(const bool preserve) noexcept { m_preserveData = preserve; }
+
+	std::shared_ptr<IDatabase> GetDatabase() const noexcept { return m_pDatabase; }
+
 	std::shared_ptr<Locked<IBlockDB>> GetBlockDB() const noexcept;
 	const std::shared_ptr<Locked<TxHashSetManager>>& GetTxHashSetManager() const noexcept { return m_pTxHashSetManager; }
 	const ITransactionPool::Ptr& GetTxPool() const noexcept { return m_pTxPool; }
@@ -107,4 +117,5 @@ private:
 	std::unique_ptr<TestMiner> m_pMiner;
 	size_t m_tempDirs;
 	size_t m_numUsers;
+	bool m_preserveData = false;
 };

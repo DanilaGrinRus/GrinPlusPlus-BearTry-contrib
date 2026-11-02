@@ -1,0 +1,108 @@
+{
+  "schema": "gpp-line3-linked-asan-v1",
+  "created_utc": "2026-11-02T22:48:09.3544680Z",
+  "repo": "C:\\DHW\\Gplus\\src\\grinplusplus",
+  "git_head": "cb510302f5bebc0d64c5d6a1c0571046a63593ef",
+  "git_status": [
+    " M docs/modernization/NRD_DIFFERENTIAL.md",
+    " M tools/audit/nrd/rust-oracle/Cargo.lock",
+    " M tools/audit/nrd/rust-oracle/Cargo.toml",
+    " M tools/audit/nrd/rust-oracle/src/main.rs",
+    "?? evidence/line3/full-asan-20261103-054256/",
+    "?? tools/audit/nrd/evidence/cpp-nrd-differential-report-paired-nrd-paired-v5-c8c386-20261103-054716.json",
+    "?? tools/audit/nrd/evidence/isolated/nrd-paired-v5-c8c386-20261103-054716/",
+    "?? tools/audit/nrd/evidence/paired-differential-report-nrd-paired-v5-c8c386-20261103-054716.json",
+    "?? tools/audit/nrd/evidence/rust-oracle-c8c386-v4.json",
+    "?? tools/audit/nrd/evidence/rust-oracle-c8c386-v5.json"
+  ],
+  "copied_tree": "C:\\DHW\\.tmp\\asan-line3\\gpp-tree",
+  "lib_dir": "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\bin\\Release\\Release",
+  "profile": "/W4 /WX /O1 /Zi /MT /EHsc /std:c++17 /fsanitize=address, linked against full-project ASan libs",
+  "asan_runtime": {
+    "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\clang_rt.asan_dynamic-x86_64.dll",
+    "sha256": "3AA742521E8CBD23252F0545AA51D5A15624A3E4430FBE2F81567AFAEB3FC59B"
+  },
+  "libraries": [
+    {
+      "name": "bitcoin.lib",
+      "sha256": "941339A466E1C415361560D5F45259F5663FBB2D5D453A6EC77D5612CAF11E00",
+      "bytes": 738220
+    },
+    {
+      "name": "chachapoly.lib",
+      "sha256": "27F75F0917B0551CF6575B6CF7E3AB1D60E14EE4CA1187ACB20F04EFB808629C",
+      "bytes": 159688
+    },
+    {
+      "name": "Common.lib",
+      "sha256": "62EB661119BB64ED002658E259C59D59E9D9E12F77746C974EAA879B7B51A008",
+      "bytes": 12156750
+    },
+    {
+      "name": "Core.lib",
+      "sha256": "945D15334A897189428C8CCA01AE3EF8C2CAC193BFE23E53808A23A23AD772F4",
+      "bytes": 40492250
+    },
+    {
+      "name": "Crypto.lib",
+      "sha256": "CF64E00B34E8C22323F212637E5F22EAA28F16EB072038029EBC3442F7FFD907",
+      "bytes": 23862200
+    },
+    {
+      "name": "jsoncpp.lib",
+      "sha256": "9199B53A9F7683FD943BED9BBCD80DE1CEE8DDA3E2907960A9EE06566FDCD0A4",
+      "bytes": 2915210
+    },
+    {
+      "name": "Net.lib",
+      "sha256": "720B97A4FC9119A298E1316AB2F376790E8C064AC67F2B6CF53C0ECE3CB1BCEC",
+      "bytes": 11428590
+    },
+    {
+      "name": "PMMR.lib",
+      "sha256": "42DF8E20E9FF272AA1C056AADC647CB5326B7D062BC16D37125AA966FC04B91A",
+      "bytes": 34225838
+    },
+    {
+      "name": "rfc6234.lib",
+      "sha256": "6EF4BBB5537C9EC664A1065D45F19C84B2858433B465F8069D3554163C39AC2B",
+      "bytes": 165252
+    },
+    {
+      "name": "scrypt.lib",
+      "sha256": "A846F108E19ADA939A8C8083F90DF2650627F6C7B6A8F56605520DD4508DB74D",
+      "bytes": 77216
+    },
+    {
+      "name": "sha3.lib",
+      "sha256": "78918974F9F6DA460642A72B088AE86FBA39F19F360AE97A30BAD9BA505F14B0",
+      "bytes": 132546
+    },
+    {
+      "name": "Tor.lib",
+      "sha256": "694A5629C79F54FB76D99C42CB9E31E6E73A7F76629F6560CF9C3DC5A8EA560D",
+      "bytes": 20117344
+    }
+  ],
+  "targets": {
+    "tests_mini": {
+      "exe": "C:\\DHW\\.tmp\\asan-line3\\fuzz-linked\\TestsMini.exe",
+      "log": "C:\\DHW\\.tmp\\asan-line3\\fuzz-linked\\logs\\build_tests_mini.log",
+      "exit_code": 0,
+      "sources": [
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\TestMain.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_NrdDifferential.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_NrdIndexRebuild.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_NrdRules.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_NrdPolicy.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_Segment.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_PibdServing.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\Net\\Test_P2PCompat.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\src\\BlockChain\\Validators\\BlockValidator.cpp",
+        "C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\stub_chain_getbyheight.cpp"
+      ],
+      "binary_sha256": "19FE60057312CDC6D28E430F1247E5069E7DE136D1388482FCC3668936244ACF",
+      "bytes": 8343552
+    }
+  }
+}

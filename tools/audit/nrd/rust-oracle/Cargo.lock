@@ -953,6 +953,7 @@ dependencies = [
  "grin_chain",
  "grin_core",
  "grin_keychain",
+ "grin_store",
  "grin_util",
  "serde_json",
 ]

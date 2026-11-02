@@ -179,11 +179,18 @@ void MessageProcessor::ProcessMessageInternal(const std::shared_ptr<Connection>&
 			const PingMessage pingMessage = PingMessage::Deserialize(byteBuffer);
 			pConnection->UpdateTotals(pingMessage.GetTotalDifficulty(), pingMessage.GetHeight());
 
-			// Answer from the authoritative chain store. Tip-header lookup can
-			// lag immediately after PIBD activation, leaving the peer with height 0.
-			const uint64_t height = m_pBlockChain->GetHeight(EChainType::CONFIRMED);
-			const uint64_t difficulty = m_pBlockChain->GetTotalDifficulty(EChainType::CONFIRMED);
-			const PongMessage pongMessage(difficulty, height);
+			// Reply from ONE coherent header-head snapshot (height + TD from the
+			// same tip). Do not fall back to CONFIRMED or mix values: peers use
+			// this as our sync height/difficulty, and body-vs-header values leave
+			// a restarted Rust peer stuck in AwaitingPeers (task-7A root cause).
+			const auto advertisedTip = GetAdvertisedTip();
+			if (!advertisedTip)
+			{
+				LOG_DEBUG_F("Withholding Pong from {}: no coherent header-tip snapshot available.", pConnection);
+				break;
+			}
+
+			const PongMessage pongMessage(advertisedTip->TotalDifficulty, advertisedTip->Height);
 			pConnection->SendAsync(pongMessage);
 			break;
 		}

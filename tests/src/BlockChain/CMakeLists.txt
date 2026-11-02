@@ -7,4 +7,6 @@ list_append_parent(
     "Test_DbCheckpoint.cpp"
     "Test_DbRecovery.cpp"
     "Test_KernelIndex.cpp"
+    "Test_NrdBodylessRestart.cpp"
+    "Test_NrdKillHarness.cpp"
 )

@@ -245,3 +245,25 @@ KernelIndex, differential) — PASS.
 - **C8C386BE — финальный normal authoritative SHA** для NRD/archive evidence;
   930/8F10/DDC/FD7C — historical. ASan остаётся source-bound и для C8C
   **STALE** (mismatch=19), без PASS-claims.
+
+### BUILD-09 0A3B7D66 — final binding WITH EXPLICIT EXCEPTION (Lead decision b)
+
+- Tests
+  `0A3B7D66E78F5E70A6D95616F0138D994AEB820796C0C77E98AEC7EAC4F2735B`
+  (9 335 808 B, PE `0x6AE91AB1`), GrinNode
+  `F90EEF389D1B35B7A17BD8E3C35F06AECFD9C39410C4F755713E1CD1F448A2F8`;
+  repo == `C:\DHW\.tmp\build-09` copies; BUILD OK; frozen source (0 changes after
+  build start; aggregate `832C378C…`; production `964FE6D7…`).
+- Line2 evidence проверено: preserved `Tests-0A3B7D66E78F.exe`; BlockPipe 3/16,
+  Nrd* 30/428, KernelIndex 3/48 PASS; bodyless FAIL (test-only short-chain header
+  version); kill NOT VERIFIED (test-only fs restore).
+- Line3 independent: full **249 cases / 248 passed / 1 failed** (4033/4032 ×2),
+  единственный провал — test-only `Test_NrdBodylessRestart`; PASS: archive 8/187,
+  Nrd 30/428, KernelIndex 3/48, advert 2/15, BlockPipe 3/16.
+- ASan refresh: source manifest `CF78C188…`, TestsMini `12C3D16C…`, Nrd* 21/365,
+  archive 8/187, Segment 16/68, P2P 7/61, teardown PASS, 0 reports; bodyless/kill/
+  BlockPipe normal-only.
+- **Binding:** build-09 — normal authoritative **WITH EXPLICIT EXCEPTION**
+  (не fully green; bodyless-NRD + kill-recovery NOT VERIFIED; production 0 fails);
+  C8C/build-08 и ранее — historical; ASan source-bound к build-09 production
+  sources. Build-10 — backlog по отдельному approval.

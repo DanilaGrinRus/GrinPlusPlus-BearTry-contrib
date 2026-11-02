@@ -1,0 +1,77 @@
+# Line-3 CI workflow (template for a SELF-HOSTED Windows runner).
+#
+# Deployment status: NOT VERIFIED in this workspace. The repository currently has
+# uncommitted cross-line changes, and no hosted/self-hosted runner is attached, so
+# this file is a ready-to-wire template, not proof of a hosted run. The executable
+# pipeline is tools/build/ci-pipeline.ps1; it has been run locally (ci-c8c-02)
+# with separated stages and machine-readable evidence.
+#
+# Runner requirements: Windows x64, MSVC 14.44 / VS2022 BuildTools, Windows SDK
+# 10.0.26100, pwsh 7, repo vendored deps, ASan runtime DLL available for the ASan
+# subset. The runner must NOT run wallet/full suites in parallel: wallet manager
+# binds fixed 127.0.0.1:3421 (pipeline takes an exclusive lock and preflights it).
+
+name: line3-ci
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'src/**'
+      - 'include/**'
+      - 'tests/**'
+      - 'tools/build/**'
+      - 'tools/fuzz/**'
+      - 'CMakeLists.txt'
+
+jobs:
+  line3:
+    runs-on: [self-hosted, windows, x64, gpp]
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain sanity
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          pwsh --version
+          & git rev-parse HEAD
+          & git status --porcelain
+
+      - name: Build Tests (normal profile)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force C:\DHW\.tmp | Out-Null
+          pwsh tools/build/build.ps1 -Target Tests
+          if ($LASTEXITCODE -ne 0) { throw "normal build failed" }
+
+      - name: CI pipeline (provenance + regressions + full suite + ASan subset + fuzz smoke + untested zones)
+        shell: pwsh
+        env:
+          ASAN_TESTSMINI: ${{ vars.ASAN_TESTSMINI }}
+          FUZZ_BUILD_DIR: ${{ vars.FUZZ_BUILD_DIR }}
+          EXPECTED_TESTS_SHA: ${{ vars.EXPECTED_TESTS_SHA }}
+          EXPECTED_GRINNODE_SHA: ${{ vars.EXPECTED_GRINNODE_SHA }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $args = @(
+            '-NoProfile','-ExecutionPolicy','Bypass','-File','tools/build/ci-pipeline.ps1',
+            '-SkipBuild','-RunFullSuite','-ParallelRegressions',
+            '-RunId', ('ci-' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
+          )
+          if ($env:EXPECTED_TESTS_SHA) { $args += @('-ExpectedTestsSha', $env:EXPECTED_TESTS_SHA) }
+          if ($env:EXPECTED_GRINNODE_SHA) { $args += @('-ExpectedGrinNodeSha', $env:EXPECTED_GRINNODE_SHA) }
+          if ($env:ASAN_TESTSMINI) { $args += @('-AsanTestsMini', $env:ASAN_TESTSMINI) }
+          if ($env:FUZZ_BUILD_DIR) { $args += @('-FuzzBuildDir', $env:FUZZ_BUILD_DIR) }
+          & pwsh @args
+          if ($LASTEXITCODE -ne 0) { throw "CI pipeline failed" }
+
+      - name: Upload line3 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: line3-ci-evidence
+          path: evidence/ci/**
+          if-no-files-found: error

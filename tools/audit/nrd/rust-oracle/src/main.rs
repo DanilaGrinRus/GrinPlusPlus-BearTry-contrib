@@ -26,12 +26,16 @@ use grin_core as core;
 use grin_keychain as keychain;
 
 use chain::types::{NoopAdapter, Options};
+use chain::txhashset::TxHashSet;
 use chain::Chain;
+use core::core::pmmr::PMMR;
 use core::core::{Block, BlockHeader, KernelFeatures, NRDRelativeHeight, Transaction, TxKernel};
 use core::genesis;
 use core::global;
 use core::libtx::{aggsig, build, reward, ProofBuilder};
+use core::ser::ProtocolVersion;
 use core::{consensus, pow};
+use grin_store::pmmr::PMMRBackend;
 use keychain::{BlindingFactor, ExtKeychain, ExtKeychainPath, Identifier, Keychain};
 
 const PREMINE_BLOCKS: u32 = 16;
@@ -245,6 +249,184 @@ fn run_real_rust_rebuild(chain: &Chain, genesis_header: &BlockHeader) -> Result<
 		.map_err(|e| format!("{}", e))
 }
 
+fn evaluate_invalid_history_case(
+	case: &Value,
+	index: usize,
+) -> Result<(String, String), String> {
+	global::set_local_chain_type(global::ChainTypes::AutomatedTesting);
+	global::set_local_nrd_enabled(true);
+
+	// A real chain cannot contain an invalid NRD history (the rules reject it at
+	// apply time), so build a structurally identical valid chain (same kernel
+	// count per block), then craft the kernel PMMR with the invalid kernels and
+	// run the real Rust verify_kernel_pos_index on it. This exercises the actual
+	// rebuild code path; only the kernel data is crafted.
+	let dir = std::env::temp_dir().join(format!(
+		"grin55-nrd-oracle-invalid-{}-{}",
+		std::process::id(),
+		index
+	));
+	let craft_root = std::env::temp_dir().join(format!(
+		"grin55-nrd-oracle-crafted-{}-{}",
+		std::process::id(),
+		index
+	));
+	let _ = fs::remove_dir_all(&dir);
+	let _ = fs::remove_dir_all(&craft_root);
+	fs::create_dir_all(&dir).map_err(|e| format!("temp dir: {}", e))?;
+	fs::create_dir_all(&craft_root).map_err(|e| format!("crafted dir: {}", e))?;
+
+	let kc = ExtKeychain::from_random_seed(false).map_err(|e| format!("keychain: {}", e))?;
+	let genesis_block = genesis_block(&kc);
+	let genesis_header = genesis_block.header.clone();
+	let chain = Chain::init(
+		dir.to_string_lossy().to_string(),
+		Arc::new(NoopAdapter {}),
+		genesis_block,
+		pow::verify_size,
+		false,
+		None,
+	)
+	.map_err(|e| format!("chain init: {}", e))?;
+
+	let mut coinbase_ids: Vec<Identifier> = Vec::new();
+	for i in 1..=PREMINE_BLOCKS {
+		let key_id = ExtKeychainPath::new(2, i, 0, 0, 0).to_identifier();
+		let block = build_next_block(&chain, &kc, vec![], key_id.clone())
+			.map_err(|e| format!("pre-mine block {} build: {}", i, e))?;
+		chain
+			.process_block(block, Options::NONE)
+			.map_err(|e| format!("pre-mine block {} apply: {}", i, e))?;
+		coinbase_ids.push(key_id);
+	}
+
+	let mut tag_states: HashMap<u64, TagState> = HashMap::new();
+	let mut next_key: u32 = 0;
+	let mut duplicate_in_block = false;
+	let mut planned_kernels: Vec<(u64, u64)> = Vec::new();
+	let mut shape_tag: u64 = 300;
+	let setup_blocks = case["blocks"]
+		.as_array()
+		.ok_or_else(|| "case missing blocks array".to_string())?;
+	for block_node in setup_blocks {
+		let kernels = block_node
+			.get("kernels")
+			.and_then(Value::as_array)
+			.cloned()
+			.unwrap_or_default();
+		if has_duplicate_nrd_tag(&kernels) {
+			duplicate_in_block = true;
+		}
+
+		// Shape block: same kernel count, but valid distinct NRD kernels.
+		let mut shape_specs = Vec::new();
+		for spec in &kernels {
+			planned_kernels.push((
+				spec["excess"].as_u64().unwrap_or(0),
+				spec["relative_height"].as_u64().unwrap_or(0),
+			));
+			shape_specs.push(json!({
+				"features": "nrd",
+				"excess": shape_tag,
+				"relative_height": 2u64,
+			}));
+			shape_tag += 1;
+		}
+
+		let txs = build_txs(
+			&kc,
+			&shape_specs,
+			&mut tag_states,
+			&mut coinbase_ids,
+			&mut next_key,
+		)?;
+		let height = chain.head_header().map_err(|e| format!("head: {}", e))?.height;
+		let reward_key = ExtKeychainPath::new(4, 0, 0, height as u32, 0).to_identifier();
+		let block = build_next_block(&chain, &kc, txs, reward_key)
+			.map_err(|e| format!("shape block build at height {}: {}", height + 1, e))?;
+		chain
+			.process_block(block, Options::NONE)
+			.map_err(|e| format!("shape block apply at height {}: {}", height + 1, e))?;
+	}
+
+	// Crafted kernel PMMR: invalid kernels (same excess / too-short relative gap).
+	let mut excess_by_tag: HashMap<u64, BlindingFactor> = HashMap::new();
+	let mut crafted_kernels: Vec<TxKernel> = Vec::new();
+	for (tag, relative_height) in &planned_kernels {
+		let excess = excess_by_tag
+			.entry(*tag)
+			.or_insert_with(|| BlindingFactor::rand(&kc.secp()))
+			.clone();
+		crafted_kernels.push(make_signed_kernel(
+			&kc,
+			nrd_features(NRD_FEE, *relative_height),
+			&excess,
+		));
+	}
+
+	let kernel_dir = craft_root.join("txhashset").join("kernel");
+	fs::create_dir_all(&kernel_dir).map_err(|e| format!("kernel dir: {}", e))?;
+	let mut backend = PMMRBackend::<TxKernel>::new(&kernel_dir, false, ProtocolVersion(2), None)
+		.map_err(|e| format!("kernel pmmr backend: {}", e))?;
+	{
+		let mut pmmr = PMMR::new(&mut backend);
+		for kernel in &crafted_kernels {
+			pmmr.push(kernel)
+				.map_err(|e| format!("kernel pmmr push: {}", e))?;
+		}
+	}
+	backend.sync().map_err(|e| format!("kernel pmmr sync: {}", e))?;
+
+	let crafted_txhashset = TxHashSet::open(
+		craft_root.to_string_lossy().to_string(),
+		chain.store(),
+		None,
+	)
+	.map_err(|e| format!("crafted txhashset open: {}", e))?;
+
+	let header_pmmr_arc = chain.header_pmmr();
+	let header_pmmr = header_pmmr_arc.read();
+	let store = chain.store();
+	let mut batch = store
+		.batch()
+		.map_err(|e| format!("rebuild batch: {}", e))?;
+	let rebuild = crafted_txhashset.verify_kernel_pos_index(
+		&genesis_header,
+		&header_pmmr,
+		&mut batch,
+		None,
+		None,
+	);
+	drop(batch);
+	drop(header_pmmr);
+	drop(crafted_txhashset);
+	drop(chain);
+	let _ = fs::remove_dir_all(&dir);
+	let _ = fs::remove_dir_all(&craft_root);
+
+	match rebuild {
+		Err(e) if e.to_string().contains("NRD") || e.to_string().contains("Relative") => Ok((
+			if duplicate_in_block {
+				"invalid_nrd_duplicate_in_block".to_string()
+			} else {
+				"invalid_nrd_relative_height".to_string()
+			},
+			format!(
+				"real Rust verify_kernel_pos_index rejected the crafted invalid history: {}",
+				e
+			),
+		)),
+		Err(e) => Err(format!(
+			"real Rust rebuild failed with a non-NRD error: {}",
+			e
+		)),
+		Ok(()) => Err(
+			"crafted invalid-history state unexpectedly passed real Rust verify_kernel_pos_index"
+				.to_string(),
+		),
+	}
+}
+
 fn process_case(case: &Value, index: usize) -> Value {
 	let mut out = json!({"id": case["id"].as_str().unwrap_or("")});
 	let mode = case["mode"].as_str().unwrap_or("");
@@ -262,10 +444,27 @@ fn process_case(case: &Value, index: usize) -> Value {
 			.map(|v| !v)
 			.unwrap_or(false)
 	{
-		out["status"] = json!("not_computed");
-		out["detail"] = json!(
-			"invalid NRD history fixture cannot be created through real chain apply; Rust verify_kernel_pos_index rebuild path needs a crafted MMR harness"
-		);
+		// Invalid NRD history cannot be created through normal chain apply, but it
+		// CAN be built with the NRD rule flag disabled and then fed to the real
+		// Rust rebuild path (verify_kernel_pos_index) with the flag re-enabled.
+		// The Rust rejection is computed, but its category is a rebuild error
+		// (NRDRelativeHeight), not the C++ local-state category, so it is reported
+		// as computed_unpaired and never counted as a paired case.
+		match evaluate_invalid_history_case(case, index) {
+			Ok((category, detail)) => {
+				out["status"] = json!("computed_unpaired");
+				out["actual_rust_category"] = json!(category);
+				out["paired_eligible"] = json!(false);
+				out["evaluation_path"] =
+					json!("rust_verify_kernel_pos_index_rebuild_rejects_invalid_history");
+				out["detail"] = json!(detail);
+			}
+			Err(error) => {
+				out["status"] = json!("not_computed");
+				out["paired_eligible"] = json!(false);
+				out["detail"] = json!(format!("fixture_error: {}", error));
+			}
+		}
 		return out;
 	}
 
@@ -273,6 +472,7 @@ fn process_case(case: &Value, index: usize) -> Value {
 		Ok((category, detail, evaluation_path)) => {
 			out["status"] = json!("computed");
 			out["actual_rust_category"] = json!(category);
+			out["paired_eligible"] = json!(true);
 			out["evaluation_path"] = json!(evaluation_path);
 			out["rust_rebuild_executed"] =
 				json!(evaluation_path == "rust_verify_kernel_pos_index_rebuild_then_chain_apply");
@@ -465,11 +665,14 @@ fn main() {
 		.unwrap_or_else(|| panic!("cases json has no cases array"));
 
 	let mut computed = 0usize;
+	let mut computed_unpaired = 0usize;
 	let mut output_cases = Vec::new();
 	for (index, case) in cases.iter().enumerate() {
 		let result = process_case(case, index);
-		if result["status"].as_str() == Some("computed") {
-			computed += 1;
+		match result["status"].as_str() {
+			Some("computed") => computed += 1,
+			Some("computed_unpaired") => computed_unpaired += 1,
+			_ => {}
 		}
 		println!(
 			"case {}: {} {}",
@@ -490,17 +693,19 @@ fn main() {
 		"reference_tree": "C:/Users/nurli/AppData/Local/Temp/grin55-minpeers",
 		"cases_total": cases.len(),
 		"cases_computed": computed,
-		"cases_not_computed": cases.len() - computed,
+		"cases_computed_unpaired": computed_unpaired,
+		"cases_not_computed": cases.len() - computed - computed_unpaired,
 		"cases": output_cases,
 	});
 
 	let rendered = serde_json::to_string_pretty(&output).expect("serialize oracle output");
 	fs::write(&output_path, rendered).unwrap_or_else(|e| panic!("cannot write {}: {}", output_path, e));
 	println!(
-		"nrd-oracle: {} cases, {} computed, {} not_computed -> {}",
+		"nrd-oracle: {} cases, {} computed, {} computed_unpaired, {} not_computed -> {}",
 		cases.len(),
 		computed,
-		cases.len() - computed,
+		computed_unpaired,
+		cases.len() - computed - computed_unpaired,
 		output_path
 	);
 }

@@ -1,12 +1,28 @@
 # G-09 archive serving: snapshot/capability contract, gap analysis and DRAFT review
 
-Status: **review candidate**. No code from this document is implemented, built or
-accepted. Line 1, 2026-11-03.
+> **Текущий статус (2026-11-03):** это техническое досье, а не текущая доска.
+> Актуальный срез: [THREE_LINE_STATUS.md](THREE_LINE_STATUS.md); матрица рисков:
+> [GAP_MATRIX.md](GAP_MATRIX.md). Build-07 (`Tests C8C386BE…`,
+> `GrinNode F9EF06B4…`) — принятое evidence только для своего снимка.
+> Финальный кандидат — build-09 (`Tests 0A3B7D66…`, `GrinNode F90EEF38…`);
+> независимый full/ASan аудит ещё идёт. Build-08 (`7994F191…`) — historical,
+> non-green (wallet-port env + test-only bodyless). Archive serving —
+> **default-off, opt-in**. Ordinary live G-09 остаётся **NOT VERIFIED/BLOCKED**:
+> Pong snapshot fix и 7C/7B live-проверки выполняются; fixed-H PASS ниже —
+> историческое доказательство, не готовность обычного бинарника.
+>
+> Разделы ниже — хронология review/реализации/прогонов. Начальные фразы
+> «review candidate / no code implemented» относятся к раннему снимку и не
+> описывают текущее состояние.
+
+Status of the initial review snapshot (historical): **review candidate**. No code
+from that draft was implemented at review time. Line 1, 2026-11-03.
 
 - Repository: `C:\DHW\Gplus\src\grinplusplus`
-- HEAD: `e0a5d2d68b990234e7bf1fb1b651f868dc30e9b6` (`docs: record capability closeout HEAD`)
-- Uncommitted at review time: `src/PMMR/Zip/ZipFile.cpp` (M), `tests/src/PMMR/CMakeLists.txt` (M),
-  `tests/src/PMMR/Test_ZipFile.cpp` (new). Auditor-owned, not touched by Line 1.
+- Code integration commit: `0031267`; docs commit `cb51030`.
+- Initial review HEAD: `e0a5d2d68b990234e7bf1fb1b651f868dc30e9b6`.
+- At initial review time, auditor-owned uncommitted files existed; they were
+  preserved and later included in the integration commit, not overwritten.
 - Rust reference on disk: `C:\DHW\Gplus\reference\grin-5.5.2` — **source snapshot,
   no `.git` of its own** (`Test-Path ...\.git` = False). `Cargo.toml` says
   `name = "grin"`, `version = "5.5.2"`; deterministic file manifest (391 files,
@@ -1186,6 +1202,82 @@ in/out = 1/0).
   profile produced `0xC0000409` with an empty log; a sequential fresh-profile
   run passed 236/3952. Runner misuse, not a product result (relevant to line3).
 
+### 8.10 Task-7A restart peer-wait root cause (build-07 trace)
+
+Reproduction: build-07 `GrinNode F9EF06B4…` on the fixture profile, Rust
+`G09RustLive` restarted on persisted `chain_data` (header MMR at 3320005, body tip
+0). Result: Rust `AwaitingPeers(false)`, tip 0, 1 connection; C++ inbound/outbound
+1/0 and only Pings; 30 status samples over 150 s identical
+(`C:\DHW\.tmp\task7-A\restart-status.jsonl`).
+
+Fresh-from-zero comparison (`task7-A\rust-zero`, empty `chain_data`): `Initial ->
+AwaitingPeers(false) -> HeaderSync` (height 0, TD 100000, highest_diff
+1207079050230) `-> BodySync`; same handshake capabilities/TD. The difference is the
+local header-resume state, not min-peers gating (`skip_sync_wait = true`,
+outbound peer present).
+
+Trace-level restart (`task7-A\restart-trace.log`, `file_log_level = Trace`):
+- Rust `header_head: 1207079050230 @ 3320005 [4988ad64…]`.
+- `state_sync: head.height: 0, tail.height: 0. header_head.height: 3320005,
+  highest_height: 3318655` (repeated); `body_sync: cannot sync full blocks
+  earlier than horizon. will request txhashset`.
+- `HeaderSync::check_run` early-returns because peer_diff (CONFIRMED TD
+  1207035333622) <= local header TD (1207079050230).
+- `StateSync::check_run` only starts PIBD when
+  `header_head.height == highest_height`; 3320005 != 3318655, so PIBD never
+  starts and the status never leaves `AwaitingPeers`.
+
+Root cause: `src/P2P/MessageProcessor.cpp` `case Ping` (build-07 lines 178-188)
+replied with **CONFIRMED** height/TD (`GetHeight/GetTotalDifficulty(CONFIRMED)`)
+while outbound Ping/Hand/Shake used header-head values. Rust peer `live_info` is
+overwritten by the Pong's body values, so `highest_height` = 3318655 while the
+local header head is 3320005: header sync thinks it is caught up and state sync
+waits for equality -> permanent `AwaitingPeers`.
+
+Approved one-file fix (implemented uncommitted; build-08 pending): `case Ping`
+builds `PongMessage` from one `GetAdvertisedTip()` header-head snapshot; if the
+snapshot is `nullopt`, the Pong is withheld; never CONFIRMED and never mixed.
+No other production changes. Expected effect: peer height/TD become
+3320005/1207079050230 in both directions, `highest_height == header_head`, so
+StateSync runs, Rust selects H=3317040, and the wrong-H refusal becomes
+observable.
+
+Build sequencing: build-07 `C8C386BE…`/`F9EF06B4…` remain accepted evidence for
+their source snapshot but are no longer source-current (line2 post-build test
+additions). build-08 is the frozen build containing line2 task-8 tests + this
+Pong fix; no further source edits after build-08 without new approval.
+
+### 8.11 Task-7B fixture inventory (read-only)
+
+- C++ REST: body height 3318655, hash
+  `2945348ef765160a160008cfd7c2b41aa44ed3cea77d6bcfe2083acf0fc4bbf1`, TD
+  1207035333622; header height 3320005 (headers 3315600..3320005 present, 3320006
+  absent). Header 3320005 hash `4988ad64…`, TD 1207079050230.
+- Archive: `TxHashSet.3315600.3615bb625917.zip`, 3,118,746,579 B, SHA-256
+  `13F9781E207F787F5F58367F9C98947D4A645D660E1CA23186AD55D9D064C530`.
+- `CHAIN`: `candidate.chain` 106,240,192 B (3,320,006 × 32-byte hashes),
+  `confirmed.chain` 106,196,992 B (3,318,656), `header_mmr.bin` 212,480,064 B,
+  `chain.checkpoint` 52 B (GRINPPCK v1, CandidateEntries 3,320,006,
+  ConfirmedEntries 3,318,656).
+- Trim feasibility: **FEASIBLE via the documented checkpoint truncation
+  contract** (not a raw trim):
+  1. copy `NODE` unchanged to a new run root (`C:\DHW\.tmp\g09-live-02`, copy
+     running),
+  2. truncate `CHAIN\candidate.chain` to 3,318,656 × 32 B = 106,196,992 B,
+  3. rewrite `CHAIN\chain.checkpoint` with `Sequence` unchanged,
+     `MmrLeaves = 3,318,656`, `CandidateEntries = 3,318,656`,
+     `ConfirmedEntries = 3,318,656`, and a recomputed FNV-1a checksum over the
+     first 44 bytes (the file's documented integrity contract),
+  4. on load, `BlockChainImpl` sees header MMR leaves 3,320,006 > candidate
+     entries 3,318,656 and truncates the MMR to the candidate under that
+     checkpoint contract, then writes a fresh checkpoint.
+  No fabricated blocks: every retained hash is from the valid fixture. Validation
+  and the acceptance run happen only after build-08.
+- Archive-at-H=3317040 is **not sufficient** for a consistent same-tip fixture:
+  C++ bodies end at 3318655, so a header head of 3320005 cannot reach `no_sync`
+  (body sync would request 3318656..3320005, which the fixture does not have).
+  The chosen B path is trim-to-3318655 + the existing archive at H=3315600.
+
 ## 9. Status matrix
 
 | item | status | reason |
@@ -1203,6 +1295,8 @@ in/out = 1/0).
 | L1 header sync from zero (ordinary binaries) | **FAIL/BLOCKED — real C++ advertised-tip defect** | §8.9: confirmed-tip Pong vs candidate-header serving; Rust `header_sync.rs:70-78` early-return; minimal repro captured |
 | L1 advertised-tip P0 fix | **PASS: build-07 `C8C386BE…`/`F9EF06B4…`, 245/4013, advert 2/15, archive 8/187; independently audited** | §8.6, §8.9; advertisement + atomic snapshot implemented; live H selection still blocked |
 | L1 fixture-mismatch refusal (H=3317040 vs archive 3315600) | **BLOCKED / NOT VERIFIED — H selection never reached** | §8.9: build-07 Rust restart stayed `AwaitingPeers(false)` (tip 0, 1 conn); C++ saw only Pings; refusal untested |
+| Task-7A restart peer-wait root cause | **ROOT-CAUSED: Pong replied with CONFIRMED height/TD; one-file header-head snapshot fix implemented (uncommitted); build-08 pending** | §8.10; Rust Trace `header_head 3320005` vs `highest_height 3318655`; StateSync equality gate never satisfied |
+| Task-7B consistent fixture | **BLOCKED offline: raw candidate trim refused by checkpoint guard; archive-at-3317040 plan requires valid snapshot generation after build-08** | §8.11; no synthetic data; checkpoint CandidateEntries=3320006 vs target 3318656 |
 | Isolated live attempt (approved L0–L6) | **PARTIAL/BLOCKED: L0 PASS; L1 not completed (H selection/refusal NOT REACHED); L2–L5 NOT VERIFIED/NOT EXECUTED; no PASS** | fixture-based C++, Rust from zero + restart attempts, §8.9 |
 | Repo state left | uncommitted edits only | no commit/reset/clean performed |
 

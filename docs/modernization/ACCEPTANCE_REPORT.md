@@ -1,5 +1,7 @@
 # ACCEPTANCE_REPORT — фактический статус по мастер-заданию
 
+> **Исторический отчёт.** Статусы и артефакты ниже относятся к описанному срезу. Текущий статус: [THREE_LINE_STATUS.md](THREE_LINE_STATUS.md); риски: [GAP_MATRIX.md](GAP_MATRIX.md).
+
 Дата: 31.10.2026 (раунд 30/32). Репозиторий: `C:\DHW\Gplus\src\grinplusplus`
 (Grin++ 1.2.9, эталон — Rust Grin v5.5.2 `dbaff34`).
 

@@ -545,3 +545,116 @@ Get-WinEvent -FilterHashtable @{LogName='Application'; Id=1000; StartTime='2026-
   ASan-BLOCKED; coverage-guided fuzzing нет; snapshot/NRD fault-injection —
   unit-симуляции; live G-09 NOT VERIFIED; crafted-zip NOT VERIFIED;
   0xC0000409 root cause NOT VERIFIED.
+
+## 17. ASan refresh build-07, CI port guard, source-drift freeze gate (2026-11-03)
+
+- **ASan refresh (05:42, build-07 source snapshot):** source manifest
+  `57590D1ED05CDC59E68D38C66F34F40D0CC24556D58BB2F1D76691055B3D8000`,
+  TestsMini `19FE60057312CDC6D28E430F1247E5069E7DE136D1388482FCC3668936244ACF`.
+  Subset PASS: `Nrd*` 21/365, archive 8/187, Segment 16/68, P2P 7/61 (оба
+  advert-теста), zero-test teardown PASS, 0 ASan reports. ASan-BLOCKED:
+  `Test_NrdPreCommit`, `Test_NrdFalseBan`, `Test_NrdBatchSafety`,
+  `Test_KernelIndex` (BlockProcessor/BlockChain→Database→non-ASan rocksdb).
+- **Stress/flake:** C8C — **8/8 full PASS** (3 line3 + pipeline + line2 + 3
+  serialized stress); Slatepack* 5/5. Редкий Slatepack-decrypt FAIL механически
+  не доказан: тайминговая корреляция есть (мой FAIL-прогон 930 стартовал через
+  3 с после full line2), но причинность не утверждается; классификация
+  сохранена как открытый риск, не blanket-env.
+- **CI pipeline:** `tools/build/ci-pipeline.ps1` получил exclusive lock +
+  preflight `127.0.0.1:3421`; `ci-c8c-02` = PASS_WITH_UNCOVERED (full-suite
+  PASS 245/4013, regressions PASS, fuzz advisory PASS, ASan STALE из-за
+  post-build drift). Hosted template добавлен:
+  `.github/workflows/line3-ci.yml` (self-hosted Windows; **NOT VERIFIED**).
+- **Source drift / freeze gate:** после build-07 (05:30) в 05:50 добавлены
+  `tests/src/P2P/Test_BlockPipeBan.cpp`, `tests/src/P2P/CMakeLists.txt`,
+  изменён `tests/CMakeLists.txt` — атрибуция line2 task-8 (test-only;
+  P2P/BlockPipe production не тронуты). В C8C их нет; к C8C не привязываются.
+  ASan 57590D1E — **build-07-only**, против dirty tree STALE; refresh
+  приостановлен. Lead: build-08 = frozen integration (line1 Ping/Pong fix +
+  line2 task-8), затем один ASan refresh и normal re-audit. C8C остаётся
+  historical; `ci-c8c-02` валиден только для C8C; никаких claims на WIP.
+- **Build-08 freeze pre-registered (verified):** production delta = ровно
+  `src/P2P/MessageProcessor.cpp`, SHA
+  `964FE6D745C5EF4987FB699E3856BDE7C40277885CD338A7D17F1504C812830B`
+  (21 794 B, 12+/5−; `case Ping` → один `GetAdvertisedTip()` snapshot, nullopt
+  ⇒ Pong withheld, без CONFIRMED fallback); единственный production-файл в
+  `git status -- src include`. Test-only delta — line2 task-8/8b
+  (`Test_BlockPipeBan`, CMake, TestServer/TxBuilder helpers, real-DB test).
+  Чек-лист прихода build-08: `evidence/line3/build-08-freeze-expectation.md`.
+  ASan paused; сборок нет.
+
+## 18. Build-08 historical FAIL → build-09 re-freeze (2026-11-03)
+
+Подробно: `evidence/line3/normal-binary-build08-historical-audit.md`.
+
+- **Build-08 identity (verified):** Tests
+  `7994F1915F3FC770A5658034174808C1AC4CC8E1CB1410B540259D762ECFE45F`
+  (9 316 864 B, PE `0x6AE9185D`) + GrinNode
+  `33258AE746DAA733CCF12529DF591D5C2D340B68A694A90B41C00A2CDC9BE974`
+  (7 805 440 B, PE `0x6AE917B2`); repo == line1-build-08 retry copies ==
+  line2 preserved; build-log BUILD OK; freeze aggregate
+  `EAF90A6F…` (1289 files, 0 source changes after build start).
+- **Line3 normal audit:** full suite **FAIL — 249 cases, 237 passed / 12
+  failed** (2 прогона, assertions 4001→3989 / 4017→4005); archive **8/187
+  PASS**, Nrd* **30/428 PASS**, KernelIndex* **3/48 PASS**, advert **2/15
+  PASS**, BlockPipe* **3/16 PASS**.
+- **Провалы:** 11× environment `Create - mg_start failed 127.0.0.1:3421`
+  (8 API wallet + 2 Wallet init + TorConnection) + **1× test-only task-8
+  дефект** `Test_NrdBodylessRestart.cpp(103)` — TestMiner header version 1 vs
+  NRD требует 4 (`VerifyKernelFeatures`), production не затронут. Kill-harness
+  (`[.]` hidden, отдельный run) — test-only `fs::copy` restore error.
+- Line2 build-08 evidence проверено: preserved SHA 7994F191…; BlockPipe 3/16,
+  Nrd 30/428, kernidx 3/48 PASS; bodyless FAIL (тот же test-only дефект).
+- **Build-08 — historical, не финальный.** Lead: test-only fixes approved,
+  build-09 follows. **ASan refresh build-08 отменён** по Lead (стал бы сразу
+  stale).
+- **Build-09 re-freeze verified:** TestMiner.h
+  `712A8B03048AC2864E01C3EB4F257794C166F96A94328F37BD1D5988FAB42CD5`,
+  Test_NrdBodylessRestart.cpp
+  `63BE69E07860042F5AAD585C94D3E20D8B49480219D8F5C3DAD43FBB333AD29A`,
+  Test_NrdKillHarness.cpp
+  `EA289E8685F3D57494029D95460507056464A26630AE77D061A8EC3F2D405A6C`;
+  все три в `tests/CMakeLists.txt` (kill harness теперь компилируется);
+  production `MessageProcessor.cpp` остаётся `964FE6D7…`; repo Tests —
+  historical 7994F191…; после build-08 старта изменены ровно эти 3 test-файла.
+- **Ждём build-09 SHA:** затем один ASan refresh на frozen build-09 source +
+  normal re-audit full (serialized, port lock)/archive/Nrd/KernelIndex/advert;
+  ASan-BLOCKED normal-only: BlockPipe/bodyless/kill (BlockChain→Database→rocksdb).
+  C8C/F9EF06B4 и build-08 — historical.
+
+## 19. FINAL build-09 0A3B7D66 — bound with explicit exception (2026-11-03)
+
+Подробно: `evidence/line3/normal-binary-0a3-audit-20261103.md`.
+
+- **Identity verified:** Tests
+  `0A3B7D66E78F5E70A6D95616F0138D994AEB820796C0C77E98AEC7EAC4F2735B`
+  (9 335 808 B, PE `0x6AE91AB1`) + GrinNode
+  `F90EEF389D1B35B7A17BD8E3C35F06AECFD9C39410C4F755713E1CD1F448A2F8`
+  (7 805 440 B, PE `0x6AE919F2`); repo == `C:\DHW\.tmp\build-09` copies;
+  BUILD OK; freeze aggregate `832C378C…` (1289 files, 0 source changes after
+  build start); production `MessageProcessor.cpp` `964FE6D7…`.
+- **Normal audit:** full ×2 **FAIL — 249 cases / 248 passed / 1 failed;
+  assertions 4033 / 4032 passed** (identical both runs). PASS: `Nrd*` 30/428,
+  `KernelIndex*` 3/48, archive 8/187, advert 2/15, BlockPipe* 3/16.
+  Единственный провал — **test-only** `Test_NrdBodylessRestart.cpp(103)`
+  (short-chain header-version contradiction); bodyless-NRD + kill-recovery
+  **NOT VERIFIED**; production/agreed-suite failures = 0.
+- **Lead decision (b):** build-09 = normal authoritative **WITH EXPLICIT
+  EXCEPTION**, не fully green; build-10 — backlog, только по отдельному approval.
+- **Line2 build-09 evidence verified:** preserved `Tests-0A3B7D66E78F.exe`
+  SHA 0A3B7D66…; blockpipe 3/16, Nrd 30/428, kernidx 3/48 PASS; bodyless FAIL
+  (тот же test-only); kill NOT VERIFIED.
+- **ASan refresh (ONE):** source manifest
+  `CF78C188A3F69F242F326B5DEFDA3DFD1D4A1E3A11591DAB8A9CDBF98DB68D85`,
+  TestsMini `12C3D16C21E80F86BC3C736BE5046872454D1A6D7FA26B018D782E89D153778B`;
+  subset PASS: Nrd* 21/365, archive 8/187, Segment 16/68, P2P 7/61 (incl.
+  advert), teardown PASS, **0 ASan reports**; ASan-BLOCKED normal-only:
+  PreCommit/FalseBan/BatchSafety/KernelIndex/BlockPipe/bodyless/kill.
+- **Pipeline `ci-0a3-01`:** overall **FAIL** (честно, из-за 1 test-only
+  full-suite провала); provenance PASS, unit-regressions PASS, full-suite FAIL
+  (249/248/1), **asan-subset PASS**, fuzz advisory PASS, untested-zones
+  REPORTED. Evidence: `evidence/ci/ci-0a3-01/`.
+- **Binding:** normal authoritative = Tests `0A3B7D66…` + GrinNode `F90EEF38…`
+  **with exception** (не fully green); ASan = source-bound
+  `CF78C188…`/TestsMini `12C3D16C…`; C8C/build-08/930/8F10/DDC/FD7C —
+  historical. Hosted CI NOT VERIFIED.

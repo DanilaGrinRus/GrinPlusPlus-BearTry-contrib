@@ -1,0 +1,15 @@
+target=nrd_rules
+seed=20261103
+executed=100
+ok=100
+rejected_deserialization=0
+rejected_file=0
+rejected_segment=0
+oom=0
+exception=0
+unknown_exception=0
+slow_cases=0
+slowest_ms=0.0352
+wall_sec=0.244875
+corpus_files=26
+corpus_fnv1a=6094137ae8339902

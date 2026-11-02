@@ -28,7 +28,10 @@ Round-2 auditor findings (section 9): reorg-backup and rebuild-exception fixes
 are **verified on C8C386BE**; the real-Rust `verify_kernel_pos_index` path is
 exercised for all 8 computed rebuild cases; paired v3 on C8C386BE is
 **11 paired / 0 mismatches / 3 not_computed**; missing-fixture negative,
-positive and report-write-error checks all behave as required.
+positive and report-write-error checks all behave as required. Oracle v5
+additionally computes the two invalid-history rebuild rejections via real Rust
+rebuild on a crafted kernel PMMR (`computed_unpaired`, not paired); only
+missing-local-history remains fundamentally not applicable to Rust.
 
 Scope: Grin++ 1.2.9 (`C:\DHW\Gplus\src\grinplusplus`, HEAD `e0a5d2d`) versus
 Rust grin 5.5.2 (canonical reference `C:\DHW\Gplus\reference\grin-5.5.2`,
@@ -691,8 +694,28 @@ record this per case:
 - `chain_apply` only (3): plain-repeat, incremental-one-before-boundary,
   incremental-exact-boundary.
 `not_computed` (explicit): missing-local-history; rebuild-rejects-historical-
-violation; rebuild-rejects-duplicate-history-block (invalid history cannot be
-built through real chain apply; crafted-MMR harness needed).
+violation; rebuild-rejects-duplicate-history-block.
+
+**Oracle v5 advancement (invalid-history rebuild cases):** a real chain cannot
+hold invalid NRD history (apply rejects it), so the oracle now builds a
+structurally identical valid chain (same kernel count per block), then crafts
+only the kernel PMMR with the invalid kernels and runs the real Rust
+`TxHashSet::verify_kernel_pos_index` on it. Result:
+- `rebuild-rejects-historical-violation` → **computed_unpaired**,
+  `invalid_nrd_relative_height` — real Rust rebuild rejected with
+  `NRD Relative Height`;
+- `rebuild-rejects-duplicate-history-block` → **computed_unpaired**,
+  `invalid_nrd_duplicate_in_block` — real Rust rebuild rejected with
+  `NRD Relative Height`;
+- `missing-local-history` → remains **not_computed** (Rust has no
+  local-missing-index state; the index is rebuilt inside txhashset
+  write/startup, so there is no Rust analogue to compare).
+`computed_unpaired` is deliberate: Rust's rebuild error category
+(`NRDRelativeHeight`) is not the C++ local-state category
+(`missing_local_history`), so these two verdicts are reported as actual Rust
+rebuild behaviour but are **not** counted as paired cases. Oracle v5 evidence:
+`evidence/rust-oracle-c8c386-v5.json` (sha `2850FDE7…1384`), binary
+`evidence/bin/nrd-oracle-24C648AC3E80.exe` (sha `24C648AC…2CC9`).
 Paired actual-Rust vs actual-C++: on preserved Tests SHA `930148B6…BB6E`
 **11 computed / 3 not_computed / 11 paired / 0 mismatches** (report
 `evidence/paired-differential-report-nrd-paired-v3-930148B6-20261103-052546.json`,
@@ -700,7 +723,10 @@ sha `D1E13441…0E95`), and again on build-07 final candidate
 `C8C386BE…B7FE` — **11 computed / 3 not_computed / 11 paired / 0 mismatches**
 (report
 `evidence/paired-differential-report-nrd-paired-c8c386-20261103-053139.json`,
-sha `57978B2E…5AF6`; run `nrd-paired-c8c386-20261103-053139`).
+sha `57978B2E…5AF6`; run `nrd-paired-c8c386-20261103-053139`). Oracle v5 was
+also paired on C8C386BE without changing the paired result: run
+`nrd-paired-v5-c8c386-20261103-054716`, report sha `80F67E4A…95EA` — the two
+`computed_unpaired` cases stay outside the paired subset by construction.
 
 ### 9.4 Fixture negative/positive verification (EXECUTED on C8C386BE)
 

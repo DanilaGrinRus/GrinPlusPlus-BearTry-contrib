@@ -1,0 +1,28 @@
+{
+  "schema": "gpp-line3-asan-teardown-regression/v1",
+  "run_id": "ci-0a3-01-asan",
+  "created_utc": "2026-11-02T23:26:23.6568106Z",
+  "result": "PASS",
+  "exe": "C:\\DHW\\.tmp\\asan-line3\\fuzz-linked\\TestsMini.exe",
+  "exe_sha256": "12C3D16C21E80F86BC3C736BE5046872454D1A6D7FA26B018D782E89D153778B",
+  "runner_manifest": "C:\\DHW\\.tmp\\asan-line3\\teardown-iso\\ci-0a3-01-asan\\manifest.json",
+  "checks": {
+    "runner_exit_zero": true,
+    "manifest_status_pass": true,
+    "process_exit_zero": true,
+    "no_asan_report": true,
+    "zero_tests_ran": true,
+    "user_profile_unchanged": true,
+    "isolated_data_dir": true,
+    "runtime_dll_copied": true
+  },
+  "failed_checks": [],
+  "asan_report": false,
+  "process_exit": {
+    "decimal": 0,
+    "hex": "0x00000000"
+  },
+  "stdout": "C:\\DHW\\.tmp\\asan-line3\\teardown-iso\\ci-0a3-01-asan\\out\\instance-1.stdout.log",
+  "stderr": "C:\\DHW\\.tmp\\asan-line3\\teardown-iso\\ci-0a3-01-asan\\out\\instance-1.stderr.log",
+  "note": "Pre-fix failing evidence: evidence/line3/asan-testsmini-empty-01 (zero tests, exit 1, ASan heap-use-after-free)."
+}

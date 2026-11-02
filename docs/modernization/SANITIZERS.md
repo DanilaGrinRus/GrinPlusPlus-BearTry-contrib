@@ -127,27 +127,42 @@ assertions)**, `PibdArchiveServer::*` **8/187**, `Nrd*` **30/428**,
 line2 task-6/round-2 + archive). Предыдущие 8F10BFD6 (236/3952),
 DDC21F45 (236/3952), FD7C0492 (232/3926) сохранены как исторические и к
 C8C386BE не привязываются.
-**Environment flake:** на 930148B6 (non-final) 2/6 full FAIL из-за фиксированного
-wallet-порта `127.0.0.1:3421` и параллельных прогонов; на C8C при сериализации —
-4/4 full PASS, 5/5 Slatepack PASS. CI обязан сериализовать wallet/full или
-выделять уникальные порты.
-ASan D2 subset (source manifest `5A769673…`, TestsMini `4AB0CDDD…`; copied tree
-файл-в-файл совпадает с текущими компилируемыми исходниками, mismatch=0):
-`Nrd*` **21/362** (includes `NrdPolicy` + `NrdRules`), archive **8/187**,
-Segment 16/68, P2P 5/46, teardown PASS, zero ASan reports; `Test_NrdPreCommit`
-и `Test_KernelIndex` **BLOCKED** под ASan (link: BlockChain→Database→non-ASan
-rocksdb; точные LNK2019 в `evidence/line3/asan-d2-blocked-kernidx/linker_errors.txt`).
-ASan-результаты остаются привязанными к source manifest/TestsMini SHA, normal
-authoritative — к `8F10BFD6…`; предыдущие интегрированные `DDC21F45…`
-(236/3952) и `FD7C0492…` (232/3926) сохранены как исторические.
+**Environment flake:** на 930148B6 (non-final) 2/6 full FAIL; причина части сбоев —
+фиксированный wallet-порт `127.0.0.1:3421` при параллельных прогонах. На C8C при
+сериализации и port-preflight — **8/8 full PASS** (3 line3 + pipeline + line2 +
+3 stress), `Slatepack*` 5/5 PASS. Редкий Slatepack-decrypt FAIL (Unknown
+exception/DecryptSlatepack) **не имеет доказанной причины** — остаётся открытым
+риском, не списывается автоматически на окружение; CI классифицирует как FAIL,
+если в провале есть Slatepack-путь.
+ASan **обновлён под build-07 sources** (refresh 05:42): source manifest
+`57590D1ED05CDC59E68D38C66F34F40D0CC24556D58BB2F1D76691055B3D8000`, TestsMini
+`19FE60057312CDC6D28E430F1247E5069E7DE136D1388482FCC3668936244ACF`. Subset PASS:
+`Nrd*` **21/365**, archive **8/187**, Segment 16/68, P2P **7/61** (включая оба
+advert-теста), zero-test teardown PASS, 0 ASan reports.
+`Test_NrdPreCommit`, `Test_NrdFalseBan`, `Test_NrdBatchSafety`, `Test_KernelIndex`
+остаются ASan-**BLOCKED** (BlockProcessor/BlockChain→Database→non-ASan rocksdb
+`LNK2019`); покрыты normal-suite C8C.
+**Post-build drift (05:50):** после build-07 в repo добавлены
+`tests/src/P2P/Test_BlockPipeBan.cpp`, `tests/src/P2P/CMakeLists.txt`,
+изменён `tests/CMakeLists.txt`; бинарник C8C их не содержит → текущий tree снова
+расходится с ASan (pipeline `mismatch=3`, ASan `NOT RUN (STALE)`). Refresh
+приостановлен до заморозки дерева/build-08; никаких ASan-PASS к незамороженному
+tree нет. Normal authoritative evidence остаётся за `C8C386BE…` (его собственный
+source snapshot); предыдущие `8F10BFD6…`, `DDC21F45…`, `FD7C0492…` — исторические.
 
-**Важно (после P0 atomic advertised-tip sources):** исходники снова изменились
-(`include/P2P/AdvertisedTip.h`, `SyncStatus.h`, MessageProcessor/Connection/
-P2PServerImpl и др.), поэтому ASan source manifest `5A769673…`/TestsMini
-`4AB0CDDD…` **STALE** относительно текущего normal tree (`mismatch=19` в CI
-pipeline). Никаких ASan-claims к новому SHA нет; refresh требует разрешённой
-ASan-пересборки copied tree. Pipeline обязан показывать `NOT RUN (STALE)`, а не
-PASS.
+**Build-08 / build-09 (2026-11-03):** build-08 `7994F191…` — historical FAIL
+(249/237/12: 11× wallet-port env + 1× test-only bodyless); ASan refresh для него
+отменён. Build-09 `0A3B7D66…` — **normal authoritative WITH EXPLICIT EXCEPTION**
+(Lead decision b): full **249 cases / 248 passed / 1 failed** (4033/4032; только
+test-only `Test_NrdBodylessRestart` short-chain header-version); bodyless-NRD и
+kill-recovery **NOT VERIFIED**; production/agreed suites 0 fails; PASS: Nrd 30/428,
+KernelIndex 3/48, archive 8/187, advert 2/15, BlockPipe 3/16. **Не fully green.**
+ASan refresh build-09 (ONE): source manifest `CF78C188…` (1290 files), TestsMini
+`12C3D16C…`; Nrd* 21/365, archive 8/187, Segment 16/68, P2P 7/61 (incl. advert),
+teardown PASS, 0 reports; BlockPipe/bodyless/kill/PreCommit/FalseBan/BatchSafety/
+KernelIndex — normal-only (rocksdb). Pipeline `ci-0a3-01` overall **FAIL** honest
+(full-suite test-only); asan-subset PASS. Build-10 — backlog по отдельному approval.
+(BlockChain→Database→rocksdb).
 
 **Находка ASan — исправлено в тестовом runtime (Lead-approved option b):**
 исходный `tests/src/TestMain.cpp` (`static TestRuntime`) давал exit-time

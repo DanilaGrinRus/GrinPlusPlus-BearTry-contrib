@@ -18,4 +18,5 @@ chrono = "0.4.11"
 grin_core = { path = "C:/Users/nurli/AppData/Local/Temp/grin55-minpeers/core", version = "5.5.2" }
 grin_chain = { path = "C:/Users/nurli/AppData/Local/Temp/grin55-minpeers/chain", version = "5.5.2" }
 grin_keychain = { path = "C:/Users/nurli/AppData/Local/Temp/grin55-minpeers/keychain", version = "5.5.2" }
+grin_store = { path = "C:/Users/nurli/AppData/Local/Temp/grin55-minpeers/store", version = "5.5.2" }
 grin_util = { path = "C:/Users/nurli/AppData/Local/Temp/grin55-minpeers/util", version = "5.5.2" }

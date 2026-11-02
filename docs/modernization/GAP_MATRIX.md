@@ -32,7 +32,7 @@
 | ID | Компонент | Эталон | Расхождение | Влияние | P | Действие | Проверка | Статус |
 |---|---|---|---|---|---|---|---|---|
 | G-08 | Набор сообщений | IDs 0..28 (`p2p/src/msg.rs:67-97`) | IDs 21/22 заняты несовместимыми `GetKernels/Kernels` (никуда не отправляются); 23-28 отсутствуют | Любая попытка использовать 21/22 будет принята Rust-нодой как PIBD-запрос | P0 | Убрать коллизию, завести таблицу 21-28 с размерами из Rust | `static_assert`/компиляция TU | **DONE-C** |
-| G-09 | PIBD (клиент+сервер) | `pibd.rs`, `desegmenter.rs`, `txhashset.rs`, `p2p/src/protocol.rs:21-28` | Fixed-H экспериментальный ordinary Rust PASS сохраняется исторически (H=3 315 600, 10 203 442 leaves). В repo-кандидате `C8C386BE…` реализованы opt-in archive server (default-off), честные capabilities, atomic advertised header tip, read lease/cache/limits; build/unit/ASan-subset зелёные. Обычный live G-09 **NOT VERIFIED**: L1 остановлен на `header_sync`/`awaiting_peers`, fixture H mismatch (header head 3320005 => Rust H 3317040, архив 3315600). Restart/horizon/reorg/negative/Output Commitment — отдельные NOT VERIFIED | Нужен согласованный fixture (candidate==body==3318655 или архив H=3317040), затем повтор L1 с нуля и отказ при H mismatch | E32–E34/E41/E42/E55–E63, G09_LIVE_PASS_2026-11-03, THREE_LINE_STATUS | **PARTIAL (fixed-H historical PASS; ordinary live NOT VERIFIED)** |
+| G-09 | PIBD (клиент+сервер) | `pibd.rs`, `desegmenter.rs`, `txhashset.rs`, `p2p/src/protocol.rs:21-28` | Fixed-H экспериментальный ordinary Rust PASS сохраняется исторически (H=3 315 600, 10 203 442 leaves). В build-09 (`Tests 0A3B7D66…`, `GrinNode F90EEF38…`) реализованы opt-in archive server (default-off), динамические capabilities, atomic advertised header tip и Pong header-head snapshot fix; BlockPipe/Nrd/KernelIndex/archive/advert unit-suites зелёные. Обычный live G-09 **частично проверен**: 7C wrong-H safe refusal PASS (bounded, no wrong segments/crash); 7B полный PIBD/no_sync ещё выполняется на согласованном fixture. Fixture mismatch (header 3320005 => H 3317040 vs archive 3315600) остаётся причиной, по которой нужен 7B. Restart/horizon/reorg/negative/Output Commitment — отдельные NOT VERIFIED/BLOCKED | Нужен первый полный PIBD/no_sync на согласованном fixture, затем обязательные restart/reorg/negative/resource проверки; только после них возможен ordinary PASS | E32–E34/E41/E42/E55–E63, G09_LIVE_PASS_2026-11-03, THREE_LINE_STATUS | **PARTIAL (fixed-H historical PASS; ordinary live NOT VERIFIED)** |
 | G-10 | Capabilities | `HEADER_HIST..PIBD_HIST_1` (`p2p/src/types.rs:381-399`) | Объявлены только 0x01/0x02/0x04; 0x08/0x10/0x20/0x40 отсутствуют | Невозможно корректно негодовать возможности; PIBD/BLOCK_HIST не рекламируются | P0 | Добавлен полный набор битов + `ADVERTISED` (PIBD/PIBD_1/BLOCK_HIST выключены до реализации) | `static_assert` в TU | **DONE-C** |
 | G-11 | Неизвестные типы сообщений | читать и отбрасывать (`default_max_msg_size`) | Grin++ рвал соединение на любом неизвестном типе (лимит 0) | Прямая несовместимость с новыми сообщениями; дисконнект от Rust-пиров при будущих расширениях | P1 | `MessageHeader`: неизвестный тип → лимит `MAX_BLOCK_SIZE*4` (как Rust) | компиляция TU | **DONE-C** |
 | G-12 | Проверка genesis в handshake | `BadHandshake` при ином genesis (`p2p/src/handshake.rs`) | Grin++ читал genesis пира и **не сравнивал** | Подключение к peer другой сети → поток «плохих» блоков/баны честных пиров | P1 | Сравнение с `Global::GetGenesisHash()` в Hand и Shake | только чтение кода (DONE-R) | **DONE-R** |
@@ -158,7 +158,8 @@
 * PIHD (G-27) — не входит в v5.5.2 (enum до `KernelSegment = 28`); в ветке `staging`
   реализовано целиком (PR #3879/#3882), для совместимости с v5.5.2 не требуется —
   разбор в `PIHD_UPSTREAM.md`.
-* Сборка и тесты проверяемы исполнением: `/W4 /WX`, актуальный прогон — E76:
+> **Исторический срез E76 (до интеграции 2026-11-03).** Записи ниже сохранены для истории; текущая сборка, SHA и G-09-статус — в [THREE_LINE_STATUS.md](THREE_LINE_STATUS.md). Не используйте слово «актуальная» ниже как текущее состояние.
+* Сборка и тесты проверяемы исполнением: `/W4 /WX`, прогон среза E76:
   194 кейсов / 2227 проверок PASS; `GrinNode E16A014E…`, `Tests CC6472B1…`.
 * Не подтверждено: живой serving Rust-клиенту, legacy-фолбэк (G-41), reorg,
   crash/fuzz, **mainnet (G-45)**. Живой журнальный resume: replay подтверждён,
@@ -169,13 +170,13 @@
   cooldown. `PIHD_HIST` не рекламируется, серверной части нет; со staging Rust
   client-mode пока несовместим (Rust требует бит у запрашивающего). Остаются
   in-flight 8/2, serving, live PIHD peer, snapshot guard/cache/rate-limit (PIBD).
-* **G-09 live (03.11.2026): PASS.** Rust 5.5.2 `no_sync` на H=3 318 655 / `2945348e…`; PIBD 10 203 442/10 203 442, roots/rangeproof/kernel/body sync завершены. Причина прошлых рестартов — missing left sibling на output idx 1648; fix в SegmentGenerator. Ограничения: headers preseeded, reorg/restart/negative/mainnet открыты.
+* **G-09 fixed-H (03.11.2026): исторический PASS.** Rust 5.5.2 `no_sync` на H=3 318 655 / `2945348e…`; PIBD 10 203 442/10 203 442, roots/rangeproof/kernel/body sync завершены. Причина прошлых рестартов — missing left sibling на output idx 1648; fix в SegmentGenerator. **Обычный repo-бинарник: live NOT VERIFIED/BLOCKED** (headers preseeded; AwaitingPeers, fixture H mismatch, restart/reorg/negative не закрыты).
 
-* **G-09 serving (02.11.2026):** контролируемый P2P + Rust identity-checked
+* **G-09 serving (02.11.2026, historical):** контролируемый P2P + Rust identity-checked
   прогон на H=3 315 600 — PASS: 7/7 bitmap, 1673/1673 output, 1673/1673
   rangeproof, 1637/1637 kernel. Roots взяты из C++ REST, независимое
   подтверждение H и обычная Rust-нода остаются NOT VERIFIED.
-* Актуальная сборка: suite **205 / 3700 PASS**; `GrinNode 19E0C97E…`,
+* Сборка среза E76: suite **205 / 3700 PASS**; `GrinNode 19E0C97E…`,
   `Tests 524FC297…`; exe 7 745 024 B.
 * **P0 crypto (02.11.2026): PARTIAL.** Кэш Bulletproofs теперь включает точные байты proof; batch валидирует пустые/разные длины и не пишет кэш до успеха. Нужны реальный warmed/cold proof-тест, Rust-дифференциал и fuzz.
 * **P0 NRD (02.11.2026): PARTIAL.** Rebuild идёт из kernel PMMR + header chain, без полных block bodies; неполный индекс fail-closed и отвергает NRD-блок. Live PIBD-state стартовал без предупреждений rebuild; нужны end-to-end NRD/reorg и сверка с Rust.

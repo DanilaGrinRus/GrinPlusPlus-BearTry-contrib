@@ -96,17 +96,46 @@ HOME/TMP недостаточно.
 - **Normal authoritative:** Tests `C8C386BE…`, GrinNode `F9EF06B4…`.
 - **Historical:** 930148B6… (non-final, 245→ нет, 242/3980 flaky), 8F10BFD6…,
   DDC21F45…, FD7C0492… — сохранены, к финальному SHA не привязываются.
-- **ASan:** source-bound `5A769673…`/TestsMini `4AB0CDDD…`; для C8C source set
-  **STALE (mismatch=19)**, NOT RUN, никаких ASan-claims к C8C386BE.
+- **ASan:** refresh 05:42 под build-07 source snapshot: source manifest
+  `57590D1E…`, TestsMini `19FE6005…`, subset PASS (Nrd* 21/365, archive 8/187,
+  Segment 16/68, P2P 7/61, teardown PASS, 0 reports). `Test_NrdPreCommit`/
+  `Test_NrdFalseBan`/`Test_NrdBatchSafety`/`Test_KernelIndex` — ASan-BLOCKED
+  (BlockProcessor/BlockChain→Database→rocksdb). Этот ASan **привязан только к
+  build-07 snapshot**; после post-05:50 WIP он STALE и **не** обновляется до
+  freeze gate/build-08.
 - Компилируемые источники C8C: atomic-tip set (AdvertisedTip.h, SyncStatus.h,
   MessageProcessor/Connection/P2PServerImpl, ChainState-комментарий,
   Test_P2PCompat) + archive/pibd/line2 изменения; ключевые SHA фиксируются в
   pipeline provenance.
 
+## 8. Freeze gate, post-build WIP и границы доказательств (06:00+)
+
+- C8C386BE/F9EF06B4 остаётся **accepted evidence binary только для своего
+  pre-05:50 source snapshot** (сохранённые копии). Post-05:50 файлы
+  `tests/src/P2P/Test_BlockPipeBan.cpp`, `tests/src/P2P/CMakeLists.txt`,
+  `tests/CMakeLists.txt` — **line2 task-8**, не входят в C8C и **не
+  привязываются** к нему (line1 подтвердил: его source changes после build-07
+  нет; возможный один файл Ping/Pong — только после Lead approval/слота).
+- **ASan 57590D1E/19FE6005 — build-07-only.** Против dirty tree он STALE
+  (mismatch=3 на момент флага, вырастет с task-8b); refresh **приостановлен** до
+  freeze gate и build-08, затем один ASan refresh по замороженному tree.
+- **ci-c8c-02** (PASS_WITH_UNCOVERED, 245/4013, exclusive port-3421 lock +
+  preflight) валиден для C8C и его source snapshot, **не** для dirty tree.
+- Hosted CI (`/.github/workflows/line3-ci.yml` — self-hosted Windows template)
+  **NOT VERIFIED**: runner не подключён, repo содержит uncommitted cross-line
+  изменения.
+- Flake-дисциплина сохранена: mg_start/Receive-класс объясняется фиксированным
+  портом 3421; редкий Slatepack-decrypt FAIL причинно **не доказан** и остаётся
+  FAIL/open risk, не относится автоматически к окружению.
+- Freeze gate: ждём подтверждения line2 task-8 (freeze) и line1 task-7
+  (нужны ли source edits); после Lead-команды — build-08, затем один ASan
+  refresh и re-audit normal/ASan. Никаких claims на post-build файлы до этого.
+
 ## 7. Ограничения
 
-- ASan не покрывает rocksdb/database; `Test_NrdPreCommit`/`Test_KernelIndex`
-  ASan-BLOCKED (LNK2019) — покрыты normal-suite C8C;
+- ASan не покрывает rocksdb/database; `Test_NrdPreCommit`/`Test_NrdFalseBan`/
+  `Test_NrdBatchSafety`/`Test_KernelIndex` ASan-BLOCKED (LNK2019) — покрыты
+  normal-suite C8C;
 - coverage-guided fuzzing отсутствует; fuzz smoke — bounded, не safety proof;
 - snapshot activation/NRD transitions — unit-симуляции (см. FAULT_INJECTION.md);
 - live G-09 NOT VERIFIED; crafted-zip end-to-end NOT VERIFIED; исторический

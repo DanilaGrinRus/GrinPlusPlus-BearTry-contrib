@@ -1,0 +1,172 @@
+{
+  "schema": "gpp-line3-linked-asan-v1",
+  "created_utc": "2026-11-02T23:24:34.4896171Z",
+  "repo": "C:\\DHW\\Gplus\\src\\grinplusplus",
+  "git_head": "cb510302f5bebc0d64c5d6a1c0571046a63593ef",
+  "git_status": [
+    " M docs/modernization/ACCEPTANCE_REPORT.md",
+    " M docs/modernization/CI_REPRO.md",
+    " M docs/modernization/FAULT_INJECTION.md",
+    " M docs/modernization/G07_NRD.md",
+    " M docs/modernization/G09_ARCHIVE_SERVING.md",
+    " M docs/modernization/GAP_MATRIX.md",
+    " M docs/modernization/NRD_DIFFERENTIAL.md",
+    " M docs/modernization/REMAINING.md",
+    " M docs/modernization/SANITIZERS.md",
+    " M docs/modernization/THREE_LINE_STATUS.md",
+    " M evidence/line3/EVIDENCE_LINE3.md",
+    " M evidence/line3/normal-binary-c8c-audit-20261103.md",
+    " M src/P2P/MessageProcessor.cpp",
+    " M tests/CMakeLists.txt",
+    " M tests/framework/include/TestMiner.h",
+    " M tests/framework/include/TestServer.h",
+    " M tests/framework/include/TxBuilder.h",
+    " M tests/framework/src/TestServer.cpp",
+    " M tests/framework/src/TxBuilder.cpp",
+    " M tests/src/BlockChain/CMakeLists.txt",
+    " M tools/audit/nrd/rust-oracle/Cargo.lock",
+    " M tools/audit/nrd/rust-oracle/Cargo.toml",
+    " M tools/audit/nrd/rust-oracle/src/main.rs",
+    " M tools/build/ci-pipeline.ps1",
+    "?? .github/workflows/line3-ci.yml",
+    "?? docs/modernization/DOCUMENTATION_INDEX.md",
+    "?? evidence/ci/ci-c8c-02/",
+    "?? evidence/line3/asan-c8c-archive-01/",
+    "?? evidence/line3/asan-c8c-nrd-01/",
+    "?? evidence/line3/asan-c8c-p2p-01/",
+    "?? evidence/line3/asan-c8c-segment-01/",
+    "?? evidence/line3/asan-c8c-teardown-01/",
+    "?? evidence/line3/build-08-freeze-expectation.md",
+    "?? evidence/line3/build-08-freeze-snapshot-final.json",
+    "?? evidence/line3/build-08-freeze-snapshot.json",
+    "?? evidence/line3/build-09-freeze-snapshot-final.json",
+    "?? evidence/line3/ci-c8c-02-fuzz/",
+    "?? evidence/line3/full-asan-20261103-054256/",
+    "?? evidence/line3/full-asan-20261103-062259/",
+    "?? evidence/line3/linked-asan-build-20261103-054836/",
+    "?? evidence/line3/normal-0a3-advert-01/",
+    "?? evidence/line3/normal-0a3-archive-01/",
+    "?? evidence/line3/normal-0a3-blockpipe-01/",
+    "?? evidence/line3/normal-0a3-bodyless-01/",
+    "?? evidence/line3/normal-0a3-full-01/",
+    "?? evidence/line3/normal-0a3-kernidx-01/",
+    "?? evidence/line3/normal-0a3-nrd-01/",
+    "?? evidence/line3/normal-799-advert-01/",
+    "?? evidence/line3/normal-799-archive-01/",
+    "?? evidence/line3/normal-799-blockpipe-01/",
+    "?? evidence/line3/normal-799-full-01/",
+    "?? evidence/line3/normal-799-kernidx-01/",
+    "?? evidence/line3/normal-799-kill-01/",
+    "?? evidence/line3/normal-799-nrd-01/",
+    "?? evidence/line3/normal-binary-build08-historical-audit.md",
+    "?? tests/src/BlockChain/Test_NrdBodylessRestart.cpp",
+    "?? tests/src/BlockChain/Test_NrdKillHarness.cpp",
+    "?? tests/src/P2P/",
+    "?? tools/audit/nrd/evidence/cpp-nrd-differential-report-paired-nrd-paired-v5-c8c386-20261103-054716.json",
+    "?? tools/audit/nrd/evidence/isolated/blockpipe-b08-20261103-061043/",
+    "?? tools/audit/nrd/evidence/isolated/blockpipe-b09-20261103-062035/",
+    "?? tools/audit/nrd/evidence/isolated/bodyless-b08-20261103-061043/",
+    "?? tools/audit/nrd/evidence/isolated/bodyless-b09-20261103-062035/",
+    "?? tools/audit/nrd/evidence/isolated/kernidx-b08-20261103-061043/",
+    "?? tools/audit/nrd/evidence/isolated/kernidx-b09-20261103-062035/",
+    "?? tools/audit/nrd/evidence/isolated/kill-b08-20261103-061043/",
+    "?? tools/audit/nrd/evidence/isolated/kill-b09-20261103-062035/",
+    "?? tools/audit/nrd/evidence/isolated/nrd-b08-20261103-061043/",
+    "?? tools/audit/nrd/evidence/isolated/nrd-b09-20261103-062035/",
+    "?? tools/audit/nrd/evidence/isolated/nrd-paired-v5-c8c386-20261103-054716/",
+    "?? tools/audit/nrd/evidence/paired-differential-report-nrd-paired-v5-c8c386-20261103-054716.json",
+    "?? tools/audit/nrd/evidence/rust-oracle-c8c386-v4.json",
+    "?? tools/audit/nrd/evidence/rust-oracle-c8c386-v5.json",
+    "?? tools/audit/nrd/rebuild-kill-harness.ps1"
+  ],
+  "copied_tree": "C:\\DHW\\.tmp\\asan-line3\\gpp-tree",
+  "lib_dir": "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\bin\\Release\\Release",
+  "profile": "/W4 /WX /O1 /Zi /MT /EHsc /std:c++17 /fsanitize=address, linked against full-project ASan libs",
+  "asan_runtime": {
+    "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\clang_rt.asan_dynamic-x86_64.dll",
+    "sha256": "3AA742521E8CBD23252F0545AA51D5A15624A3E4430FBE2F81567AFAEB3FC59B"
+  },
+  "libraries": [
+    {
+      "name": "bitcoin.lib",
+      "sha256": "3A80A1C066B9532250A046CA561B1C13387B9A278DB5155AE3B802B402991151",
+      "bytes": 738220
+    },
+    {
+      "name": "chachapoly.lib",
+      "sha256": "40A99FF49F49C3769A08AD74B9A9C2466DA048F554FF196114D07C29295398FB",
+      "bytes": 159688
+    },
+    {
+      "name": "Common.lib",
+      "sha256": "817D75A57C8B0BBE27E35C64295CB97A95E85516AB58C234606FE6FF557BFF5E",
+      "bytes": 12156750
+    },
+    {
+      "name": "Core.lib",
+      "sha256": "C3476D9C0C8DDED4B33605B0CF6D5DFC03B36F553FDF45E2779FE893BB5048EF",
+      "bytes": 40492250
+    },
+    {
+      "name": "Crypto.lib",
+      "sha256": "524D0250DAAFE2FB948A13910CE440AC59E4B0E8A4D771A795E9CA799A96C0F1",
+      "bytes": 23862200
+    },
+    {
+      "name": "jsoncpp.lib",
+      "sha256": "95630BA94A11B8564DC3BF762761A8AC850F28C62028BC9D412695C4612CB0AA",
+      "bytes": 2915210
+    },
+    {
+      "name": "Net.lib",
+      "sha256": "0BCF854C071BFB247E3A58AFBEEDAF1DD6B621CCA4790E2071B974AD4DEA9F16",
+      "bytes": 11428590
+    },
+    {
+      "name": "PMMR.lib",
+      "sha256": "465B39813B83EDF8B726D396185AE997D84419C5960AD8D60004501777C35A1C",
+      "bytes": 34225838
+    },
+    {
+      "name": "rfc6234.lib",
+      "sha256": "F6063A317131E856883E89A36B0C011907FB87F70EC9EB19D58CF8533CA0E972",
+      "bytes": 165252
+    },
+    {
+      "name": "scrypt.lib",
+      "sha256": "EE797BA7C337BDAFC8F28665BD5CCC5EE0D62E7FB7C2E131257272D53380CFAC",
+      "bytes": 77216
+    },
+    {
+      "name": "sha3.lib",
+      "sha256": "709A1D2740C0F2C7A9E7475B0F0493B4166920B7976A2E0CE86D9E1212179A79",
+      "bytes": 132546
+    },
+    {
+      "name": "Tor.lib",
+      "sha256": "F0BDF008532BB0E96B0980864B8DC069587C01928401AE386A76BED9526A57B4",
+      "bytes": 20117344
+    }
+  ],
+  "targets": {
+    "tests_mini": {
+      "exe": "C:\\DHW\\.tmp\\asan-line3\\fuzz-linked\\TestsMini.exe",
+      "log": "C:\\DHW\\.tmp\\asan-line3\\fuzz-linked\\logs\\build_tests_mini.log",
+      "exit_code": 0,
+      "sources": [
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\TestMain.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_NrdDifferential.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_NrdIndexRebuild.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_NrdRules.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_NrdPolicy.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_Segment.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_PibdServing.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\Net\\Test_P2PCompat.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\src\\BlockChain\\Validators\\BlockValidator.cpp",
+        "C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\stub_chain_getbyheight.cpp"
+      ],
+      "binary_sha256": "12C3D16C21E80F86BC3C736BE5046872454D1A6D7FA26B018D782E89D153778B",
+      "bytes": 8343552
+    }
+  }
+}

@@ -46,3 +46,22 @@ fault-injection под ASan** и зафиксировать, что именно
 3. Reorg/restart последовательности для F4 под ASan + повтор после рестарта.
 4. Каждый сценарий — отдельный CI-фильтр с SHA бинарника и исходников; падение
    не подавлять; ASan-отчёт сохранять в evidence.
+
+## Текущий статус (2026-11-03, после handoff Lead)
+
+- **F1/F2:** пока только unit-симуляции; line2 готовит внешний child-kill
+  harness для «настоящего прерывания до commit» (task-8b), без production hook.
+  При передаче добавим его в common CI; ASan-вариант — если TU не уходит в
+  BlockChain→Database→rocksdb.
+- **F3 (snapshot activation/disk-full):** реальный FS-fault harness **не
+  реализован**; покрытие остаётся unit-симуляциями (`ValidateExtractedState`,
+  `StagingCleanup`, `PibdSnapshot::*`, `PibdStateWriter`). Это явный остаток.
+- **F4:** reorg/rollback unit-симуляции (`NrdRollback*`, `NrdReorgBackup*`,
+  `NrdRebuildException`); fault-injection под ASan не реализован.
+- **ASan:** refresh build-07 source snapshot сделан (manifest `57590D1E…`,
+  TestsMini `19FE6005…`, subset PASS, teardown PASS); после post-05:50 WIP
+  дерево снова dirty → ASan STALE, refresh приостановлен до freeze/build-08.
+- **ASan-BLOCKED (link):** `Test_NrdPreCommit`, `Test_NrdFalseBan`,
+  `Test_NrdBatchSafety`, `Test_KernelIndex`, `Test_BlockPipeBan` и real-DB
+  task-8b тест — требуют BlockProcessor/BlockChain→Database→non-ASan rocksdb;
+  остаются normal-binary-only до ASan-пересборки sysroot.

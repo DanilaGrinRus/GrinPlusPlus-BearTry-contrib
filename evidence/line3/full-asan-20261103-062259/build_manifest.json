@@ -1,0 +1,181 @@
+{
+  "schema": "gpp-line3-full-asan-build/v1",
+  "run_id": "full-asan-20261103-062259",
+  "created_utc": "2026-11-02T23:22:59.0615547Z",
+  "repo": "C:\\DHW\\Gplus\\src\\grinplusplus",
+  "git_head": "cb510302f5bebc0d64c5d6a1c0571046a63593ef",
+  "git_status": [
+    " M docs/modernization/ACCEPTANCE_REPORT.md",
+    " M docs/modernization/CI_REPRO.md",
+    " M docs/modernization/FAULT_INJECTION.md",
+    " M docs/modernization/G07_NRD.md",
+    " M docs/modernization/G09_ARCHIVE_SERVING.md",
+    " M docs/modernization/GAP_MATRIX.md",
+    " M docs/modernization/NRD_DIFFERENTIAL.md",
+    " M docs/modernization/REMAINING.md",
+    " M docs/modernization/SANITIZERS.md",
+    " M docs/modernization/THREE_LINE_STATUS.md",
+    " M evidence/line3/EVIDENCE_LINE3.md",
+    " M evidence/line3/normal-binary-c8c-audit-20261103.md",
+    " M src/P2P/MessageProcessor.cpp",
+    " M tests/CMakeLists.txt",
+    " M tests/framework/include/TestMiner.h",
+    " M tests/framework/include/TestServer.h",
+    " M tests/framework/include/TxBuilder.h",
+    " M tests/framework/src/TestServer.cpp",
+    " M tests/framework/src/TxBuilder.cpp",
+    " M tests/src/BlockChain/CMakeLists.txt",
+    " M tools/audit/nrd/rust-oracle/Cargo.lock",
+    " M tools/audit/nrd/rust-oracle/Cargo.toml",
+    " M tools/audit/nrd/rust-oracle/src/main.rs",
+    " M tools/build/ci-pipeline.ps1",
+    "?? .github/workflows/line3-ci.yml",
+    "?? docs/modernization/DOCUMENTATION_INDEX.md",
+    "?? evidence/ci/ci-c8c-02/",
+    "?? evidence/line3/asan-c8c-archive-01/",
+    "?? evidence/line3/asan-c8c-nrd-01/",
+    "?? evidence/line3/asan-c8c-p2p-01/",
+    "?? evidence/line3/asan-c8c-segment-01/",
+    "?? evidence/line3/asan-c8c-teardown-01/",
+    "?? evidence/line3/build-08-freeze-expectation.md",
+    "?? evidence/line3/build-08-freeze-snapshot-final.json",
+    "?? evidence/line3/build-08-freeze-snapshot.json",
+    "?? evidence/line3/build-09-freeze-snapshot-final.json",
+    "?? evidence/line3/ci-c8c-02-fuzz/",
+    "?? evidence/line3/full-asan-20261103-054256/",
+    "?? evidence/line3/linked-asan-build-20261103-054836/",
+    "?? evidence/line3/normal-0a3-advert-01/",
+    "?? evidence/line3/normal-0a3-archive-01/",
+    "?? evidence/line3/normal-0a3-blockpipe-01/",
+    "?? evidence/line3/normal-0a3-bodyless-01/",
+    "?? evidence/line3/normal-0a3-full-01/",
+    "?? evidence/line3/normal-0a3-kernidx-01/",
+    "?? evidence/line3/normal-0a3-nrd-01/",
+    "?? evidence/line3/normal-799-advert-01/",
+    "?? evidence/line3/normal-799-archive-01/",
+    "?? evidence/line3/normal-799-blockpipe-01/",
+    "?? evidence/line3/normal-799-full-01/",
+    "?? evidence/line3/normal-799-kernidx-01/",
+    "?? evidence/line3/normal-799-kill-01/",
+    "?? evidence/line3/normal-799-nrd-01/",
+    "?? evidence/line3/normal-binary-build08-historical-audit.md",
+    "?? tests/src/BlockChain/Test_NrdBodylessRestart.cpp",
+    "?? tests/src/BlockChain/Test_NrdKillHarness.cpp",
+    "?? tests/src/P2P/",
+    "?? tools/audit/nrd/evidence/cpp-nrd-differential-report-paired-nrd-paired-v5-c8c386-20261103-054716.json",
+    "?? tools/audit/nrd/evidence/isolated/blockpipe-b08-20261103-061043/",
+    "?? tools/audit/nrd/evidence/isolated/blockpipe-b09-20261103-062035/",
+    "?? tools/audit/nrd/evidence/isolated/bodyless-b08-20261103-061043/",
+    "?? tools/audit/nrd/evidence/isolated/bodyless-b09-20261103-062035/",
+    "?? tools/audit/nrd/evidence/isolated/kernidx-b08-20261103-061043/",
+    "?? tools/audit/nrd/evidence/isolated/kernidx-b09-20261103-062035/",
+    "?? tools/audit/nrd/evidence/isolated/kill-b08-20261103-061043/",
+    "?? tools/audit/nrd/evidence/isolated/kill-b09-20261103-062035/",
+    "?? tools/audit/nrd/evidence/isolated/nrd-b08-20261103-061043/",
+    "?? tools/audit/nrd/evidence/isolated/nrd-b09-20261103-062035/",
+    "?? tools/audit/nrd/evidence/isolated/nrd-paired-v5-c8c386-20261103-054716/",
+    "?? tools/audit/nrd/evidence/paired-differential-report-nrd-paired-v5-c8c386-20261103-054716.json",
+    "?? tools/audit/nrd/evidence/rust-oracle-c8c386-v4.json",
+    "?? tools/audit/nrd/evidence/rust-oracle-c8c386-v5.json",
+    "?? tools/audit/nrd/rebuild-kill-harness.ps1"
+  ],
+  "copied_tree": "C:\\DHW\\.tmp\\asan-line3\\gpp-tree",
+  "source_manifest": "C:\\DHW\\.tmp\\asan-line3\\gpp-build\\source_tree_manifest.txt",
+  "source_manifest_sha256": "CF78C188A3F69F242F326B5DEFDA3DFD1D4A1E3A11591DAB8A9CDBF98DB68D85",
+  "build_dir": "C:\\DHW\\.tmp\\asan-line3\\gpp-build",
+  "sysroot": "C:\\DHW\\Gplus\\.toolchain\\sysroot",
+  "toolchain": "MSVC 14.44.35207 (VS 2022 BuildTools 17.14), Windows SDK 10.0.26100",
+  "asan_runtime": {
+    "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\clang_rt.asan_dynamic-x86_64.dll",
+    "sha256": "3AA742521E8CBD23252F0545AA51D5A15624A3E4430FBE2F81567AFAEB3FC59B"
+  },
+  "configure": {
+    "command": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe -S C:\\DHW\\.tmp\\asan-line3\\gpp-tree -B C:\\DHW\\.tmp\\asan-line3\\gpp-build -G Visual Studio 17 2022 -A x64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=C:\\DHW\\Gplus\\.toolchain\\sysroot -DGRINPP_TESTS=ON -DGRINPP_TOOLS=OFF -DCMAKE_CXX_FLAGS=/DWIN32 /D_WINDOWS /W3 /GR /EHsc /fsanitize=address /Zi -DCMAKE_C_FLAGS=/DWIN32 /D_WINDOWS /W3 /fsanitize=address /Zi -DCMAKE_EXE_LINKER_FLAGS=/DEBUG -DCMAKE_SHARED_LINKER_FLAGS=/DEBUG -DCMAKE_STATIC_LINKER_FLAGS=/DEBUG",
+    "log": "C:\\DHW\\.tmp\\asan-line3\\gpp-build\\full-asan-20261103-062259.configure.log",
+    "exit_code": 0
+  },
+  "build": {
+    "command": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\MSBuild\\Current\\Bin\\MSBuild.exe C:\\DHW\\.tmp\\asan-line3\\gpp-build\\GRIN_PLUS_PLUS.sln /t:Common;Core;Crypto;PMMR /p:Configuration=Release /p:Platform=x64 /p:TrackFileAccess=false /p:UseSharedCompilation=false /nr:false /v:m /nologo /flp:LogFile=C:\\DHW\\.tmp\\asan-line3\\gpp-build\\full-asan-20261103-062259.build.log;Verbosity=normal",
+    "targets": [
+      "Common",
+      "Core",
+      "Crypto",
+      "PMMR"
+    ],
+    "log": "C:\\DHW\\.tmp\\asan-line3\\gpp-build\\full-asan-20261103-062259.build.log",
+    "stdout_log": "C:\\DHW\\.tmp\\asan-line3\\gpp-build\\full-asan-20261103-062259.msbuild.stdout.log",
+    "exit_code": 0,
+    "wall_sec": 81.699,
+    "output_dir": "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\bin\\Release\\Release",
+    "libraries": [
+      {
+        "name": "bitcoin.lib",
+        "bytes": 738220,
+        "sha256": "3A80A1C066B9532250A046CA561B1C13387B9A278DB5155AE3B802B402991151"
+      },
+      {
+        "name": "chachapoly.lib",
+        "bytes": 159688,
+        "sha256": "40A99FF49F49C3769A08AD74B9A9C2466DA048F554FF196114D07C29295398FB"
+      },
+      {
+        "name": "Common.lib",
+        "bytes": 12156750,
+        "sha256": "817D75A57C8B0BBE27E35C64295CB97A95E85516AB58C234606FE6FF557BFF5E"
+      },
+      {
+        "name": "Core.lib",
+        "bytes": 40492250,
+        "sha256": "C3476D9C0C8DDED4B33605B0CF6D5DFC03B36F553FDF45E2779FE893BB5048EF"
+      },
+      {
+        "name": "Crypto.lib",
+        "bytes": 23862200,
+        "sha256": "524D0250DAAFE2FB948A13910CE440AC59E4B0E8A4D771A795E9CA799A96C0F1"
+      },
+      {
+        "name": "jsoncpp.lib",
+        "bytes": 2915210,
+        "sha256": "95630BA94A11B8564DC3BF762761A8AC850F28C62028BC9D412695C4612CB0AA"
+      },
+      {
+        "name": "Net.lib",
+        "bytes": 11428590,
+        "sha256": "0BCF854C071BFB247E3A58AFBEEDAF1DD6B621CCA4790E2071B974AD4DEA9F16"
+      },
+      {
+        "name": "PMMR.lib",
+        "bytes": 34225838,
+        "sha256": "465B39813B83EDF8B726D396185AE997D84419C5960AD8D60004501777C35A1C"
+      },
+      {
+        "name": "rfc6234.lib",
+        "bytes": 165252,
+        "sha256": "F6063A317131E856883E89A36B0C011907FB87F70EC9EB19D58CF8533CA0E972"
+      },
+      {
+        "name": "scrypt.lib",
+        "bytes": 77216,
+        "sha256": "EE797BA7C337BDAFC8F28665BD5CCC5EE0D62E7FB7C2E131257272D53380CFAC"
+      },
+      {
+        "name": "sha3.lib",
+        "bytes": 132546,
+        "sha256": "709A1D2740C0F2C7A9E7475B0F0493B4166920B7976A2E0CE86D9E1212179A79"
+      },
+      {
+        "name": "Tor.lib",
+        "bytes": 20117344,
+        "sha256": "F0BDF008532BB0E96B0980864B8DC069587C01928401AE386A76BED9526A57B4"
+      }
+    ]
+  },
+  "notes": [
+    "Project CMakeLists forces /W4 /WX and static CRT /MT; the ASan profile only adds /fsanitize=address /Zi and /DEBUG.",
+    "/Zi is mandatory: without debug info MSVC raises C5072 and /WX fails the build.",
+    "All project TUs in this build are ASan-instrumented, so MSVC STL annotate_string/annotate_vector pragmas match (LNK2038 resolved).",
+    "Uninstrumented: sysroot C libraries (zlib, minizip, libsodium, secp256k1-zkp, roaring) and system CRT/Windows DLLs.",
+    "Targets avoid Database so the non-ASan rocksdb.lib C++ library is not linked."
+  ],
+  "result": "BUILD_PASS"
+}
