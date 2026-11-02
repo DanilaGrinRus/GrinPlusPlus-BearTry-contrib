@@ -5,7 +5,7 @@
 - объём diff/новых C++ файлов: **≈ +717.7 KiB**;
 - итоговый `GrinNode.exe`: **7 741 952 B = 7 560.5 KiB = 7.38 MiB**;
 - **прирост exe относительно 1.2.9: NOT MEASURED** — исходный бинарник отсутствует; 7.7 MB это итоговый размер, не дельта;
-- артефакты: `GrinNode 9DC493E2…`, `Tests 96505A75…`; suite **200 / 2302 PASS**.
+- артефакты: `GrinNode 9DC493E2…`, `Tests 9E9014D4…`; suite **201 / 2309 PASS**.
 - **G-09 stage 1:** identity-checked P2P + Rust-прогон на H=3 315 600 — PASS (7/7, 1673/1673, 1673/1673, 1637/1637); roots взяты из C++ REST, независимое подтверждение H и обычная Rust-нода — NOT VERIFIED.
 - **PIBD/PIHD guard:** height-cap 13, overflow-check `idx*capacity`, привязка PIHD-ответа к connection/peer, fallback при отсутствии роста chain height; PIBD-ответ строится по одному `ApiStateSnapshot` с retry при смене sequence, bitmap/root кешируются по output root, лимит 500 запросов/мин на connection. PIHD experimental, `PIHD_HIST` не рекламируется; конкурентный apply/reorg-тест snapshot ещё открыт.
 

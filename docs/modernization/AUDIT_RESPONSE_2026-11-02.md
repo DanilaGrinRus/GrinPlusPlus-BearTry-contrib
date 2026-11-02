@@ -19,10 +19,11 @@
   - запись в кэш выполняется только после успешной проверки всей группы;
   - проверяется отказ scratch-space и конвертации commitments.
 - Тесты: `Crypto::BulletproofsCacheBindsProofBytes`,
-  `Crypto::BulletproofsRejectsEmptyBatchItem`.
-- **Не сделано:** полный холодный/прогретый тест с реальным валидным proof,
-  дифференциальный прогон против Rust, ASan/fuzz, проверка всех сетевых
-  callers. Поэтому это не финальный PASS по P0.
+  `Crypto::BulletproofsRejectsEmptyBatchItem`,
+  `Crypto::BulletproofsWarmCacheRejectsMutatedProof` (реальный proof, warm cache,
+  изменённый байт отклонён).
+- **Не сделано:** дифференциальный прогон против Rust, ASan/fuzz, проверка
+  всех сетевых callers. Поэтому это не финальный PASS по P0.
 
 ## P0: NRD fail-closed
 
@@ -79,8 +80,8 @@
 
 - `GrinNode.exe`: SHA-256 `9DC493E201481362FE371F2B6A9AC59A542373EB56502FE95C4C4DAD3D5F1EA7`,
   **7 741 952 B = 7 560.5 KiB**.
-- `Tests.exe`: SHA-256 `96505A757EB34C627D3D8AB11DC9B6A7F0529D22D382233FF78E56B66ECF6CF9`.
-- Suite: **200 / 2302 PASS** (`C:\DHW\.tmp\tests-audit-p0.log`).
+- `Tests.exe`: SHA-256 `9E9014D4E827151A7E4BCB21D99BB8784866390EB6FC8983D9B987A2F53EA471`.
+- Suite: **201 / 2309 PASS** (`C:\DHW\.tmp\tests-proof-mutation.log`).
 - Wire PASS: `C:\DHW\.tmp\pibd-wire-lease.log`.
 - Active-sync kernel PASS: `C:\DHW\.tmp\pibd-kernel-lease-active.log`.
 - Исходники относительно 1.2.9: **+17 010 / −594** строк; 186 tracked + 1 новый

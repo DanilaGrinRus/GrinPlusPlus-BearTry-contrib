@@ -2,6 +2,9 @@
 
 #include <Crypto/BulletProofsCache.h>
 #include <Crypto/Bulletproofs.h>
+#include <Crypto/Crypto.h>
+#include <Crypto/CSPRNG.h>
+#include <Wallet/Keychain/KeyChain.h>
 #include <Crypto/Models/Commitment.h>
 #include <Crypto/Models/RangeProof.h>
 
@@ -36,4 +39,30 @@ TEST_CASE("Crypto::BulletproofsRejectsEmptyBatchItem")
 	std::vector<std::pair<Commitment, RangeProof>> invalid;
 	invalid.emplace_back(commitment, RangeProof(std::vector<unsigned char>()));
 	REQUIRE_FALSE(Bulletproofs::GetInstance().VerifyBulletproofs(invalid));
+}
+TEST_CASE("Crypto::BulletproofsWarmCacheRejectsMutatedProof")
+{
+	const CBigInteger<32> masterSeed = CSPRNG::GenerateRandom32();
+	const SecureVector seedBytes(masterSeed.GetData().begin(), masterSeed.GetData().end());
+	const uint64_t amount = 45;
+	const KeyChainPath keyId(std::vector<uint32_t>({ 1, 2, 3 }));
+	KeyChain keyChain = KeyChain::FromSeed(seedBytes);
+	const SecretKey blindingFactor = keyChain.DerivePrivateKey(keyId, amount);
+	const Commitment commitment =
+		Crypto::CommitBlinded(amount, BlindingFactor(blindingFactor.GetBytes()));
+	const RangeProof proof =
+		keyChain.GenerateRangeProof(keyId, amount, commitment, blindingFactor, EBulletproofType::ORIGINAL);
+
+	std::vector<std::pair<Commitment, RangeProof>> valid;
+	valid.emplace_back(commitment, proof);
+	REQUIRE(Bulletproofs::GetInstance().VerifyBulletproofs(valid));
+	// Warm cache hit; the same exact proof remains valid.
+	REQUIRE(Bulletproofs::GetInstance().VerifyBulletproofs(valid));
+
+	std::vector<unsigned char> mutatedBytes = proof.GetProofBytes();
+	REQUIRE(mutatedBytes.size() > 10);
+	mutatedBytes[10] ^= 0x01;
+	std::vector<std::pair<Commitment, RangeProof>> mutated;
+	mutated.emplace_back(commitment, RangeProof(std::move(mutatedBytes)));
+	REQUIRE_FALSE(Bulletproofs::GetInstance().VerifyBulletproofs(mutated));
 }
