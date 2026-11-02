@@ -1,0 +1,15 @@
+target=bytebuffer
+seed=20261103
+executed=100
+ok=21
+rejected_deserialization=79
+rejected_file=0
+rejected_segment=0
+oom=0
+exception=0
+unknown_exception=0
+slow_cases=0
+slowest_ms=0.1066
+wall_sec=0.215875
+corpus_files=13
+corpus_fnv1a=89225b1501e975ef

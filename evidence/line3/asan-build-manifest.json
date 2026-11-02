@@ -1,0 +1,103 @@
+{
+  "schema": "gpp-line3-fuzz-build/v1",
+  "created_utc": "2026-11-02T19:42:41.9442933Z",
+  "repo": "C:\\DHW\\Gplus\\src\\grinplusplus",
+  "git_head": "e0a5d2d68b990234e7bf1fb1b651f868dc30e9b6",
+  "git_status": [
+    " M include/P2P/Capabilities.h",
+    " M src/BlockChain/Validators/BlockValidator.cpp",
+    " M src/P2P/MessageProcessor.cpp",
+    " M src/P2P/PIBD/PibdParams.h",
+    " M src/P2P/Seed/HandShake.cpp",
+    " M src/P2P/Seed/Seeder.cpp",
+    " M src/PMMR/TxHashSetImpl.cpp",
+    " M src/PMMR/TxHashSetImpl.h",
+    " M src/PMMR/Zip/ZipFile.cpp",
+    " M tests/src/Net/Test_P2PCompat.cpp",
+    " M tests/src/PMMR/CMakeLists.txt",
+    " M tests/src/PMMR/Test_NrdRules.cpp",
+    " M tests/src/PMMR/Test_PibdServing.cpp",
+    "?? docs/modernization/G09_ARCHIVE_SERVING.md",
+    "?? docs/modernization/NRD_DIFFERENTIAL.md",
+    "?? evidence/",
+    "?? src/P2P/PIBD/PibdArchiveServer.h",
+    "?? tests/fuzz/",
+    "?? tests/src/PMMR/Test_NrdDifferential.cpp",
+    "?? tests/src/PMMR/Test_NrdIndexRebuild.cpp",
+    "?? tests/src/PMMR/Test_NrdSupport.h",
+    "?? tests/src/PMMR/Test_ZipFile.cpp",
+    "?? tools/audit/nrd/",
+    "?? tools/build/run-tests-isolated.ps1",
+    "?? tools/fuzz/"
+  ],
+  "msvc": "14.44.35207 (VS 2022 BuildTools 17.14, Windows SDK 10.0.26100)",
+  "profile": "/W4 /WX /O1 /Zi /MT /EHsc /std:c++17 /fsanitize=address (dynamic ASan runtime DLL)",
+  "output_dir": "C:\\DHW\\.tmp\\asan-line3\\fuzz",
+  "asan_runtime": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\clang_rt.asan_dynamic-x86_64.dll",
+  "uninstrumented": [
+    "project static libs in bin\\Release\\Release (Release /MT, no ASan)",
+    "sysroot libs: rocksdb, secp256k1-zkp, libsodium, roaring, minizip, zlibstatic"
+  ],
+  "targets": {
+    "bytebuffer": {
+      "exe": "C:\\DHW\\.tmp\\asan-line3\\fuzz\\fuzz_bytebuffer.exe",
+      "log": "C:\\DHW\\.tmp\\asan-line3\\fuzz\\logs\\build_bytebuffer.log",
+      "exit_code": 0,
+      "sources": [
+        "C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\fuzz_driver.cpp",
+        "C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\target_bytebuffer.cpp"
+      ],
+      "libraries": [],
+      "binary_sha256": "2312BE962C06D8FB51B100E2BCC589318CCD8EA955A234B85DE661D359C49691"
+    },
+    "p2p_body": {
+      "exe": "C:\\DHW\\.tmp\\asan-line3\\fuzz\\fuzz_p2p_body.exe",
+      "log": "C:\\DHW\\.tmp\\asan-line3\\fuzz\\logs\\build_p2p_body.log",
+      "exit_code": 0,
+      "sources": [
+        "C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\fuzz_driver.cpp",
+        "C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\target_p2p_messages.cpp",
+        "C:\\DHW\\Gplus\\src\\grinplusplus\\src\\Core\\Traits\\Serializable.cpp"
+      ],
+      "libraries": [],
+      "binary_sha256": "7363C8E5C9C4684FBECA79F985EED983297F2F9A4A9BAE5D8CB8BD85870241C2"
+    },
+    "segment": {
+      "exe": "C:\\DHW\\.tmp\\asan-line3\\fuzz\\fuzz_segment.exe",
+      "log": "C:\\DHW\\.tmp\\asan-line3\\fuzz\\logs\\build_segment.log",
+      "exit_code": 0,
+      "sources": [
+        "C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\fuzz_driver.cpp",
+        "C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\target_segment.cpp",
+        "C:\\DHW\\Gplus\\src\\grinplusplus\\src\\Core\\Traits\\Serializable.cpp"
+      ],
+      "libraries": [],
+      "binary_sha256": "C7AF094E085EAAA641E6C085923EF5BC0B863784822ABE595B8420586C12A0A6"
+    },
+    "zip": {
+      "exe": "C:\\DHW\\.tmp\\asan-line3\\fuzz\\fuzz_zip.exe",
+      "log": "C:\\DHW\\.tmp\\asan-line3\\fuzz\\logs\\build_zip.log",
+      "exit_code": 0,
+      "sources": [
+        "C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\fuzz_driver.cpp",
+        "C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\target_zip.cpp",
+        "C:\\DHW\\Gplus\\src\\grinplusplus\\src\\PMMR\\Zip\\ZipFile.cpp",
+        "C:\\DHW\\Gplus\\src\\grinplusplus\\src\\Common\\Logger.cpp",
+        "C:\\DHW\\Gplus\\src\\grinplusplus\\src\\Common\\GrinStr.cpp",
+        "C:\\DHW\\Gplus\\src\\grinplusplus\\src\\Common\\Util\\FileUtil.cpp"
+      ],
+      "libraries": [
+        "C:\\DHW\\Gplus\\.toolchain\\sysroot\\lib\\minizip.lib",
+        "C:\\DHW\\Gplus\\.toolchain\\sysroot\\lib\\zlibstatic.lib",
+        "advapi32.lib",
+        "kernel32.lib",
+        "user32.lib",
+        "shell32.lib",
+        "ole32.lib",
+        "oleaut32.lib",
+        "uuid.lib"
+      ],
+      "binary_sha256": "1619BFBC781A8A5FEADF123F52427E6B3869C96B98792CD7747671C88DA78921"
+    }
+  }
+}

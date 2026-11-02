@@ -1,0 +1,15 @@
+target=segment
+seed=20261103
+executed=200
+ok=45
+rejected_deserialization=155
+rejected_file=0
+rejected_segment=0
+oom=0
+exception=0
+unknown_exception=0
+slow_cases=0
+slowest_ms=0.1647
+wall_sec=0.515462
+corpus_files=14
+corpus_fnv1a=62fc43b47e413f86

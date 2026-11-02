@@ -53,6 +53,14 @@ Config::Config(const Json::Value& json, const Environment environment, const fs:
 	
 }
 
+bool Config::IsNrdKernelEnabled(const Environment environment) noexcept
+{
+	// Rust grin 5.5.2 src/bin/grin.rs:
+	//   Mainnet => global::init_global_nrd_enabled(false)
+	//   all other networks => global::init_global_nrd_enabled(true)
+	return environment != Environment::MAINNET;
+}
+
 Config::Ptr Config::Load(const fs::path& configPath, const Environment environment)
 {
 	std::shared_ptr<Config> pConfig = nullptr;

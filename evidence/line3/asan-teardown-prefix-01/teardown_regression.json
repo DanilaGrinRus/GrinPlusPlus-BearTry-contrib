@@ -1,0 +1,33 @@
+{
+  "schema": "gpp-line3-asan-teardown-regression/v1",
+  "run_id": "asan-teardown-prefix-01",
+  "created_utc": "2026-11-02T20:25:24.1422826Z",
+  "result": "FAIL",
+  "exe": "C:\\DHW\\.tmp\\asan-line3\\fuzz-linked\\fuzz_tests_mini_prefix.exe",
+  "exe_sha256": "C8C1096311D7F49B5C71F52CB3BAF7F60A471891D279C30BB6B990761B1C29F8",
+  "runner_manifest": "C:\\DHW\\.tmp\\asan-line3\\teardown-iso\\asan-teardown-prefix-01\\manifest.json",
+  "checks": {
+    "runner_exit_zero": false,
+    "manifest_status_pass": false,
+    "process_exit_zero": false,
+    "no_asan_report": false,
+    "zero_tests_ran": true,
+    "user_profile_unchanged": true,
+    "isolated_data_dir": true,
+    "runtime_dll_copied": true
+  },
+  "failed_checks": [
+    "runner_exit_zero",
+    "manifest_status_pass",
+    "process_exit_zero",
+    "no_asan_report"
+  ],
+  "asan_report": true,
+  "process_exit": {
+    "decimal": 1,
+    "hex": "0x00000001"
+  },
+  "stdout": "C:\\DHW\\.tmp\\asan-line3\\teardown-iso\\asan-teardown-prefix-01\\out\\instance-1.stdout.log",
+  "stderr": "C:\\DHW\\.tmp\\asan-line3\\teardown-iso\\asan-teardown-prefix-01\\out\\instance-1.stderr.log",
+  "note": "Pre-fix failing evidence: evidence/line3/asan-testsmini-empty-01 (zero tests, exit 1, ASan heap-use-after-free)."
+}

@@ -1,12 +1,12 @@
 # AUDIT_DELTA (DE) — Grin++ 1.2.9 → Kompatibilität mit Grin v5.5.2
 **Aktueller Stand 02.11.2026.** Basis 1.2.9 `5f511e6`; Arbeitsbaum HEAD `807b5b1`. Quellmetriken:
 
-- C++ hinzugefügt: **+17.142 Zeilen**; entfernt **−594**; 187 Dateien;
-- Diff-/neuer C++-Textumfang: **≈ +725.0 KiB**;
-- endgültige `GrinNode.exe`: **7.745.024 B = 7.563,5 KiB = 7,38 MiB**;
+- C++ hinzugefügt: **+22.619 Zeilen**; entfernt **−625**; 191 getrackte + 22 neue;
+- Diff-/neuer C++-Textumfang: **≈ +927.8 KiB**;
+- endgültige `GrinNode.exe`: **7.805.440 B = 7.622,5 KiB = 7,44 MiB**;
 - **Exe-Zuwachs gegenüber 1.2.9: NOT MEASURED** — kein Originalbinär vorhanden; 7,7 MB ist die Endgröße, kein Delta;
-- Artefakte: `GrinNode 19E0C97E…`, `Tests 4F75DCD4…`; Suite **205 / 3.700 PASS**.
-- **G-09 live (03.11.2026): PASS für das isolierte Szenario.** Normale Rust-5.5.2-Node erreichte `no_sync` bei H=3.318.655 / Hash `2945348e…`, mit gleichem C++-Tip, 1 Inbound / 0 Outbound; PIBD 10.203.442/10.203.442, Roots/Rangeproof/Kernel-Validierung/Body-Sync abgeschlossen. Ursache der früheren Restarts war `missing left sibling` bei Output-Segment 1648; behoben durch Senden verfügbarer Leaves in `SegmentGenerator`. Grenzen: Headers preseeded, Reorg/Restart/Negativ/Mainnet nicht abgedeckt.
+- Artefakte: `GrinNode F9EF06B4…`, `Tests C8C386BE…`; Suite **245 / 4.013 PASS**.
+- **G-09 fixed-H (experimentell, 03.11.2026): historischer PASS.** Der normale Repo-Binär `C8C386BE…` besteht Build/Unit/ASan-Subset, aber ordinary live ist **NOT VERIFIED** (L1 header_sync/awaiting_peers; Fixture-H-Mismatch). Normale Rust-5.5.2-Node erreichte `no_sync` bei H=3.318.655 / Hash `2945348e…`, mit gleichem C++-Tip, 1 Inbound / 0 Outbound; PIBD 10.203.442/10.203.442, Roots/Rangeproof/Kernel-Validierung/Body-Sync abgeschlossen. Ursache der früheren Restarts war `missing left sibling` bei Output-Segment 1648; behoben durch Senden verfügbarer Leaves in `SegmentGenerator`. Grenzen: Headers preseeded, Reorg/Restart/Negativ/Mainnet nicht abgedeckt.
 - **PIBD/PIHD-Guard:** Height-Cap 13, Overflow-Prüfung `idx*capacity`, PIHD-Antwort an Connection/Peer gebunden, Fallback ohne Chain-Height-Fortschritt; PIHD ist experimentell, `PIHD_HIST` wird nicht beworben, Snapshot/Cache/Rate-Limit bleiben offen.
 
 Basis: Grin++ 1.2.9 (`5f511e6`). Delta aktualisiert: 02.11.2026, HEAD `807b5b1` (G-09/G-23/G-53/G-07/G-24).

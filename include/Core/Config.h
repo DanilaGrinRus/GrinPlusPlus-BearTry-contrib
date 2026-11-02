@@ -19,6 +19,15 @@ public:
 	static std::shared_ptr<Config> Load(const Json::Value& json, const Environment environment);
 	static std::shared_ptr<Config> Default(const Environment environment);
 
+	// D2 proposal helper (NOT wired into consensus validation yet).
+	// Rust grin 5.5.2 enables NRD kernels on every non-mainnet network and
+	// disables them on mainnet (src/bin/grin.rs init_global_nrd_enabled):
+	//   Mainnet => false, Floonet/Testnet/AutomatedTesting => true.
+	// Wiring this into BlockValidator/txpool requires Lead approval; the pure
+	// helper exists so mainnet/testnet decisions can be tested without
+	// constructing per-network Config objects (which would create data dirs).
+	static bool IsNrdKernelEnabled(const Environment environment) noexcept;
+
 	Json::Value& GetJSON() noexcept;
 
 	const std::string& GetLogLevel() const noexcept;

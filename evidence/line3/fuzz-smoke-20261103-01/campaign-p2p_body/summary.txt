@@ -1,0 +1,15 @@
+target=p2p_body
+seed=20261103
+executed=200
+ok=34
+rejected_deserialization=166
+rejected_file=0
+rejected_segment=0
+oom=0
+exception=0
+unknown_exception=0
+slow_cases=0
+slowest_ms=0.1558
+wall_sec=0.578341
+corpus_files=9
+corpus_fnv1a=681f1353147b5fc6

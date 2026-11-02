@@ -1,0 +1,1180 @@
+{
+  "schema": "gpp-line3-fuzz-run/v1",
+  "run_id": "fuzz-linked-smoke-20261103-02",
+  "created_utc": "2026-11-02T20:20:11.4178983Z",
+  "repo": "C:\\DHW\\Gplus\\src\\grinplusplus",
+  "git_head": "e0a5d2d68b990234e7bf1fb1b651f868dc30e9b6",
+  "git_status": [
+    " M include/Core/Config.h",
+    " M include/P2P/Capabilities.h",
+    " M src/BlockChain/BlockChainImpl.cpp",
+    " M src/BlockChain/Processors/TxHashSetProcessor.cpp",
+    " M src/BlockChain/Processors/TxHashSetProcessor.h",
+    " M src/BlockChain/Validators/BlockValidator.cpp",
+    " M src/Core/Config.cpp",
+    " M src/P2P/MessageProcessor.cpp",
+    " M src/P2P/PIBD/PibdParams.h",
+    " M src/P2P/Seed/HandShake.cpp",
+    " M src/P2P/Seed/Seeder.cpp",
+    " M src/PMMR/TxHashSetImpl.cpp",
+    " M src/PMMR/TxHashSetImpl.h",
+    " M src/PMMR/Zip/ZipFile.cpp",
+    " M tests/src/Net/Test_P2PCompat.cpp",
+    " M tests/src/PMMR/CMakeLists.txt",
+    " M tests/src/PMMR/Test_NrdRules.cpp",
+    " M tests/src/PMMR/Test_PibdServing.cpp",
+    "?? docs/modernization/CI_REPRO.md",
+    "?? docs/modernization/G09_ARCHIVE_SERVING.md",
+    "?? docs/modernization/NRD_DIFFERENTIAL.md",
+    "?? docs/modernization/SANITIZERS.md",
+    "?? evidence/",
+    "?? src/P2P/PIBD/PibdArchiveServer.h",
+    "?? tests/fuzz/",
+    "?? tests/src/PMMR/Test_NrdDifferential.cpp",
+    "?? tests/src/PMMR/Test_NrdIndexRebuild.cpp",
+    "?? tests/src/PMMR/Test_NrdPolicy.cpp",
+    "?? tests/src/PMMR/Test_NrdPreCommit.cpp",
+    "?? tests/src/PMMR/Test_NrdSupport.h",
+    "?? tests/src/PMMR/Test_ZipFile.cpp",
+    "?? tools/audit/nrd/",
+    "?? tools/build/run-tests-isolated.ps1",
+    "?? tools/fuzz/"
+  ],
+  "seed": 20261103,
+  "iterations": 200,
+  "max_seconds": 30.0,
+  "one_shot_timeout_sec": 30,
+  "environment": {
+    "os": "Microsoft Windows NT 10.0.26300.0",
+    "asan_staging": "C:\\DHW\\.tmp\\asan-line3\\runs\\fuzz-linked-smoke-20261103-02\\zip-staging",
+    "note": "ASan runtime DLL is copied next to the harness exe by build_asan.ps1"
+  },
+  "targets": {
+    "p2p_responses": {
+      "exe_sha256": "67A769E16D365D9153CC7A2B16327EB4E2842D15909A4FA17F9973048A4B055D",
+      "exe": "C:\\DHW\\.tmp\\asan-line3\\fuzz-linked\\fuzz_p2p_responses.exe",
+      "corpus": "C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_responses",
+      "corpus_sha256": "sel0_empty_body.bin:6E340B9CFFB37A989CA544E6BB780A2C78901D3FB33738768511A30617AFA01D;sel0_request_big_height.bin:80522030457A6B6CA326CAA6D3BD12B0861E45EEF8D926A32C361E008B8F59A5;sel0_request_ident.bin:2E9F7B45A9FF7A80F4495B1643DC525AF6022BF62281F7C678A4FAC7D783B766;sel0_request_idx_max.bin:12B65553FD13589849C9A1A485E17F61ED5C5DD8142408C6EC30C2D0F44650E9;sel0_request_truncated_hash.bin:66687AADF862BD776C8FC18B8E9F8E20089714856EE233B3902A591D0D5F2925;sel0_response_bitmap.bin:2F395178D75912BFE155A8065BA627BB059B2B3041C41957CDAC584A595AF54D;sel0_response_kernels_count_max.bin:B87859063B2304BA9EEFEA362D1419F78B857AAD03B9AF8079197D4399A15858;sel0_response_outputs_empty.bin:B3C98A8A882CE387D4CD3B9904CA16CBA05896068B91C2B186DF8CD0BA091450;sel0_truncated_hash.bin:60DAA3A5F7DBFA200F8C82840ECF5B42640B70F3B7218A4C6BBD67DB542E75A4;sel1_empty_body.bin:4BF5122F344554C53BDE2EBB8CD2B7E3D1600AD631C385A5D7CCE23C7785459A;sel1_request_big_height.bin:DDB5D9A43FBBD0032CDEE61C9D28285B42CFA3102A6D98AF109DDEE0A35FE082;sel1_request_ident.bin:57558D5DC8382FB0E57C56A4F12EE30978499A46240E42A4DBF089575FC3B79D;sel1_request_idx_max.bin:04469561DE5CF40F47C18CB5F190AA1F42E8AB4E6E64F05FB57C41D691CCA500;sel1_request_truncated_hash.bin:01D0FABD251FCBBE2B93B4B927B26AD2A1A99077152E45DED1E678AFA45DBEC5;sel1_response_bitmap.bin:7E47ABDA05138E87C6BAEC3609444463545B7A9DA6CE76D23789DF366453352E;sel1_response_kernels_count_max.bin:3FC1924529F77E46461C13A8136E6804A94665E14E3C9E90AC0910CA3A58B284;sel1_response_outputs_empty.bin:F986F3D30A45446002040683F35CEDFE2FB6DDA1297B3C1195AB78633D13A916;sel1_truncated_hash.bin:AA25E1D595A77C375B40B4796EA4FF044890EFEEBD4BD15D16D54387A5A8FC37;sel2_empty_body.bin:DBC1B4C900FFE48D575B5DA5C638040125F65DB0FE3E24494B76EA986457D986;sel2_request_big_height.bin:D4B7C73AF5D5CA56E95EA3BCF34120DA3769F6F7AE91EF9A8E3711C011739B7A;sel2_request_ident.bin:4B9B0CC9108C1DEC3B2BD3F0E302688E8460BE7591CB278F278F9C00F92364A0;sel2_request_idx_max.bin:E961AC6854426444425F1613CD5E163D383C0BD27FEF532A7D30A4DC5A7EB6D8;sel2_request_truncated_hash.bin:5778F985DB754C6628691F56FADAE50C65FDDBE8EB2E93039633FEFA05D45E31;sel2_response_bitmap.bin:6AF7E6CBFBB5749BBB1738C40CA4CD9D076FA199FED32A22ECFD3ADDA00D1919;sel2_response_kernels_count_max.bin:A44B6FB71F3BFB8DD294F77D3C054D053A7892B65FAE1305FF9D8DCEEADD67C3;sel2_response_outputs_empty.bin:8CAA0986BBC6E0DD0A7651424825D1EA36A51E4B76DC8CF66C9241AF6CF8484B;sel2_truncated_hash.bin:3892A88A1C454D52A2383473B4827CBFDB1100EF18149781609C4851AE54C0A5;sel3_empty_body.bin:084FED08B978AF4D7D196A7446A86B58009E636B611DB16211B65A9AADFF29C5;sel3_request_big_height.bin:23E5DD9DC338BCB829BA64F33653993464F349FA62C9B3E1C81F350B0CDE38F6;sel3_request_ident.bin:9B2C30DE55467FEF152667606B7E49253C0E277A2D70EF50CB0DD2553FF6C99A;sel3_request_idx_max.bin:1D7D531EEA49D2056B1F2DD404EEB1D6F221081ADC1207807C9EB194D00E9C3D;sel3_request_truncated_hash.bin:91D3827F052F5A4B44D5FE2BED657C752247365D94F80A33CB09C1436A16B125;sel3_response_bitmap.bin:44D0FBCC3A582FA8CF27B7FA984F088A8B8064912F7D27A22D84A865F0E2E5C3;sel3_response_kernels_count_max.bin:9DBFF3F91DC7FCB7B5F355B6649A31E09114A4E332727A4EAFB013C3B5F9B0F8;sel3_response_outputs_empty.bin:DA4470E7B2F1D56D551D8FA8FF9B2E718858F12ADF82541C761A888447ABB17F;sel3_truncated_hash.bin:45F3CFB357F285C8D854597A1D23A2341DEE97573B541D46BC211C40F33526EB",
+      "campaign": {
+        "requested_iterations": 200,
+        "exit_code": 0,
+        "wall_sec": 0.759,
+        "stdout": "C:\\DHW\\.tmp\\asan-line3\\runs\\fuzz-linked-smoke-20261103-02\\campaign-p2p_responses\\stdout.log",
+        "stderr": "C:\\DHW\\.tmp\\asan-line3\\runs\\fuzz-linked-smoke-20261103-02\\campaign-p2p_responses\\stderr.log",
+        "asan_report": false,
+        "summary_line": "SUMMARY target=p2p_responses seed=20261103 executed=200 ok=1 rejected_deserialization=199 rejected_file=0 rejected_segment=0 oom=0 exception=0 unknown=0 slow_cases=0 slowest_ms=0.205 wall_sec=0.596 corpus_files=36 corpus_fnv1a=be9e8d5fedc601b7",
+        "current_case": "C:\\DHW\\.tmp\\asan-line3\\runs\\fuzz-linked-smoke-20261103-02\\campaign-p2p_responses\\current_case.bin",
+        "last_case": "C:\\DHW\\.tmp\\asan-line3\\runs\\fuzz-linked-smoke-20261103-02\\campaign-p2p_responses\\last_case.txt"
+      },
+      "one_shot": [
+        {
+          "input": "sel0_empty_body.bin",
+          "bytes": 1,
+          "exit_code": 0,
+          "wall_sec": 0.113,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_responses\\sel0_empty_body.bin outcome=rejected_deserialization input_bytes=1 input_fnv1a=44bd2bd473ccf799",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "sel0_request_big_height.bin",
+          "bytes": 42,
+          "exit_code": 0,
+          "wall_sec": 0.111,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_responses\\sel0_request_big_height.bin outcome=rejected_deserialization input_bytes=42 input_fnv1a=1b8b6b9f6c038325",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "sel0_request_ident.bin",
+          "bytes": 42,
+          "exit_code": 0,
+          "wall_sec": 0.11,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_responses\\sel0_request_ident.bin outcome=rejected_deserialization input_bytes=42 input_fnv1a=dabd722941a86ed0",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "sel0_request_idx_max.bin",
+          "bytes": 42,
+          "exit_code": 0,
+          "wall_sec": 0.11,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_responses\\sel0_request_idx_max.bin outcome=rejected_deserialization input_bytes=42 input_fnv1a=b68290adcd340394",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "sel0_request_truncated_hash.bin",
+          "bytes": 32,
+          "exit_code": 0,
+          "wall_sec": 0.111,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_responses\\sel0_request_truncated_hash.bin outcome=rejected_deserialization input_bytes=32 input_fnv1a=171bb79dc8e18503",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "sel0_response_bitmap.bin",
+          "bytes": 78,
+          "exit_code": 0,
+          "wall_sec": 0.11,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_responses\\sel0_response_bitmap.bin outcome=rejected_deserialization input_bytes=78 input_fnv1a=dd8669574aefcfc8",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "sel0_response_kernels_count_max.bin",
+          "bytes": 41,
+          "exit_code": 0,
+          "wall_sec": 0.112,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_responses\\sel0_response_kernels_count_max.bin outcome=rejected_deserialization input_bytes=41 input_fnv1a=2eac9f227e064391",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "sel0_response_outputs_empty.bin",
+          "bytes": 97,
+          "exit_code": 0,
+          "wall_sec": 0.113,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_responses\\sel0_response_outputs_empty.bin outcome=rejected_deserialization input_bytes=97 input_fnv1a=7c03017e33d223d9",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "sel0_truncated_hash.bin",
+          "bytes": 18,
+          "exit_code": 0,
+          "wall_sec": 0.109,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_responses\\sel0_truncated_hash.bin outcome=rejected_deserialization input_bytes=18 input_fnv1a=c731957ab6657fbb",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "sel1_empty_body.bin",
+          "bytes": 1,
+          "exit_code": 0,
+          "wall_sec": 0.111,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_responses\\sel1_empty_body.bin outcome=rejected_deserialization input_bytes=1 input_fnv1a=44bd2ad473ccf5e6",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "sel1_request_big_height.bin",
+          "bytes": 42,
+          "exit_code": 0,
+          "wall_sec": 0.11,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_responses\\sel1_request_big_height.bin outcome=rejected_deserialization input_bytes=42 input_fnv1a=de29c3e8b3649d28",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "sel1_request_ident.bin",
+          "bytes": 42,
+          "exit_code": 0,
+          "wall_sec": 0.109,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_responses\\sel1_request_ident.bin outcome=rejected_deserialization input_bytes=42 input_fnv1a=190d2122ecee52bd",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "sel1_request_idx_max.bin",
+          "bytes": 42,
+          "exit_code": 0,
+          "wall_sec": 0.113,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_responses\\sel1_request_idx_max.bin outcome=rejected_deserialization input_bytes=42 input_fnv1a=ad4dcad2eadf1ae9",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "sel1_request_truncated_hash.bin",
+          "bytes": 32,
+          "exit_code": 0,
+          "wall_sec": 0.113,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_responses\\sel1_request_truncated_hash.bin outcome=rejected_deserialization input_bytes=32 input_fnv1a=11c304b725eb4482",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "sel1_response_bitmap.bin",
+          "bytes": 78,
+          "exit_code": 0,
+          "wall_sec": 0.111,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_responses\\sel1_response_bitmap.bin outcome=rejected_deserialization input_bytes=78 input_fnv1a=12e6f6ec101f2235",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "sel1_response_kernels_count_max.bin",
+          "bytes": 41,
+          "exit_code": 0,
+          "wall_sec": 0.115,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_responses\\sel1_response_kernels_count_max.bin outcome=rejected_deserialization input_bytes=41 input_fnv1a=5b47cbc3cb16311e",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "sel1_response_outputs_empty.bin",
+          "bytes": 97,
+          "exit_code": 0,
+          "wall_sec": 0.111,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_responses\\sel1_response_outputs_empty.bin outcome=rejected_deserialization input_bytes=97 input_fnv1a=e88ff2e9bd60d8e6",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "sel1_truncated_hash.bin",
+          "bytes": 18,
+          "exit_code": 0,
+          "wall_sec": 0.11,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_responses\\sel1_truncated_hash.bin outcome=rejected_deserialization input_bytes=18 input_fnv1a=f732a359c300fa52",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "sel2_empty_body.bin",
+          "bytes": 1,
+          "exit_code": 0,
+          "wall_sec": 0.12,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_responses\\sel2_empty_body.bin outcome=rejected_deserialization input_bytes=1 input_fnv1a=44bd29d473ccf433",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "sel2_request_big_height.bin",
+          "bytes": 42,
+          "exit_code": 0,
+          "wall_sec": 0.113,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_responses\\sel2_request_big_height.bin outcome=rejected_deserialization input_bytes=42 input_fnv1a=8fe7e05a2721ecd7",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "sel2_request_ident.bin",
+          "bytes": 42,
+          "exit_code": 0,
+          "wall_sec": 0.111,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_responses\\sel2_request_ident.bin outcome=rejected_deserialization input_bytes=42 input_fnv1a=7d432ffb66c1944e",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "sel2_request_idx_max.bin",
+          "bytes": 42,
+          "exit_code": 0,
+          "wall_sec": 0.114,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_responses\\sel2_request_idx_max.bin outcome=rejected_deserialization input_bytes=42 input_fnv1a=c0bcf96df7a8fb12",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "sel2_request_truncated_hash.bin",
+          "bytes": 32,
+          "exit_code": 0,
+          "wall_sec": 0.115,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_responses\\sel2_request_truncated_hash.bin outcome=rejected_deserialization input_bytes=32 input_fnv1a=0c6a51d082f50401",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "sel2_response_bitmap.bin",
+          "bytes": 78,
+          "exit_code": 0,
+          "wall_sec": 0.121,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_responses\\sel2_response_bitmap.bin outcome=rejected_deserialization input_bytes=78 input_fnv1a=7303ae7f0d057126",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "sel2_response_kernels_count_max.bin",
+          "bytes": 41,
+          "exit_code": 0,
+          "wall_sec": 0.111,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_responses\\sel2_response_kernels_count_max.bin outcome=rejected_deserialization input_bytes=41 input_fnv1a=1d1cfcae1aa2fb0b",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "sel2_response_outputs_empty.bin",
+          "bytes": 97,
+          "exit_code": 0,
+          "wall_sec": 0.119,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_responses\\sel2_response_outputs_empty.bin outcome=rejected_deserialization input_bytes=97 input_fnv1a=bc4fe293cbb1adb3",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "sel2_truncated_hash.bin",
+          "bytes": 18,
+          "exit_code": 0,
+          "wall_sec": 0.109,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_responses\\sel2_truncated_hash.bin outcome=rejected_deserialization input_bytes=18 input_fnv1a=2733b138cf9c74e9",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "sel3_empty_body.bin",
+          "bytes": 1,
+          "exit_code": 0,
+          "wall_sec": 0.109,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_responses\\sel3_empty_body.bin outcome=rejected_deserialization input_bytes=1 input_fnv1a=44bd28d473ccf280",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "sel3_request_big_height.bin",
+          "bytes": 42,
+          "exit_code": 0,
+          "wall_sec": 0.113,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_responses\\sel3_request_big_height.bin outcome=rejected_deserialization input_bytes=42 input_fnv1a=666166dbd6b9aeba",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "sel3_request_ident.bin",
+          "bytes": 42,
+          "exit_code": 0,
+          "wall_sec": 0.115,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_responses\\sel3_request_ident.bin outcome=rejected_deserialization input_bytes=42 input_fnv1a=2888bd83a4c74d2b",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "sel3_request_idx_max.bin",
+          "bytes": 42,
+          "exit_code": 0,
+          "wall_sec": 0.115,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_responses\\sel3_request_idx_max.bin outcome=rejected_deserialization input_bytes=42 input_fnv1a=588bd52d249dadef",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "sel3_request_truncated_hash.bin",
+          "bytes": 32,
+          "exit_code": 0,
+          "wall_sec": 0.112,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_responses\\sel3_request_truncated_hash.bin outcome=rejected_deserialization input_bytes=32 input_fnv1a=07119ee9dffec380",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "sel3_response_bitmap.bin",
+          "bytes": 78,
+          "exit_code": 0,
+          "wall_sec": 0.121,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_responses\\sel3_response_bitmap.bin outcome=rejected_deserialization input_bytes=78 input_fnv1a=c50c7c94641af263",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "sel3_response_kernels_count_max.bin",
+          "bytes": 41,
+          "exit_code": 0,
+          "wall_sec": 0.113,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_responses\\sel3_response_kernels_count_max.bin outcome=rejected_deserialization input_bytes=41 input_fnv1a=6410c230cdf08bf8",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "sel3_response_outputs_empty.bin",
+          "bytes": 97,
+          "exit_code": 0,
+          "wall_sec": 0.109,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_responses\\sel3_response_outputs_empty.bin outcome=rejected_deserialization input_bytes=97 input_fnv1a=edc8c23b10986c80",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "sel3_truncated_hash.bin",
+          "bytes": 18,
+          "exit_code": 0,
+          "wall_sec": 0.111,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_responses\\sel3_truncated_hash.bin outcome=rejected_deserialization input_bytes=18 input_fnv1a=5734bf17dc37ef80",
+          "asan": false,
+          "timed_out": false
+        }
+      ],
+      "crashed": false,
+      "timeouts": 0,
+      "asan_reports": 0
+    },
+    "segment_validate": {
+      "exe_sha256": "17A35EF382551341B63A56813D8A2F85C1B47001916494F237B7EA35011261C2",
+      "exe": "C:\\DHW\\.tmp\\asan-line3\\fuzz-linked\\fuzz_segment_validate.exe",
+      "corpus": "C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate",
+      "corpus_sha256": "op0_bitmap_block_sparse.bin:7CD8FC6B303E4E66C49403E1843BCCBDE0833D7323480483B7C2321B4669AEB0;op0_bitmap_raw_block.bin:D367E8BE9EB342DF9FD9F890C99B1A955F774F74183A2ADF81B238BCB9527C05;op0_bitmap_segment.bin:42EA6CD1189B5F45D0C36DC64503387DF9D815C9F85AEDDA7004E3AC4B9A8394;op0_chunk.bin:2C80619D7E7C58257293CDA3A878C13E5856F4E06F6F90601276F7B9179C9E07;op0_empty.bin:6E340B9CFFB37A989CA544E6BB780A2C78901D3FB33738768511A30617AFA01D;op0_ident_height32_idxmax.bin:48D83040FFCCE321E3B7455A82123C2BC12FB1C42C7BC495B2C8CE5CEC274C35;op0_ident_height33.bin:E4A19223AA701D4FC58FF27E2E3BB3457FD589620E1B3FF83292F4D46E80439E;op0_ident_valid.bin:6F9C3B0315D3BEC5BCDB51B8A78D4634AC0D7D9D579A4C6DEE3DF291B9C390BC;op0_proof_count_1e6.bin:0E8B3BB24333E5E01F8FB423105EA32CD9E05422974C92ECA20B3813F330C84A;op0_proof_count_max.bin:9DEF0FA72F2E47121F76669BB34E840056E33B7CB205287C2E7B765BF6FF0A07;op0_proof_empty.bin:3E7077FD2F66D689E0CEE6A7CF5B37BF2DCA7C979AF356D0A31CBC5C85605C7D;op0_proof_one_hash.bin:6EF39F2499D33A9A4FC259B17ED0A959C7B76A11F8A60426D2A22018EA45333E;op0_segment_bitmapchunk.bin:3429EB0B1359A240790E94D5E60CC7D122C5021FD8849C1A00671F9E4F9A73DE;op0_segment_proof_validate.bin:6EF39F2499D33A9A4FC259B17ED0A959C7B76A11F8A60426D2A22018EA45333E;op1_bitmap_block_sparse.bin:9C4A81749CDE21A688C6C8C65029F030E884904D1272D657311405730A8D9372;op1_bitmap_raw_block.bin:8B0AC81A5877AE0D7C2A0F139E66AA4552094897BAD570ECEF346AF87F16CC6A;op1_bitmap_segment.bin:05E5E1E3E79866DA78ECE20AA876B945F3DA0E257E2186ED393969DE2241377A;op1_chunk.bin:B84147B0EEB997D0942E214CE03C7889E5653F276830838B91E2DFEA9528D46D;op1_empty.bin:4BF5122F344554C53BDE2EBB8CD2B7E3D1600AD631C385A5D7CCE23C7785459A;op1_ident_height32_idxmax.bin:8E797397AA132242D768B22318B2589A3B468088F05E0E023BF75BDBC743CCBE;op1_ident_height33.bin:1677C765591D23866E83C3C961D49B977B1B510FB2F6E94F8025F52EB549438D;op1_ident_valid.bin:62087A44ACECFB2C4F7736F3B0648E7B8CA313325C1933C8A99EFE3C10538B1E;op1_proof_count_1e6.bin:1345BC2FF440A482D4F850A6A0B5C7E25F78F1C240E476A2EC54B9B57E31B966;op1_proof_count_max.bin:1272F520CF7CA5CF117A0B5A3116518371BF20FB7FAC043AC1BE568B8C55B96C;op1_proof_empty.bin:A536AA3CEDE6EA3C1F3E0357C3C60E0F216A8C89B853DF13B29DAA8F85065DFB;op1_proof_one_hash.bin:7944474F3E56C91FB1A4938A25D5281F90B9C9001AF9FA89D14ABD3608246D68;op1_segment_bitmapchunk.bin:FB8D52460DF01B8A332488C1D8585ABC346B4F5AA09F937692C6CA1254F4D583;op1_segment_proof_validate.bin:7944474F3E56C91FB1A4938A25D5281F90B9C9001AF9FA89D14ABD3608246D68;op2_bitmap_block_sparse.bin:9F570405CD72C5A2DB8FFE234FAAE4CD6B3F23947F9ED8D007A50A202EAC4046;op2_bitmap_raw_block.bin:739B018B273748134F631019ADC47699490AF9440064387E96F96E27AE8F14AA;op2_bitmap_segment.bin:1AA56FE65F610648DF3AEC36BF873E7999794FB2A0223BB9FFDF2CD31F1AA995;op2_chunk.bin:7557DABB7A5EB2DADB304FC0DCC12372A94C407E6A057D4F765D2EFA05DDD3BA;op2_empty.bin:DBC1B4C900FFE48D575B5DA5C638040125F65DB0FE3E24494B76EA986457D986;op2_ident_height32_idxmax.bin:A783200A2EF43D7C3F180EAF41FBE28CF6C85C59FA253F51CBDD786170F00F6E;op2_ident_height33.bin:47C871F8445DC8A737201405160632460AF19184D3D12F403FD2F105891C1F1C;op2_ident_valid.bin:D5AED588423053929AA997D57D5161CB9D2079A77ED142EA00EA2C8835B734DB;op2_proof_count_1e6.bin:B0EA463F07359C59280E4EEAA738DC4C50A486ADAB2177F0673EB6059AFCF5A3;op2_proof_count_max.bin:B2CF65B90288FA2B93E532214343121851BB8DB63B059AEEB1188CA646B50A51;op2_proof_empty.bin:4322FD2BC0A137D1375B37B3B2E2B4715B3D3DD7CA9682438D4FEA0F8437FAD3;op2_proof_one_hash.bin:E1F556A9A04F97B1C2169E34E5781CF3955D584D17E09BD7CC44DE5E41CC96EF;op2_segment_bitmapchunk.bin:D34D7B9D6CE8CAC9CD7667CC625B4BF02078A9FADCB6B80391D185DF9370DC29;op2_segment_proof_validate.bin:E1F556A9A04F97B1C2169E34E5781CF3955D584D17E09BD7CC44DE5E41CC96EF;op3_bitmap_block_sparse.bin:A02E690870204FB149787ACB4F9A98684B34B189FC5FC4CEED8B94CEF6177C23;op3_bitmap_raw_block.bin:1D8E22A8536348ECE455E5C5BAB3752AB4B6C559A12C8904CE0883D14AE02DAA;op3_bitmap_segment.bin:D31F4342BF490112581DE9161E7F4D3F0DF69980DFA7A8F948547C1D2D6F1B05;op3_chunk.bin:2546B53E0BA419DBFEE03A6D243D48007A08D0B9C60ED235AAA1C5FA094BE864;op3_empty.bin:084FED08B978AF4D7D196A7446A86B58009E636B611DB16211B65A9AADFF29C5;op3_ident_height32_idxmax.bin:AB44304FE839D3DC6AFDED3CEAF0EE7E4038D4BB106BD49E5EBB09C686ECF0FC;op3_ident_height33.bin:6D78F622823D07E60D8EFCEE3E73D31BD09376CE2FD50F0301E358EE4B879BD3;op3_ident_valid.bin:1866176AB167C1A4DA509D64D10D8F866FD92E46A8921DAB711A60C22708B45B;op3_proof_count_1e6.bin:80D77D84BCF126D7537CF69C6727D5213908939CBB3A030AAED5F2C98AA0B355;op3_proof_count_max.bin:339EED010A5E07B4314CB00F1234D636DC30DF8FCE73917165C299C6B4811804;op3_proof_empty.bin:DC4C8669DF128318C5790C414C870CC76C585268552851E78D3EE8604DBEC0E3;op3_proof_one_hash.bin:EE3F660205A565CF02EB8617BE2DAF63AB88DF0749CFBB71C43DBDFE8A2802DE;op3_segment_bitmapchunk.bin:6C2AD0C0AD97097D78A910FF6C7970D075637E9842EBE9808137ED4C0F01CD76;op3_segment_proof_validate.bin:EE3F660205A565CF02EB8617BE2DAF63AB88DF0749CFBB71C43DBDFE8A2802DE;op4_bitmap_block_sparse.bin:67D8539270B4A3C78412367F4D846D1A51A6354FDAC617F3C587DBE1933A3C04;op4_bitmap_raw_block.bin:13652C75EBFA3B9378705177B55C9C1B712415D4F3D90E0E1DA9B4456B8F7C84;op4_bitmap_segment.bin:E54BFEEB8E473F65966D0C86C9BCEA74BD82F45F5B37D23423F29EABB106F1C7;op4_chunk.bin:C640D82868C4BB1C90135BA0889481C4709D2CD57C87632A0E79B4E6ADEDFA53;op4_empty.bin:E52D9C508C502347344D8C07AD91CBD6068AFC75FF6292F062A09CA381C89E71;op4_ident_height32_idxmax.bin:71469468A309AD5148B43B5A5CCE77DFB1FF3FF9097C9CE6A7194FD41B9EA80D;op4_ident_height33.bin:59C7F11D08F549135DE750F895FAEDD27A11468C40C8F4746291206A25BF3599;op4_ident_valid.bin:21AB3434239EF9B094F2F2FD85391DA91485529E5BF803BFFCCB6901098BD08D;op4_proof_count_1e6.bin:C7D9860449DB756CE40A136608AC45868E1E06F194BFAB0AEE1BB0681CB92B2B;op4_proof_count_max.bin:0806653BB73F9922B047D694EDD1750C506C086957C9EE0608DDD1856D207DE5;op4_proof_empty.bin:93E60F669B99AD3E3EE6284B139E57ADFB419960F390858E46EA565BBF82D001;op4_proof_one_hash.bin:479CB8B4660290E11F66DC378C2F09C67857C1DAF1AD3CFF107985ABA0247E81;op4_segment_bitmapchunk.bin:A51B4E6C134C6CFA166843B5739B5BD029AD1F29A0813BA015805B6C39DFEA4F;op4_segment_proof_validate.bin:479CB8B4660290E11F66DC378C2F09C67857C1DAF1AD3CFF107985ABA0247E81;op5_bitmap_block_sparse.bin:13E2B9D26E2CF4C0DD63E3FA27AEF5846F8449A90140FDD5D593125BA61B1B32;op5_bitmap_raw_block.bin:65256AAFEE38B4CE5DF5DD65B7663BB8BC48A0C98B5C0505306ACFE0C9E47F8C;op5_bitmap_segment.bin:1B28C70D549B69494A4119E8CF513C666D7B76FA6894D76DFE94B5920817DA47;op5_chunk.bin:BA8196AAA47A8A8C75BE67F2B106F88EEB52B6FFD575AE688CB4B0EC950303A0;op5_empty.bin:E77B9A9AE9E30B0DBDB6F510A264EF9DE781501D7B6B92AE89EB059C5AB743DB;op5_ident_height32_idxmax.bin:B51ADA664554CBB068A8FB83B1E17663963D8D356DC6A08728A508653B06B92F;op5_ident_height33.bin:EF9357B55F9D168E42FF926C4D40CDE2296A7C5C9563A8800E06E1E28D2302B5;op5_ident_valid.bin:89766D0C83953E7CFABCBAEB60C39F0E6328002AD98210585D3DD8322A9C096D;op5_proof_count_1e6.bin:4AA6AD7F6BC040B014F2BD3A7F8D24E5F7B01982871FB1A11201F750337BC968;op5_proof_count_max.bin:FAE39E7CC7E71977A328F3A498068CF0124B80D67560DDA2856F1D67D595AC35;op5_proof_empty.bin:6C449F91C1ADBF3945AD078F5F875C0C1F133F246C4588668FAFFBE23A3C195F;op5_proof_one_hash.bin:B6F0C64252263C359C32A030768996DF3443B91606EDCBCA3E9E7A7D362ED404;op5_segment_bitmapchunk.bin:B8DB491C1CF6A5FC5E92BABBD0A8A53EAADBE5DAE1DD6BE17A3AB684598EF990;op5_segment_proof_validate.bin:B6F0C64252263C359C32A030768996DF3443B91606EDCBCA3E9E7A7D362ED404",
+      "campaign": {
+        "requested_iterations": 200,
+        "exit_code": 0,
+        "wall_sec": 0.716,
+        "stdout": "C:\\DHW\\.tmp\\asan-line3\\runs\\fuzz-linked-smoke-20261103-02\\campaign-segment_validate\\stdout.log",
+        "stderr": "C:\\DHW\\.tmp\\asan-line3\\runs\\fuzz-linked-smoke-20261103-02\\campaign-segment_validate\\stderr.log",
+        "asan_report": false,
+        "summary_line": "SUMMARY target=segment_validate seed=20261103 executed=200 ok=20 rejected_deserialization=174 rejected_file=0 rejected_segment=6 oom=0 exception=0 unknown=0 slow_cases=0 slowest_ms=0.142 wall_sec=0.574 corpus_files=84 corpus_fnv1a=7944e07d3797529f",
+        "current_case": "C:\\DHW\\.tmp\\asan-line3\\runs\\fuzz-linked-smoke-20261103-02\\campaign-segment_validate\\current_case.bin",
+        "last_case": "C:\\DHW\\.tmp\\asan-line3\\runs\\fuzz-linked-smoke-20261103-02\\campaign-segment_validate\\last_case.txt"
+      },
+      "one_shot": [
+        {
+          "input": "op0_bitmap_block_sparse.bin",
+          "bytes": 10,
+          "exit_code": 0,
+          "wall_sec": 0.112,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op0_bitmap_block_sparse.bin outcome=rejected_deserialization input_bytes=10 input_fnv1a=0f5b3273bd84a662",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op0_bitmap_raw_block.bin",
+          "bytes": 131,
+          "exit_code": 0,
+          "wall_sec": 0.111,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op0_bitmap_raw_block.bin outcome=ok input_bytes=131 input_fnv1a=f6a500c3cb51d481",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op0_bitmap_segment.bin",
+          "bytes": 150,
+          "exit_code": 0,
+          "wall_sec": 0.11,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op0_bitmap_segment.bin outcome=rejected_deserialization input_bytes=150 input_fnv1a=b8460a7b680840bb",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op0_chunk.bin",
+          "bytes": 129,
+          "exit_code": 0,
+          "wall_sec": 0.109,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op0_chunk.bin outcome=ok input_bytes=129 input_fnv1a=3b9b5d527ad2a999",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op0_empty.bin",
+          "bytes": 1,
+          "exit_code": 0,
+          "wall_sec": 0.108,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op0_empty.bin outcome=rejected_deserialization input_bytes=1 input_fnv1a=44bd2bd473ccf799",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op0_ident_height32_idxmax.bin",
+          "bytes": 10,
+          "exit_code": 0,
+          "wall_sec": 0.107,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op0_ident_height32_idxmax.bin outcome=rejected_deserialization input_bytes=10 input_fnv1a=9f59e350dc37bf33",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op0_ident_height33.bin",
+          "bytes": 10,
+          "exit_code": 0,
+          "wall_sec": 0.108,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op0_ident_height33.bin outcome=rejected_deserialization input_bytes=10 input_fnv1a=6ccea666f2f132a8",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op0_ident_valid.bin",
+          "bytes": 10,
+          "exit_code": 0,
+          "wall_sec": 0.121,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op0_ident_valid.bin outcome=rejected_deserialization input_bytes=10 input_fnv1a=64314fc7bababfb0",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op0_proof_count_1e6.bin",
+          "bytes": 9,
+          "exit_code": 0,
+          "wall_sec": 0.109,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op0_proof_count_1e6.bin outcome=rejected_deserialization input_bytes=9 input_fnv1a=a74080442d3b51de",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op0_proof_count_max.bin",
+          "bytes": 9,
+          "exit_code": 0,
+          "wall_sec": 0.108,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op0_proof_count_max.bin outcome=rejected_deserialization input_bytes=9 input_fnv1a=4a0f8feb970db531",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op0_proof_empty.bin",
+          "bytes": 9,
+          "exit_code": 0,
+          "wall_sec": 0.108,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op0_proof_empty.bin outcome=ok input_bytes=9 input_fnv1a=e302d1444ed524b9",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op0_proof_one_hash.bin",
+          "bytes": 41,
+          "exit_code": 0,
+          "wall_sec": 0.108,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op0_proof_one_hash.bin outcome=ok input_bytes=41 input_fnv1a=64bc909518a09006",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op0_segment_bitmapchunk.bin",
+          "bytes": 42,
+          "exit_code": 0,
+          "wall_sec": 0.128,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op0_segment_bitmapchunk.bin outcome=rejected_deserialization input_bytes=42 input_fnv1a=d07357355b2697b0",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op0_segment_proof_validate.bin",
+          "bytes": 41,
+          "exit_code": 0,
+          "wall_sec": 0.109,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op0_segment_proof_validate.bin outcome=ok input_bytes=41 input_fnv1a=64bc909518a09006",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op1_bitmap_block_sparse.bin",
+          "bytes": 10,
+          "exit_code": 0,
+          "wall_sec": 0.107,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op1_bitmap_block_sparse.bin outcome=rejected_deserialization input_bytes=10 input_fnv1a=fddc4caca786040b",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op1_bitmap_raw_block.bin",
+          "bytes": 131,
+          "exit_code": 0,
+          "wall_sec": 0.118,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op1_bitmap_raw_block.bin outcome=ok input_bytes=131 input_fnv1a=5f6ffb5fee78ffd6",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op1_bitmap_segment.bin",
+          "bytes": 150,
+          "exit_code": 0,
+          "wall_sec": 0.109,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op1_bitmap_segment.bin outcome=rejected_deserialization input_bytes=150 input_fnv1a=fd6d99084f90a6a2",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op1_chunk.bin",
+          "bytes": 129,
+          "exit_code": 0,
+          "wall_sec": 0.111,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op1_chunk.bin outcome=ok input_bytes=129 input_fnv1a=b505e52ad487c1e6",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op1_empty.bin",
+          "bytes": 1,
+          "exit_code": 0,
+          "wall_sec": 0.108,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op1_empty.bin outcome=rejected_deserialization input_bytes=1 input_fnv1a=44bd2ad473ccf5e6",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op1_ident_height32_idxmax.bin",
+          "bytes": 10,
+          "exit_code": 0,
+          "wall_sec": 0.109,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op1_ident_height32_idxmax.bin outcome=rejected_deserialization input_bytes=10 input_fnv1a=29fcf1c703a8bc2a",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op1_ident_height33.bin",
+          "bytes": 10,
+          "exit_code": 0,
+          "wall_sec": 0.107,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op1_ident_height33.bin outcome=rejected_deserialization input_bytes=10 input_fnv1a=a068d8b9721977c5",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op1_ident_valid.bin",
+          "bytes": 10,
+          "exit_code": 0,
+          "wall_sec": 0.109,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op1_ident_valid.bin outcome=rejected_deserialization input_bytes=10 input_fnv1a=a9062f58aa4feabd",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op1_proof_count_1e6.bin",
+          "bytes": 9,
+          "exit_code": 0,
+          "wall_sec": 0.107,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op1_proof_count_1e6.bin outcome=rejected_deserialization input_bytes=9 input_fnv1a=ae0038e6ef7322ad",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op1_proof_count_max.bin",
+          "bytes": 9,
+          "exit_code": 0,
+          "wall_sec": 0.11,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op1_proof_count_max.bin outcome=rejected_deserialization input_bytes=9 input_fnv1a=ccfb417fa672391e",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op1_proof_empty.bin",
+          "bytes": 9,
+          "exit_code": 0,
+          "wall_sec": 0.107,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op1_proof_empty.bin outcome=rejected_deserialization input_bytes=9 input_fnv1a=4f987be6ba3a2ea6",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op1_proof_one_hash.bin",
+          "bytes": 41,
+          "exit_code": 0,
+          "wall_sec": 0.109,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op1_proof_one_hash.bin outcome=rejected_deserialization input_bytes=41 input_fnv1a=3ce4638157730db9",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op1_segment_bitmapchunk.bin",
+          "bytes": 42,
+          "exit_code": 0,
+          "wall_sec": 0.11,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op1_segment_bitmapchunk.bin outcome=ok input_bytes=42 input_fnv1a=49ea9166f892893d",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op1_segment_proof_validate.bin",
+          "bytes": 41,
+          "exit_code": 0,
+          "wall_sec": 0.109,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op1_segment_proof_validate.bin outcome=rejected_deserialization input_bytes=41 input_fnv1a=3ce4638157730db9",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op2_bitmap_block_sparse.bin",
+          "bytes": 10,
+          "exit_code": 0,
+          "wall_sec": 0.108,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op2_bitmap_block_sparse.bin outcome=rejected_deserialization input_bytes=10 input_fnv1a=c09f51ec08f603b0",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op2_bitmap_raw_block.bin",
+          "bytes": 131,
+          "exit_code": 0,
+          "wall_sec": 0.112,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op2_bitmap_raw_block.bin outcome=ok input_bytes=131 input_fnv1a=c83af5fc11a02b2b",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op2_bitmap_segment.bin",
+          "bytes": 150,
+          "exit_code": 0,
+          "wall_sec": 0.108,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op2_bitmap_segment.bin outcome=rejected_deserialization input_bytes=150 input_fnv1a=176f5ca642ff15f9",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op2_chunk.bin",
+          "bytes": 129,
+          "exit_code": 0,
+          "wall_sec": 0.108,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op2_chunk.bin outcome=ok input_bytes=129 input_fnv1a=2e706d032e3cda33",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op2_empty.bin",
+          "bytes": 1,
+          "exit_code": 0,
+          "wall_sec": 0.107,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op2_empty.bin outcome=rejected_deserialization input_bytes=1 input_fnv1a=44bd29d473ccf433",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op2_ident_height32_idxmax.bin",
+          "bytes": 10,
+          "exit_code": 0,
+          "wall_sec": 0.108,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op2_ident_height32_idxmax.bin outcome=rejected_deserialization input_bytes=10 input_fnv1a=36d00f0a66af4de1",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op2_ident_height33.bin",
+          "bytes": 10,
+          "exit_code": 0,
+          "wall_sec": 0.106,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op2_ident_height33.bin outcome=rejected_deserialization input_bytes=10 input_fnv1a=60ef0cfac5936956",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op2_ident_valid.bin",
+          "bytes": 10,
+          "exit_code": 0,
+          "wall_sec": 0.107,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op2_ident_valid.bin outcome=rejected_deserialization input_bytes=10 input_fnv1a=698c6399fdc9dc4e",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op2_proof_count_1e6.bin",
+          "bytes": 9,
+          "exit_code": 0,
+          "wall_sec": 0.107,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op2_proof_count_1e6.bin outcome=rejected_deserialization input_bytes=9 input_fnv1a=a151a989162918c0",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op2_proof_count_max.bin",
+          "bytes": 9,
+          "exit_code": 0,
+          "wall_sec": 0.108,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op2_proof_count_max.bin outcome=rejected_deserialization input_bytes=9 input_fnv1a=5d485af5ad85930b",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op2_proof_empty.bin",
+          "bytes": 9,
+          "exit_code": 0,
+          "wall_sec": 0.107,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op2_proof_empty.bin outcome=rejected_deserialization input_bytes=9 input_fnv1a=bc2e2689259f3893",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op2_proof_one_hash.bin",
+          "bytes": 41,
+          "exit_code": 0,
+          "wall_sec": 0.108,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op2_proof_one_hash.bin outcome=rejected_deserialization input_bytes=41 input_fnv1a=936c9a97e8aa2ce0",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op2_segment_bitmapchunk.bin",
+          "bytes": 42,
+          "exit_code": 0,
+          "wall_sec": 0.108,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op2_segment_bitmapchunk.bin outcome=ok input_bytes=42 input_fnv1a=1092778268bf834e",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op2_segment_proof_validate.bin",
+          "bytes": 41,
+          "exit_code": 0,
+          "wall_sec": 0.107,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op2_segment_proof_validate.bin outcome=rejected_deserialization input_bytes=41 input_fnv1a=936c9a97e8aa2ce0",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op3_bitmap_block_sparse.bin",
+          "bytes": 10,
+          "exit_code": 0,
+          "wall_sec": 0.108,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op3_bitmap_block_sparse.bin outcome=rejected_deserialization input_bytes=10 input_fnv1a=ea0399264ed40269",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op3_bitmap_raw_block.bin",
+          "bytes": 131,
+          "exit_code": 0,
+          "wall_sec": 0.107,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op3_bitmap_raw_block.bin outcome=ok input_bytes=131 input_fnv1a=3105f09834c75680",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op3_bitmap_segment.bin",
+          "bytes": 150,
+          "exit_code": 0,
+          "wall_sec": 0.107,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op3_bitmap_segment.bin outcome=rejected_deserialization input_bytes=150 input_fnv1a=4cb050f9370669b0",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op3_chunk.bin",
+          "bytes": 129,
+          "exit_code": 0,
+          "wall_sec": 0.11,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op3_chunk.bin outcome=ok input_bytes=129 input_fnv1a=a7daf4db87f1f280",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op3_empty.bin",
+          "bytes": 1,
+          "exit_code": 0,
+          "wall_sec": 0.128,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op3_empty.bin outcome=rejected_deserialization input_bytes=1 input_fnv1a=44bd28d473ccf280",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op3_ident_height32_idxmax.bin",
+          "bytes": 10,
+          "exit_code": 0,
+          "wall_sec": 0.113,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op3_ident_height32_idxmax.bin outcome=rejected_deserialization input_bytes=10 input_fnv1a=16309eb47a4f0c58",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op3_ident_height33.bin",
+          "bytes": 10,
+          "exit_code": 0,
+          "wall_sec": 0.11,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op3_ident_height33.bin outcome=rejected_deserialization input_bytes=10 input_fnv1a=49b3ee179236b7f3",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op3_ident_valid.bin",
+          "bytes": 10,
+          "exit_code": 0,
+          "wall_sec": 0.11,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op3_ident_valid.bin outcome=rejected_deserialization input_bytes=10 input_fnv1a=77bbed51a3afa62b",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op3_proof_count_1e6.bin",
+          "bytes": 9,
+          "exit_code": 0,
+          "wall_sec": 0.112,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op3_proof_count_1e6.bin outcome=rejected_deserialization input_bytes=9 input_fnv1a=a9df922bd9e99757",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op3_proof_count_max.bin",
+          "bytes": 9,
+          "exit_code": 0,
+          "wall_sec": 0.108,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op3_proof_count_max.bin outcome=rejected_deserialization input_bytes=9 input_fnv1a=6075a6a409604ef8",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op3_proof_empty.bin",
+          "bytes": 9,
+          "exit_code": 0,
+          "wall_sec": 0.108,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op3_proof_empty.bin outcome=rejected_deserialization input_bytes=9 input_fnv1a=28c3d12b91044280",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op3_proof_one_hash.bin",
+          "bytes": 41,
+          "exit_code": 0,
+          "wall_sec": 0.107,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op3_proof_one_hash.bin outcome=rejected_deserialization input_bytes=41 input_fnv1a=f051f52537acac33",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op3_segment_bitmapchunk.bin",
+          "bytes": 42,
+          "exit_code": 0,
+          "wall_sec": 0.115,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op3_segment_bitmapchunk.bin outcome=ok input_bytes=42 input_fnv1a=2e30a1a2485f7bab",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op3_segment_proof_validate.bin",
+          "bytes": 41,
+          "exit_code": 0,
+          "wall_sec": 0.107,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op3_segment_proof_validate.bin outcome=rejected_deserialization input_bytes=41 input_fnv1a=f051f52537acac33",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op4_bitmap_block_sparse.bin",
+          "bytes": 10,
+          "exit_code": 0,
+          "wall_sec": 0.116,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op4_bitmap_block_sparse.bin outcome=rejected_deserialization input_bytes=10 input_fnv1a=71efb681cac52f86",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op4_bitmap_raw_block.bin",
+          "bytes": 131,
+          "exit_code": 0,
+          "wall_sec": 0.109,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op4_bitmap_raw_block.bin outcome=ok input_bytes=131 input_fnv1a=537916533eb5272d",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op4_bitmap_segment.bin",
+          "bytes": 150,
+          "exit_code": 0,
+          "wall_sec": 0.115,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op4_bitmap_segment.bin outcome=rejected_deserialization input_bytes=150 input_fnv1a=29a734d38c9dcccf",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op4_chunk.bin",
+          "bytes": 129,
+          "exit_code": 0,
+          "wall_sec": 0.11,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op4_chunk.bin outcome=ok input_bytes=129 input_fnv1a=55f13df113fe4865",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op4_empty.bin",
+          "bytes": 1,
+          "exit_code": 0,
+          "wall_sec": 0.107,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op4_empty.bin outcome=rejected_deserialization input_bytes=1 input_fnv1a=44bd2fd473ccfe65",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op4_ident_height32_idxmax.bin",
+          "bytes": 10,
+          "exit_code": 0,
+          "wall_sec": 0.107,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op4_ident_height32_idxmax.bin outcome=rejected_deserialization input_bytes=10 input_fnv1a=0d77ecb976412597",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op4_ident_height33.bin",
+          "bytes": 10,
+          "exit_code": 0,
+          "wall_sec": 0.109,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op4_ident_height33.bin outcome=rejected_deserialization input_bytes=10 input_fnv1a=f4cdd30fd974370c",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op4_ident_valid.bin",
+          "bytes": 10,
+          "exit_code": 0,
+          "wall_sec": 0.108,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op4_ident_valid.bin outcome=rejected_deserialization input_bytes=10 input_fnv1a=fd6b29af11aaaa04",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op4_proof_count_1e6.bin",
+          "bytes": 9,
+          "exit_code": 0,
+          "wall_sec": 0.109,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op4_proof_count_1e6.bin outcome=rejected_deserialization input_bytes=9 input_fnv1a=af9e7dba58680e52",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op4_proof_count_max.bin",
+          "bytes": 9,
+          "exit_code": 0,
+          "wall_sec": 0.108,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op4_proof_count_max.bin outcome=rejected_deserialization input_bytes=9 input_fnv1a=f7cd4c82e353737d",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op4_proof_empty.bin",
+          "bytes": 9,
+          "exit_code": 0,
+          "wall_sec": 0.121,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op4_proof_empty.bin outcome=rejected_deserialization input_bytes=9 input_fnv1a=30ac26baa140fd05",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op4_proof_one_hash.bin",
+          "bytes": 41,
+          "exit_code": 0,
+          "wall_sec": 0.108,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op4_proof_one_hash.bin outcome=rejected_deserialization input_bytes=41 input_fnv1a=f811db0d45798fd2",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op4_segment_bitmapchunk.bin",
+          "bytes": 42,
+          "exit_code": 0,
+          "wall_sec": 0.108,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op4_segment_bitmapchunk.bin outcome=ok input_bytes=42 input_fnv1a=63c046d07958ac04",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op4_segment_proof_validate.bin",
+          "bytes": 41,
+          "exit_code": 0,
+          "wall_sec": 0.108,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op4_segment_proof_validate.bin outcome=rejected_deserialization input_bytes=41 input_fnv1a=f811db0d45798fd2",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op5_bitmap_block_sparse.bin",
+          "bytes": 10,
+          "exit_code": 0,
+          "wall_sec": 0.106,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op5_bitmap_block_sparse.bin outcome=rejected_deserialization input_bytes=10 input_fnv1a=6070c0bab4c671ff",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op5_bitmap_raw_block.bin",
+          "bytes": 131,
+          "exit_code": 0,
+          "wall_sec": 0.106,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op5_bitmap_raw_block.bin outcome=rejected_segment input_bytes=131 input_fnv1a=bc4410ef61dc5282",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op5_bitmap_segment.bin",
+          "bytes": 150,
+          "exit_code": 0,
+          "wall_sec": 0.107,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op5_bitmap_segment.bin outcome=rejected_deserialization input_bytes=150 input_fnv1a=5ee8292680a52086",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op5_chunk.bin",
+          "bytes": 129,
+          "exit_code": 0,
+          "wall_sec": 0.107,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op5_chunk.bin outcome=rejected_segment input_bytes=129 input_fnv1a=cf5bc5c96db360b2",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op5_empty.bin",
+          "bytes": 1,
+          "exit_code": 0,
+          "wall_sec": 0.107,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op5_empty.bin outcome=rejected_deserialization input_bytes=1 input_fnv1a=44bd2ed473ccfcb2",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op5_ident_height32_idxmax.bin",
+          "bytes": 10,
+          "exit_code": 0,
+          "wall_sec": 0.107,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op5_ident_height32_idxmax.bin outcome=rejected_deserialization input_bytes=10 input_fnv1a=53337ed0e29c6d4e",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op5_ident_height33.bin",
+          "bytes": 10,
+          "exit_code": 0,
+          "wall_sec": 0.118,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op5_ident_height33.bin outcome=rejected_deserialization input_bytes=10 input_fnv1a=02fd5cc77f5a00e9",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op5_ident_valid.bin",
+          "bytes": 10,
+          "exit_code": 0,
+          "wall_sec": 0.109,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op5_ident_valid.bin outcome=rejected_deserialization input_bytes=10 input_fnv1a=0b9ab366b79073e1",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op5_proof_count_1e6.bin",
+          "bytes": 9,
+          "exit_code": 0,
+          "wall_sec": 0.107,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op5_proof_count_1e6.bin outcome=rejected_deserialization input_bytes=9 input_fnv1a=b811365d1c1173a1",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op5_proof_count_max.bin",
+          "bytes": 9,
+          "exit_code": 0,
+          "wall_sec": 0.109,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op5_proof_count_max.bin outcome=rejected_deserialization input_bytes=9 input_fnv1a=e58453ecdbd3476a",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op5_proof_empty.bin",
+          "bytes": 9,
+          "exit_code": 0,
+          "wall_sec": 0.107,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op5_proof_empty.bin outcome=rejected_segment input_bytes=9 input_fnv1a=9d41d15d0ca606f2",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op5_proof_one_hash.bin",
+          "bytes": 41,
+          "exit_code": 0,
+          "wall_sec": 0.109,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op5_proof_one_hash.bin outcome=rejected_segment input_bytes=41 input_fnv1a=390a86560f193dc5",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op5_segment_bitmapchunk.bin",
+          "bytes": 42,
+          "exit_code": 0,
+          "wall_sec": 0.108,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op5_segment_bitmapchunk.bin outcome=rejected_deserialization input_bytes=42 input_fnv1a=815e70f058f8a461",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "op5_segment_proof_validate.bin",
+          "bytes": 41,
+          "exit_code": 0,
+          "wall_sec": 0.108,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment_validate\\op5_segment_proof_validate.bin outcome=rejected_segment input_bytes=41 input_fnv1a=390a86560f193dc5",
+          "asan": false,
+          "timed_out": false
+        }
+      ],
+      "crashed": false,
+      "timeouts": 0,
+      "asan_reports": 0
+    }
+  },
+  "result": "PASS",
+  "failure_reasons": []
+}

@@ -1,0 +1,57 @@
+EVENT_TIME_LOCAL=2026-11-03T01:52:16.0236003+07:00
+PROVIDER=Application Error ID=1000 LEVEL=Ошибка
+PROPERTIES:
+  Tests.exe
+  0.0.0.0
+  6ae8d9b3
+  Tests.exe
+  0.0.0.0
+  6ae8d9b3
+  c0000409
+  0000000000646b29
+  31768
+  134381191359429383
+  C:\DHW\Gplus\src\grinplusplus\bin\Release\Release\Tests.exe
+  C:\DHW\Gplus\src\grinplusplus\bin\Release\Release\Tests.exe
+  86c299d4-a416-442a-9e9c-08a872f30ce8
+  
+  
+---
+EVENT_TIME_LOCAL=2026-11-03T01:51:31.2363120+07:00
+PROVIDER=Application Error ID=1000 LEVEL=Ошибка
+PROPERTIES:
+  Tests.exe
+  0.0.0.0
+  6ae8d9b3
+  Tests.exe
+  0.0.0.0
+  6ae8d9b3
+  c0000409
+  0000000000646b29
+  22300
+  134381190910720334
+  C:\DHW\Gplus\src\grinplusplus\bin\Release\Release\Tests.exe
+  C:\DHW\Gplus\src\grinplusplus\bin\Release\Release\Tests.exe
+  d4b4c494-9585-4c19-be48-b863b346f971
+  
+  
+---
+EVENT_TIME_LOCAL=2026-11-03T01:51:08.5286418+07:00
+PROVIDER=Application Error ID=1000 LEVEL=Ошибка
+PROPERTIES:
+  Tests.exe
+  0.0.0.0
+  6ae8d9b3
+  Tests.exe
+  0.0.0.0
+  6ae8d9b3
+  c0000409
+  0000000000646b29
+  14884
+  134381190683329546
+  C:\DHW\Gplus\src\grinplusplus\bin\Release\Release\Tests.exe
+  C:\DHW\Gplus\src\grinplusplus\bin\Release\Release\Tests.exe
+  4ced4d32-bfd9-4591-bc32-b3aafeaf7e6d
+  
+  
+---

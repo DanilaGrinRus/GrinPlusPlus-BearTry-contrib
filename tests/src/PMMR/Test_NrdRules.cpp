@@ -42,3 +42,34 @@ TEST_CASE("NrdRules boundary cases match Rust saturating semantics")
 	REQUIRE_FALSE(NrdRules::IsRelativeHeightSatisfied(1000, 1001, 2, 1000));
 	REQUIRE(NrdRules::IsRelativeHeightSatisfied(999, 1001, 2, 1000));
 }
+
+TEST_CASE("NrdRules maximum relative height boundary matches Rust WEEK_HEIGHT")
+{
+	// Rust NRDRelativeHeight::MAX == consensus::WEEK_HEIGHT (1..=MAX only).
+	REQUIRE(Consensus::WEEK_HEIGHT == 7 * Consensus::DAY_HEIGHT);
+
+	const uint64_t relative = Consensus::WEEK_HEIGHT;
+	const uint64_t previous = 5'000'000;
+
+	// diff == MAX is accepted, diff == MAX - 1 is rejected.
+	REQUIRE(NrdRules::IsRelativeHeightSatisfied(previous, previous + relative, relative, 0));
+	REQUIRE_FALSE(NrdRules::IsRelativeHeightSatisfied(previous, previous + relative - 1, relative, 0));
+
+	// Larger diffs stay accepted and decreasing heights stay rejected
+	// (Rust saturating_sub => diff 0 < relative_height).
+	REQUIRE(NrdRules::IsRelativeHeightSatisfied(previous, previous + relative + 1, relative, 0));
+	REQUIRE_FALSE(NrdRules::IsRelativeHeightSatisfied(previous + 1, previous, relative, 0));
+}
+
+TEST_CASE("NrdRules block duplicate detection is per excess")
+{
+	std::map<Commitment, uint64_t> blockKernels;
+	const Commitment excess = Commitment(CBigInteger<33>::ValueOf(9));
+
+	REQUIRE(NrdRules::RecordBlockKernel(blockKernels, excess, 100));
+	REQUIRE_FALSE(NrdRules::RecordBlockKernel(blockKernels, excess, 100));
+
+	// Two different excesses are independent.
+	const Commitment other = Commitment(CBigInteger<33>::ValueOf(10));
+	REQUIRE(NrdRules::RecordBlockKernel(blockKernels, other, 100));
+}

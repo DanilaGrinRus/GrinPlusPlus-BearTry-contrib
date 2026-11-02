@@ -86,6 +86,8 @@ void ChainState::UpdateSyncStatus(SyncStatus& syncStatus) const
 	{
 		// The chain store can know the tip before its header is readable from the
 		// block DB (e.g. immediately after a PIBD flush). Do not leave Ping at 0.
+		// BlockChain::UpdateSyncStatus holds a ChainState read lease across this
+		// call, so both lookups observe the same chain tip (one read transaction).
 		syncStatus.UpdateHeaderStatus(
 			GetHeight(EChainType::CANDIDATE),
 			GetTotalDifficulty(EChainType::CANDIDATE));

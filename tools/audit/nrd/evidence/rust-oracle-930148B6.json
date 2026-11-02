@@ -1,0 +1,92 @@
+{
+  "cases": [
+    {
+      "actual_rust_category": "accepted",
+      "detail": "real grin_chain 5.5.2 process_block accepted target (rust_verify_kernel_pos_index_rebuild_then_chain_apply; height 18)",
+      "id": "first-occurrence-accepted",
+      "status": "computed"
+    },
+    {
+      "actual_rust_category": "accepted",
+      "detail": "real grin_chain 5.5.2 process_block accepted target (rust_verify_kernel_pos_index_rebuild_then_chain_apply; height 20)",
+      "id": "exact-boundary-accepted",
+      "status": "computed"
+    },
+    {
+      "actual_rust_category": "invalid_nrd_relative_height",
+      "detail": "real grin_chain 5.5.2 process_block rejected target with NRD error (\"NRD Relative Height\")",
+      "id": "one-before-boundary-invalid",
+      "status": "computed"
+    },
+    {
+      "actual_rust_category": "accepted",
+      "detail": "real grin_chain 5.5.2 process_block accepted target (rust_verify_kernel_pos_index_rebuild_then_chain_apply; height 19)",
+      "id": "relative-height-1-next-block-accepted",
+      "status": "computed"
+    },
+    {
+      "actual_rust_category": "accepted",
+      "detail": "real grin_chain 5.5.2 process_block accepted target (rust_verify_kernel_pos_index_rebuild_then_chain_apply; height 21)",
+      "id": "three-occurrences-boundary-accepted",
+      "status": "computed"
+    },
+    {
+      "actual_rust_category": "invalid_nrd_duplicate_in_block",
+      "detail": "real grin_chain 5.5.2 process_block rejected target with NRD error (\"Invalid Block Proof\")",
+      "id": "duplicate-nrd-in-one-block-invalid",
+      "status": "computed"
+    },
+    {
+      "actual_rust_category": "accepted",
+      "detail": "real grin_chain 5.5.2 process_block accepted target (rust_verify_kernel_pos_index_rebuild_then_chain_apply; height 18)",
+      "id": "plain-excess-not-indexed",
+      "status": "computed"
+    },
+    {
+      "actual_rust_category": "accepted_non_nrd",
+      "detail": "real grin_chain 5.5.2 process_block accepted target (chain_apply; height 19)",
+      "id": "plain-repeat-accepted",
+      "status": "computed"
+    },
+    {
+      "actual_rust_category": "accepted",
+      "detail": "real grin_chain 5.5.2 process_block accepted target (rust_verify_kernel_pos_index_rebuild_then_chain_apply; height 19)",
+      "id": "multi-kernel-mixed-block-attribution",
+      "status": "computed"
+    },
+    {
+      "detail": "Rust has no local-missing-index state: the index is rebuilt inside txhashset write/startup",
+      "id": "missing-local-history",
+      "status": "not_computed"
+    },
+    {
+      "detail": "invalid NRD history fixture cannot be created through real chain apply; Rust verify_kernel_pos_index rebuild path needs a crafted MMR harness",
+      "id": "rebuild-rejects-historical-violation",
+      "status": "not_computed"
+    },
+    {
+      "detail": "invalid NRD history fixture cannot be created through real chain apply; Rust verify_kernel_pos_index rebuild path needs a crafted MMR harness",
+      "id": "rebuild-rejects-duplicate-history-block",
+      "status": "not_computed"
+    },
+    {
+      "actual_rust_category": "invalid_nrd_relative_height",
+      "detail": "real grin_chain 5.5.2 process_block rejected target with NRD error (\"NRD Relative Height\")",
+      "id": "incremental-one-before-boundary-invalid",
+      "status": "computed"
+    },
+    {
+      "actual_rust_category": "accepted",
+      "detail": "real grin_chain 5.5.2 process_block accepted target (chain_apply; height 19)",
+      "id": "incremental-exact-boundary-accepted",
+      "status": "computed"
+    }
+  ],
+  "cases_computed": 11,
+  "cases_not_computed": 3,
+  "cases_total": 14,
+  "format_version": 1,
+  "producer": "nrd-oracle (line2-nrd)",
+  "reference_tree": "C:/Users/nurli/AppData/Local/Temp/grin55-minpeers",
+  "rust_version": "5.5.2"
+}

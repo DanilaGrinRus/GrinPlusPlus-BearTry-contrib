@@ -4,12 +4,29 @@
 #include "../Messages/ShakeMessage.h"
 #include "../Messages/BanReasonMessage.h"
 #include "../ConnectionManager.h"
+#include "../PIBD/PibdArchiveServer.h"
 
 #include <Core/Exceptions/ProtocolException.h>
 #include <Crypto/CSPRNG.h>
 #include <Common/Logger.h>
+#include <P2P/AdvertisedTip.h>
+
+#include <memory>
 
 static const uint64_t SELF_NONCE = CSPRNG::GenerateRandom(0, UINT64_MAX);
+
+namespace
+{
+	// The capability mask is fixed for the lifetime of a handshake. It must come
+	// from the serving component, not from a static constant: a node that cannot
+	// serve the archive horizon must not claim PIBD (G-09 capability contract).
+	Capabilities GetLocalCapabilities()
+	{
+		const std::shared_ptr<PibdArchiveServer> pArchiveServer = PibdArchiveServer::Instance();
+		return Capabilities::Advertised(
+			pArchiveServer != nullptr && pArchiveServer->ShouldAdvertise());
+	}
+}
 
 void HandShake::PerformHandshake(const Socket::Ptr& pSocket, ConnectedPeer& connectedPeer) const
 {
@@ -107,10 +124,10 @@ void HandShake::TransmitHandMessage(const Socket::Ptr& pSocket) const
     IPAddress localHostIP = IPAddress::CreateV4({ 0x7F, 0x00, 0x00, 0x01 });
     HandMessage hand(
         P2P::PROTOCOL_VERSION,
-        Capabilities::ADVERTISED,
+        GetLocalCapabilities(),
         SELF_NONCE,
         Global::GetGenesisHash(),
-        m_pSyncStatus->GetBlockDifficulty(),
+        P2P::GetAdvertisedDifficulty(*m_pSyncStatus),
         SocketAddress(localHostIP, Global::GetConfig().GetP2PPort()),
         SocketAddress(localHostIP, pSocket->GetPort()),
         P2P::USER_AGENT
@@ -125,9 +142,9 @@ void HandShake::TransmitShakeMessage(const Socket::Ptr& pSocket, const uint32_t 
 {
     ShakeMessage shakeMessage(
         protocolVersion,
-        Capabilities::ADVERTISED,
+        GetLocalCapabilities(),
         Global::GetGenesisHash(),
-        m_pSyncStatus->GetBlockDifficulty(),
+        P2P::GetAdvertisedDifficulty(*m_pSyncStatus),
         P2P::USER_AGENT
     );
 

@@ -1,12 +1,12 @@
 # AUDIT_DELTA (EN) — Grin++ 1.2.9 → Grin v5.5.2 compatibility
 **Current snapshot 2026-11-02.** Baseline 1.2.9 `5f511e6`; working tree HEAD `807b5b1`. Source metrics:
 
-- C++ added: **+17,142 lines**; deleted **−594**; 187 files;
-- diff/new C++ text volume: **≈ +725.0 KiB**;
-- final `GrinNode.exe`: **7,745,024 B = 7,563.5 KiB = 7.38 MiB**;
+- C++ added: **+22,619 lines**; deleted **−625**; 191 tracked + 22 new;
+- diff/new C++ text volume: **≈ +927.8 KiB**;
+- final `GrinNode.exe`: **7,805,440 B = 7,622.5 KiB = 7.44 MiB**;
 - **exe growth vs 1.2.9: NOT MEASURED** — no original binary is preserved; 7.7 MB is the final size, not a delta;
-- artifacts: `GrinNode 19E0C97E…`, `Tests 4F75DCD4…`; suite **205 / 3,700 PASS**.
-- **G-09 live (2026-11-03): PASS for the isolated scenario.** Ordinary Rust 5.5.2 reached `no_sync` at H=3,318,655 / hash `2945348e…`, with the same C++ tip, 1 inbound / 0 outbound; PIBD 10,203,442/10,203,442, roots/rangeproof/kernel validation/body sync completed. The previous restarts were caused by `missing left sibling` at output segment 1648 and fixed by sending available leaves in `SegmentGenerator`. Limits: headers preseeded, reorg/restart/negative/mainnet not covered.
+- artifacts: `GrinNode F9EF06B4…`, `Tests C8C386BE…`; suite **245 / 4,013 PASS**.
+- **G-09 fixed-H (experimental, 2026-11-03): historical PASS.** Ordinary repo binary `C8C386BE…` has build/unit/ASan-subset PASS, but ordinary live is **NOT VERIFIED** (L1 header_sync/awaiting_peers; fixture H mismatch). Ordinary Rust 5.5.2 reached `no_sync` at H=3,318,655 / hash `2945348e…`, with the same C++ tip, 1 inbound / 0 outbound; PIBD 10,203,442/10,203,442, roots/rangeproof/kernel validation/body sync completed. The previous restarts were caused by `missing left sibling` at output segment 1648 and fixed by sending available leaves in `SegmentGenerator`. Limits: headers preseeded, reorg/restart/negative/mainnet not covered.
 - **PIBD/PIHD guard:** height cap 13, `idx*capacity` overflow check, PIHD response bound to connection/peer, fallback on no chain-height progress; PIBD responses use one `ApiStateSnapshot` with sequence retry, bitmap/root cached by output root, 500 requests/min per connection. PIHD is experimental, `PIHD_HIST` is not advertised; concurrent apply/reorg snapshot test remains open.
 
 Baseline: Grin++ 1.2.9 (`5f511e6`). Delta updated: 2026-11-02, HEAD `807b5b1` (G-09/G-23/G-53/G-07/G-24).

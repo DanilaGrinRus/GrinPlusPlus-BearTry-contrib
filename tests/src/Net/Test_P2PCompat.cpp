@@ -1,9 +1,11 @@
 #include <catch.hpp>
 
 #include <GrinVersion.h>
+#include <P2P/AdvertisedTip.h>
 #include <P2P/Capabilities.h>
 #include <P2P/Common.h>
 #include <P2P/Messages/MessageTypes.h>
+#include <memory>
 
 // Wire-format pins for Grin v5.5.2 compatibility. These values are consensus on
 // the network boundary: changing any of them silently breaks interop.
@@ -41,6 +43,25 @@ TEST_CASE("Capabilities::WireFormat")
 		.HasCapability(Capabilities::PIHD_HIST));
 }
 
+TEST_CASE("Capabilities::AdvertisedGating")
+{
+	// G-09 capability contract: the compile-time mask stays conservative; PIBD
+	// bits are added only when the serving component reports a validated ready
+	// archive for the current deterministic horizon. Never from file presence.
+	REQUIRE_FALSE(Capabilities::Advertised(false).HasCapability(Capabilities::PIBD_HIST));
+	REQUIRE_FALSE(Capabilities::Advertised(false).HasCapability(Capabilities::PIBD_HIST_1));
+	REQUIRE_FALSE(Capabilities::Advertised(false).HasCapability(Capabilities::BLOCK_HIST));
+	REQUIRE(Capabilities::Advertised(false).HasCapability(Capabilities::HEADER_HIST));
+	REQUIRE(Capabilities::Advertised(false).HasCapability(Capabilities::TXHASHET_HIST));
+	REQUIRE(Capabilities::Advertised(false).HasCapability(Capabilities::PEER_LIST));
+
+	REQUIRE(Capabilities::Advertised(true).HasCapability(Capabilities::PIBD_HIST));
+	REQUIRE(Capabilities::Advertised(true).HasCapability(Capabilities::PIBD_HIST_1));
+	REQUIRE_FALSE(Capabilities::Advertised(true).HasCapability(Capabilities::BLOCK_HIST));
+	REQUIRE_FALSE(Capabilities::Advertised(true).HasCapability(Capabilities::PIHD_HIST));
+	REQUIRE(Capabilities::Advertised(true).HasCapability(Capabilities::HEADER_HIST));
+}
+
 TEST_CASE("MessageTypes::PibdIds")
 {
 	REQUIRE((int)MessageTypes::GetOutputBitmapSegment == 21);
@@ -66,4 +87,76 @@ TEST_CASE("MessageTypes::MaximumSizes")
 	REQUIRE(MessageTypes::GetMaximumSize(MessageTypes::GetKernelSegment) == 41);
 	REQUIRE(MessageTypes::GetMaximumSize(MessageTypes::OutputSegment) == 2 * P2P::MAX_BLOCK_SIZE);
 	REQUIRE(MessageTypes::GetMaximumSize(MessageTypes::KernelSegment) == 2 * P2P::MAX_BLOCK_SIZE);
+}
+
+namespace
+{
+	// Deterministic single-tip view: both accessors belong to one immutable
+	// header snapshot, mirroring BlockHeaderPtr.
+	struct StubTipHeader
+	{
+		uint64_t Height = 0;
+		uint64_t TotalDifficulty = 0;
+
+		uint64_t GetHeight() const { return Height; }
+		uint64_t GetTotalDifficulty() const { return TotalDifficulty; }
+	};
+}
+
+// Regression for the G-09 L1 stall (docs/modernization/G09_ARCHIVE_SERVING.md
+// §8.9): advertising the confirmed body tip while serving candidate headers let
+// a syncing peer overshoot the advertised difficulty and stop. Hand/Shake and
+// Ping/Pong must advertise the header head (CANDIDATE), never the body tip.
+TEST_CASE("P2P::AdvertisedTipUsesHeaderHead")
+{
+	SyncStatus syncStatus;
+	syncStatus.UpdateHeaderStatus(207, 2500);
+	syncStatus.UpdateBlockStatus(100, 1000, 0);
+
+	const P2P::AdvertisedTip tip = P2P::GetAdvertisedTip(syncStatus);
+	REQUIRE(tip.Height == 207);
+	REQUIRE(tip.TotalDifficulty == 2500);
+	REQUIRE(P2P::GetAdvertisedDifficulty(syncStatus) == 2500);
+	REQUIRE(syncStatus.GetBlockDifficulty() == 1000);
+
+	// Both advertised fields move together: a reader can never see the new
+	// height with the old difficulty (or vice versa).
+	syncStatus.UpdateHeaderStatus(208, 2600);
+	const HeaderTip headerTip = syncStatus.GetHeaderTip();
+	REQUIRE(headerTip.Height == 208);
+	REQUIRE(headerTip.TotalDifficulty == 2600);
+	const P2P::AdvertisedTip next = P2P::GetAdvertisedTip(syncStatus);
+	REQUIRE(next.Height == 208);
+	REQUIRE(next.TotalDifficulty == 2600);
+}
+
+// Controlled snapshot test: the tip changes *between* the two reads a split
+// implementation would make. The provider is invoked exactly once and the
+// returned pair must come entirely from the first snapshot; a second read would
+// have seen snapshot B's height and/or difficulty.
+TEST_CASE("P2P::AdvertisedTipReadsOneSnapshot")
+{
+	auto snapshotA = std::make_shared<StubTipHeader>(StubTipHeader{ 100, 1000 });
+	auto snapshotB = std::make_shared<StubTipHeader>(StubTipHeader{ 207, 2500 });
+	std::shared_ptr<StubTipHeader> current = snapshotA;
+	int providerCalls = 0;
+	auto provider = [&]() {
+		++providerCalls;
+		auto snapshot = current;
+		current = snapshotB; // candidate tip advances after this snapshot is taken
+		return snapshot;
+	};
+
+	const auto tip = P2P::ReadAdvertisedTip(provider);
+	REQUIRE(tip.has_value());
+	REQUIRE(providerCalls == 1);
+	REQUIRE(tip->Height == snapshotA->GetHeight());
+	REQUIRE(tip->TotalDifficulty == snapshotA->GetTotalDifficulty());
+	REQUIRE(tip->Height != snapshotB->GetHeight());
+	REQUIRE(tip->TotalDifficulty != snapshotB->GetTotalDifficulty());
+
+	// No readable tip => nullopt, so the caller withholds the message.
+	std::shared_ptr<StubTipHeader> none;
+	const auto withheld = P2P::ReadAdvertisedTip([&]() { return none; });
+	REQUIRE_FALSE(withheld.has_value());
 }

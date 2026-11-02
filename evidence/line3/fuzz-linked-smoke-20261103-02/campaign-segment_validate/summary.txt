@@ -1,0 +1,15 @@
+target=segment_validate
+seed=20261103
+executed=200
+ok=20
+rejected_deserialization=174
+rejected_file=0
+rejected_segment=6
+oom=0
+exception=0
+unknown_exception=0
+slow_cases=0
+slowest_ms=0.1417
+wall_sec=0.573507
+corpus_files=84
+corpus_fnv1a=7944e07d3797529f

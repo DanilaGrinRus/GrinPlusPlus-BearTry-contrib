@@ -25,9 +25,52 @@
 #include <Core/Exceptions/BadDataException.h>
 #include <Core/Config.h>
 #include <PMMR/TxHashSet.h>
+#include "../PMMR/TxHashSetImpl.h"
 #include <filesystem.h>
 #include <algorithm>
 #include <thread>
+
+namespace
+{
+	// Rebuild the in-memory NRD recent-kernel index from the kernel MMR plus the
+	// header chain and require it to be complete. Rust grin 5.5.2 treats an
+	// invalid/incomplete NRD index as an error for the whole txhashset write
+	// (TxHashSet::verify_kernel_pos_index), so callers must not publish or keep
+	// using a state whose index could not be fully rebuilt.
+	bool RebuildNrdIndexAndRequireComplete(
+		ITxHashSet* pTxHashSet,
+		const std::shared_ptr<const IBlockDB>& pBlockDB,
+		const BlockHeaderPtr& pTip,
+		const char* context)
+	{
+		if (pTxHashSet == nullptr || pBlockDB == nullptr || pTip == nullptr) {
+			LOG_ERROR_F("Cannot rebuild the NRD recent-kernel index ({}): missing txhashset, block DB or tip", context);
+			return false;
+		}
+
+		// TxHashSet is currently the only ITxHashSet implementation. Treat an
+		// unexpected implementation as fail-closed rather than skipping history.
+		TxHashSet* pConcrete = dynamic_cast<TxHashSet*>(pTxHashSet);
+		if (pConcrete == nullptr) {
+			LOG_ERROR_F(
+				"Cannot rebuild the NRD recent-kernel index ({}): unexpected ITxHashSet implementation",
+				context);
+			return false;
+		}
+
+		pConcrete->RebuildRecentKernelIndex(pBlockDB, *pTip);
+		if (!pConcrete->IsRecentNrdIndexComplete()) {
+			LOG_ERROR_F(
+				"NRD recent-kernel index rebuild is incomplete at {} (tip {} height {}); refusing to treat this txhashset state as valid",
+				context,
+				pTip->GetHash(),
+				pTip->GetHeight());
+			return false;
+		}
+
+		return true;
+	}
+}
 
 BlockChain::BlockChain(
 	std::shared_ptr<ITransactionPool> pTransactionPool,
@@ -308,7 +351,17 @@ std::shared_ptr<BlockChain> BlockChain::Create(
 
 		const BlockHeaderPtr pConfirmedTip = pReader->GetTipBlockHeader(EChainType::CONFIRMED);
 		if (pTxHashSet != nullptr && pConfirmedTip != nullptr) {
-			const_cast<ITxHashSet*>(pTxHashSet.get())->RebuildRecentKernelIndex(pDatabase->Read().GetShared(), *pConfirmedTip);
+			if (!RebuildNrdIndexAndRequireComplete(
+					const_cast<ITxHashSet*>(pTxHashSet.get()),
+					pDatabase->Read().GetShared(),
+					pConfirmedTip,
+					"startup")) {
+				// Rust grin 5.5.2 Chain::init propagates init_recent_kernel_pos_index
+				// errors, so a node with a historically invalid NRD index does not
+				// start. Match that instead of silently running with NRD disabled.
+				throw std::runtime_error(
+					"NRD recent-kernel index rebuild is incomplete; refusing to start on a txhashset state that Rust grin 5.5.2 would reject");
+			}
 		}
 	}
 
@@ -468,17 +521,26 @@ fs::path BlockChain::SnapshotTxHashSet(BlockHeaderPtr pBlockHeader)
 EBlockChainStatus BlockChain::ProcessTransactionHashSet(const Hash& blockHash, const fs::path& path, SyncStatus& syncStatus)
 {
 	StateWriteGuard writeGuard(*this);
+	TxHashSetProcessor processor(Global::GetConfig(), *this, m_pChainState);
 	try
 	{
-		const bool success = TxHashSetProcessor(Global::GetConfig(), *this, m_pChainState).ProcessTxHashSet(blockHash, path, syncStatus);
+		const bool success = processor.ProcessTxHashSet(blockHash, path, syncStatus);
 		if (success)
 		{
 			auto pReader = m_pChainState->Read();
 			auto pTxHashSet = pReader->GetTxHashSetManager()->GetTxHashSet();
 			const BlockHeaderPtr pTip = pReader->GetTipBlockHeader(EChainType::CONFIRMED);
 			if (pTxHashSet != nullptr && pTip != nullptr) {
-				const_cast<ITxHashSet*>(pTxHashSet.get())->RebuildRecentKernelIndex(
-					pReader->GetBlockDB().GetShared(), *pTip);
+				// Defense-in-depth only: the processor already rebuilds and checks
+				// the NRD index before committing. Never report SUCCESS for a state
+				// whose NRD history cannot be rebuilt.
+				if (!RebuildNrdIndexAndRequireComplete(
+						const_cast<ITxHashSet*>(pTxHashSet.get()),
+						pReader->GetBlockDB().GetShared(),
+						pTip,
+						"txhashset install")) {
+					return EBlockChainStatus::STORE_ERROR;
+				}
 			}
 			return EBlockChainStatus::SUCCESS;
 		}
@@ -486,6 +548,11 @@ EBlockChainStatus BlockChain::ProcessTransactionHashSet(const Hash& blockHash, c
 	catch (std::exception& e)
 	{
 		LOG_ERROR_F("Failed to process TxHashSet: {}", e.what());
+	}
+
+	if (processor.GetLastFailureKind() == TxHashSetProcessor::EFailureKind::LocalUnverifiable) {
+		LOG_WARNING("TxHashSet was refused because the state cannot be verified locally; not treating the peer as malicious.");
+		return EBlockChainStatus::STORE_ERROR;
 	}
 
 	return EBlockChainStatus::INVALID;
@@ -579,22 +646,33 @@ void BlockChain::OpenTxHashSet()
 EBlockChainStatus BlockChain::ProcessExistingTxHashSet(const Hash& blockHash, SyncStatus& syncStatus)
 {
 	StateWriteGuard writeGuard(*this);
+	TxHashSetProcessor processor(Global::GetConfig(), *this, m_pChainState);
 	try {
-		const bool success = TxHashSetProcessor(Global::GetConfig(), *this, m_pChainState)
-			.ProcessExistingTxHashSet(blockHash, syncStatus);
+		const bool success = processor.ProcessExistingTxHashSet(blockHash, syncStatus);
 		if (success) {
 			auto pReader = m_pChainState->Read();
 			auto pTxHashSet = pReader->GetTxHashSetManager()->GetTxHashSet();
 			const BlockHeaderPtr pTip = pReader->GetTipBlockHeader(EChainType::CONFIRMED);
 			if (pTxHashSet != nullptr && pTip != nullptr) {
-				const_cast<ITxHashSet*>(pTxHashSet.get())->RebuildRecentKernelIndex(
-					pReader->GetBlockDB().GetShared(), *pTip);
+				// Defense-in-depth only; the processor checks before committing.
+				if (!RebuildNrdIndexAndRequireComplete(
+						const_cast<ITxHashSet*>(pTxHashSet.get()),
+						pReader->GetBlockDB().GetShared(),
+						pTip,
+						"PIBD txhashset install")) {
+					return EBlockChainStatus::STORE_ERROR;
+				}
 			}
 			return EBlockChainStatus::SUCCESS;
 		}
 	}
 	catch (std::exception& e) {
 		LOG_ERROR_F("Failed to process the existing TxHashSet: {}", e.what());
+	}
+
+	if (processor.GetLastFailureKind() == TxHashSetProcessor::EFailureKind::LocalUnverifiable) {
+		LOG_WARNING("Activated TxHashSet was refused because the state cannot be verified locally; not treating the peer as malicious.");
+		return EBlockChainStatus::STORE_ERROR;
 	}
 
 	return EBlockChainStatus::INVALID;

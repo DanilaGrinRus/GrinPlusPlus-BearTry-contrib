@@ -17,6 +17,14 @@ enum class ESyncStatus
 	NOT_SYNCING
 };
 
+// Height and total difficulty from one header-tip snapshot. Both fields are
+// updated and read together so advertisement code cannot mix two tips.
+struct HeaderTip
+{
+	uint64_t Height = 0;
+	uint64_t TotalDifficulty = 0;
+};
+
 class SyncStatus
 {
 public:
@@ -44,8 +52,8 @@ public:
 		m_numActiveConnections(other.m_numActiveConnections.load()),
 		m_networkHeight(other.m_networkHeight.load()),
 		m_networkDifficulty(other.m_networkDifficulty.load()),
-		m_headerHeight(other.m_headerHeight.load()),
-		m_headerDifficulty(other.m_headerDifficulty.load()),
+		m_headerHeight(0),
+		m_headerDifficulty(0),
 		m_blockHeight(other.m_blockHeight.load()),
 		m_blockDifficulty(other.m_blockDifficulty.load()),
 		m_lastBlockTime(other.m_lastBlockTime.load()),
@@ -61,6 +69,9 @@ public:
 		m_pibdRequired(other.m_pibdRequired.load()),
 		m_pibdStarted(other.m_pibdStarted.load())
 	{
+		const HeaderTip headerTip = other.GetHeaderTip();
+		m_headerHeight = headerTip.Height;
+		m_headerDifficulty = headerTip.TotalDifficulty;
 		std::lock_guard<std::mutex> lock(other.m_reasonMutex);
 		m_waitingReason = other.m_waitingReason;
 		m_pibdPeer = other.m_pibdPeer;
@@ -71,8 +82,13 @@ public:
 	uint64_t GetNumActiveConnections() const { return m_numActiveConnections; }
 	uint64_t GetNetworkHeight() const { return m_networkHeight; }
 	uint64_t GetNetworkDifficulty() const { return m_networkDifficulty; }
-	uint64_t GetHeaderHeight() const { return m_headerHeight; }
-	uint64_t GetHeaderDifficulty() const { return m_headerDifficulty; }
+	HeaderTip GetHeaderTip() const
+	{
+		std::lock_guard<std::mutex> lock(m_headerTipMutex);
+		return HeaderTip{ m_headerHeight, m_headerDifficulty };
+	}
+	uint64_t GetHeaderHeight() const { return GetHeaderTip().Height; }
+	uint64_t GetHeaderDifficulty() const { return GetHeaderTip().TotalDifficulty; }
 	uint64_t GetBlockHeight() const { return m_blockHeight; }
 	uint64_t GetBlockDifficulty() const { return m_blockDifficulty; }
 	time_t GetLastBlockTime() const noexcept { return m_lastBlockTime; }
@@ -123,6 +139,7 @@ public:
 
 	void UpdateHeaderStatus(const uint64_t headerHeight, const uint64_t headerDifficulty)
 	{
+		std::lock_guard<std::mutex> lock(m_headerTipMutex);
 		m_headerHeight = headerHeight;
 		m_headerDifficulty = headerDifficulty;
 	}
@@ -143,8 +160,8 @@ private:
 	std::atomic<uint64_t> m_numActiveConnections;
 	std::atomic<uint64_t> m_networkHeight;
 	std::atomic<uint64_t> m_networkDifficulty;
-	std::atomic<uint64_t> m_headerHeight;
-	std::atomic<uint64_t> m_headerDifficulty;
+	uint64_t m_headerHeight;
+	uint64_t m_headerDifficulty;
 	std::atomic<uint64_t> m_blockHeight;
 	std::atomic<uint64_t> m_blockDifficulty;
 	std::atomic<time_t> m_lastBlockTime;
@@ -157,6 +174,7 @@ private:
 	mutable std::atomic<uint64_t> m_blockReassignments;
 	mutable std::atomic<uint64_t> m_bansFraudHeight;
 	mutable std::atomic<uint64_t> m_bansInvalidData;
+	mutable std::mutex m_headerTipMutex;
 	mutable std::mutex m_reasonMutex;
 	mutable std::string m_waitingReason;
 	mutable std::string m_pibdPeer;

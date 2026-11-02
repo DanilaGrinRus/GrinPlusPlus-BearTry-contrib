@@ -108,6 +108,7 @@ bool TxHashSet::ApplyBlock(std::shared_ptr<IBlockDB> pBlockDB, const FullBlock& 
 	// Validate NRD relative-height rules before mutating any outputs. The rule is
 	// enforced for NRD kernels; non-NRD kernels are unaffected.
 	{
+		ENrdValidationResult nrdResult = ENrdValidationResult::NONE;
 		std::map<Commitment, uint64_t> blockKernelHeights;
 		for (const TransactionKernel& kernel : block.GetKernels()) {
 			if (kernel.GetFeatures() != EKernelFeatures::NO_RECENT_DUPLICATE) {
@@ -119,11 +120,13 @@ bool TxHashSet::ApplyBlock(std::shared_ptr<IBlockDB> pBlockDB, const FullBlock& 
 				LOG_ERROR_F(
 					"Cannot validate NRD kernel at height {}: recent-kernel index is incomplete",
 					block.GetHeight());
+				m_lastNrdValidationResult = ENrdValidationResult::MISSING_LOCAL_HISTORY;
 				return false;
 			}
 
 			if (!NrdRules::RecordBlockKernel(blockKernelHeights, excess, block.GetHeight())) {
 				LOG_WARNING_F("Duplicate NRD kernel {} in block {}", excess, block.GetHeight());
+				m_lastNrdValidationResult = ENrdValidationResult::DUPLICATE_IN_BLOCK;
 				return false;
 			}
 
@@ -138,11 +141,15 @@ bool TxHashSet::ApplyBlock(std::shared_ptr<IBlockDB> pBlockDB, const FullBlock& 
 					LOG_WARNING_F(
 						"NRD relative height violation for kernel {} at height {} (previous {})",
 						excess, block.GetHeight(), previousHeight);
+					m_lastNrdValidationResult = ENrdValidationResult::INVALID_RELATIVE_HEIGHT;
 					return false;
 				}
 			}
- 
+
+			nrdResult = ENrdValidationResult::ACCEPTED;
 		}
+
+		m_lastNrdValidationResult = nrdResult;
 	}
 
 
@@ -419,81 +426,179 @@ void TxHashSet::RebuildRecentKernelIndex(
 	const std::shared_ptr<const IBlockDB>& pBlockDB,
 	const BlockHeader& tip)
 {
+	RebuildRecentKernelIndexInternal(pBlockDB, tip, true);
+}
+
+void TxHashSet::RebuildRecentKernelIndexPreservingBaseline(
+	const std::shared_ptr<const IBlockDB>& pBlockDB,
+	const BlockHeader& tip)
+{
+	RebuildRecentKernelIndexInternal(pBlockDB, tip, false);
+}
+
+void TxHashSet::RebuildRecentKernelIndexInternal(
+	const std::shared_ptr<const IBlockDB>& pBlockDB,
+	const BlockHeader& tip,
+	const bool publishBaseline)
+{
+	m_lastNrdRebuildThrew = false;
 	// Do not publish a partially rebuilt index. While incomplete, ApplyBlock
 	// rejects NRD-bearing blocks instead of accepting them without history.
 	m_recentNrdIndexComplete = false;
 	m_recentNrdKernels.clear();
-	if (pBlockDB == nullptr) {
-		return;
+	if (publishBaseline) {
+		// Only a rebuild outside an uncommitted batch may advance the last-commit
+		// backup. A rebuild on an alternative reorg branch must leave the backup
+		// at the last committed tip, otherwise a failed reorg would roll back into
+		// the abandoned branch's index.
+		m_recentNrdIndexCompleteBackup = false;
+		m_recentNrdKernelsBackup.clear();
 	}
 
-	const uint64_t cutoff = tip.GetHeight() > 2 * Consensus::WEEK_HEIGHT
-		? tip.GetHeight() - 2 * Consensus::WEEK_HEIGHT
-		: 0;
+	try
+	{
+		if (pBlockDB == nullptr) {
+			return;
+		}
 
-	// Rebuild from the kernel PMMR plus header chain, not from full block
-	// bodies: a PIBD state legitimately has no bodies for recent blocks.
-	std::vector<BlockHeaderPtr> headers;
-	BlockHeaderPtr pHeader = std::make_shared<BlockHeader>(tip);
-	while (pHeader != nullptr && pHeader->GetHeight() > cutoff) {
+		const uint64_t cutoff = tip.GetHeight() > 2 * Consensus::WEEK_HEIGHT
+			? tip.GetHeight() - 2 * Consensus::WEEK_HEIGHT
+			: 0;
+
+		// Rebuild from the kernel PMMR plus header chain, not from full block
+		// bodies: a PIBD state legitimately has no bodies for recent blocks.
+		std::vector<BlockHeaderPtr> headers;
+		BlockHeaderPtr pHeader = std::make_shared<BlockHeader>(tip);
+		while (pHeader != nullptr && pHeader->GetHeight() > cutoff) {
+			headers.push_back(pHeader);
+			BlockHeaderPtr pPrevious = pBlockDB->GetBlockHeader(pHeader->GetPreviousHash());
+			if (pPrevious == nullptr ||
+				pPrevious->GetHeight() + 1 != pHeader->GetHeight()) {
+				LOG_WARNING_F("Could not rebuild NRD index: header {} is missing", pHeader->GetPreviousHash());
+				return;
+			}
+			pHeader = pPrevious;
+		}
+
+		if (pHeader == nullptr || pHeader->GetHeight() != cutoff) {
+			LOG_WARNING_F("Could not rebuild NRD index: history does not reach cutoff {}", cutoff);
+			return;
+		}
 		headers.push_back(pHeader);
-		BlockHeaderPtr pPrevious = pBlockDB->GetBlockHeader(pHeader->GetPreviousHash());
-		if (pPrevious == nullptr ||
-			pPrevious->GetHeight() + 1 != pHeader->GetHeight()) {
-			LOG_WARNING_F("Could not rebuild NRD index: header {} is missing", pHeader->GetPreviousHash());
-			return;
+		std::reverse(headers.begin(), headers.end());
+
+		uint64_t previousKernelCount = 0;
+		if (cutoff > 0) {
+			BlockHeaderPtr pPrevious = pBlockDB->GetBlockHeader(pHeader->GetPreviousHash());
+			if (pPrevious == nullptr || pPrevious->GetHeight() + 1 != cutoff) {
+				LOG_WARNING_F("Could not rebuild NRD index: header before cutoff is missing");
+				return;
+			}
+			previousKernelCount = pPrevious->GetNumKernels();
 		}
-		pHeader = pPrevious;
-	}
 
-	if (pHeader == nullptr || pHeader->GetHeight() != cutoff) {
-		LOG_WARNING_F("Could not rebuild NRD index: history does not reach cutoff {}", cutoff);
-		return;
-	}
-	headers.push_back(pHeader);
-	std::reverse(headers.begin(), headers.end());
-
-	uint64_t previousKernelCount = 0;
-	if (cutoff > 0) {
-		BlockHeaderPtr pPrevious = pBlockDB->GetBlockHeader(pHeader->GetPreviousHash());
-		if (pPrevious == nullptr || pPrevious->GetHeight() + 1 != cutoff) {
-			LOG_WARNING_F("Could not rebuild NRD index: header before cutoff is missing");
-			return;
-		}
-		previousKernelCount = pPrevious->GetNumKernels();
-	}
-
-	const uint64_t tipKernelCount = headers.back()->GetNumKernels();
-	if (m_pKernelMMR->GetNumKernels() < tipKernelCount) {
-		LOG_WARNING_F("Could not rebuild NRD index: kernel MMR has fewer leaves than the tip header");
-		return;
-	}
-
-	size_t headerIndex = 0;
-	for (uint64_t leaf = previousKernelCount; leaf < tipKernelCount; ++leaf) {
-		while (headerIndex < headers.size() &&
-			leaf >= headers[headerIndex]->GetNumKernels()) {
-			++headerIndex;
-		}
-		if (headerIndex >= headers.size()) {
-			LOG_WARNING_F("Could not rebuild NRD index: no header owns kernel leaf {}", leaf);
+		const uint64_t tipKernelCount = headers.back()->GetNumKernels();
+		if (m_pKernelMMR->GetNumKernels() != tipKernelCount) {
+			LOG_WARNING_F(
+				"Could not rebuild NRD index: kernel MMR has {} leaves but the tip header claims {}",
+				m_pKernelMMR->GetNumKernels(),
+				tipKernelCount);
 			return;
 		}
 
-		std::unique_ptr<TransactionKernel> pKernel =
-			m_pKernelMMR->GetKernelAt(LeafIndex::At(leaf));
-		if (pKernel == nullptr) {
-			LOG_WARNING_F("Could not rebuild NRD index: kernel leaf {} is missing", leaf);
-			return;
+		size_t headerIndex = 0;
+		for (uint64_t leaf = previousKernelCount; leaf < tipKernelCount; ++leaf) {
+			while (headerIndex < headers.size() &&
+				leaf >= headers[headerIndex]->GetNumKernels()) {
+				++headerIndex;
+			}
+			if (headerIndex >= headers.size()) {
+				LOG_WARNING_F("Could not rebuild NRD index: no header owns kernel leaf {}", leaf);
+				return;
+			}
+
+			std::unique_ptr<TransactionKernel> pKernel =
+				m_pKernelMMR->GetKernelAt(LeafIndex::At(leaf));
+			if (pKernel == nullptr) {
+				LOG_WARNING_F("Could not rebuild NRD index: kernel leaf {} is missing", leaf);
+				return;
+			}
+
+			if (pKernel->GetFeatures() == EKernelFeatures::NO_RECENT_DUPLICATE) {
+				const Commitment& excess = pKernel->GetExcessCommitment();
+				const uint64_t kernelHeight = headers[headerIndex]->GetHeight();
+
+				// Rust grin 5.5.2 verify_kernel_pos_index replays apply_kernel_rules
+				// over the rebuilt window; a historical relative-height violation
+				// fails the rebuild (txhashset.rs, apply_kernel_rules). A rebuild
+				// that only populated the index would publish state Rust rejects.
+				const auto iter = m_recentNrdKernels.find(excess);
+				if (iter != m_recentNrdKernels.end() && !iter->second.empty()) {
+					if (!NrdRules::IsRelativeHeightSatisfied(
+							iter->second.back().Height, kernelHeight, pKernel->GetLockHeight(), cutoff)) {
+						LOG_WARNING_F(
+							"Could not rebuild NRD index: historical relative-height violation for kernel {} at height {} (previous {})",
+							excess, kernelHeight, iter->second.back().Height);
+						m_recentNrdKernels.clear();
+						return;
+					}
+				}
+
+				ApplyNrd(*pKernel, LeafIndex::At(leaf).GetPosition(), kernelHeight);
+			}
 		}
 
-		if (pKernel->GetFeatures() == EKernelFeatures::NO_RECENT_DUPLICATE) {
-			ApplyNrd(*pKernel, LeafIndex::At(leaf).GetPosition(), headers[headerIndex]->GetHeight());
+		m_recentNrdIndexComplete = true;
+		if (publishBaseline) {
+			PublishRecentNrdIndexAsBackup();
 		}
 	}
-
-	m_recentNrdIndexComplete = true;
+	catch (const std::exception& e)
+	{
+		// A local read failure must not escape a rebuild: for the block-apply path
+		// that would reach BlockPipe and ban the peer. Leave the index incomplete
+		// (fail-closed) and let callers classify this as locally unverifiable.
+		LOG_ERROR_F("NRD index rebuild failed with a local error: {}", e.what());
+		m_recentNrdKernels.clear();
+		m_recentNrdIndexComplete = false;
+		m_lastNrdRebuildThrew = true;
+	}
+	catch (...)
+	{
+		LOG_ERROR("NRD index rebuild failed with an unknown local error");
+		m_recentNrdKernels.clear();
+		m_recentNrdIndexComplete = false;
+		m_lastNrdRebuildThrew = true;
+	}
 }
+
+size_t TxHashSet::GetRecentNrdKernelCount() const noexcept
+{
+	size_t count = 0;
+	for (const auto& entry : m_recentNrdKernels) {
+		count += entry.second.size();
+	}
+
+	return count;
+}
+
+std::vector<TxHashSet::RecentKernelPosition> TxHashSet::GetRecentNrdEntries(
+	const Commitment& excess) const
+{
+	const auto iter = m_recentNrdKernels.find(excess);
+	if (iter == m_recentNrdKernels.end()) {
+		return {};
+	}
+
+	return iter->second;
+}
+
+void TxHashSet::PublishRecentNrdIndexAsBackup()
+{
+	m_recentNrdKernelsBackup = m_recentNrdKernels;
+	m_recentNrdIndexCompleteBackup = m_recentNrdIndexComplete;
+}
+
 uint64_t TxHashSet::GetNumKernels() const
 {
 	return m_pKernelMMR->GetNumKernels();
@@ -570,7 +675,18 @@ void TxHashSet::Rewind(std::shared_ptr<IBlockDB> pBlockDB, const BlockHeader& he
 		// header kernel MMR size is the exact cut point.
 		const BlockHeaderPtr pPreviousHeader =
 			pBlockDB->GetBlockHeader(pBlock->GetPreviousHash());
-		if (pPreviousHeader != nullptr) {
+		if (pPreviousHeader == nullptr) {
+			// Without the previous header the exact cut point is unknown. Fail
+			// closed instead of leaving stale NRD entries that could reject a
+			// legitimate duplicate after the reorg.
+			LOG_ERROR_F(
+				"Cannot rewind NRD index for block {}: previous header {} is missing",
+				pBlock->GetHash(), pBlock->GetPreviousHash());
+			m_recentNrdKernels.clear();
+			m_recentNrdIndexComplete = false;
+			m_recentNrdIndexCompleteBackup = false;
+			m_recentNrdKernelsBackup.clear();
+		} else {
 			for (const TransactionKernel& kernel : pBlock->GetKernels()) {
 				if (kernel.GetFeatures() == EKernelFeatures::NO_RECENT_DUPLICATE) {
 					RemoveNrdAtOrAbove(
@@ -637,6 +753,7 @@ void TxHashSet::Commit()
 	}
 
 	m_pBlockHeaderBackup = m_pBlockHeader;
+	PublishRecentNrdIndexAsBackup();
 }
 
 void TxHashSet::Rollback() noexcept
@@ -645,6 +762,20 @@ void TxHashSet::Rollback() noexcept
 	m_pOutputPMMR->Rollback();
 	m_pRangeProofPMMR->Rollback();
 	m_pBlockHeader = m_pBlockHeaderBackup;
+
+	// The NRD index is in-memory state built by ApplyBlock/Rewind and updated
+	// inside the same batch as the MMRs. Restore it to the last committed state
+	// so a failed or rewound block cannot leave stale duplicates behind.
+	try {
+		m_recentNrdKernels = m_recentNrdKernelsBackup;
+		m_recentNrdIndexComplete = m_recentNrdIndexCompleteBackup;
+	} catch (...) {
+		// Allocation failure while restoring must not publish a half-restored
+		// index. Fall back to fail-closed.
+		m_recentNrdKernels.clear();
+		m_recentNrdIndexComplete = false;
+	}
+	m_lastNrdValidationResult = ENrdValidationResult::NONE;
 }
 
 void TxHashSet::Compact()

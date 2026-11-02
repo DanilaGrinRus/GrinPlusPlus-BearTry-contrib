@@ -1,0 +1,522 @@
+{
+  "schema": "gpp-line3-fuzz-run/v1",
+  "run_id": "fuzz-smoke-20261103-01",
+  "created_utc": "2026-11-02T19:43:05.5058362Z",
+  "repo": "C:\\DHW\\Gplus\\src\\grinplusplus",
+  "git_head": "e0a5d2d68b990234e7bf1fb1b651f868dc30e9b6",
+  "git_status": [
+    " M include/P2P/Capabilities.h",
+    " M src/BlockChain/Validators/BlockValidator.cpp",
+    " M src/P2P/MessageProcessor.cpp",
+    " M src/P2P/PIBD/PibdParams.h",
+    " M src/P2P/Seed/HandShake.cpp",
+    " M src/P2P/Seed/Seeder.cpp",
+    " M src/PMMR/TxHashSetImpl.cpp",
+    " M src/PMMR/TxHashSetImpl.h",
+    " M src/PMMR/Zip/ZipFile.cpp",
+    " M tests/src/Net/Test_P2PCompat.cpp",
+    " M tests/src/PMMR/CMakeLists.txt",
+    " M tests/src/PMMR/Test_NrdRules.cpp",
+    " M tests/src/PMMR/Test_PibdServing.cpp",
+    "?? docs/modernization/G09_ARCHIVE_SERVING.md",
+    "?? docs/modernization/NRD_DIFFERENTIAL.md",
+    "?? evidence/",
+    "?? src/P2P/PIBD/PibdArchiveServer.h",
+    "?? tests/fuzz/",
+    "?? tests/src/PMMR/Test_NrdDifferential.cpp",
+    "?? tests/src/PMMR/Test_NrdIndexRebuild.cpp",
+    "?? tests/src/PMMR/Test_NrdSupport.h",
+    "?? tests/src/PMMR/Test_ZipFile.cpp",
+    "?? tools/audit/nrd/",
+    "?? tools/build/run-tests-isolated.ps1",
+    "?? tools/fuzz/"
+  ],
+  "seed": 20261103,
+  "iterations": 200,
+  "max_seconds": 30.0,
+  "one_shot_timeout_sec": 30,
+  "environment": {
+    "os": "Microsoft Windows NT 10.0.26300.0",
+    "asan_staging": "C:\\DHW\\.tmp\\asan-line3\\runs\\fuzz-smoke-20261103-01\\zip-staging",
+    "note": "ASan runtime DLL is copied next to the harness exe by build_asan.ps1"
+  },
+  "targets": {
+    "bytebuffer": {
+      "exe_sha256": "2312BE962C06D8FB51B100E2BCC589318CCD8EA955A234B85DE661D359C49691",
+      "exe": "C:\\DHW\\.tmp\\asan-line3\\fuzz\\fuzz_bytebuffer.exe",
+      "corpus": "C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\bytebuffer",
+      "corpus_sha256": "bigint32_short.bin:1A85C133F8DBC2A3C7EF3526F2A8FA6A0DEC2FBEB09C6C90910E139C80DC4220;bigint64_short.bin:F66CB566864E46E968C4C34B1A1CEB2B3CF1D7F4BA6B74A990553DFC06D89A17;empty.bin:E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855;one_byte.bin:4BF5122F344554C53BDE2EBB8CD2B7E3D1600AD631C385A5D7CCE23C7785459A;opcode_stream.bin:1C4672A4C6713BCB9495ABBA712BE251BBEFF723D79F001F81E5170B1D1627A5;truncated_u32.bin:FB5E512425FC9449316EC95969EBE71E2D576DBAB833D61E2A5B9330FD70EE02;truncated_u64.bin:7C90D27333F3E314049F0521305E2FC0825BA0268C3F2B611EFB73D18938DD2E;u64_declared_9.bin:A1544655D99E415B87846DF6856A15706DF6461425784D7B08A3F266EC2D9C35;u64_declared_ffffffff.bin:49187573A4BBB9E7EC082E0C15A2790011ADB015C10E11BAF15D9D0CE4F04F7F;u64_declared_plus1.bin:A1544655D99E415B87846DF6856A15706DF6461425784D7B08A3F266EC2D9C35;u64_max.bin:F6AE6DBDAF533C38FE85709E4DE07B9C4E340775AA3DDCB9C7A16B9008C21342;u64_zero.bin:A35923DC41A44CE49C44F34A7304C982360D5E91C787539D12E02C3672113055;varstr_huge.bin:22D1DF0A69EEDA4B94F986EED6448B92AB0E4DF1BEAD1217B6DDDE870452F12C",
+      "campaign": {
+        "requested_iterations": 200,
+        "exit_code": 0,
+        "wall_sec": 0.573,
+        "stdout": "C:\\DHW\\.tmp\\asan-line3\\runs\\fuzz-smoke-20261103-01\\campaign-bytebuffer\\stdout.log",
+        "stderr": "C:\\DHW\\.tmp\\asan-line3\\runs\\fuzz-smoke-20261103-01\\campaign-bytebuffer\\stderr.log",
+        "asan_report": false,
+        "summary_line": "SUMMARY target=bytebuffer seed=20261103 executed=200 ok=42 rejected_deserialization=158 rejected_file=0 rejected_segment=0 oom=0 exception=0 unknown=0 slow_cases=0 slowest_ms=0.137 wall_sec=0.530 corpus_files=13 corpus_fnv1a=89225b1501e975ef",
+        "current_case": "C:\\DHW\\.tmp\\asan-line3\\runs\\fuzz-smoke-20261103-01\\campaign-bytebuffer\\current_case.bin",
+        "last_case": "C:\\DHW\\.tmp\\asan-line3\\runs\\fuzz-smoke-20261103-01\\campaign-bytebuffer\\last_case.txt"
+      },
+      "one_shot": [
+        {
+          "input": "bigint32_short.bin",
+          "bytes": 32,
+          "exit_code": 0,
+          "wall_sec": 0.031,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\bytebuffer\\bigint32_short.bin outcome=rejected_deserialization input_bytes=32 input_fnv1a=31d7361ef7b0c788",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "bigint64_short.bin",
+          "bytes": 64,
+          "exit_code": 0,
+          "wall_sec": 0.03,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\bytebuffer\\bigint64_short.bin outcome=rejected_deserialization input_bytes=64 input_fnv1a=9e0cea05e3dfd28f",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "empty.bin",
+          "bytes": 0,
+          "exit_code": 0,
+          "wall_sec": 0.03,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\bytebuffer\\empty.bin outcome=ok input_bytes=0 input_fnv1a=14650fb0739d0383",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "one_byte.bin",
+          "bytes": 1,
+          "exit_code": 0,
+          "wall_sec": 0.029,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\bytebuffer\\one_byte.bin outcome=rejected_deserialization input_bytes=1 input_fnv1a=44bd2ad473ccf5e6",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "opcode_stream.bin",
+          "bytes": 64,
+          "exit_code": 0,
+          "wall_sec": 0.03,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\bytebuffer\\opcode_stream.bin outcome=ok input_bytes=64 input_fnv1a=08ceb7ead0436283",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "truncated_u32.bin",
+          "bytes": 4,
+          "exit_code": 0,
+          "wall_sec": 0.03,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\bytebuffer\\truncated_u32.bin outcome=rejected_deserialization input_bytes=4 input_fnv1a=b13ef6c1df792377",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "truncated_u64.bin",
+          "bytes": 7,
+          "exit_code": 0,
+          "wall_sec": 0.031,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\bytebuffer\\truncated_u64.bin outcome=rejected_deserialization input_bytes=7 input_fnv1a=93f374785e0049ec",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "u64_declared_9.bin",
+          "bytes": 17,
+          "exit_code": 0,
+          "wall_sec": 0.032,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\bytebuffer\\u64_declared_9.bin outcome=rejected_deserialization input_bytes=17 input_fnv1a=4ead6cfbf44c116d",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "u64_declared_ffffffff.bin",
+          "bytes": 13,
+          "exit_code": 0,
+          "wall_sec": 0.031,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\bytebuffer\\u64_declared_ffffffff.bin outcome=rejected_deserialization input_bytes=13 input_fnv1a=e93ddf4c10ea3c46",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "u64_declared_plus1.bin",
+          "bytes": 17,
+          "exit_code": 0,
+          "wall_sec": 0.031,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\bytebuffer\\u64_declared_plus1.bin outcome=rejected_deserialization input_bytes=17 input_fnv1a=4ead6cfbf44c116d",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "u64_max.bin",
+          "bytes": 9,
+          "exit_code": 0,
+          "wall_sec": 0.029,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\bytebuffer\\u64_max.bin outcome=rejected_deserialization input_bytes=9 input_fnv1a=e21cf26b8d475402",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "u64_zero.bin",
+          "bytes": 9,
+          "exit_code": 0,
+          "wall_sec": 0.03,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\bytebuffer\\u64_zero.bin outcome=ok input_bytes=9 input_fnv1a=38947c49b17db78a",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "varstr_huge.bin",
+          "bytes": 10,
+          "exit_code": 0,
+          "wall_sec": 0.029,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\bytebuffer\\varstr_huge.bin outcome=rejected_deserialization input_bytes=10 input_fnv1a=e1dc413c8e7cf435",
+          "asan": false,
+          "timed_out": false
+        }
+      ],
+      "crashed": false,
+      "timeouts": 0,
+      "asan_reports": 0
+    },
+    "p2p_body": {
+      "exe_sha256": "7363C8E5C9C4684FBECA79F985EED983297F2F9A4A9BAE5D8CB8BD85870241C2",
+      "exe": "C:\\DHW\\.tmp\\asan-line3\\fuzz\\fuzz_p2p_body.exe",
+      "corpus": "C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_body",
+      "corpus_sha256": "empty_body.bin:6E340B9CFFB37A989CA544E6BB780A2C78901D3FB33738768511A30617AFA01D;request_big_height.bin:80522030457A6B6CA326CAA6D3BD12B0861E45EEF8D926A32C361E008B8F59A5;request_ident.bin:2E9F7B45A9FF7A80F4495B1643DC525AF6022BF62281F7C678A4FAC7D783B766;request_idx_max.bin:DEC0AE446CAE5573E7DCC7F62B9A088795D1863AD78933FB601EDD68D29D1CBE;request_truncated_hash.bin:5778F985DB754C6628691F56FADAE50C65FDDBE8EB2E93039633FEFA05D45E31;response_bitmap.bin:7E47ABDA05138E87C6BAEC3609444463545B7A9DA6CE76D23789DF366453352E;response_kernels_count_max.bin:ED964C32DC5DE1B02EC4CEAE7D1957B5B60A7395EA3E31E5EDE1ECD028A65B48;response_outputs_empty.bin:DA4470E7B2F1D56D551D8FA8FF9B2E718858F12ADF82541C761A888447ABB17F;truncated_hash.bin:7713EB09E2DDBB4097CCF117281F7AC3BD50F0237CFB2AECB3D313D5A1DD1421",
+      "campaign": {
+        "requested_iterations": 200,
+        "exit_code": 0,
+        "wall_sec": 0.635,
+        "stdout": "C:\\DHW\\.tmp\\asan-line3\\runs\\fuzz-smoke-20261103-01\\campaign-p2p_body\\stdout.log",
+        "stderr": "C:\\DHW\\.tmp\\asan-line3\\runs\\fuzz-smoke-20261103-01\\campaign-p2p_body\\stderr.log",
+        "asan_report": false,
+        "summary_line": "SUMMARY target=p2p_body seed=20261103 executed=200 ok=34 rejected_deserialization=166 rejected_file=0 rejected_segment=0 oom=0 exception=0 unknown=0 slow_cases=0 slowest_ms=0.156 wall_sec=0.578 corpus_files=9 corpus_fnv1a=681f1353147b5fc6",
+        "current_case": "C:\\DHW\\.tmp\\asan-line3\\runs\\fuzz-smoke-20261103-01\\campaign-p2p_body\\current_case.bin",
+        "last_case": "C:\\DHW\\.tmp\\asan-line3\\runs\\fuzz-smoke-20261103-01\\campaign-p2p_body\\last_case.txt"
+      },
+      "one_shot": [
+        {
+          "input": "empty_body.bin",
+          "bytes": 1,
+          "exit_code": 0,
+          "wall_sec": 0.032,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_body\\empty_body.bin outcome=rejected_deserialization input_bytes=1 input_fnv1a=44bd2bd473ccf799",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "request_big_height.bin",
+          "bytes": 42,
+          "exit_code": 0,
+          "wall_sec": 0.032,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_body\\request_big_height.bin outcome=rejected_deserialization input_bytes=42 input_fnv1a=1b8b6b9f6c038325",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "request_ident.bin",
+          "bytes": 42,
+          "exit_code": 0,
+          "wall_sec": 0.032,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_body\\request_ident.bin outcome=ok input_bytes=42 input_fnv1a=dabd722941a86ed0",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "request_idx_max.bin",
+          "bytes": 42,
+          "exit_code": 0,
+          "wall_sec": 0.031,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_body\\request_idx_max.bin outcome=rejected_deserialization input_bytes=42 input_fnv1a=dcb08e8fcccb4690",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "request_truncated_hash.bin",
+          "bytes": 32,
+          "exit_code": 0,
+          "wall_sec": 0.03,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_body\\request_truncated_hash.bin outcome=rejected_deserialization input_bytes=32 input_fnv1a=0c6a51d082f50401",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "response_bitmap.bin",
+          "bytes": 78,
+          "exit_code": 0,
+          "wall_sec": 0.031,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_body\\response_bitmap.bin outcome=ok input_bytes=78 input_fnv1a=12e6f6ec101f2235",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "response_kernels_count_max.bin",
+          "bytes": 41,
+          "exit_code": 0,
+          "wall_sec": 0.04,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_body\\response_kernels_count_max.bin outcome=rejected_deserialization input_bytes=41 input_fnv1a=1c537927c9d43804",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "response_outputs_empty.bin",
+          "bytes": 97,
+          "exit_code": 0,
+          "wall_sec": 0.03,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_body\\response_outputs_empty.bin outcome=ok input_bytes=97 input_fnv1a=edc8c23b10986c80",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "truncated_hash.bin",
+          "bytes": 18,
+          "exit_code": 0,
+          "wall_sec": 0.03,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\p2p_body\\truncated_hash.bin outcome=rejected_deserialization input_bytes=18 input_fnv1a=372e6bdd90930ff6",
+          "asan": false,
+          "timed_out": false
+        }
+      ],
+      "crashed": false,
+      "timeouts": 0,
+      "asan_reports": 0
+    },
+    "segment": {
+      "exe_sha256": "C7AF094E085EAAA641E6C085923EF5BC0B863784822ABE595B8420586C12A0A6",
+      "exe": "C:\\DHW\\.tmp\\asan-line3\\fuzz\\fuzz_segment.exe",
+      "corpus": "C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment",
+      "corpus_sha256": "bitmap_block_sparse.bin:9F570405CD72C5A2DB8FFE234FAAE4CD6B3F23947F9ED8D007A50A202EAC4046;bitmap_raw_block.bin:739B018B273748134F631019ADC47699490AF9440064387E96F96E27AE8F14AA;bitmap_segment.bin:E54BFEEB8E473F65966D0C86C9BCEA74BD82F45F5B37D23423F29EABB106F1C7;chunk.bin:2546B53E0BA419DBFEE03A6D243D48007A08D0B9C60ED235AAA1C5FA094BE864;empty.bin:6E340B9CFFB37A989CA544E6BB780A2C78901D3FB33738768511A30617AFA01D;ident_height32_idxmax.bin:48D83040FFCCE321E3B7455A82123C2BC12FB1C42C7BC495B2C8CE5CEC274C35;ident_height33.bin:E4A19223AA701D4FC58FF27E2E3BB3457FD589620E1B3FF83292F4D46E80439E;ident_valid.bin:6F9C3B0315D3BEC5BCDB51B8A78D4634AC0D7D9D579A4C6DEE3DF291B9C390BC;proof_count_1e6.bin:1345BC2FF440A482D4F850A6A0B5C7E25F78F1C240E476A2EC54B9B57E31B966;proof_count_max.bin:1272F520CF7CA5CF117A0B5A3116518371BF20FB7FAC043AC1BE568B8C55B96C;proof_empty.bin:A536AA3CEDE6EA3C1F3E0357C3C60E0F216A8C89B853DF13B29DAA8F85065DFB;proof_one_hash.bin:7944474F3E56C91FB1A4938A25D5281F90B9C9001AF9FA89D14ABD3608246D68;segment_bitmapchunk.bin:B8DB491C1CF6A5FC5E92BABBD0A8A53EAADBE5DAE1DD6BE17A3AB684598EF990;segment_proof_validate.bin:5A3780415B9B2586FCD318DC1C27E892EA7A3BF3D32A440915CF6911A59C7B66",
+      "campaign": {
+        "requested_iterations": 200,
+        "exit_code": 0,
+        "wall_sec": 0.578,
+        "stdout": "C:\\DHW\\.tmp\\asan-line3\\runs\\fuzz-smoke-20261103-01\\campaign-segment\\stdout.log",
+        "stderr": "C:\\DHW\\.tmp\\asan-line3\\runs\\fuzz-smoke-20261103-01\\campaign-segment\\stderr.log",
+        "asan_report": false,
+        "summary_line": "SUMMARY target=segment seed=20261103 executed=200 ok=45 rejected_deserialization=155 rejected_file=0 rejected_segment=0 oom=0 exception=0 unknown=0 slow_cases=0 slowest_ms=0.165 wall_sec=0.515 corpus_files=14 corpus_fnv1a=62fc43b47e413f86",
+        "current_case": "C:\\DHW\\.tmp\\asan-line3\\runs\\fuzz-smoke-20261103-01\\campaign-segment\\current_case.bin",
+        "last_case": "C:\\DHW\\.tmp\\asan-line3\\runs\\fuzz-smoke-20261103-01\\campaign-segment\\last_case.txt"
+      },
+      "one_shot": [
+        {
+          "input": "bitmap_block_sparse.bin",
+          "bytes": 10,
+          "exit_code": 0,
+          "wall_sec": 0.031,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment\\bitmap_block_sparse.bin outcome=rejected_deserialization input_bytes=10 input_fnv1a=c09f51ec08f603b0",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "bitmap_raw_block.bin",
+          "bytes": 131,
+          "exit_code": 0,
+          "wall_sec": 0.029,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment\\bitmap_raw_block.bin outcome=ok input_bytes=131 input_fnv1a=c83af5fc11a02b2b",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "bitmap_segment.bin",
+          "bytes": 150,
+          "exit_code": 0,
+          "wall_sec": 0.03,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment\\bitmap_segment.bin outcome=rejected_deserialization input_bytes=150 input_fnv1a=29a734d38c9dcccf",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "chunk.bin",
+          "bytes": 129,
+          "exit_code": 0,
+          "wall_sec": 0.029,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment\\chunk.bin outcome=ok input_bytes=129 input_fnv1a=a7daf4db87f1f280",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "empty.bin",
+          "bytes": 1,
+          "exit_code": 0,
+          "wall_sec": 0.029,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment\\empty.bin outcome=rejected_deserialization input_bytes=1 input_fnv1a=44bd2bd473ccf799",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "ident_height32_idxmax.bin",
+          "bytes": 10,
+          "exit_code": 0,
+          "wall_sec": 0.03,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment\\ident_height32_idxmax.bin outcome=ok input_bytes=10 input_fnv1a=9f59e350dc37bf33",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "ident_height33.bin",
+          "bytes": 10,
+          "exit_code": 0,
+          "wall_sec": 0.029,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment\\ident_height33.bin outcome=rejected_deserialization input_bytes=10 input_fnv1a=6ccea666f2f132a8",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "ident_valid.bin",
+          "bytes": 10,
+          "exit_code": 0,
+          "wall_sec": 0.028,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment\\ident_valid.bin outcome=ok input_bytes=10 input_fnv1a=64314fc7bababfb0",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "proof_count_1e6.bin",
+          "bytes": 9,
+          "exit_code": 0,
+          "wall_sec": 0.029,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment\\proof_count_1e6.bin outcome=rejected_deserialization input_bytes=9 input_fnv1a=ae0038e6ef7322ad",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "proof_count_max.bin",
+          "bytes": 9,
+          "exit_code": 0,
+          "wall_sec": 0.03,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment\\proof_count_max.bin outcome=rejected_deserialization input_bytes=9 input_fnv1a=ccfb417fa672391e",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "proof_empty.bin",
+          "bytes": 9,
+          "exit_code": 0,
+          "wall_sec": 0.029,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment\\proof_empty.bin outcome=ok input_bytes=9 input_fnv1a=4f987be6ba3a2ea6",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "proof_one_hash.bin",
+          "bytes": 41,
+          "exit_code": 0,
+          "wall_sec": 0.028,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment\\proof_one_hash.bin outcome=ok input_bytes=41 input_fnv1a=3ce4638157730db9",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "segment_bitmapchunk.bin",
+          "bytes": 42,
+          "exit_code": 0,
+          "wall_sec": 0.029,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment\\segment_bitmapchunk.bin outcome=ok input_bytes=42 input_fnv1a=815e70f058f8a461",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "segment_proof_validate.bin",
+          "bytes": 41,
+          "exit_code": 0,
+          "wall_sec": 0.029,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\segment\\segment_proof_validate.bin outcome=rejected_deserialization input_bytes=41 input_fnv1a=5f01fe3653fd69ec",
+          "asan": false,
+          "timed_out": false
+        }
+      ],
+      "crashed": false,
+      "timeouts": 0,
+      "asan_reports": 0
+    },
+    "zip": {
+      "exe_sha256": "1619BFBC781A8A5FEADF123F52427E6B3869C96B98792CD7747671C88DA78921",
+      "exe": "C:\\DHW\\.tmp\\asan-line3\\fuzz\\fuzz_zip.exe",
+      "corpus": "C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\zip",
+      "corpus_sha256": "crc_corrupted.zip:4F492E1D25F90FD28FA10CF48EB58E03DB61005AAAEA2F64991E52A9E1FC16A8;duplicate_names.zip:E761A23197021EFB56D27629678E7F2B23B9FF4F6DC9E99FA4C9EE413CFB4322;empty.bin:E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855;random.bin:B6FDF9ECE632261FC66DF0BD2D5E9E9C9B1A5B262ABDFE7F99F07123EC977F20;traversal.zip:7254D0912ABAEBA749AE5EE73FB3E6BA37703760E9BB558C1B371281C9764F1C;truncated_central_directory.zip:70E3052085CEF2AB3B80279077D27FE87F65A5AB4E4649BA6FA22FC9163651A6;valid.zip:D28699748E4C5360E6E200E1504D34D0F094940EE3CA4189FCB2143ABC5C37ED",
+      "campaign": {
+        "requested_iterations": 200,
+        "exit_code": 0,
+        "wall_sec": 1.35,
+        "stdout": "C:\\DHW\\.tmp\\asan-line3\\runs\\fuzz-smoke-20261103-01\\campaign-zip\\stdout.log",
+        "stderr": "C:\\DHW\\.tmp\\asan-line3\\runs\\fuzz-smoke-20261103-01\\campaign-zip\\stderr.log",
+        "asan_report": false,
+        "summary_line": "SUMMARY target=zip seed=20261103 executed=200 ok=25 rejected_deserialization=0 rejected_file=175 rejected_segment=0 oom=0 exception=0 unknown=0 slow_cases=0 slowest_ms=197.763 wall_sec=1.296 corpus_files=7 corpus_fnv1a=9a18b3ef5367c27c",
+        "current_case": "C:\\DHW\\.tmp\\asan-line3\\runs\\fuzz-smoke-20261103-01\\campaign-zip\\current_case.bin",
+        "last_case": "C:\\DHW\\.tmp\\asan-line3\\runs\\fuzz-smoke-20261103-01\\campaign-zip\\last_case.txt"
+      },
+      "one_shot": [
+        {
+          "input": "crc_corrupted.zip",
+          "bytes": 297,
+          "exit_code": 0,
+          "wall_sec": 0.032,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\zip\\crc_corrupted.zip outcome=rejected_file input_bytes=297 input_fnv1a=9803830dcf0042b1",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "duplicate_names.zip",
+          "bytes": 213,
+          "exit_code": 0,
+          "wall_sec": 0.035,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\zip\\duplicate_names.zip outcome=ok input_bytes=213 input_fnv1a=613ed3414a388682",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "empty.bin",
+          "bytes": 0,
+          "exit_code": 0,
+          "wall_sec": 0.03,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\zip\\empty.bin outcome=rejected_file input_bytes=0 input_fnv1a=14650fb0739d0383",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "random.bin",
+          "bytes": 64,
+          "exit_code": 0,
+          "wall_sec": 0.034,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\zip\\random.bin outcome=rejected_file input_bytes=64 input_fnv1a=a675fee951adb9bc",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "traversal.zip",
+          "bytes": 228,
+          "exit_code": 0,
+          "wall_sec": 0.035,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\zip\\traversal.zip outcome=ok input_bytes=228 input_fnv1a=d0c50de06b2a3d4d",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "truncated_central_directory.zip",
+          "bytes": 249,
+          "exit_code": 0,
+          "wall_sec": 0.031,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\zip\\truncated_central_directory.zip outcome=rejected_file input_bytes=249 input_fnv1a=dc944ad79d8c84fa",
+          "asan": false,
+          "timed_out": false
+        },
+        {
+          "input": "valid.zip",
+          "bytes": 297,
+          "exit_code": 0,
+          "wall_sec": 0.03,
+          "outcome": "one_shot=C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\corpus\\zip\\valid.zip outcome=ok input_bytes=297 input_fnv1a=5a8dd791e5ba5448",
+          "asan": false,
+          "timed_out": false
+        }
+      ],
+      "crashed": false,
+      "timeouts": 0,
+      "asan_reports": 0
+    }
+  },
+  "result": "PASS",
+  "failure_reasons": []
+}

@@ -1,0 +1,1 @@
+iteration=199 seed=20261103 base=bitmap_block_sparse.bin bytes=11

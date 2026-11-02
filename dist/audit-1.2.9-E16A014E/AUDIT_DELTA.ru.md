@@ -1,12 +1,12 @@
 # AUDIT_DELTA (RU) — Grin++ 1.2.9 → совместимость с Grin v5.5.2
 **Актуальный срез 02.11.2026.** База 1.2.9 `5f511e6`; рабочее дерево HEAD `807b5b1`. Метрики исходников:
 
-- добавлено C++: **+17 142 строки**; удалено **−594**; 187 файлов;
-- объём diff/новых C++ файлов: **≈ +725.0 KiB**;
-- итоговый `GrinNode.exe`: **7 745 024 B = 7 563.5 KiB = 7.38 MiB**;
+- добавлено C++: **+22 619 строк**; удалено **−625**; 191 tracked + 22 новых;
+- объём diff/новых C++ файлов: **≈ +927.8 KiB**;
+- итоговый `GrinNode.exe`: **7 805 440 B = 7 622.5 KiB = 7.44 MiB**;
 - **прирост exe относительно 1.2.9: NOT MEASURED** — исходный бинарник отсутствует; 7.7 MB это итоговый размер, не дельта;
-- артефакты: `GrinNode 19E0C97E…`, `Tests 4F75DCD4…`; suite **205 / 3700 PASS**.
-- **G-09 live (03.11.2026): PASS для изолированного сценария.** Обычная Rust 5.5.2-нода дошла до `no_sync` на H=3 318 655 / hash `2945348e…`, с тем же C++ tip, 1 inbound / 0 outbound; PIBD 10 203 442/10 203 442, roots/rangeproof/kernel validation/body sync завершены. Причина прошлых рестартов — `missing left sibling` на output segment 1648; исправлена отправка листьев в `SegmentGenerator`. Ограничения: headers preseeded, reorg/restart/negative/mainnet не покрыты.
+- артефакты: `GrinNode F9EF06B4…`, `Tests C8C386BE…`; suite **245 / 4013 PASS**.
+- **G-09 fixed-H (экспериментальный, 03.11.2026): PASS исторически.** Обычный repo-бинарник `C8C386BE…` — build/unit/ASan-subset PASS, ordinary live **NOT VERIFIED** (L1 header_sync/awaiting_peers; fixture H mismatch). Обычная Rust 5.5.2-нода дошла до `no_sync` на H=3 318 655 / hash `2945348e…`, с тем же C++ tip, 1 inbound / 0 outbound; PIBD 10 203 442/10 203 442, roots/rangeproof/kernel validation/body sync завершены. Причина прошлых рестартов — `missing left sibling` на output segment 1648; исправлена отправка листьев в `SegmentGenerator`. Ограничения: headers preseeded, reorg/restart/negative/mainnet не покрыты.
 - **PIBD/PIHD guard:** height-cap 13, overflow-check `idx*capacity`, привязка PIHD-ответа к connection/peer, fallback при отсутствии роста chain height; PIBD-ответ строится по одному `ApiStateSnapshot` с retry при смене sequence, bitmap/root кешируются по output root, лимит 500 запросов/мин на connection. PIHD experimental, `PIHD_HIST` не рекламируется; конкурентный apply/reorg-тест snapshot ещё открыт.
 
 Базовая точка: Grin++ 1.2.9 (`5f511e6`). Дельта обновлена: 02.11.2026, HEAD `807b5b1` (G-09/G-23/G-53/G-07/G-24).

@@ -2,6 +2,7 @@
 #include "MessageProcessor.h"
 #include "ConnectionManager.h"
 #include "Messages/PingMessage.h"
+#include <P2P/AdvertisedTip.h>
 #include "Messages/GetPeerAddressesMessage.h"
 #include "Seed/HandShake.h"
 
@@ -255,13 +256,20 @@ void Connection::CheckPing()
     }
 
     if (m_lastPing + std::chrono::seconds(10) < system_clock::now()) {
-        uint64_t difficulty = m_pSyncStatus->GetBlockDifficulty();
-        uint64_t height = m_pSyncStatus->GetBlockHeight();
+        // ONE coherent header-head snapshot (height+TD from the same tip). If no
+        // snapshot is readable, withhold the Ping rather than mixing two tips.
+        std::optional<P2P::AdvertisedTip> tip;
         if (const auto pMessageProcessor = m_pMessageProcessor.lock()) {
-            difficulty = pMessageProcessor->GetBlockDifficulty();
-            height = pMessageProcessor->GetBlockHeight();
+            tip = pMessageProcessor->GetAdvertisedTip();
         }
-        SendAsync(PingMessage{ difficulty, height });
+        if (!tip) {
+            tip = P2P::GetAdvertisedTip(*m_pSyncStatus);
+        }
+        if (tip) {
+            SendAsync(PingMessage{ tip->TotalDifficulty, tip->Height });
+        } else {
+            LOG_DEBUG("Withholding Ping: no coherent header-tip snapshot available.");
+        }
 
         m_lastPing = system_clock::now();
     }

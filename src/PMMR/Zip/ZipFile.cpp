@@ -46,19 +46,35 @@ void ZipFile::ExtractFile(const std::string& path, const fs::path& destination) 
 	if (!destinationFile.is_open())
 	{
 		LOG_WARNING_F("Failed to write to destination ({}).", destination);
+		unzCloseCurrentFile(m_unzFile);
 		throw FILE_EXCEPTION("Failed to write to destination");
 	}
 
-	unsigned char buffer[256];
-	int readSize;
-	while ((readSize = unzReadCurrentFile(m_unzFile, &buffer, 256)) > 0)
-	{
-		destinationFile.write((const char*)&buffer[0], readSize);
+	// Check every layer: read/decompression errors, short writes and the CRC
+	// reported on close. A partial archive must never become a serving state.
+	try {
+		unsigned char buffer[64 * 1024];
+		int readSize = 0;
+		while ((readSize = unzReadCurrentFile(m_unzFile, buffer, sizeof(buffer))) > 0) {
+			destinationFile.write((const char*)buffer, readSize);
+			if (!destinationFile) {
+				throw FILE_EXCEPTION("Failed to write extracted file");
+			}
+		}
+		if (readSize < 0) {
+			throw FILE_EXCEPTION("Failed to decompress zip entry");
+		}
+		destinationFile.close();
+		if (!destinationFile) {
+			throw FILE_EXCEPTION("Failed to close extracted file");
+		}
+	} catch (...) {
+		unzCloseCurrentFile(m_unzFile);
+		throw;
 	}
-
-	destinationFile.close();
-
-	unzCloseCurrentFile(m_unzFile);
+	if (unzCloseCurrentFile(m_unzFile) != UNZ_OK) {
+		throw FILE_EXCEPTION("Zip entry failed CRC or close validation");
+	}
 }
 
 std::vector<std::string> ZipFile::ListFiles() const

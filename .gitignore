@@ -336,3 +336,7 @@ output/
 # Project build helpers (the generic 'build/' rule above would hide them)
 !tools/build/
 
+
+# Gplus local evidence binaries (manifests/logs are kept in git)
+/evidence/**/*.exe
+/tools/audit/nrd/evidence/**/*.exe

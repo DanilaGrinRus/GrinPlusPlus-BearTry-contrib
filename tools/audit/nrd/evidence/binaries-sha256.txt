@@ -1,0 +1,266 @@
+# Line 2 NRD oracle — binaries actually executed (SHA-256)
+
+Collected 2026-11-03T02:33+07:00 (Asia/Bangkok).
+
+## Rust grin 5.5.2 oracle (release profile)
+
+Source tree:      C:\Users\nurli\AppData\Local\Temp\grin55-minpeers
+Canonical tree:   C:\DHW\Gplus\reference\grin-5.5.2 (no .git)
+CARGO_TARGET_DIR: C:\Users\nurli\AppData\Local\Temp\grin55-target
+toolchain:        rustc 1.99.1 (58cf8f9c3 2026-10-13), cargo 1.99.1 (5f94df478 2026-08-27)
+package version:  grin 5.5.2 (Cargo.toml); claimed commit dbaff34 = NOT VERIFIED
+
+| SHA-256 | artifact | bytes | built (local) |
+| --- | --- | --- | --- |
+| 2023847F50F7409B41D0BFA0F90EE8A559F2918CB1023D4E9A40B04A508A34CB | grin.exe (line1's live node, not rebuilt by me) | 10971136 | 2026-11-02T10:28:21+07:00 |
+| 6B15F1811CED1FB606EA3B1A1C353E287C5701A4FD42E20464DA4BFED17DB9C4 | nrd_validation_rules-6668b749d3224a10.exe | 2630144 | 2026-11-03T02:28:13+07:00 |
+| D3B21BBCE207C74168772182B25595367AE313CDE62883B2107DF575A67F8C8A | block-3566e8d21b489604.exe (grin_core --test block) | 1872384 | 2026-11-03T02:28:34+07:00 |
+| 13F28086D528BB605E44AF1526050484187627CB2FEBF373CD8C0B02EA0524F1 | store_kernel_pos_index-298e479f77a9066a.exe | 1624576 | 2026-11-03T02:28:36+07:00 |
+| 779F85AC9659CD2808D4B3BD319ED0FD319BEF52B48E1AA80845EF6B3562043D | nrd_kernel_relative_height-c27f84c638e6d813.exe | 2779648 | 2026-11-03T02:28:45+07:00 |
+| 618E041E5F14E49EED4A9D6AF9586548D614DF2D4C5FBBB3418BC142A4AF511A | nrd_kernels_disabled-2907583d4b1fbb30.exe | 2748416 | 2026-11-03T02:28:48+07:00 |
+| A2C0CC22235E8933E6AE97ED5E3BF1E8D3E9794B63F3D83D4109634C155C8181 | nrd_kernels_enabled-392c6e7231739f29.exe | 2749952 | 2026-11-03T02:28:50+07:00 |
+| D496E3977944B243AA3AD5A6FC1B6B9A764479BB62D07BFEF778914264B6B4A9 | grin_core-54f7e60ef68d91c5.exe (--lib nrd filter) | 1822208 | 2026-11-03T02:28:53+07:00 |
+
+Results (see evidence/rust55-*.log):
+- nrd_validation_rules: 3 passed; 0 failed
+- block: 27 passed; 0 failed
+- store_kernel_pos_index: 5 passed; 0 failed
+- nrd_kernel_relative_height: 1 passed
+- nrd_kernels_disabled: 1 passed
+- nrd_kernels_enabled: 1 passed
+- grin_core --lib nrd: 3 passed (36 filtered out)
+
+## C++ baseline (before this line's changes; non-instrumented existing build)
+
+| SHA-256 | artifact | bytes | built (local) |
+| --- | --- | --- | --- |
+| 4F75DCD431DF4A26BB34B4548F078338D9E3FB48F1043E531B3A498CCA636C7B | bin\Release\Release\Tests.exe | 8876032 | 2026-11-03T02:10:39+07:00 |
+
+Command: Tests.exe "NrdRules*" with isolated HOME/TMP.
+Result: 3 test cases / 13 assertions PASS (log:
+C:\DHW\.tmp\line2-nrd\cpp-nrd-baseline-20261103-022651\nrd-rules.log).
+
+## C++ evidence binary (final, preserved for immutable SHA <-> log binding)
+
+Built 2026-11-03T02:56:09+07:00 with `pwsh tools/build/build.ps1 -Target Tests`
+(build log evidence/cpp-build-20261103-024953.log).
+
+| SHA-256 | artifact | bytes | PE timestamp |
+| --- | --- | --- | --- |
+| 0EDC0F810E7D9BB864F27266EEB0872DC12288B6F08A9E79293B44D912235FC7 | evidence/bin/Tests-0EDC0F810E7D.exe (copy of bin\Release\Release\Tests.exe) | 9012736 | 0x6AE8EAD8 (2026-11-02T19:56:08Z) |
+
+Used by (all exit 0, isolated HOME/TMP, user profile unchanged):
+- run nrd-20261103-025613, filter Nrd*: 17 test cases / 350 assertions PASS,
+  14 differential cases, evidence/isolated/nrd-20261103-025613/
+- run kernidx-20261103-025622, filter KernelIndex*: 3 test cases / 48 assertions
+  PASS, evidence/isolated/kernidx-20261103-025622/
+- line3-fuzz independent reruns with -KeepBinary on the same SHA:
+  evidence/line3/nrd-audit-20261103-01 (KernelIndex*) and
+  ...-02 (Nrd*), plus its audit memo evidence/line3/nrd-handoff-audit-20261103.md
+
+Per-case differential report: evidence/cpp-nrd-differential-report.json (14/14
+actual == expected). See docs/modernization/NRD_DIFFERENTIAL.md for full status.
+
+## C++ evidence binary, task-5 follow-up (NRD pre-commit gate + D2 policy helper)
+
+Built 2026-11-03T03:33:55+07:00 with `pwsh tools/build/build.ps1 -Target Tests`
+(build log evidence/cpp-build-20261103-032722.log).
+
+| SHA-256 | artifact | bytes | PE timestamp |
+| --- | --- | --- | --- |
+| 2032536D810F9DD78E57658FDEC39DCA06B71368551B2B1C6CAB08B79592140F | evidence/bin/Tests-2032536D810F.exe | 9141248 | 0x6AE8F3B3 (2026-11-02T20:33:55Z) |
+
+Used by (isolated HOME/TMP, user profile unchanged, 0 crash events):
+- run nrd-precommit-20261103-033401, filter Nrd*: 20 test cases / 375
+  assertions PASS (includes Test_NrdPreCommit and Test_NrdPolicy; differential
+  14/14), evidence/isolated/nrd-precommit-20261103-033401/
+- run kernidx-20261103-033401, filter KernelIndex*: 3 / 48 PASS,
+  evidence/isolated/kernidx-20261103-033401/
+- run full-20261103-033401, -KeepBinary: 231 cases / 3917 assertions, 230 pass,
+  1 fail in line1's PibdServing.cpp:611
+  (PibdArchiveServer::LeaseOutlivesHorizonSwitch, `destroyed == 1` -> `0 == 1`;
+  deterministic on single-test rerun lease-recheck-20261103-033526),
+  evidence/isolated/full-20261103-033401/ (binary kept there too)
+- FINAL per-run binary binding (line3-fuzz recommendation): the preserved binary
+  was re-run with -KeepBinary, so each evidence dir now contains its own
+  Tests.exe copy with the same SHA-256:
+  * nrd-final-keepbin-20261103-033742 (Nrd*, 20 cases / 375 assertions PASS)
+  * kernidx-final-keepbin-20261103-033742 (KernelIndex*, 3 / 48 PASS)
+  evidence/isolated/<run-id>/Tests.exe hash = 2032536D…2140F in both.
+
+The pre-task-5 binary 06309AF0D81C9111FA3853777C09ECD0596DAAC2AB5433DF07D9931999C65B03
+is preserved as evidence/bin/Tests-06309AF0D81C.exe for comparison.
+
+## Task-5 evidence bound to line1's final integrated Tests build (Lead-verified green)
+
+Lead reported line1's final normal build green: full suite 232 cases / 3926
+assertions PASS, PibdArchiveServer::* 7 / 168 PASS, lease test 1 / 16 PASS.
+The same binary was used read-only for isolated NRD evidence binding; NO rebuild
+was performed by line2-nrd.
+
+| SHA-256 | artifact | bytes | PE timestamp |
+| --- | --- | --- | --- |
+| FD7C04922A2E016723531EC389E21D3AC1E8C0F99134F003595DB18149AB16E5 | bin\Release\Release\Tests.exe (mtime 2026-11-03T03:44:47+07:00) | 9154048 | 0x6AE8F63F (2026-11-02T20:44:47Z) |
+
+Isolated reruns against this exact binary with -KeepBinary (each evidence dir
+holds its own Tests.exe copy; verified SHA-256 = FD7C0492…B16E5):
+- nrd-bind-FD7C0492-20261103-034652, filter Nrd*: 20 cases / 375 assertions
+  PASS, 14/14 differential cases; evidence/isolated/nrd-bind-FD7C0492-20261103-034652/
+- kernidx-bind-FD7C0492-20261103-034652, filter KernelIndex*: 3 / 48 PASS;
+  evidence/isolated/kernidx-bind-FD7C0492-20261103-034652/
+- differential report: evidence/cpp-nrd-differential-report-FD7C0492.json,
+  14/14 cases, SHA-256 EA44A390A37AAB5F53D045F3F63BB6E1CF2DE39BE37710F8CFCD67AE502B5FCB
+
+Both runs: isolated HOME/TMP, real user profile unchanged, 0 crash events,
+exit 0. Earlier task-5 evidence remains bound to binary 2032536D…2140F.
+
+## D2 mainnet NRD gate wiring — final binary (block consensus path)
+
+Built 2026-11-03T03:59:57+07:00 with `pwsh tools/build/build.ps1 -Target Tests`
+(build log evidence/cpp-build-20261103-035328.log); Lead-approved D2 block path
+wiring (BlockValidator::VerifyNrdNetworkGate -> Config::IsNrdKernelEnabled).
+
+| SHA-256 | artifact | bytes | PE timestamp |
+| --- | --- | --- | --- |
+| DDC21F45EBFE6FA4846FFFB0FA5E376297EED5BFFEFAA5583E3A6B04B0BCF714 | evidence/bin/Tests-DDC21F45EBFE.exe | 9172480 | 0x6AE8F9CD (2026-11-02T20:59:57Z) |
+
+Isolated runs against this exact binary with -KeepBinary (each evidence dir
+holds its own Tests.exe copy; verified SHA-256 = DDC21F45…F714; isolated
+HOME/TMP, real user profile unchanged, 0 crash events, exit 0):
+- nrd-d2-DDC21F45-20261103-040003, filter Nrd*: 23 cases / 382 assertions PASS,
+  14/14 differential cases; evidence/isolated/nrd-d2-DDC21F45-20261103-040003/
+- kernidx-d2-DDC21F45-20261103-040003, filter KernelIndex*: 3 / 48 PASS;
+  evidence/isolated/kernidx-d2-DDC21F45-20261103-040003/
+- full-d2-DDC21F45-20261103-040003, full suite: 236 cases / 3952 assertions
+  ALL PASS, -KeepBinary; evidence/isolated/full-d2-DDC21F45-20261103-040003/
+- differential report: evidence/cpp-nrd-differential-report-D2-DDC21F45.json,
+  14/14 cases, SHA-256 EA44A390A37AAB5F53D045F3F63BB6E1CF2DE39BE37710F8CFCD67AE502B5FCB
+
+Earlier binaries FD7C0492…, 2032536D…, 0EDC0F81…, 06309AF0… remain preserved.
+
+### DDC21F45 build provenance nuance (recorded after line3-fuzz audit)
+
+The DDC21F45 source tree is not only line2's D2 diff: `tests/src/PMMR/Test_PibdServing.cpp`
+was modified by line1 at 2026-11-03T03:54:55+07:00 (uncommitted;
+SHA-256 EDB1BA612B18B5DA167F00EC6A7A7F6EDBCCC2DAE024C055E28FA1572FD799A3)
+BEFORE this build. line2 did not edit that file. Count deltas therefore attribute as:
+
+- `Nrd*` 20/375 -> 23/382 (+3 cases / +7 assertions) = line2 D2 tests
+  (Test_NrdPolicy 1 -> 4 cases).
+- full suite 232/3926 -> 236/3952 (+4 cases / +26 assertions) = +3 line2
+  Test_NrdPolicy cases / +7 assertions AND +1 line1 Test_PibdServing case /
+  +19 assertions.
+- line3's independent archive subset 7/168 -> 8/187 (+1 case / +19 assertions)
+  is entirely line1's Test_PibdServing update; the D2 tests are not part of that
+  archive subset.
+
+### Evidence-integrity note: repo binary advanced after the audited DDC21F45 build
+
+The shared repo binary `bin\Release\Release\Tests.exe` was replaced by line1 at
+2026-11-03T04:09:31+07:00: current SHA-256
+`8F10BFD67047DD25FAB3C201C29FA125096EF4DD7E8EFFFE33B61627CF1D73D6`
+(9,172,480 B, PE ts `0x6AE8FC0B`; line1's own copy at
+`C:\DHW\.tmp\line1-build-05\Tests-8F10BFD67047.exe`).
+
+History: before the run-only binding below, line2 had no evidence on 8F10BFD6
+and the last audited authoritative normal-binary evidence was DDC21F45…F714
+(preserved copy `evidence/bin/Tests-DDC21F45EBFE.exe`). Lead then approved a
+**run-only** instruction; see the next section. No rebuild was performed by
+line2 for 8F10BFD6.
+
+## Run-only evidence binding to integrated SHA 8F10BFD6 (Lead-approved, no rebuild)
+
+Target binary verified before and after the runs:
+`bin\Release\Release\Tests.exe` SHA-256
+`8F10BFD67047DD25FAB3C201C29FA125096EF4DD7E8EFFFE33B61627CF1D73D6`
+(9,172,480 B, PE ts `0x6AE8FC0B`, mtime 2026-11-03T04:09:31+07:00; SHA stable
+before/after). Preserved as `evidence/bin/Tests-8F10BFD67047.exe` +
+`Tests-8F10BFD6.sha256.txt`. Full suite 236 / 3952 on this SHA was reported by
+Lead/line1; line2 did not re-run it.
+
+Isolated runs against that exact binary with -KeepBinary (each evidence dir keeps
+its own Tests.exe copy; kept SHA verified = 8F10BFD6…D73D6; isolated HOME/TMP,
+real user profile unchanged, 0 crash events, exit 0):
+- nrd-bind-8F10BFD6-20261103-041147, filter Nrd*: 23 cases / 382 assertions
+  PASS, 14/14 differential cases; evidence/isolated/nrd-bind-8F10BFD6-20261103-041147/
+- kernidx-bind-8F10BFD6-20261103-041147, filter KernelIndex*: 3 / 48 PASS;
+  evidence/isolated/kernidx-bind-8F10BFD6-20261103-041147/
+- differential report: evidence/cpp-nrd-differential-report-8F10BFD6.json,
+  14/14 cases, SHA-256 EA44A390A37AAB5F53D045F3F63BB6E1CF2DE39BE37710F8CFCD67AE502B5FCB
+
+DDC21F45…F714 remains the historical audited normal SHA; after line3-fuzz's
+independent audit of this binding (PASS; Nrd* 23/382, KernelIndex* 3/48, archive
+8/187, full 236/3952), **8F10BFD6…D73D6 is the current authoritative normal SHA
+for NRD/archive evidence**.
+
+Provenance finding (line3-fuzz audit): a scan of all compiled roots
+(CMakeLists/cmake/include/src/tests/deps) found ZERO compiled-source changes
+between the DDC21F45 build (03:59:57) and the 8F10BFD6 build (04:09:31) — 8F10
+is a source-identical rebuild (only docs and line3 tooling changed), which
+explains identical counts and the same 9,172,480 B size. DDC21F45 remains
+preserved as historical evidence; its runs are still bound to its own copy.
+All earlier evidence stays bound to its own preserved copies.
+
+## Line1 build-06 — task-6 paired differential + false-ban runtime evidence
+
+Lead-directed line1 shared build (line2 did NOT rebuild); line2 code included.
+
+| SHA-256 | artifact | bytes | PE timestamp |
+| --- | --- | --- | --- |
+| 930148B6146A5E89B0B7FAC4A32B57212434B511E14F778A00AD6D6D24C1BB6E | evidence/bin/Tests-930148B6146A.exe (copy of line1-build-06; repo binary identical at run time) | 9214976 | 0x6AE90AE3 (2026-11-02T22:12:51Z) |
+
+Isolated runs with -KeepBinary on this exact SHA (each dir keeps its Tests.exe;
+isolated HOME/TMP, profile unchanged, 0 crash events):
+- nrd-paired-930148B6-20261103-051449 — paired differential: **11 computed,
+  3 not_computed, 11 paired, 0 paired mismatches**; report
+  evidence/paired-differential-report-nrd-paired-930148B6-20261103-051449.json
+- nrd-930148B6-20261103-051449 — Nrd*: **28 cases / 402 assertions PASS**
+- kernidx-930148B6-20261103-051449 — KernelIndex*: **3 / 48 PASS**
+- falseban-930148B6-20261103-051527 — NrdFalseBan*: **5 cases / 17 assertions PASS**
+- full-930148B6-20261103-051449 — full suite in THIS harness: 242 cases /
+  3944 assertions, 228 pass / **14 fail, all wallet-API/Tor environment tests**
+  (`Create - mg_start failed 127.0.0.1:3421`, Tor/Unknown exception); no NRD
+  test failed. Line1 reported 242/3980 PASS on the same SHA in their
+  environment; the delta is wallet-manager/Tor availability, not NRD code.
+
+Not_computed (explicitly not paired): missing-local-history,
+rebuild-rejects-historical-violation, rebuild-rejects-duplicate-history-block.
+Paired claim is limited to the 11 computed cases.
+
+## Build-07 final candidate — round-2 fixes + real-rebuild differential
+
+| SHA-256 | artifact | bytes | PE timestamp |
+| --- | --- | --- | --- |
+| C8C386BE576A62604404E0FA02E56EE9E8F06B50EA0B15AD109F36F5AFF5B7FE | evidence/bin/Tests-C8C386BE576A.exe (repo binary identical at run time) | 9241600 | 0x6AE90EE9 (2026-11-02T22:30:01Z) |
+
+Isolated runs with -KeepBinary on this exact SHA (each evidence dir keeps its own
+Tests.exe; isolated HOME/TMP, profile unchanged, 0 crash events):
+- nrd-paired-c8c386-20261103-053139 — paired oracle v3 (real Rust
+  verify_kernel_pos_index for 8 rebuild cases): **11 computed / 3 not_computed /
+  11 paired / 0 mismatches**; report
+  evidence/paired-differential-report-nrd-paired-c8c386-20261103-053139.json
+  (sha 57978B2EC9C1DEF368EF15ADB40506A42A23815EDBC6C83DAD971CF1239C5AF6).
+- nrd-c8c386-20261103-053139 — Nrd*: **30 cases / 428 assertions PASS**
+  (includes the 2 new Test_NrdBatchSafety cases: reorg-backup and
+  rebuild-exception classification).
+- falseban-c8c386-20261103-053139 — NrdFalseBan*: 5 cases / 17 assertions PASS.
+- kernidx-c8c386-20261103-053139 — KernelIndex*: 3 cases / 48 assertions PASS.
+- Fixture checks (direct isolated invocation on this SHA):
+  missing GRINPP_NRD_CASES ⇒ **expected FAIL** `REQUIRE(fs::exists(casesPath))`
+  (Test_NrdDifferential.cpp:201), exit 1, no report;
+  positive with file+report ⇒ **PASS**, report written;
+  report into nonexistent dir ⇒ **expected FAIL** `REQUIRE(out.good())`
+  (line 318), exit 1, no report. No false PASS.
+- Full suite on this SHA (independent line2 rerun after line3-fuzz completed its
+  serialized full x3): run `full-c8c386-20261103-053707`,
+  **245 cases / 4013 assertions PASS**, exit 0, `-KeepBinary`, isolated HOME/TMP,
+  profile unchanged, 0 crash events; kept copy SHA verified C8C386BE…B7FE.
+  This reproduces line1/line3's 245/4013 PASS. (line2's earlier full run on
+  930148B6 was wallet/Tor environment-limited and is not restated.)
+
+Round-2 source fixes verified by the Nrd* run above: rebuild no longer publishes
+the rollback baseline inside an uncommitted reorg batch
+(RebuildRecentKernelIndexPreservingBaseline), and rebuild read exceptions are
+contained as LocalNrdHistoryUnavailable/local-unverifiable (no BlockPipe ban).
+Paired claim limited to the 11 computed cases; not_computed cases are listed and
+are not parity evidence.

@@ -4,8 +4,10 @@
 #include "PeerManager.h"
 #include "../ConnectionManager.h"
 #include "../Messages/GetPeerAddressesMessage.h"
+#include "../PIBD/PibdArchiveServer.h"
 
 #include <Core/Context.h>
+#include <Core/Global.h>
 #include <P2P/Capabilities.h>
 #include <Net/SocketAddress.h>
 #include <Net/Socket.h>
@@ -18,6 +20,11 @@
 Seeder::~Seeder()
 {
     LOG_INFO("Shutting down seeder");
+
+    // The archive worker only reads the chain; stop it before the connections
+    // and the chain teardown. Shutdown is idempotent and safe when disabled.
+    PibdArchiveServer::Shutdown();
+
     m_terminate = true;
 
     m_pAsioContext->stop();
@@ -36,6 +43,22 @@ std::unique_ptr<Seeder> Seeder::Create(
     std::shared_ptr<PibdSync> pPibdSync,
     std::shared_ptr<PihdClient> pPihdClient)
 {
+    // Own the archive serving/capability state for the lifetime of the P2P
+    // server. Disabled by default; an isolated test may opt in for this process
+    // only via GRINPP_PIBD_ARCHIVE_SERVING=1 (see
+    // docs/modernization/G09_ARCHIVE_SERVING.md). Never opt in on mainnet.
+    bool pibdArchiveServing = PibdArchiveServer::ResolveServingOptIn(
+        PibdArchiveServer::ENABLED_BY_DEFAULT);
+    if (pibdArchiveServing && Global::IsMainnet()) {
+        LOG_ERROR("PIBD archive serving refused on MAINNET; staying disabled.");
+        pibdArchiveServing = false;
+    }
+    LOG_INFO_F(
+        "PIBD archive serving: {} ({})",
+        pibdArchiveServing ? "ENABLED" : "DISABLED",
+        pibdArchiveServing ? "opt-in GRINPP_PIBD_ARCHIVE_SERVING" : "default");
+    PibdArchiveServer::Initialize(pBlockChain, pibdArchiveServing);
+
     auto pMessageProcessor = std::make_shared<MessageProcessor>(
         connectionManager,
         peerManager,

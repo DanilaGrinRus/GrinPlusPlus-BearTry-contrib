@@ -1,0 +1,135 @@
+{
+  "schema": "gpp-line3-linked-asan-v1",
+  "created_utc": "2026-11-02T21:08:27.2270007Z",
+  "repo": "C:\\DHW\\Gplus\\src\\grinplusplus",
+  "git_head": "e0a5d2d68b990234e7bf1fb1b651f868dc30e9b6",
+  "git_status": [
+    " M include/Core/Config.h",
+    " M include/P2P/Capabilities.h",
+    " M src/BlockChain/BlockChainImpl.cpp",
+    " M src/BlockChain/Processors/TxHashSetProcessor.cpp",
+    " M src/BlockChain/Processors/TxHashSetProcessor.h",
+    " M src/BlockChain/Validators/BlockValidator.cpp",
+    " M src/BlockChain/Validators/BlockValidator.h",
+    " M src/Core/Config.cpp",
+    " M src/P2P/MessageProcessor.cpp",
+    " M src/P2P/PIBD/PibdParams.h",
+    " M src/P2P/Seed/HandShake.cpp",
+    " M src/P2P/Seed/Seeder.cpp",
+    " M src/PMMR/TxHashSetImpl.cpp",
+    " M src/PMMR/TxHashSetImpl.h",
+    " M src/PMMR/Zip/ZipFile.cpp",
+    " M tests/src/Net/Test_P2PCompat.cpp",
+    " M tests/src/PMMR/CMakeLists.txt",
+    " M tests/src/PMMR/Test_NrdRules.cpp",
+    " M tests/src/PMMR/Test_PibdServing.cpp",
+    " M tests/src/TestMain.cpp",
+    "?? docs/modernization/CI_REPRO.md",
+    "?? docs/modernization/G09_ARCHIVE_SERVING.md",
+    "?? docs/modernization/NRD_DIFFERENTIAL.md",
+    "?? docs/modernization/SANITIZERS.md",
+    "?? docs/modernization/THREE_LINE_STATUS.md",
+    "?? evidence/",
+    "?? src/P2P/PIBD/PibdArchiveServer.h",
+    "?? tests/fuzz/",
+    "?? tests/src/PMMR/Test_NrdDifferential.cpp",
+    "?? tests/src/PMMR/Test_NrdIndexRebuild.cpp",
+    "?? tests/src/PMMR/Test_NrdPolicy.cpp",
+    "?? tests/src/PMMR/Test_NrdPreCommit.cpp",
+    "?? tests/src/PMMR/Test_NrdSupport.h",
+    "?? tests/src/PMMR/Test_ZipFile.cpp",
+    "?? tools/audit/nrd/",
+    "?? tools/build/run-tests-isolated.ps1",
+    "?? tools/fuzz/"
+  ],
+  "copied_tree": "C:\\DHW\\.tmp\\asan-line3\\gpp-tree",
+  "lib_dir": "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\bin\\Release\\Release",
+  "profile": "/W4 /WX /O1 /Zi /MT /EHsc /std:c++17 /fsanitize=address, linked against full-project ASan libs",
+  "asan_runtime": {
+    "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\clang_rt.asan_dynamic-x86_64.dll",
+    "sha256": "3AA742521E8CBD23252F0545AA51D5A15624A3E4430FBE2F81567AFAEB3FC59B"
+  },
+  "libraries": [
+    {
+      "name": "bitcoin.lib",
+      "sha256": "D345A61743D4362960495D01EE70CD921339D05723BDAD9E8F44C8E3630AED44",
+      "bytes": 738220
+    },
+    {
+      "name": "chachapoly.lib",
+      "sha256": "7F7DBE836283D661447A8BB88640A9D45419B98D97F23F41B518782D4017D6CE",
+      "bytes": 159688
+    },
+    {
+      "name": "Common.lib",
+      "sha256": "D33BF40AA4B273FD7DD1C4751C787B2D79182F79E0540603289B0ED6453345B3",
+      "bytes": 12156750
+    },
+    {
+      "name": "Core.lib",
+      "sha256": "ECFBD08C0126A0620A51F6B23BF417D84EFE06FAEA86E4C04A2ABB6598C967F0",
+      "bytes": 40492250
+    },
+    {
+      "name": "Crypto.lib",
+      "sha256": "66CA9C2030C7DB6C6EFB60CAA15D73C9F5694D3D4E1245494D2429A1A5A659A2",
+      "bytes": 23862200
+    },
+    {
+      "name": "jsoncpp.lib",
+      "sha256": "21DA0F23B898AA97D768A7CA6495AEA46070A07D37E2B8A8D06DB0FA1CDA34F3",
+      "bytes": 2915210
+    },
+    {
+      "name": "Net.lib",
+      "sha256": "1A9CCD3FEB41EBB946A0BC37C0A08A306B2DD02D0CE7777E19C1EAF5776A3C73",
+      "bytes": 11428590
+    },
+    {
+      "name": "PMMR.lib",
+      "sha256": "04B000DBD490023543B3D5723E6654E1B1F08B749B1CAC11CF0BBB33F6D76728",
+      "bytes": 34197334
+    },
+    {
+      "name": "rfc6234.lib",
+      "sha256": "DF642D0C330DA4506A2F4109CDD7806D5198416CDE18AA36825DD16778E136D6",
+      "bytes": 165252
+    },
+    {
+      "name": "scrypt.lib",
+      "sha256": "189F712642BCAA23FDBAA5A45D43D95E469D323C3325EE60A6056E5F1D5A864E",
+      "bytes": 77216
+    },
+    {
+      "name": "sha3.lib",
+      "sha256": "41489CAC23D450AD93589E2CB556092049FD4670F5C6B348BC2DF130540CAA18",
+      "bytes": 132546
+    },
+    {
+      "name": "Tor.lib",
+      "sha256": "757245DE4F3DB56FAFB56827E26F34A7111E08D6F49F866A938913CC5B4B3214",
+      "bytes": 20117344
+    }
+  ],
+  "targets": {
+    "tests_mini": {
+      "exe": "C:\\DHW\\.tmp\\asan-line3\\fuzz-linked\\TestsMini.exe",
+      "log": "C:\\DHW\\.tmp\\asan-line3\\fuzz-linked\\logs\\build_tests_mini.log",
+      "exit_code": 0,
+      "sources": [
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\TestMain.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_NrdDifferential.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_NrdIndexRebuild.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_NrdRules.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_NrdPolicy.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_Segment.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_PibdServing.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\Net\\Test_P2PCompat.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\src\\BlockChain\\Validators\\BlockValidator.cpp",
+        "C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\stub_chain_getbyheight.cpp"
+      ],
+      "binary_sha256": "4AB0CDDDCC849FDF85BD9DEF8DC8EE6B44B2CAFBD075286A8639AA2FE382FDA9",
+      "bytes": 8238592
+    }
+  }
+}

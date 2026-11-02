@@ -54,6 +54,21 @@ public:
 		ADVERTISED = (HEADER_HIST | FAST_SYNC_NODE),
 	};
 
+	// Runtime handshake value. The compile-time ADVERTISED mask stays
+	// PIBD-free; the PIBD bits are added only when the caller has a validated,
+	// ready archive that matches the current deterministic horizon
+	// (PibdArchiveServer::ShouldAdvertise). Never derive this from the presence
+	// of a zip file, a preparing state or an unvalidated load.
+	static Capabilities Advertised(const bool pibdServingReady)
+	{
+		uint32_t value = (uint32_t)ADVERTISED;
+		if (pibdServingReady) {
+			value |= (uint32_t)(PIBD_HIST | PIBD_HIST_1);
+		}
+
+		return Capabilities(value);
+	}
+
 	Capabilities(const uint32_t value)
 		: m_value(value)
 	{

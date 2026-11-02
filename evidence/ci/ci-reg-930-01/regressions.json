@@ -1,0 +1,96 @@
+{
+  "schema": "gpp-line3-ci-regressions/v1",
+  "run_id": "ci-reg-930-01",
+  "created_utc": "2026-11-02T22:22:08.9234575Z",
+  "repo": "C:\\DHW\\Gplus\\src\\grinplusplus",
+  "git_head": "e0a5d2d68b990234e7bf1fb1b651f868dc30e9b6",
+  "tests_exe": "C:\\DHW\\.tmp\\line1-build-06\\Tests-930148B6146A.exe",
+  "tests_sha256": "930148B6146A5E89B0B7FAC4A32B57212434B511E14F778A00AD6D6D24C1BB6E",
+  "expected_sha": "930148B6146A5E89B0B7FAC4A32B57212434B511E14F778A00AD6D6D24C1BB6E",
+  "parallel": true,
+  "result": "PASS",
+  "failed_groups": [],
+  "groups": [
+    {
+      "group": "advertised-tip",
+      "filter": "P2P::AdvertisedTipUsesHeaderHead,P2P::AdvertisedTipReadsOneSnapshot",
+      "run_id": "ci-reg-930-01-advertised-tip",
+      "exit_code": 0,
+      "status": "PASS",
+      "tests_sha256": "930148B6146A5E89B0B7FAC4A32B57212434B511E14F778A00AD6D6D24C1BB6E",
+      "sha_match": true,
+      "summary": [
+        "Test Runtime Initialized.",
+        "Running Tests...",
+        "All tests passed (8 assertions in 1 test case)"
+      ],
+      "manifest": "C:\\DHW\\.tmp\\ci-iso\\ci-reg-930-01-advertised-tip\\manifest.json",
+      "manifest_sha256": "D549249DAEBB75695D85F0C14EA4B5826C5EDCC568BB7C1D34FE029D986C563C",
+      "stderr": "C:\\DHW\\.tmp\\ci-iso\\ci-reg-930-01-advertised-tip\\out\\instance-1.stderr.log",
+      "PSComputerName": "localhost",
+      "RunspaceId": "7d01cc04-6ccf-40b7-a119-a756ff498817",
+      "PSShowComputerName": false
+    },
+    {
+      "group": "false-ban",
+      "filter": "NrdFalseBan*",
+      "run_id": "ci-reg-930-01-false-ban",
+      "exit_code": 0,
+      "status": "PASS",
+      "tests_sha256": "930148B6146A5E89B0B7FAC4A32B57212434B511E14F778A00AD6D6D24C1BB6E",
+      "sha_match": true,
+      "summary": [
+        "Test Runtime Initialized.",
+        "Running Tests...",
+        "All tests passed (17 assertions in 5 test cases)"
+      ],
+      "manifest": "C:\\DHW\\.tmp\\ci-iso\\ci-reg-930-01-false-ban\\manifest.json",
+      "manifest_sha256": "8C9A6FE1755E24D35D366FE0CE52CD83F19E2D8200750893F288A319EDAE748B",
+      "stderr": "C:\\DHW\\.tmp\\ci-iso\\ci-reg-930-01-false-ban\\out\\instance-1.stderr.log",
+      "PSComputerName": "localhost",
+      "RunspaceId": "857efec8-7fa7-4020-a318-45fa28a8c8ab",
+      "PSShowComputerName": false
+    },
+    {
+      "group": "nrd-rollback-reorg",
+      "filter": "NrdRollback*,NrdReorgBackup*",
+      "run_id": "ci-reg-930-01-nrd-rollback-reorg",
+      "exit_code": 0,
+      "status": "PASS",
+      "tests_sha256": "930148B6146A5E89B0B7FAC4A32B57212434B511E14F778A00AD6D6D24C1BB6E",
+      "sha_match": true,
+      "summary": [
+        "Test Runtime Initialized.",
+        "Running Tests...",
+        "All tests passed (7 assertions in 1 test case)"
+      ],
+      "manifest": "C:\\DHW\\.tmp\\ci-iso\\ci-reg-930-01-nrd-rollback-reorg\\manifest.json",
+      "manifest_sha256": "5F4C53751DADB248F7D5FE5ADDDCC68FBBC577C201B62948640D5FB375909639",
+      "stderr": "C:\\DHW\\.tmp\\ci-iso\\ci-reg-930-01-nrd-rollback-reorg\\out\\instance-1.stderr.log",
+      "PSComputerName": "localhost",
+      "RunspaceId": "63761fa2-0bf9-45d5-8adc-836f218b383d",
+      "PSShowComputerName": false
+    },
+    {
+      "group": "rebuild-interruption",
+      "filter": "KernelIndex*,NrdRebuild*",
+      "run_id": "ci-reg-930-01-rebuild-interruption",
+      "exit_code": 0,
+      "status": "PASS",
+      "tests_sha256": "930148B6146A5E89B0B7FAC4A32B57212434B511E14F778A00AD6D6D24C1BB6E",
+      "sha_match": true,
+      "summary": [
+        "Test Runtime Initialized.",
+        "Running Tests...",
+        "All tests passed (101 assertions in 7 test cases)"
+      ],
+      "manifest": "C:\\DHW\\.tmp\\ci-iso\\ci-reg-930-01-rebuild-interruption\\manifest.json",
+      "manifest_sha256": "558970BA52AA0C87D02A76CD196F36AB244CD8807EAB3045FB9D397F519DD071",
+      "stderr": "C:\\DHW\\.tmp\\ci-iso\\ci-reg-930-01-rebuild-interruption\\out\\instance-1.stderr.log",
+      "PSComputerName": "localhost",
+      "RunspaceId": "1a87346a-f7ab-4840-b9c6-deb49207913a",
+      "PSShowComputerName": false
+    }
+  ],
+  "note": "Groups are serialized by default; parallel mode is only for non-port-binding regression groups. Wallet/full suite binds fixed 127.0.0.1:3421 and must be serialized."
+}

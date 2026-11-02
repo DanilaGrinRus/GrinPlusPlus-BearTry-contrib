@@ -4,8 +4,10 @@
 #include "Seed/PeerManager.h"
 
 #include <BlockChain/BlockChain.h>
+#include <P2P/AdvertisedTip.h>
 #include <P2P/ConnectedPeer.h>
 #include <memory>
+#include <optional>
 #include <chrono>
 
 // Forward Declarations
@@ -44,10 +46,11 @@ public:
 
 	void ProcessMessage(const std::shared_ptr<Connection>& pConnection, const RawMessage& rawMessage);
 
-	// Live chain values for handshake/Ping. SyncStatus can lag at startup while
-	// the chain store is already loaded, so read the authoritative chain here.
-	uint64_t GetBlockHeight() const;
-	uint64_t GetBlockDifficulty() const;
+	// ONE coherent header-head snapshot for advertisement (height + TD from the
+	// same tip; CANDIDATE because that is the header chain this node serves).
+	// nullopt means no tip header is currently readable: callers must withhold
+	// the advertisement instead of mixing values from two tips.
+	std::optional<P2P::AdvertisedTip> GetAdvertisedTip() const;
 
 private:
 	void ProcessMessageInternal(const std::shared_ptr<Connection>& pConnection, const RawMessage& rawMessage);

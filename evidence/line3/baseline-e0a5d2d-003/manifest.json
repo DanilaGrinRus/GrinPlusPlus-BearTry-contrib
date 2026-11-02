@@ -1,0 +1,220 @@
+{
+  "schema": "gpp-line3-test-run/v1",
+  "run_id": "baseline-e0a5d2d-003",
+  "status": "PASS",
+  "created_utc": "2026-11-02T19:32:11.3555955Z",
+  "repo": "C:\\DHW\\Gplus\\src\\grinplusplus",
+  "git_head": "e0a5d2d68b990234e7bf1fb1b651f868dc30e9b6",
+  "git_status_porcelain": [
+    "M src/BlockChain/Validators/BlockValidator.cpp",
+    " M src/P2P/PIBD/PibdParams.h",
+    " M src/PMMR/TxHashSetImpl.cpp",
+    " M src/PMMR/TxHashSetImpl.h",
+    " M src/PMMR/Zip/ZipFile.cpp",
+    " M tests/src/PMMR/CMakeLists.txt",
+    "?? docs/modernization/G09_ARCHIVE_SERVING.md",
+    "?? evidence/",
+    "?? tests/src/PMMR/Test_ZipFile.cpp",
+    "?? tools/audit/nrd/",
+    "?? tools/build/run-tests-isolated.ps1"
+  ],
+  "git_diff_stat": "warning: in the working copy of 'src/BlockChain/Validators/BlockValidator.cpp', LF will be replaced by CRLF the next time Git touches it\r\nwarning: in the working copy of 'src/P2P/PIBD/PibdParams.h', LF will be replaced by CRLF the next time Git touches it\r\nwarning: in the working copy of 'src/PMMR/TxHashSetImpl.cpp', LF will be replaced by CRLF the next time Git touches it\r\nwarning: in the working copy of 'src/PMMR/TxHashSetImpl.h', LF will be replaced by CRLF the next time Git touches it\r\nwarning: in the working copy of 'tests/src/PMMR/CMakeLists.txt', LF will be replaced by CRLF the next time Git touches it\r\n src/BlockChain/Validators/BlockValidator.cpp |  8 ++-\r\n src/P2P/PIBD/PibdParams.h                    | 53 ++++++++++++++++\r\n src/PMMR/TxHashSetImpl.cpp                   | 91 +++++++++++++++++++++++++++-\r\n src/PMMR/TxHashSetImpl.h                     | 35 +++++++++--\r\n src/PMMR/Zip/ZipFile.cpp                     | 34 ++++++++---\r\n tests/src/PMMR/CMakeLists.txt                |  3 +-\r\n 6 files changed, 204 insertions(+), 20 deletions(-)",
+  "source_hashes": {
+    "tests/src/TestMain.cpp": "CC8E4BF35A8FA1A2B7A17C46B38E7B293CF79DA8A76E9153ED3A9DDB4F29B755",
+    "tests/src/PMMR/CMakeLists.txt": "F01E0DEAC9B00D00DF24F5600B8CA4E2172E2D65278F64B28408D8A684757D58",
+    "tests/src/PMMR/Test_ZipFile.cpp": "B9BE2B4AA86EDC7DEE478BC230C186066B0255F1F3E1B5728E4656E757D55B75",
+    "include/P2P/Capabilities.h": "3B466678AAE74AAF04CC6209D02A59E7EA5428F80E5790D9FCBAA24B27661227",
+    "src/PMMR/Zip/ZipFile.cpp": "0097B38DF25439C7EBA6EEA3C8260C246C79BC0F600D57A3099CCFC08A0026C3"
+  },
+  "host": {
+    "os": "Microsoft Windows NT 10.0.26300.0",
+    "pwsh": "7.6.9",
+    "architecture": "AMD64",
+    "user_profile": "C:\\Users\\nurli",
+    "utc_offset_min": 420
+  },
+  "binary": {
+    "source_path": "C:\\DHW\\Gplus\\src\\grinplusplus\\bin\\Release\\Release\\Tests.exe",
+    "source_sha256": "4F75DCD431DF4A26BB34B4548F078338D9E3FB48F1043E531B3A498CCA636C7B",
+    "copy_path": "C:\\DHW\\.tmp\\line3-iso\\baseline-e0a5d2d-003\\bin\\Tests.exe",
+    "copy_sha256": "4F75DCD431DF4A26BB34B4548F078338D9E3FB48F1043E531B3A498CCA636C7B",
+    "copy_sha256_after": "4F75DCD431DF4A26BB34B4548F078338D9E3FB48F1043E531B3A498CCA636C7B",
+    "copy_unchanged": true,
+    "bytes": 8876032,
+    "pe_timestamp": {
+      "raw_hex": "0x6AE8E02E",
+      "utc": "2026-11-02T19:10:38.0000000Z"
+    },
+    "pe_timestamp_copy": {
+      "raw_hex": "0x6AE8E02E",
+      "utc": "2026-11-02T19:10:38.0000000Z"
+    }
+  },
+  "isolation": {
+    "mode": "PerRun",
+    "run_dir": "C:\\DHW\\.tmp\\line3-iso\\baseline-e0a5d2d-003",
+    "cwd": "C:\\DHW\\.tmp\\line3-iso\\baseline-e0a5d2d-003\\cwd",
+    "home_dir": "C:\\DHW\\.tmp\\line3-iso\\baseline-e0a5d2d-003\\home",
+    "tmp_dir": "C:\\DHW\\.tmp\\line3-iso\\baseline-e0a5d2d-003\\tmp",
+    "env": {
+      "HOMEDRIVE": "C:",
+      "HOMEPATH": "C:\\DHW\\.tmp\\line3-iso\\baseline-e0a5d2d-003\\home",
+      "USERPROFILE": "C:\\DHW\\.tmp\\line3-iso\\baseline-e0a5d2d-003\\home",
+      "HOME": "C:\\DHW\\.tmp\\line3-iso\\baseline-e0a5d2d-003\\home",
+      "TMP": "C:\\DHW\\.tmp\\line3-iso\\baseline-e0a5d2d-003\\tmp",
+      "TEMP": "C:\\DHW\\.tmp\\line3-iso\\baseline-e0a5d2d-003\\tmp",
+      "TMPDIR": "C:\\DHW\\.tmp\\line3-iso\\baseline-e0a5d2d-003\\tmp"
+    },
+    "env_before": {
+      "HOMEDRIVE": "C:",
+      "HOMEPATH": "\\Users\\nurli",
+      "USERPROFILE": "C:\\Users\\nurli",
+      "HOME": null,
+      "TMP": "C:\\Users\\nurli\\AppData\\Local\\Temp",
+      "TEMP": "C:\\Users\\nurli\\AppData\\Local\\Temp",
+      "TMPDIR": null
+    },
+    "expected_test_data_dir": "C:\\DHW\\.tmp\\line3-iso\\baseline-e0a5d2d-003\\home\\.GrinPP\\AUTOMATED_TESTING",
+    "test_data_dir_created": true,
+    "test_log_dir_created": true,
+    "cwd_tree": null,
+    "home_tree_sample": [
+      {
+        "rel": ".GrinPP",
+        "dir": true,
+        "bytes": 1
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING",
+        "dir": true,
+        "bytes": 1
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\LOGS",
+        "dir": true,
+        "bytes": 1
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\LOGS\\Node.log",
+        "dir": false,
+        "bytes": 90
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\LOGS\\Wallet.log",
+        "dir": false,
+        "bytes": 0
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE",
+        "dir": true,
+        "bytes": 1
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\CHAIN",
+        "dir": true,
+        "bytes": 1
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\DB",
+        "dir": true,
+        "bytes": 1
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\TXHASHSET",
+        "dir": true,
+        "bytes": 1
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\TXHASHSET\\kernel",
+        "dir": true,
+        "bytes": 1
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\TXHASHSET\\output",
+        "dir": true,
+        "bytes": 1
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\TXHASHSET\\rangeproof",
+        "dir": true,
+        "bytes": 1
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\TOR",
+        "dir": true,
+        "bytes": 1
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\TOR\\.torrc",
+        "dir": false,
+        "bytes": 0
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\WALLET",
+        "dir": true,
+        "bytes": 1
+      }
+    ],
+    "home_tree_entries": 15,
+    "user_profile_before": {
+      "path": "C:\\Users\\nurli\\.GrinPP",
+      "exists": true,
+      "recursive_entries": 17,
+      "total_bytes": 458535,
+      "latest_write_utc": "2026-11-02T14:43:40.7615748Z",
+      "listing_sha256": "889c1f5e0241fcb61cbd6a234cb00af02b5ee017da7f69b5f65b69289cefa6b6"
+    },
+    "user_profile_after": {
+      "path": "C:\\Users\\nurli\\.GrinPP",
+      "exists": true,
+      "recursive_entries": 17,
+      "total_bytes": 458535,
+      "latest_write_utc": "2026-11-02T14:43:40.7615748Z",
+      "listing_sha256": "889c1f5e0241fcb61cbd6a234cb00af02b5ee017da7f69b5f65b69289cefa6b6"
+    },
+    "user_profile_unchanged": true,
+    "reparse_point_check": "passed",
+    "disposable_base": "C:\\DHW\\.tmp\\line3-iso"
+  },
+  "command": {
+    "exe": "C:\\DHW\\.tmp\\line3-iso\\baseline-e0a5d2d-003\\bin\\Tests.exe",
+    "args": [
+      "'-r','compact'"
+    ],
+    "working_dir": "C:\\DHW\\.tmp\\line3-iso\\baseline-e0a5d2d-003\\cwd",
+    "instances": 1,
+    "timeout_sec": 900,
+    "started_utc": "2026-11-02T19:32:11.0067021Z",
+    "finished_utc": "2026-11-02T19:32:11.1876052Z",
+    "wall_sec": 0.18
+  },
+  "instances": [
+    {
+      "index": 1,
+      "pid": 21740,
+      "started_utc": "2026-11-02T19:32:11.0871749Z",
+      "duration_sec": 0.111,
+      "exit_code": {
+        "decimal": 0,
+        "hex": "0x00000000"
+      },
+      "status": "PASS",
+      "stdout_path": "C:\\DHW\\.tmp\\line3-iso\\baseline-e0a5d2d-003\\out\\instance-1.stdout.log",
+      "stdout_sha256": "275575F27DBA1A98AFDF14D82C0CA71A2D35B6F7462679EE664D2D552560C837",
+      "stdout_bytes": 232,
+      "stderr_path": "C:\\DHW\\.tmp\\line3-iso\\baseline-e0a5d2d-003\\out\\instance-1.stderr.log",
+      "stderr_sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "stderr_bytes": 0,
+      "summary_lines": [
+        "Test Runtime Initialized.",
+        "Running Tests..."
+      ]
+    }
+  ],
+  "windows_application_events": null,
+  "notes": [
+    "Non-instrumented build: no sanitizer. Evidence covers test-run isolation and runtime behavior only.",
+    "stdout redirected to a file is block-buffered; an empty log does not prove the process died before printing.",
+    "Windows Application Error events are matched by the unique copy path inside this run directory."
+  ]
+}

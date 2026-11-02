@@ -1,0 +1,15 @@
+target=zip
+seed=20261103
+executed=200
+ok=25
+rejected_deserialization=0
+rejected_file=175
+rejected_segment=0
+oom=0
+exception=0
+unknown_exception=0
+slow_cases=0
+slowest_ms=197.763
+wall_sec=1.29627
+corpus_files=7
+corpus_fnv1a=9a18b3ef5367c27c

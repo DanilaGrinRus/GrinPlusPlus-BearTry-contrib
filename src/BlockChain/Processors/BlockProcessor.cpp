@@ -9,7 +9,30 @@
 #include <Common/Logger.h>
 #include <Common/Util/HexUtil.h>
 #include <Common/Util/StringUtil.h>
+#include "../../PMMR/TxHashSetImpl.h"
 #include <algorithm>
+#include <stdexcept>
+
+namespace
+{
+	// Internal control-flow signal for "the local NRD history is incomplete".
+	// It must never escape ProcessBlock: BlockPipe bans on exceptions and on
+	// INVALID, so this is converted to EBlockChainStatus::UNKNOWN_ERROR instead.
+	class LocalNrdHistoryUnavailableException final : public std::runtime_error
+	{
+	public:
+		explicit LocalNrdHistoryUnavailableException(const Hash& blockHash)
+			: std::runtime_error("local NRD recent-kernel history is incomplete; block cannot be validated locally"),
+			m_blockHash(blockHash)
+		{
+		}
+
+		const Hash& GetBlockHash() const noexcept { return m_blockHash; }
+
+	private:
+		Hash m_blockHash;
+	};
+}
 
 BlockProcessor::BlockProcessor(const std::shared_ptr<Locked<ChainState>>& pChainState)
 	: m_pChainState(pChainState) { }
@@ -70,17 +93,96 @@ EBlockChainStatus BlockProcessor::ProcessBlockInternal(const FullBlock& block)
 		return EBlockChainStatus::ORPHANED;
 	}
 
-	if (info.status == EBlockStatus::REORG) {
-		HandleReorg(pBatch, info.reorgBlocks);
-	} else {
-		assert(info.status == EBlockStatus::NEXT_BLOCK);
+	try
+	{
+		if (info.status == EBlockStatus::REORG) {
+			HandleReorg(pBatch, info.reorgBlocks);
+		} else {
+			assert(info.status == EBlockStatus::NEXT_BLOCK);
 
-		ValidateAndAddBlock(block, pBatch);
-		pConfirmedChain->AddBlock(block.GetHash(), block.GetHeight());
-		pBatch->Commit();
+			ValidateAndAddBlock(block, pBatch);
+			pConfirmedChain->AddBlock(block.GetHash(), block.GetHeight());
+			pBatch->Commit();
+		}
+	}
+	catch (const LocalNrdHistoryUnavailableException& e)
+	{
+		// Do NOT rethrow and do NOT return INVALID: BlockPipe::ProcessNewBlock bans
+		// the peer on both INVALID and any exception. Returning UNKNOWN_ERROR
+		// keeps the peer unbanned. The batched Writer destructor rolls back the
+		// uncommitted batch (ChainState::Rollback -> TxHashSet::Rollback restores
+		// the NRD index snapshot), so no partially applied state is published.
+		LOG_WARNING_F(
+			"Block {} is locally unverifiable because the NRD recent-kernel history is incomplete ({}); returning UNKNOWN_ERROR without a bad-block/ban classification.",
+			e.GetBlockHash(),
+			e.what());
+		return EBlockChainStatus::UNKNOWN_ERROR;
 	}
 
 	return EBlockChainStatus::SUCCESS;
+}
+
+BlockProcessor::EApplyNrdAwareResult BlockProcessor::ApplyBlockNrdAware(
+	ITxHashSet& txHashSet,
+	const std::shared_ptr<IBlockDB>& pBlockDB,
+	const BlockHeader& previousHeader,
+	const FullBlock& block)
+{
+	if (pBlockDB == nullptr) {
+		return EApplyNrdAwareResult::InvalidBlock;
+	}
+
+	if (txHashSet.ApplyBlock(pBlockDB, block)) {
+		return EApplyNrdAwareResult::Applied;
+	}
+
+	// Only a locally missing NRD index is not peer evidence. Every other
+	// ApplyBlock failure keeps the existing bad-block classification.
+	TxHashSet* pConcrete = dynamic_cast<TxHashSet*>(&txHashSet);
+	if (pConcrete == nullptr ||
+		pConcrete->GetLastNrdValidationResult() != TxHashSet::ENrdValidationResult::MISSING_LOCAL_HISTORY) {
+		return EApplyNrdAwareResult::InvalidBlock;
+	}
+
+	LOG_WARNING_F(
+		"Local NRD recent-kernel index is incomplete; rebuilding at parent {} height {} before retrying block {}.",
+		previousHeader.GetHash(),
+		previousHeader.GetHeight(),
+		block.GetHash());
+	try
+	{
+		// Preserving-baseline: this runs inside an uncommitted ChainState batch
+		// (possibly a reorg alternative branch). A later Rollback must restore the
+		// index of the last COMMIT, not this intermediate branch.
+		pConcrete->RebuildRecentKernelIndexPreservingBaseline(pBlockDB, previousHeader);
+	}
+	catch (const std::exception& e)
+	{
+		// Defensive: the rebuild contains local read errors itself
+		// (DidLastNrdRebuildThrow), but no exception may ever escape towards
+		// BlockPipe, which bans on an escaped exception.
+		LOG_ERROR_F(
+			"NRD index rebuild threw while validating block {} locally: {}",
+			block.GetHash(),
+			e.what());
+		return EApplyNrdAwareResult::LocalNrdHistoryUnavailable;
+	}
+
+	if (!pConcrete->IsRecentNrdIndexComplete()) {
+		LOG_ERROR_F(
+			"NRD recent-kernel index could not be rebuilt from local headers/kernels at height {} (local_read_error={}); block {} stays unclassified (no ban evidence).",
+			previousHeader.GetHeight(),
+			pConcrete->DidLastNrdRebuildThrow(),
+			block.GetHash());
+		return EApplyNrdAwareResult::LocalNrdHistoryUnavailable;
+	}
+
+	if (txHashSet.ApplyBlock(pBlockDB, block)) {
+		return EApplyNrdAwareResult::Applied;
+	}
+
+	// The index is now complete, so a still-failing block is genuinely invalid.
+	return EApplyNrdAwareResult::InvalidBlock;
 }
 
 BlockProcessor::BlockProcessingInfo BlockProcessor::DetermineBlockStatus(const FullBlock& block, Writer<ChainState> pBatch)
@@ -195,7 +297,18 @@ void BlockProcessor::ValidateAndAddBlock(const FullBlock& block, Writer<ChainSta
 		throw BLOCK_CHAIN_EXCEPTION("Previous header not found.");
 	}
 
-	if (pTxHashSet == nullptr || !pTxHashSet->ApplyBlock(pBlockDB, block)) {
+	if (pTxHashSet == nullptr) {
+		throw BAD_DATA_EXCEPTION_F(EBanReason::BadBlock, "Failed to apply block {} to the TxHashSet.", block);
+	}
+
+	const EApplyNrdAwareResult applyResult =
+		ApplyBlockNrdAware(*pTxHashSet, pBlockDB, *pPreviousHeader, block);
+	if (applyResult == EApplyNrdAwareResult::LocalNrdHistoryUnavailable) {
+		// Caught in ProcessBlockInternal and converted to UNKNOWN_ERROR (no ban).
+		throw LocalNrdHistoryUnavailableException(block.GetHash());
+	}
+
+	if (applyResult != EApplyNrdAwareResult::Applied) {
 		throw BAD_DATA_EXCEPTION_F(EBanReason::BadBlock, "Failed to apply block {} to the TxHashSet.", block);
 	}
 

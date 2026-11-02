@@ -1,0 +1,55 @@
+# ASan link-boundary evidence: D2 pre-commit gate and KernelIndex tests — BLOCKED
+
+Date: 2026-11-03. Reproduced while extending the ASan TestsMini subset for the
+line2 D2 wiring and line1/line2 NRD tests. This is a **link-boundary** limitation,
+not a code/test failure.
+
+## Attempt 1 — add tests/src/PMMR/Test_NrdPreCommit.cpp only
+
+```
+Test_NrdPreCommit.obj : error LNK2019: unresolved external symbol
+  TxHashSetProcessor::VerifyNrdIndexBeforeCommit(ITxHashSet&, shared_ptr<const IBlockDB> const&, BlockHeader const&)
+  referenced from VerifyNrdPreCommit(ChainBuilder&)
+```
+
+## Attempt 2 — additionally compile src/BlockChain/Processors/TxHashSetProcessor.cpp with ASan
+
+Compiling that TU pulls the BlockChain/Database/ChainState surface:
+
+```
+TxHashSetProcessor.obj : error LNK2019: unresolved external symbol Chain::AddBlock(...)
+TxHashSetProcessor.obj : error LNK2019: unresolved external symbol Chain::Rewind(uint64_t)
+TxHashSetProcessor.obj : error LNK2019: unresolved external symbol ChainStore::FindCommonIndex(EChainType, EChainType) const
+TxHashSetProcessor.obj : error LNK2019: unresolved external symbol ChainState::GetBlockHeaderByHash(Hash const&) const
+TxHashSetProcessor.obj : error LNK2019: unresolved external symbol ChainState::Commit(void)
+```
+
+Resolving these requires linking BlockChain.lib -> Database.lib -> the
+uninstrumented non-ASan `rocksdb.lib` C++ sysroot library, which reintroduces the
+`LNK2038 annotate_string/annotate_vector` mismatch this ASan build exists to
+eliminate (see docs/modernization/SANITIZERS.md). Full ASan coverage of the
+pre-commit gate needs an ASan-rebuilt rocksdb/C++ sysroot.
+
+## Attempt 3 — add tests/src/BlockChain/Test_KernelIndex.cpp
+
+```
+Test_KernelIndex.obj : error LNK2019: unresolved external symbol KeyChain::FromRandom(void)
+Test_KernelIndex.obj : error LNK2019: unresolved external symbol TestServer::Create(void)
+Test_KernelIndex.obj : error LNK2019: unresolved external symbol TestServer::GetBlockDB(void) const
+Test_KernelIndex.obj : error LNK2019: unresolved external symbol TxBuilder::BuildCoinbaseTx(KeyChainPath const&, uint64_t)
+```
+
+Requires the heavy test framework (TestServer/TestMiner/TxBuilder) and thus the
+same BlockChain/Database boundary.
+
+## Consequence
+
+- ASan subset covers: `NrdRules` (pure rules), `NrdPolicy` (D2 network gate
+  decision table, BlockValidator::VerifySelfConsistent network path),
+  `NrdDifferential`, `NrdIndexRebuild` (Nrd* = 21 cases / 362 assertions PASS),
+  archive 8/187, Segment 16/68, P2P 5/46, zero-test teardown PASS.
+- NOT covered under ASan: `Test_NrdPreCommit` (2 cases/20 assertions) and
+  `Test_KernelIndex` (3 cases/48 assertions) — they stay covered by the ordinary
+  normal-binary suite on SHA DDC21F45… (Nrd* 23/382, KernelIndex* 3/48).
+- Restore? Remove both sources from the ASan TestsMini target; the failing link
+  attempts were kept only as this evidence record.
