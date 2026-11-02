@@ -1,5 +1,5 @@
 # AUDIT_DELTA (DE) — Grin++ 1.2.9 → Kompatibilität mit Grin v5.5.2
-**Aktueller Stand 02.11.2026.** Basis 1.2.9 `5f511e6`; Arbeitsbaum HEAD `0031267`. Quellmetriken:
+**Aktueller Stand 02.11.2026.** Basis 1.2.9 `5f511e6`; Arbeitsbaum HEAD `793b7db`. Quellmetriken:
 
 - C++ hinzugefügt: **+22.619 Zeilen**; entfernt **−625**; 191 getrackte + 22 neue;
 - Diff-/neuer C++-Textumfang: **≈ +927.8 KiB**;
@@ -9,7 +9,7 @@
 - **G-09 fixed-H (experimentell, 03.11.2026): historischer PASS.** Build-09 `0A3B7D66…`/`F90EEF38…`: Unit/Archive/ASan-Subset PASS; ordinary live **teilweise geprüft** — 7C Wrong-H-Refusal PASS, 7B Full-PIBD/no_sync läuft; vollständiger ordinary PASS **NOT VERIFIED**. Normale Rust-5.5.2-Node erreichte `no_sync` bei H=3.318.655 / Hash `2945348e…`, mit gleichem C++-Tip, 1 Inbound / 0 Outbound; PIBD 10.203.442/10.203.442, Roots/Rangeproof/Kernel-Validierung/Body-Sync abgeschlossen. Ursache der früheren Restarts war `missing left sibling` bei Output-Segment 1648; behoben durch Senden verfügbarer Leaves in `SegmentGenerator`. Grenzen: Headers preseeded, Reorg/Restart/Negativ/Mainnet nicht abgedeckt.
 - **PIBD/PIHD-Guard:** Height-Cap 13, Overflow-Prüfung `idx*capacity`, PIHD-Antwort an Connection/Peer gebunden, Fallback ohne Chain-Height-Fortschritt; PIHD ist experimentell, `PIHD_HIST` wird nicht beworben, Snapshot/Cache/Rate-Limit bleiben offen.
 
-Basis: Grin++ 1.2.9 (`5f511e6`). Delta aktualisiert: 02.11.2026, HEAD `0031267` (G-09/G-23/G-53/G-07/G-24).
+Basis: Grin++ 1.2.9 (`5f511e6`). Delta aktualisiert: 02.11.2026, HEAD `793b7db` (G-09/G-23/G-53/G-07/G-24).
 Begleitdokumente: `AUDIT_PACKAGE.md` (Paketregeln), `GAP_MATRIX.md` (Status aller
 Lücken), `TEST_RESULTS.md` (Nachweise E1–E84), `DB_CONSISTENCY.md` (Design der
 Chain-Speicher).
@@ -442,7 +442,7 @@ stehen in der Nachweiskarte, nicht als Karten.
 
 - G-44 (PIHD-Stillstand-Scaffold), G-45 (Mainnet-Dry-Run), G-49 (Rangeproof-Performance), G-51 (dieses Paket): abgeschlossen (Auditpaket; Eigentümer-Abnahme 01.11.2026).
 - Reine Dokumentations-Commits (`docs: …`): in der Nachweiskarte gelistet, nicht als Karten.
-## Aktualisierung 02.11.2026 — HEAD `0031267`
+## Aktualisierung 02.11.2026 — HEAD `793b7db`
 
 Basis unverändert (`5f511e6`). Dieser Stand enthält den G-09-Candidate-Merge,
 die G-23-Hash-Revalidierung, KernelIndex/get_kernel, NRD-Regeln und das lokale

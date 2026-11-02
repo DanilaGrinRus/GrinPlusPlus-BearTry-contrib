@@ -1,5 +1,5 @@
 # AUDIT_DELTA (EN) — Grin++ 1.2.9 → Grin v5.5.2 compatibility
-**Current snapshot 2026-11-02.** Baseline 1.2.9 `5f511e6`; working tree HEAD `0031267`. Source metrics:
+**Current snapshot 2026-11-02.** Baseline 1.2.9 `5f511e6`; working tree HEAD `793b7db`. Source metrics:
 
 - C++ added: **+22,619 lines**; deleted **−625**; 191 tracked + 22 new;
 - diff/new C++ text volume: **≈ +927.8 KiB**;
@@ -9,7 +9,7 @@
 - **G-09 fixed-H (experimental, 2026-11-03): historical PASS.** Build-09 `0A3B7D66…`/`F90EEF38…`: unit/archive/ASan-subset PASS; ordinary live **partially verified** — 7C wrong-H refusal PASS, 7B full PIBD/no_sync in progress; full ordinary PASS **NOT VERIFIED**. Ordinary Rust 5.5.2 reached `no_sync` at H=3,318,655 / hash `2945348e…`, with the same C++ tip, 1 inbound / 0 outbound; PIBD 10,203,442/10,203,442, roots/rangeproof/kernel validation/body sync completed. The previous restarts were caused by `missing left sibling` at output segment 1648 and fixed by sending available leaves in `SegmentGenerator`. Limits: headers preseeded, reorg/restart/negative/mainnet not covered.
 - **PIBD/PIHD guard:** height cap 13, `idx*capacity` overflow check, PIHD response bound to connection/peer, fallback on no chain-height progress; PIBD responses use one `ApiStateSnapshot` with sequence retry, bitmap/root cached by output root, 500 requests/min per connection. PIHD is experimental, `PIHD_HIST` is not advertised; concurrent apply/reorg snapshot test remains open.
 
-Baseline: Grin++ 1.2.9 (`5f511e6`). Delta updated: 2026-11-02, HEAD `0031267` (G-09/G-23/G-53/G-07/G-24).
+Baseline: Grin++ 1.2.9 (`5f511e6`). Delta updated: 2026-11-02, HEAD `793b7db` (G-09/G-23/G-53/G-07/G-24).
 Companion documents: `AUDIT_PACKAGE.md` (package rules), `GAP_MATRIX.md`
 (status of every gap), `TEST_RESULTS.md` (E1–E84 evidence), `DB_CONSISTENCY.md`
 (chain-store design).
@@ -446,7 +446,7 @@ documentation-only commits are tracked in the evidence map, not as cards.
   performance), G-51 (this package): closed (audit package; owner acceptance 01.11.2026).
 - Documentation-only commits (`docs: …`): listed in the evidence map, not as cards.
 
-## Update 2026-11-02 — HEAD `0031267`
+## Update 2026-11-02 — HEAD `793b7db`
 
 Baseline unchanged (`5f511e6`). This snapshot includes the G-09 candidate merge,
 G-23 hash revalidation, KernelIndex/get_kernel, NRD rules and the local CI gate.
