@@ -21,23 +21,31 @@
 - Тесты: `Crypto::BulletproofsCacheBindsProofBytes`,
   `Crypto::BulletproofsRejectsEmptyBatchItem`,
   `Crypto::BulletproofsWarmCacheRejectsMutatedProof` (реальный proof, warm cache,
-  изменённый байт отклонён).
-- **Не сделано:** дифференциальный прогон против Rust, ASan/fuzz, проверка
-  всех сетевых callers. Поэтому это не финальный PASS по P0.
+  изменённый байт отклонён),
+  `Crypto::RangeProofSizeBoundaries` (0..676 байт: допустимые размеры
+  десериализуются, 676 отвергается).
+- **Не сделано:** дифференциальный прогон против Rust, ASan/fuzz-раннер,
+  проверка всех сетевых callers. Это не финальный PASS по P0.
 
 ## P0: NRD fail-closed
 
-**Статус: PARTIAL, fail-closed реализован.**
+**Статус: PARTIAL, fail-closed + rebuild без тел блоков.**
 
 - `RebuildRecentKernelIndex` больше не оставляет «пустой, но выглядящий готовым»
-  индекс: при отсутствии блока/header до cutoff, неполном диапазоне или
-  underflow числа kernels индекс помечается неполным.
+  индекс: при отсутствии header до cutoff, неполном диапазоне, underflow числа
+  kernels или отсутствующем kernel leaf индекс помечается неполным.
+- Индекс теперь строится из **kernel PMMR + header chain**, а не из полных
+  block bodies. Это соответствует PIBD-состоянию, где тела последних блоков
+  отсутствуют.
 - `ApplyBlock` отвергает NRD-ядро, если `m_recentNrdIndexComplete == false`;
   молчаливого принятия NRD-блока при неполной истории больше нет.
 - Индекс публикуется только после успешного построения полного диапазона.
+- Live-проверка на существующем PIBD-состоянии: сообщений
+  `Could not rebuild NRD index` нет (0 в логе после старта).
 - **Не сделано:** end-to-end repro принятия NRD-нарушения, тесты
-  `relative_height-1/равно/+1`, PIBD activation без тел, reorg/fault injection,
-  сверка с Rust `MultiIndex`. Это остаётся P0-проверкой, а не закрытым пунктом.
+  `relative_height-1/равно/+1` для полного ApplyBlock, reorg/fault injection,
+  сверка с Rust `MultiIndex`. Block sync после PIBD всё ещё упирается в
+  `Output Commitment not found`; это отдельный P1.
 
 ## PIBD snapshot, cache и rate limit
 
@@ -78,18 +86,21 @@
 
 ## Актуальные артефакты
 
-- `GrinNode.exe`: SHA-256 `9DC493E201481362FE371F2B6A9AC59A542373EB56502FE95C4C4DAD3D5F1EA7`,
-  **7 741 952 B = 7 560.5 KiB**.
-- `Tests.exe`: SHA-256 `9E9014D4E827151A7E4BCB21D99BB8784866390EB6FC8983D9B987A2F53EA471`.
-- Suite: **201 / 2309 PASS** (`C:\DHW\.tmp\tests-proof-mutation.log`).
+- `GrinNode.exe`: SHA-256 `A3E35660D1EBC4DB1AACCA4694340F850205649CFCDA2D8E089A939D01184538`,
+  **7 744 512 B = 7 563.0 KiB**.
+- `Tests.exe`: SHA-256 `EC80635F9B75B01CA1DB1D7939190304E9CD51B034DC7AC06A7A0B4E05E73166`.
+- Suite: **203 / 3676 PASS** (`C:\DHW\.tmp\tests-proof-boundaries.log`).
 - Wire PASS: `C:\DHW\.tmp\pibd-wire-lease.log`.
 - Active-sync kernel PASS: `C:\DHW\.tmp\pibd-kernel-lease-active.log`.
-- Исходники относительно 1.2.9: **+17 010 / −594** строк; 186 tracked + 1 новый
-  файл; diff/new C++ ≈ **717.7 KiB**.
+- PIBD-state startup: `Could not rebuild NRD index` — 0 в логе; block sync
+  останавливается на `Output Commitment not found`.
+- Исходники относительно 1.2.9: **+17 093 / −594** строк; 187 файлов;
+  diff/new C++ ≈ **721.7 KiB**.
 
 ## Приоритет дальше
 
-1. Закрыть P0 crypto/NRD реальными negative/differential тестами.
+1. Закрыть P0 crypto/NRD реальным Rust-дифференциалом, ASan/fuzz и
+   end-to-end NRD/reorg.
 2. Конкурентный snapshot/reorg тест и глобальный backpressure.
 3. Независимый Rust H + полный обычный Rust PIBD/legacy/resume.
 4. Block sync, API/wallet, затем CI/fuzz и G-49.

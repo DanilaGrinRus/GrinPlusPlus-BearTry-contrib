@@ -7,6 +7,8 @@
 #include <Wallet/Keychain/KeyChain.h>
 #include <Crypto/Models/Commitment.h>
 #include <Crypto/Models/RangeProof.h>
+#include <Core/Serialization/ByteBuffer.h>
+#include <Core/Serialization/Serializer.h>
 
 TEST_CASE("Crypto::BulletproofsCacheBindsProofBytes")
 {
@@ -65,4 +67,19 @@ TEST_CASE("Crypto::BulletproofsWarmCacheRejectsMutatedProof")
 	std::vector<std::pair<Commitment, RangeProof>> mutated;
 	mutated.emplace_back(commitment, RangeProof(std::move(mutatedBytes)));
 	REQUIRE_FALSE(Bulletproofs::GetInstance().VerifyBulletproofs(mutated));
+}
+TEST_CASE("Crypto::RangeProofSizeBoundaries")
+{
+	for (size_t length = 0; length <= (size_t)MAX_PROOF_SIZE + 1; ++length) {
+		Serializer serializer;
+		serializer.Append<uint64_t>(length);
+		serializer.AppendByteVector(std::vector<uint8_t>(length, 0xA5));
+		ByteBuffer buffer(serializer.GetBytes(), EProtocolVersion::V1);
+		if (length <= (size_t)MAX_PROOF_SIZE) {
+			REQUIRE_NOTHROW(RangeProof::Deserialize(buffer));
+			REQUIRE(buffer.GetRemainingSize() == 0);
+		} else {
+			REQUIRE_THROWS_AS(RangeProof::Deserialize(buffer), DeserializationException);
+		}
+	}
 }

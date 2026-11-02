@@ -173,8 +173,8 @@
   прогон на H=3 315 600 — PASS: 7/7 bitmap, 1673/1673 output, 1673/1673
   rangeproof, 1637/1637 kernel. Roots взяты из C++ REST, независимое
   подтверждение H и обычная Rust-нода остаются NOT VERIFIED.
-* Актуальная сборка: suite **201 / 2309 PASS**; `GrinNode 9DC493E2…`,
-  `Tests 524FC297…`; exe 7 741 952 B.
+* Актуальная сборка: suite **203 / 3676 PASS**; `GrinNode A3E35660…`,
+  `Tests 524FC297…`; exe 7 744 512 B.
 * **P0 crypto (02.11.2026): PARTIAL.** Кэш Bulletproofs теперь включает точные байты proof; batch валидирует пустые/разные длины и не пишет кэш до успеха. Нужны реальный warmed/cold proof-тест, Rust-дифференциал и fuzz.
-* **P0 NRD (02.11.2026): PARTIAL fail-closed.** Неполный rebuild индекса больше не выглядит завершённым; NRD-блок при неполном индексе отвергается. Нужны end-to-end NRD/reorg/PIBD-без-тел тесты.
+* **P0 NRD (02.11.2026): PARTIAL.** Rebuild идёт из kernel PMMR + header chain, без полных block bodies; неполный индекс fail-closed и отвергает NRD-блок. Live PIBD-state стартовал без предупреждений rebuild; нужны end-to-end NRD/reorg и сверка с Rust.
 * **PIBD snapshot (02.11.2026): PARTIAL.** `ApiStateSnapshot` удерживает read lease на всё построение ответа; bitmap-кэш ключуется H+size+output root; лимит 500/мин на connection. Нужен контролируемый concurrent apply/reorg тест и глобальный backpressure.

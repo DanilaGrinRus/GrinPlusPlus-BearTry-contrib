@@ -27,3 +27,18 @@ TEST_CASE("NrdRules rejects a duplicate kernel in one block")
 	REQUIRE(NrdRules::RecordBlockKernel(blockKernels, excess, 10));
 	REQUIRE_FALSE(NrdRules::RecordBlockKernel(blockKernels, excess, 10));
 }
+
+TEST_CASE("NrdRules boundary cases match Rust saturating semantics")
+{
+	// Rust computes saturating_sub(current, previous); a decreasing height
+	// therefore yields zero and cannot satisfy any positive relative height.
+	REQUIRE_FALSE(NrdRules::IsRelativeHeightSatisfied(10, 9, 1, 0));
+	REQUIRE(NrdRules::IsRelativeHeightSatisfied(10, 10, 0, 0));
+
+	// Exact boundary: diff == relative_height is valid.
+	REQUIRE(NrdRules::IsRelativeHeightSatisfied(100, 1444, 1344, 0));
+
+	// Cutoff boundary: previous == cutoff is considered, previous < cutoff is not.
+	REQUIRE_FALSE(NrdRules::IsRelativeHeightSatisfied(1000, 1001, 2, 1000));
+	REQUIRE(NrdRules::IsRelativeHeightSatisfied(999, 1001, 2, 1000));
+}

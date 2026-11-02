@@ -431,42 +431,64 @@ void TxHashSet::RebuildRecentKernelIndex(
 		? tip.GetHeight() - 2 * Consensus::WEEK_HEIGHT
 		: 0;
 
-	std::vector<std::unique_ptr<FullBlock>> blocks;
+	// Rebuild from the kernel PMMR plus header chain, not from full block
+	// bodies: a PIBD state legitimately has no bodies for recent blocks.
+	std::vector<BlockHeaderPtr> headers;
 	BlockHeaderPtr pHeader = std::make_shared<BlockHeader>(tip);
-	while (pHeader != nullptr && pHeader->GetHeight() >= cutoff) {
-		std::unique_ptr<FullBlock> pBlock = pBlockDB->GetBlock(pHeader->GetHash());
-		if (pBlock == nullptr) {
-			LOG_WARNING_F("Could not rebuild NRD index: block {} is missing", pHeader->GetHash());
+	while (pHeader != nullptr && pHeader->GetHeight() > cutoff) {
+		headers.push_back(pHeader);
+		BlockHeaderPtr pPrevious = pBlockDB->GetBlockHeader(pHeader->GetPreviousHash());
+		if (pPrevious == nullptr ||
+			pPrevious->GetHeight() + 1 != pHeader->GetHeight()) {
+			LOG_WARNING_F("Could not rebuild NRD index: header {} is missing", pHeader->GetPreviousHash());
 			return;
 		}
-		blocks.push_back(std::move(pBlock));
-		if (pHeader->GetHeight() == 0) {
-			break;
-		}
-		pHeader = pBlockDB->GetBlockHeader(pHeader->GetPreviousHash());
+		pHeader = pPrevious;
 	}
 
-	if (blocks.empty() ||
-		blocks.back()->GetHeader()->GetHeight() != cutoff) {
+	if (pHeader == nullptr || pHeader->GetHeight() != cutoff) {
 		LOG_WARNING_F("Could not rebuild NRD index: history does not reach cutoff {}", cutoff);
 		return;
 	}
+	headers.push_back(pHeader);
+	std::reverse(headers.begin(), headers.end());
 
-	for (auto iter = blocks.rbegin(); iter != blocks.rend(); ++iter) {
-		const FullBlock& block = **iter;
-		const BlockHeader& header = *block.GetHeader();
-		if (header.GetNumKernels() < block.GetKernels().size()) {
-			LOG_WARNING_F("Could not rebuild NRD index: kernel count underflow at {}", header.GetHeight());
+	uint64_t previousKernelCount = 0;
+	if (cutoff > 0) {
+		BlockHeaderPtr pPrevious = pBlockDB->GetBlockHeader(pHeader->GetPreviousHash());
+		if (pPrevious == nullptr || pPrevious->GetHeight() + 1 != cutoff) {
+			LOG_WARNING_F("Could not rebuild NRD index: header before cutoff is missing");
+			return;
+		}
+		previousKernelCount = pPrevious->GetNumKernels();
+	}
+
+	const uint64_t tipKernelCount = headers.back()->GetNumKernels();
+	if (m_pKernelMMR->GetNumKernels() < tipKernelCount) {
+		LOG_WARNING_F("Could not rebuild NRD index: kernel MMR has fewer leaves than the tip header");
+		return;
+	}
+
+	size_t headerIndex = 0;
+	for (uint64_t leaf = previousKernelCount; leaf < tipKernelCount; ++leaf) {
+		while (headerIndex < headers.size() &&
+			leaf >= headers[headerIndex]->GetNumKernels()) {
+			++headerIndex;
+		}
+		if (headerIndex >= headers.size()) {
+			LOG_WARNING_F("Could not rebuild NRD index: no header owns kernel leaf {}", leaf);
 			return;
 		}
 
-		const uint64_t firstLeaf = header.GetNumKernels() - block.GetKernels().size();
-		uint64_t leaf = firstLeaf;
-		for (const TransactionKernel& kernel : block.GetKernels()) {
-			if (kernel.GetFeatures() == EKernelFeatures::NO_RECENT_DUPLICATE) {
-				ApplyNrd(kernel, LeafIndex::At(leaf).GetPosition(), header.GetHeight());
-			}
-			++leaf;
+		std::unique_ptr<TransactionKernel> pKernel =
+			m_pKernelMMR->GetKernelAt(LeafIndex::At(leaf));
+		if (pKernel == nullptr) {
+			LOG_WARNING_F("Could not rebuild NRD index: kernel leaf {} is missing", leaf);
+			return;
+		}
+
+		if (pKernel->GetFeatures() == EKernelFeatures::NO_RECENT_DUPLICATE) {
+			ApplyNrd(*pKernel, LeafIndex::At(leaf).GetPosition(), headers[headerIndex]->GetHeight());
 		}
 	}
 
