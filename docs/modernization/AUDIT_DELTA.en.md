@@ -1,5 +1,5 @@
 # AUDIT_DELTA (EN) — Grin++ 1.2.9 → Grin v5.5.2 compatibility
-**Current snapshot 2026-11-02.** Baseline 1.2.9 `5f511e6`; working tree HEAD `1c0bcc3`. Source metrics:
+**Current snapshot 2026-11-02.** Baseline 1.2.9 `5f511e6`; working tree HEAD `807b5b1`. Source metrics:
 
 - C++ added: **+17,142 lines**; deleted **−594**; 187 files;
 - diff/new C++ text volume: **≈ +725.0 KiB**;
@@ -9,7 +9,7 @@
 - **G-09 live (2026-11-03): PASS for the isolated scenario.** Ordinary Rust 5.5.2 reached `no_sync` at H=3,318,655 / hash `2945348e…`, with the same C++ tip, 1 inbound / 0 outbound; PIBD 10,203,442/10,203,442, roots/rangeproof/kernel validation/body sync completed. The previous restarts were caused by `missing left sibling` at output segment 1648 and fixed by sending available leaves in `SegmentGenerator`. Limits: headers preseeded, reorg/restart/negative/mainnet not covered.
 - **PIBD/PIHD guard:** height cap 13, `idx*capacity` overflow check, PIHD response bound to connection/peer, fallback on no chain-height progress; PIBD responses use one `ApiStateSnapshot` with sequence retry, bitmap/root cached by output root, 500 requests/min per connection. PIHD is experimental, `PIHD_HIST` is not advertised; concurrent apply/reorg snapshot test remains open.
 
-Baseline: Grin++ 1.2.9 (`5f511e6`). Delta updated: 2026-11-02, HEAD `1c0bcc3` (G-09/G-23/G-53/G-07/G-24).
+Baseline: Grin++ 1.2.9 (`5f511e6`). Delta updated: 2026-11-02, HEAD `807b5b1` (G-09/G-23/G-53/G-07/G-24).
 Companion documents: `AUDIT_PACKAGE.md` (package rules), `GAP_MATRIX.md`
 (status of every gap), `TEST_RESULTS.md` (E1–E84 evidence), `DB_CONSISTENCY.md`
 (chain-store design).
@@ -446,7 +446,7 @@ documentation-only commits are tracked in the evidence map, not as cards.
   performance), G-51 (this package): closed (audit package; owner acceptance 01.11.2026).
 - Documentation-only commits (`docs: …`): listed in the evidence map, not as cards.
 
-## Update 2026-11-02 — HEAD `1c0bcc3`
+## Update 2026-11-02 — HEAD `807b5b1`
 
 Baseline unchanged (`5f511e6`). This snapshot includes the G-09 candidate merge,
 G-23 hash revalidation, KernelIndex/get_kernel, NRD rules and the local CI gate.
