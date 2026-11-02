@@ -38,12 +38,13 @@ Do not report this as 4993 or as the audit H.
 
 ## Artifacts
 
-- C++ GrinNode SHA-256 (current post-guard build): `9E6E92C9A5F0CA4D4E0C9ED98859FE074FA53A6DE3A8F0361449AE421A733A78`; the identity run itself used the pre-guard build. Post-guard kernel-only validation passed 1637/1637.
+- Post-guard C++ GrinNode SHA-256: `0374EC4F6C8B0DEC1444E1AAA4994279EC12D02504AF09334BA99FB4F5B8B5E1`
 - Rust wire client SHA-256: `A2561FE6E2AC4CAD76AF73DAA02BCE2972CA00E086853332BCB590289FB6B1D9`
-- Identity-run log: `C:\DHW\.tmp\pibd-wire-full-identity.log`
-- Earlier full-run log: `C:\DHW\.tmp\pibd-wire-full.log`
+- Post-guard full identity run: `C:\DHW\.tmp\pibd-wire-still2.log`
+- Earlier identity run: `C:\DHW\.tmp\pibd-wire-full-identity.log`
 - Client binary: `C:\Users\nurli\AppData\Local\Temp\pibd-wire-audit\target\release\pibd-wire-audit.exe`
 - Header JSON used for roots: `C:\DHW\.tmp\interop\block3315600.json`
+- Quiescent test server config: `C:\DHW\.tmp\interop\server_config-wire-still.json`
 - C++ server log: `C:\DHW\.tmp\interop\pp-pibdnow\.GrinPP\FLOONET\LOGS\Node.log`
 
 ## Important limitations
@@ -52,13 +53,16 @@ Do not report this as 4993 or as the audit H.
    fetched from a Rust header chain. Identity and segment validation passed, but root
    provenance still needs an independent header source. This is the main remaining caveat.
 2. This does not exercise ordinary Rust node `awaiting_peers`/state activation.
-3. Negative mutation test (flip proof byte / wrong root) was not run in this pass.
-4. An earlier full run hit a transient C++ connection reset at kernel ~403; the clean rerun
+3. The post-guard run used a **quiescent** C++ state (external peers disabled), because the
+   API-sequence guard intentionally refuses a response if the state changes during assembly.
+   Serving while blocks/reorg are actively changing needs a dedicated concurrent test.
+4. Negative mutation test (flip proof byte / wrong root) was not run in this pass.
+5. An earlier full run hit a transient C++ connection reset at kernel ~403; the clean rerun
    completed 1637/1637, so this needs separate crash/fault investigation.
-5. NRD must be enabled in the Rust client (`global::init_global_nrd_enabled(true)`); without
+6. NRD must be enabled in the Rust client (`global::init_global_nrd_enabled(true)`); without
    it, kernel segment 296 fails with `Serialization(CorruptedData)`. This was a client test
    configuration issue, not a C++ wire defect.
-6. The run used a fixed H served by C++; it did not exercise normal Rust horizon selection.
+7. The run used a fixed H served by C++; it did not exercise normal Rust horizon selection.
 
 ## Verdict
 

@@ -72,6 +72,23 @@ bool Connection::ExceedsRateLimit() const
         || m_pSocket->GetRateCounter().GetReceivedInLastMinute() > 500;
 }
 
+bool Connection::AllowPibdRequest()
+{
+    std::lock_guard<std::mutex> lock(m_pibdRateMutex);
+    const auto now = system_clock::now();
+    while (!m_pibdRequests.empty() &&
+        m_pibdRequests.front() + std::chrono::seconds(60) <= now) {
+        m_pibdRequests.pop_front();
+    }
+
+    if (m_pibdRequests.size() >= P2P::MAX_PIBD_REQUESTS_PER_MINUTE) {
+        return false;
+    }
+
+    m_pibdRequests.push_back(now);
+    return true;
+}
+
 void Connection::Thread_Connect(std::shared_ptr<Connection> pConnection)
 {
     LoggerAPI::SetThreadName("PEER");

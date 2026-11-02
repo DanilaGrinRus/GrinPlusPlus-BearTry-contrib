@@ -21,6 +21,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <mutex>
 
 // Serves PIBD segments from the node's file-backed PMMRs.
 //

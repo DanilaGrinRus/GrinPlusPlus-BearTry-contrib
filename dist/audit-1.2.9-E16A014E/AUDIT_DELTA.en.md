@@ -1,13 +1,13 @@
 # AUDIT_DELTA (EN) — Grin++ 1.2.9 → Grin v5.5.2 compatibility
 **Current snapshot 2026-11-02.** Baseline 1.2.9 `5f511e6`; working tree HEAD `6833bf6`. Source metrics:
 
-- C++ added: **+16,695 lines**; deleted **−551**; 177 tracked files + 5 new files;
-- diff/new C++ text volume: **≈ +700.5 KiB**;
-- final `GrinNode.exe`: **7,739,392 B = 7,558.0 KiB = 7.38 MiB**;
+- C++ added: **+16,765 lines**; deleted **−550**; 184 files;
+- diff/new C++ text volume: **≈ +705.6 KiB**;
+- final `GrinNode.exe`: **7,742,464 B = 7,561.0 KiB = 7.38 MiB**;
 - **exe growth vs 1.2.9: NOT MEASURED** — no original binary is preserved; 7.7 MB is the final size, not a delta;
-- artifacts: `GrinNode 9E6E92C9…`, `Tests 524FC297…`; suite **198 / 2,265 PASS**.
+- artifacts: `GrinNode 0374EC4F…`, `Tests 7D5ED40B…`; suite **198 / 2,277 PASS**.
 - **G-09 stage 1:** identity-checked P2P + Rust run at H=3,315,600 — PASS (7/7, 1673/1673, 1673/1673, 1637/1637); roots came from C++ REST, independent H confirmation and ordinary Rust node remain NOT VERIFIED.
-- **PIBD/PIHD guard:** height cap 13, `idx*capacity` overflow check, PIHD response bound to connection/peer, fallback on no chain-height progress; PIHD is experimental, `PIHD_HIST` is not advertised, snapshot/cache/rate-limit remain open.
+- **PIBD/PIHD guard:** height cap 13, `idx*capacity` overflow check, PIHD response bound to connection/peer, fallback on no chain-height progress; PIBD responses use one `ApiStateSnapshot` with sequence retry, bitmap/root cached by output root, 500 requests/min per connection. PIHD is experimental, `PIHD_HIST` is not advertised; concurrent apply/reorg snapshot test remains open.
 
 Baseline: Grin++ 1.2.9 (`5f511e6`). Delta updated: 2026-11-02, HEAD `6833bf6` (G-09/G-23/G-53/G-07/G-24).
 Companion documents: `AUDIT_PACKAGE.md` (package rules), `GAP_MATRIX.md`

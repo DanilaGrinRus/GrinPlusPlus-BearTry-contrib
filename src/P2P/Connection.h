@@ -12,6 +12,7 @@
 #include <chrono>
 #include <atomic>
 #include <queue>
+#include <deque>
 
 // Forward Declarations
 class IMessage;
@@ -67,6 +68,7 @@ public:
 	bool ReceiveSync(std::vector<uint8_t>& bytes, const size_t num_bytes);
 
 	bool ExceedsRateLimit() const;
+	bool AllowPibdRequest();
 	void BanPeer(const EBanReason reason);
 	void CheckPing();
 
@@ -113,6 +115,8 @@ private:
 
 	mutable LRUCache<Hash, Hash> m_advertisedBlocks;
 	mutable std::mutex m_mutex;
+	std::mutex m_pibdRateMutex;
+	std::deque<std::chrono::system_clock::time_point> m_pibdRequests;
 };
 
 typedef std::shared_ptr<Connection> ConnectionPtr;

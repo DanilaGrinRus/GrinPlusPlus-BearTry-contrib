@@ -220,29 +220,9 @@ void MessageProcessor::ProcessMessageInternal(const std::shared_ptr<Connection>&
 			try {
 				const SegmentRequestMessage request =
 					SegmentRequestMessage::Deserialize(byteBuffer, header.GetMessageType());
-
-				const ITxHashSetPtr pTxHashSet = m_pBlockChain->GetTxHashSet();
-				const std::shared_ptr<TxHashSet> pState =
-					std::dynamic_pointer_cast<TxHashSet>(pTxHashSet);
-				if (pState == nullptr) {
-					LOG_DEBUG_F("Cannot serve {}: no txhashset is open", MessageTypes::ToString(header.GetMessageType()));
-					break;
-				}
-
-				const BlockHeaderPtr pFlushedHeader = pState->GetFlushedBlockHeader();
-				if (pFlushedHeader == nullptr || pFlushedHeader->GetHeight() == 0 ||
-					pFlushedHeader->GetHash() != request.GetBlockHash()) {
-					LOG_DEBUG_F(
-						"Ignoring {} from {}: requested horizon is not our flushed state",
-						MessageTypes::ToString(header.GetMessageType()),
-						pConnection);
-					break;
-				}
-
-				PibdSegmentService service(
-					pState->GetOutputPMMR(), pState->GetRangeProofPMMR(), pState->GetKernelMMR());
 				const Hash& blockHash = request.GetBlockHash();
 				const SegmentIdentifier& identifier = request.GetIdentifier();
+
 				// Limit work per peer-controlled request. The Grin 5.5.2 PIBD
 				// client uses heights 9 and 11; height 13 retains headroom.
 				// Larger segment requests require a separately bounded implementation.
@@ -250,25 +230,91 @@ void MessageProcessor::ProcessMessageInternal(const std::shared_ptr<Connection>&
 					LOG_WARNING_F("Ignoring PIBD request with oversized segment height {}", identifier.GetHeight());
 					break;
 				}
-				switch (header.GetMessageType()) {
-					case GetOutputBitmapSegment:
-						pConnection->SendAsync(SegmentResponseMessage::CreateOutputBitmap(
-							blockHash, service.GetBitmapSegment(identifier), service.GetOutputMmrRoot()));
+
+				if (!pConnection->AllowPibdRequest()) {
+					LOG_DEBUG_F("Throttling PIBD request from {}: per-connection limit reached", pConnection);
+					break;
+				}
+
+				// Build the entire response from one API snapshot and re-check the
+				// state sequence after the expensive segment/root reads. A block
+				// apply/reorg in between forces a retry; the response is never
+				// assembled from two different states.
+				bool served = false;
+				for (int attempt = 0; attempt < 3 && !served; ++attempt) {
+					const IBlockChain::ApiStateSnapshot snapshot = m_pBlockChain->GetApiStateSnapshot();
+					if (!snapshot.valid || snapshot.txHashSet == nullptr) {
+						LOG_DEBUG_F("Cannot serve {}: no API state snapshot",
+							MessageTypes::ToString(header.GetMessageType()));
 						break;
-					case GetOutputSegment:
-						pConnection->SendAsync(SegmentResponseMessage::CreateOutputs(
-							blockHash, service.GetOutputSegment(identifier), service.GetBitmapMmrRoot()));
+					}
+
+					const std::shared_ptr<TxHashSet> pState =
+						std::dynamic_pointer_cast<TxHashSet>(snapshot.txHashSet);
+					if (pState == nullptr) {
+						LOG_DEBUG_F("Cannot serve {}: no txhashset is open",
+							MessageTypes::ToString(header.GetMessageType()));
 						break;
-					case GetRangeProofSegment:
-						pConnection->SendAsync(SegmentResponseMessage::CreateRangeProofs(
-							blockHash, service.GetRangeProofSegment(identifier)));
+					}
+
+					const BlockHeaderPtr pFlushedHeader = pState->GetFlushedBlockHeader();
+					if (pFlushedHeader == nullptr || pFlushedHeader->GetHeight() == 0 ||
+						pFlushedHeader->GetHash() != blockHash) {
+						LOG_DEBUG_F(
+							"Ignoring {} from {}: requested horizon is not our flushed state",
+							MessageTypes::ToString(header.GetMessageType()),
+							pConnection);
 						break;
-					case GetKernelSegment:
-						pConnection->SendAsync(SegmentResponseMessage::CreateKernels(
-							blockHash, service.GetKernelSegment(identifier)));
+					}
+
+					PibdSegmentService service(
+						pState->GetOutputPMMR(), pState->GetRangeProofPMMR(), pState->GetKernelMMR());
+
+					std::shared_ptr<SegmentResponseMessage> pResponse;
+					switch (header.GetMessageType()) {
+						case GetOutputBitmapSegment:
+							pResponse = std::make_shared<SegmentResponseMessage>(
+								SegmentResponseMessage::CreateOutputBitmap(
+									blockHash, service.GetBitmapSegment(identifier), service.GetOutputMmrRoot()));
+							break;
+						case GetOutputSegment:
+							pResponse = std::make_shared<SegmentResponseMessage>(
+								SegmentResponseMessage::CreateOutputs(
+									blockHash, service.GetOutputSegment(identifier), service.GetBitmapMmrRoot()));
+							break;
+						case GetRangeProofSegment:
+							pResponse = std::make_shared<SegmentResponseMessage>(
+								SegmentResponseMessage::CreateRangeProofs(
+									blockHash, service.GetRangeProofSegment(identifier)));
+							break;
+						case GetKernelSegment:
+							pResponse = std::make_shared<SegmentResponseMessage>(
+								SegmentResponseMessage::CreateKernels(
+									blockHash, service.GetKernelSegment(identifier)));
+							break;
+						default:
+							break;
+					}
+
+					if (pResponse == nullptr) {
 						break;
-					default:
-						break;
+					}
+
+					if (!m_pBlockChain->IsApiStateCurrent(snapshot.sequence)) {
+						LOG_DEBUG_F(
+							"PIBD snapshot changed while serving {} from {}; retrying",
+							MessageTypes::ToString(header.GetMessageType()),
+							pConnection);
+						continue;
+					}
+
+					pConnection->SendAsync(*pResponse);
+					served = true;
+				}
+
+				if (!served) {
+					LOG_DEBUG_F("PIBD response for {} was not sent (state changed or unavailable)",
+						MessageTypes::ToString(header.GetMessageType()));
 				}
 			}
 			catch (const std::exception& e) {

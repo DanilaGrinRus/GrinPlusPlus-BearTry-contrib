@@ -1,13 +1,13 @@
 # AUDIT_DELTA (RU) — Grin++ 1.2.9 → совместимость с Grin v5.5.2
 **Актуальный срез 02.11.2026.** База 1.2.9 `5f511e6`; рабочее дерево HEAD `6833bf6`. Метрики исходников:
 
-- добавлено C++: **+16 695 строк**; удалено **−551**; 177 tracked-файлов + 5 новых;
-- объём diff/новых C++ файлов: **≈ +700.5 KiB**;
-- итоговый `GrinNode.exe`: **7 739 392 B = 7 558.0 KiB = 7.38 MiB**;
+- добавлено C++: **+16 765 строк**; удалено **−550**; 184 файла;
+- объём diff/новых C++ файлов: **≈ +705.6 KiB**;
+- итоговый `GrinNode.exe`: **7 742 464 B = 7 561.0 KiB = 7.38 MiB**;
 - **прирост exe относительно 1.2.9: NOT MEASURED** — исходный бинарник отсутствует; 7.7 MB это итоговый размер, не дельта;
-- артефакты: `GrinNode 9E6E92C9…`, `Tests 524FC297…`; suite **198 / 2265 PASS**.
+- артефакты: `GrinNode 0374EC4F…`, `Tests 7D5ED40B…`; suite **198 / 2277 PASS**.
 - **G-09 stage 1:** identity-checked P2P + Rust-прогон на H=3 315 600 — PASS (7/7, 1673/1673, 1673/1673, 1637/1637); roots взяты из C++ REST, независимое подтверждение H и обычная Rust-нода — NOT VERIFIED.
-- **PIBD/PIHD guard:** приняты height-cap 13, overflow-check `idx*capacity`, привязка PIHD-ответа к connection/peer, fallback при отсутствии роста chain height; PIHD — experimental, `PIHD_HIST` не рекламируется, snapshot/cache/rate-limit открыты.
+- **PIBD/PIHD guard:** height-cap 13, overflow-check `idx*capacity`, привязка PIHD-ответа к connection/peer, fallback при отсутствии роста chain height; PIBD-ответ строится по одному `ApiStateSnapshot` с retry при смене sequence, bitmap/root кешируются по output root, лимит 500 запросов/мин на connection. PIHD experimental, `PIHD_HIST` не рекламируется; конкурентный apply/reorg-тест snapshot ещё открыт.
 
 Базовая точка: Grin++ 1.2.9 (`5f511e6`). Дельта обновлена: 02.11.2026, HEAD `6833bf6` (G-09/G-23/G-53/G-07/G-24).
 Сопутствующие документы: `AUDIT_PACKAGE.md` (правила пакета), `GAP_MATRIX.md`
