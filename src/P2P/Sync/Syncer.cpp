@@ -2,6 +2,7 @@
 #include "HeaderSyncer.h"
 #include "StateSyncer.h"
 #include "BlockSyncer.h"
+#include "PihdClient.h"
 
 #include <BlockChain/BlockChain.h>
 #include <P2P/SyncStatus.h>
@@ -15,12 +16,14 @@ Syncer::Syncer(
     const IBlockChain::Ptr& pBlockChain,
     std::shared_ptr<Pipeline> pPipeline,
     SyncStatusPtr pSyncStatus,
-    std::shared_ptr<PibdSync> pPibdSync)
+    std::shared_ptr<PibdSync> pPibdSync,
+    std::shared_ptr<PihdClient> pPihdClient)
     : m_pConnectionManager(pConnectionManager),
     m_pBlockChain(pBlockChain),
     m_pPipeline(pPipeline),
     m_pSyncStatus(pSyncStatus),
     m_pPibdSync(std::move(pPibdSync)),
+    m_pPihdClient(std::move(pPihdClient)),
     m_terminate(false)
 {
 
@@ -37,14 +40,16 @@ std::shared_ptr<Syncer> Syncer::Create(
     const IBlockChain::Ptr& pBlockChain,
     std::shared_ptr<Pipeline> pPipeline,
     SyncStatusPtr pSyncStatus,
-    std::shared_ptr<PibdSync> pPibdSync)
+    std::shared_ptr<PibdSync> pPibdSync,
+    std::shared_ptr<PihdClient> pPihdClient)
 {
     std::shared_ptr<Syncer> pSyncer = std::shared_ptr<Syncer>(new Syncer(
         pConnectionManager,
         pBlockChain,
         pPipeline,
         pSyncStatus,
-        pPibdSync
+        pPibdSync,
+        pPihdClient
     ));
     pSyncer->m_syncThread = std::thread(Thread_Sync, std::ref(*pSyncer));
 
@@ -56,7 +61,7 @@ void Syncer::Thread_Sync(Syncer& syncer)
     LoggerAPI::SetThreadName("SYNC");
     LOG_DEBUG("BEGIN");
 
-    HeaderSyncer headerSyncer(syncer.m_pConnectionManager, syncer.m_pBlockChain);
+    HeaderSyncer headerSyncer(syncer.m_pConnectionManager, syncer.m_pBlockChain, syncer.m_pPihdClient);
     StateSyncer stateSyncer(syncer.m_pConnectionManager, syncer.m_pBlockChain, syncer.m_pPibdSync);
     BlockSyncer blockSyncer(syncer.m_pConnectionManager, syncer.m_pBlockChain, syncer.m_pPipeline);
     bool headers_synced = false;

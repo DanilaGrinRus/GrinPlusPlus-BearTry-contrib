@@ -37,10 +37,10 @@ public:
 		// As above, with the PIBD serialization fix (Grin PR #3705) applied.
 		PIBD_HIST_1 = 0x40,
 
-		// PIHD (PIBD history) extension bit. Grin 5.5.2 has no such messages:
-		// its p2p message enum ends at KernelSegment = 28, so this bit is only
-		// defined for detection/compatibility with hypothetical peers. It is
-		// never advertised and header sync always uses the legacy path.
+		// PIHD (parallel initial header download) extension bit from Grin
+		// staging. v5.5.2 has no messages 29/30. This node has an experimental
+		// client path (P2P.PIHD_MODE=client) but no server implementation, so
+		// the bit is never advertised; legacy header sync remains the fallback.
 		PIHD_HIST = 0x80,
 
 		FAST_SYNC_NODE = (TXHASHET_HIST | PEER_LIST),

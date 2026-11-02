@@ -53,6 +53,93 @@ struct PibdSnapshot
 
 namespace PibdSnapshotDetail
 {
+	// Keep the bitmap-required leaf pairs. Optional data may differ between
+	// output and rangeproof trees and cannot be stored as a single leaf with
+	// the current prune-list data layout.
+	template<class T>
+	void NormalizeLeaves(
+		const uint64_t mmrSize,
+		const SegmentBitmap& bitmap,
+		std::vector<std::pair<uint64_t, T>>& leaves,
+		std::map<uint64_t, Hash>& storedHashes)
+	{
+		const uint64_t numLeaves = MMRUtil::GetNumLeaves(mmrSize);
+		std::vector<std::optional<Hash>> available((size_t)mmrSize);
+		std::vector<uint8_t> hasRequired((size_t)mmrSize, 0);
+		std::vector<int64_t> parent((size_t)mmrSize, -1);
+		size_t nextLeaf = 0;
+		uint64_t leafIndex = 0;
+		for (uint64_t pos0 = 0; pos0 < mmrSize; ++pos0) {
+			if (MMRUtil::IsLeaf(pos0)) {
+				const bool required = IsSegmentLeafRequired(pos0, mmrSize, bitmap);
+				const bool present = nextLeaf < leaves.size() && leaves[nextLeaf].first == leafIndex;
+				if (required && !present) {
+					throw SegmentException(ESegmentError::MissingLeaf,
+						"Required leaf is missing at position " + std::to_string(pos0));
+				}
+				if (present) {
+					Serializer serializer;
+					leaves[nextLeaf].second.Serialize(serializer);
+					available[(size_t)pos0] = MMRHashUtil::HashLeafWithIndex(serializer.GetBytes(), pos0);
+					const auto found = storedHashes.find(pos0);
+					if (found != storedHashes.end() && found->second != *available[(size_t)pos0]) {
+						throw SegmentException(ESegmentError::Mismatch,
+							"Conflicting leaf data and hash at position " + std::to_string(pos0));
+					}
+					++nextLeaf;
+				} else {
+					const auto found = storedHashes.find(pos0);
+					if (found != storedHashes.end()) {
+						available[(size_t)pos0] = found->second;
+					}
+				}
+				hasRequired[(size_t)pos0] = required ? 1 : 0;
+				++leafIndex;
+				continue;
+			}
+
+			const uint64_t height = MMRUtil::BintreePostorderHeight(pos0);
+			const uint64_t left = pos0 - (1ULL << height);
+			const uint64_t right = pos0 - 1;
+			parent[(size_t)left] = (int64_t)pos0;
+			parent[(size_t)right] = (int64_t)pos0;
+			hasRequired[(size_t)pos0] = hasRequired[(size_t)left] || hasRequired[(size_t)right];
+			if (available[(size_t)left].has_value() && available[(size_t)right].has_value()) {
+				available[(size_t)pos0] = MMRHashUtil::HashParentWithIndex(
+					*available[(size_t)left], *available[(size_t)right], pos0);
+				const auto found = storedHashes.find(pos0);
+				if (found != storedHashes.end() && found->second != *available[(size_t)pos0]) {
+					throw SegmentException(ESegmentError::Mismatch,
+						"Conflicting subtree hash at position " + std::to_string(pos0));
+				}
+			} else {
+				const auto found = storedHashes.find(pos0);
+				if (found != storedHashes.end()) {
+					available[(size_t)pos0] = found->second;
+				}
+			}
+		}
+		if (leafIndex != numLeaves || nextLeaf != leaves.size()) {
+			throw SegmentException(ESegmentError::Mismatch, "Invalid leaf indices");
+		}
+
+		for (uint64_t pos0 = 0; pos0 < mmrSize; ++pos0) {
+			const int64_t parentPos = parent[(size_t)pos0];
+			if (!hasRequired[(size_t)pos0] &&
+				(parentPos < 0 || hasRequired[(size_t)parentPos])) {
+				if (!available[(size_t)pos0].has_value()) {
+					throw SegmentException(ESegmentError::MissingHash,
+						"Missing normalized subtree hash at position " + std::to_string(pos0));
+				}
+				storedHashes[pos0] = *available[(size_t)pos0];
+			}
+		}
+		leaves.erase(std::remove_if(leaves.begin(), leaves.end(), [&](const std::pair<uint64_t, T>& leaf) {
+			const uint64_t pos0 = MMRUtil::InsertionToPmmrIndex(leaf.first);
+			return !IsSegmentLeafRequired(pos0, mmrSize, bitmap);
+		}), leaves.end());
+	}
+
 	template<class T>
 	std::vector<std::pair<uint64_t, T>> ToLeafIndices(std::vector<std::pair<uint64_t, T>> leaves)
 	{
@@ -110,6 +197,10 @@ inline PibdSnapshot BuildSnapshot(const PibdDownload& download)
 	snapshot.OutputHashes = download.GetOutputs().GetStoredHashes();
 	snapshot.RangeProofHashes = download.GetRangeProofs().GetStoredHashes();
 	snapshot.KernelHashes = download.GetKernels().GetStoredHashes();
+	PibdSnapshotDetail::NormalizeLeaves(snapshot.OutputMmrSize, snapshot.Bitmap,
+		snapshot.Outputs, snapshot.OutputHashes);
+	PibdSnapshotDetail::NormalizeLeaves(snapshot.OutputMmrSize, snapshot.Bitmap,
+		snapshot.RangeProofs, snapshot.RangeProofHashes);
 
 	// Kernels are never pruned: the whole tree must rebuild to the horizon root.
 	const uint64_t kernelLeaves = MMRUtil::GetNumLeaves(snapshot.KernelMmrSize);

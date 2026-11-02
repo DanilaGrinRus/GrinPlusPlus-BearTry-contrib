@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <limits>
 #include <utility>
 
 // Tuple that defines a segment of a given PMMR.
@@ -42,7 +43,11 @@ public:
 	// Offset (in leaf index) of the first leaf in the segment.
 	uint64_t LeafOffset() const
 	{
-		return m_idx * SegmentCapacity();
+		const uint64_t capacity = SegmentCapacity();
+		if (m_idx > (std::numeric_limits<uint64_t>::max)() / capacity) {
+			throw DESERIALIZATION_EXCEPTION("Segment leaf offset overflow");
+		}
+		return m_idx * capacity;
 	}
 
 	// Number of leaves in this segment: capacity, except for the final segment

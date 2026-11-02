@@ -18,6 +18,8 @@
 #include <PMMR/Common/HashFile.h>
 #include <PMMR/Common/MMRHashUtil.h>
 #include <PMMR/Common/MMRUtil.h>
+#include <Core/Models/FullBlock.h>
+#include <PMMR/OutputPMMR.h>
 #include <PMMR/Common/PruneList.h>
 #include <PMMR/Models/BitmapChunk.h>
 #include <PMMR/Models/BitmapSegment.h>
@@ -124,6 +126,47 @@ namespace
 
 		return BuildSnapshot(session.GetDownload());
 	}
+}
+
+TEST_CASE("PibdStateWriter::RejectsUnalignableHashOnlyLeaf")
+{
+	// 4 leaves, bitmap {2}; leaf 0 is hash-only and would become a height-0
+	// pruned root with no data. Until the physical data model is proven, the
+	// writer must reject this snapshot rather than write shifted data indices.
+	const uint64_t numOutputs = 4;
+	VectorSegmentBitmap bitmap(numOutputs);
+	bitmap.Set(2, true);
+
+	const InMemoryPmmr<OutputIdentifier> outputs = MakeTree<OutputIdentifier>(numOutputs, MakeOutput);
+	const InMemoryPmmr<RangeProof> rangeProofs = MakeTree<RangeProof>(numOutputs, MakeRangeProof);
+	const InMemoryPmmr<TransactionKernel> kernels = MakeTree<TransactionKernel>(2, MakeKernel);
+
+	PibdSnapshot snapshot;
+	snapshot.BlockHash = Hash::ValueOf(23);
+	snapshot.Height = 100;
+	snapshot.OutputMmrSize = outputs.GetSize();
+	snapshot.KernelMmrSize = kernels.GetSize();
+	snapshot.OutputMmrRoot = outputs.GetRoot();
+	snapshot.RangeProofRoot = rangeProofs.GetRoot();
+	snapshot.KernelRoot = kernels.GetRoot();
+	snapshot.Bitmap = bitmap;
+	for (uint64_t i = 1; i < numOutputs; ++i) {
+		const uint64_t pos = MMRUtil::InsertionToPmmrIndex(i);
+		snapshot.Outputs.emplace_back(i, outputs.GetLeafData(pos));
+		snapshot.RangeProofs.emplace_back(i, rangeProofs.GetLeafData(pos));
+	}
+	for (uint64_t i = 0; i < 2; ++i) {
+		const uint64_t pos = MMRUtil::InsertionToPmmrIndex(i);
+		snapshot.Kernels.emplace_back(i, kernels.GetLeafData(pos));
+	}
+	snapshot.OutputHashes.emplace(0, outputs.GetHash(0));
+	snapshot.RangeProofHashes.emplace(0, rangeProofs.GetHash(0));
+
+	const fs::path dir = fs::temp_directory_path() / "pibd-hash-only-reject";
+	std::error_code error;
+	fs::remove_all(dir, error);
+	REQUIRE_THROWS_AS(PibdStateWriter::Write(snapshot, dir), SegmentException);
+	fs::remove_all(dir, error);
 }
 
 TEST_CASE("PibdStateWriter::WritesVerifiablePmmrFiles")

@@ -5,6 +5,7 @@
 #include "PIBD/PibdSync.h"
 #include <Common/Util/FileUtil.h>
 #include "Sync/Syncer.h"
+#include "Sync/PihdClient.h"
 #include "Messages/TransactionKernelMessage.h"
 
 #include <Core/Context.h>
@@ -46,8 +47,17 @@ std::shared_ptr<P2PServer> P2PServer::Create(
 	std::shared_ptr<IDatabase> pDatabase,
 	const ITransactionPool::Ptr& pTransactionPool)
 {
-	// Sync Status
+	// Sync Status: seed the handshake/Ping values from the loaded chain. Without
+	// this, a node with a valid state reports genesis height/TD to peers and
+	// they never select it for header/PIBD sync.
 	SyncStatusPtr pSyncStatus(new SyncStatus());
+	pSyncStatus->UpdateHeaderStatus(
+		pBlockChain->GetHeight(EChainType::CANDIDATE),
+		pBlockChain->GetTotalDifficulty(EChainType::CANDIDATE));
+	pSyncStatus->UpdateBlockStatus(
+		pBlockChain->GetHeight(EChainType::CONFIRMED),
+		pBlockChain->GetTotalDifficulty(EChainType::CONFIRMED),
+		0);
 
 	// Peer Manager
 	std::shared_ptr<Locked<PeerManager>> peerManager = PeerManager::Create(
@@ -57,6 +67,7 @@ std::shared_ptr<P2PServer> P2PServer::Create(
 
 	// Connection Manager
 	ConnectionManagerPtr pConnectionManager = ConnectionManager::Create();
+	auto pPihdClient = std::make_shared<PihdClient>(pConnectionManager, pBlockChain);
 
 	const Config& config = pContext->GetConfig();
 
@@ -82,7 +93,8 @@ std::shared_ptr<P2PServer> P2PServer::Create(
 		pBlockChain,
 		pPipeline,
 		pSyncStatus,
-		pPibdSync
+		pPibdSync,
+		pPihdClient
 	);
 
 	// Syncer
@@ -91,7 +103,8 @@ std::shared_ptr<P2PServer> P2PServer::Create(
 		pBlockChain,
 		pPipeline,
 		pSyncStatus,
-		pPibdSync
+		pPibdSync,
+		pPihdClient
 	);
 
 	// Dandelion

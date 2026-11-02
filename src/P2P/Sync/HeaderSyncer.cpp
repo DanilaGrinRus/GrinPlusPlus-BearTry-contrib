@@ -6,6 +6,12 @@
 
 bool HeaderSyncer::SyncHeaders(const SyncStatus& syncStatus, const bool startup)
 {
+	// Client-only PIHD: dormant unless P2P.PIHD_MODE is explicitly client/full.
+	// On any failure/timeout PihdClient returns false and legacy sync takes over.
+	if (m_pPihdClient != nullptr && m_pPihdClient->TrySync()) {
+		return true;
+	}
+
 	const uint64_t chainHeight = syncStatus.GetHeaderHeight();
 	const uint64_t networkHeight = syncStatus.GetNetworkHeight();
 

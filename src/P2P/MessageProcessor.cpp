@@ -15,6 +15,9 @@
 #include "Messages/GetHeadersMessage.h"
 #include "Messages/HeaderMessage.h"
 #include "Messages/HeadersMessage.h"
+#include "Messages/GetHeaderSegmentMessage.h"
+#include "Messages/HeaderSegmentMessage.h"
+#include "Sync/PihdClient.h"
 #include "Messages/BlockMessage.h"
 #include "Messages/GetBlockMessage.h"
 #include "Messages/CompactBlockMessage.h"
@@ -58,15 +61,27 @@ MessageProcessor::MessageProcessor(
 	const IBlockChain::Ptr& pBlockChain,
 	const std::shared_ptr<Pipeline>& pPipeline,
 	SyncStatusConstPtr pSyncStatus,
-	std::shared_ptr<PibdSync> pPibdSync)
+	std::shared_ptr<PibdSync> pPibdSync,
+	std::shared_ptr<PihdClient> pPihdClient)
 	: m_connectionManager(connectionManager),
 	m_peerManager(peerManager),
 	m_pBlockChain(pBlockChain),
 	m_pPipeline(pPipeline),
 	m_pSyncStatus(pSyncStatus),
-	m_pPibdSync(std::move(pPibdSync))
+	m_pPibdSync(std::move(pPibdSync)),
+	m_pPihdClient(std::move(pPihdClient))
 {
 
+}
+
+uint64_t MessageProcessor::GetBlockHeight() const
+{
+	return m_pBlockChain->GetHeight(EChainType::CONFIRMED);
+}
+
+uint64_t MessageProcessor::GetBlockDifficulty() const
+{
+	return m_pBlockChain->GetTotalDifficulty(EChainType::CONFIRMED);
 }
 
 void MessageProcessor::ProcessMessage(const std::shared_ptr<Connection>& pConnection, const RawMessage& rawMessage)
@@ -142,13 +157,11 @@ void MessageProcessor::ProcessMessageInternal(const std::shared_ptr<Connection>&
 			const PingMessage pingMessage = PingMessage::Deserialize(byteBuffer);
 			pConnection->UpdateTotals(pingMessage.GetTotalDifficulty(), pingMessage.GetHeight());
 
-			const BlockHeaderPtr pTipHeader = m_pBlockChain->GetTipBlockHeader(EChainType::CONFIRMED);
-			if (pTipHeader == nullptr) {
-				LOG_WARNING("Cannot answer Ping: no confirmed tip header.");
-				break;
-			}
-
-			const PongMessage pongMessage(pTipHeader->GetTotalDifficulty(), pTipHeader->GetHeight());
+			// Answer from the authoritative chain store. Tip-header lookup can
+			// lag immediately after PIBD activation, leaving the peer with height 0.
+			const uint64_t height = m_pBlockChain->GetHeight(EChainType::CONFIRMED);
+			const uint64_t difficulty = m_pBlockChain->GetTotalDifficulty(EChainType::CONFIRMED);
+			const PongMessage pongMessage(difficulty, height);
 			pConnection->SendAsync(pongMessage);
 			break;
 		}
@@ -156,6 +169,22 @@ void MessageProcessor::ProcessMessageInternal(const std::shared_ptr<Connection>&
 		{
 			const PongMessage pongMessage = PongMessage::Deserialize(byteBuffer);
 			pConnection->UpdateTotals(pongMessage.GetTotalDifficulty(), pongMessage.GetHeight());
+			break;
+		}
+		case GetHeaderSegment:
+		{
+			// Client-only build: we never advertise PIHD_HIST, so serving a
+			// header segment is deliberately unsupported.
+			LOG_DEBUG_F("Ignoring GetHeaderSegment from {}: PIHD server disabled", pConnection);
+			break;
+		}
+		case HeaderSegment:
+		{
+			if (m_pPihdClient == nullptr) {
+				break;
+			}
+			const HeaderSegmentMessage response = HeaderSegmentMessage::Deserialize(byteBuffer);
+			m_pPihdClient->OnHeaderSegment(pConnection, response);
 			break;
 		}
 		case OutputBitmapSegment:
@@ -184,19 +213,10 @@ void MessageProcessor::ProcessMessageInternal(const std::shared_ptr<Connection>&
 		case GetRangeProofSegment:
 		case GetKernelSegment:
 		{
-			// Serve PIBD segments only from a fully settled node. Advertising
-			// segments while headers/state/body sync is still running would send
-			// partial or mid-migration state to peers.
-			if (m_pSyncStatus == nullptr || m_pSyncStatus->GetStatus() != ESyncStatus::NOT_SYNCING) {
-				LOG_DEBUG_F(
-					"Ignoring {} from {}: node is not fully synced",
-					MessageTypes::ToString(header.GetMessageType()),
-					pConnection);
-				break;
-			}
-
-			// Only the flushed header of the installed state can be served;
-			// requests for another horizon are ignored.
+			// Serve the installed flushed snapshot. A node can still be catching
+			// up on later blocks; the snapshot at H is immutable once flushed and
+			// is exactly what a Rust peer asks for. Requests for another H are
+			// rejected below by the flushed-hash comparison.
 			try {
 				const SegmentRequestMessage request =
 					SegmentRequestMessage::Deserialize(byteBuffer, header.GetMessageType());
@@ -223,6 +243,13 @@ void MessageProcessor::ProcessMessageInternal(const std::shared_ptr<Connection>&
 					pState->GetOutputPMMR(), pState->GetRangeProofPMMR(), pState->GetKernelMMR());
 				const Hash& blockHash = request.GetBlockHash();
 				const SegmentIdentifier& identifier = request.GetIdentifier();
+				// Limit work per peer-controlled request. The Grin 5.5.2 PIBD
+				// client uses heights 9 and 11; height 13 retains headroom.
+				// Larger segment requests require a separately bounded implementation.
+				if (identifier.GetHeight() > 13) {
+					LOG_WARNING_F("Ignoring PIBD request with oversized segment height {}", identifier.GetHeight());
+					break;
+				}
 				switch (header.GetMessageType()) {
 					case GetOutputBitmapSegment:
 						pConnection->SendAsync(SegmentResponseMessage::CreateOutputBitmap(

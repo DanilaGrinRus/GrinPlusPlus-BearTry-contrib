@@ -238,7 +238,13 @@ void Connection::CheckPing()
     }
 
     if (m_lastPing + std::chrono::seconds(10) < system_clock::now()) {
-        SendAsync(PingMessage{ m_pSyncStatus->GetBlockDifficulty(), m_pSyncStatus->GetBlockHeight() });
+        uint64_t difficulty = m_pSyncStatus->GetBlockDifficulty();
+        uint64_t height = m_pSyncStatus->GetBlockHeight();
+        if (const auto pMessageProcessor = m_pMessageProcessor.lock()) {
+            difficulty = pMessageProcessor->GetBlockDifficulty();
+            height = pMessageProcessor->GetBlockHeight();
+        }
+        SendAsync(PingMessage{ difficulty, height });
 
         m_lastPing = system_clock::now();
     }

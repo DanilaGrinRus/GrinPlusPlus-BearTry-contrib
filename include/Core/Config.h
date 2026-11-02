@@ -6,6 +6,7 @@
 #include <filesystem.h>
 #include <json/json.h>
 #include <Net/IPAddress.h>
+#include <P2P/PihdParams.h>
 #include <unordered_set>
 
 class Config
@@ -43,6 +44,7 @@ public:
 	void SetMaxPeers(int max_peers) noexcept;
 
 	uint16_t GetP2PPort() const noexcept;
+	Pihd::EPihdMode GetPihdMode() const noexcept;
 	// Port used when connecting to peers (may differ from the listening port).
 	uint16_t GetPeerPort() const noexcept;
 	// Whether the PIBD state download path is allowed (legacy zip otherwise).
@@ -54,6 +56,7 @@ public:
 	const std::unordered_set<IPAddress>& GetPreferredPeers() const noexcept;
 	const std::unordered_set<IPAddress>& GetAllowedPeers() const noexcept;
 	const std::unordered_set<IPAddress>& GetBlockedPeers() const noexcept;
+	const std::unordered_set<IPAddress>& GetBlockedOutboundPeers() const noexcept;
 	bool IsPeerAllowed(const IPAddress& peer);
 	bool IsPeerBlocked(const IPAddress& peer);
 	bool IsPeerPreferred(const IPAddress& peer);

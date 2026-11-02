@@ -15,6 +15,7 @@
 #include "../../PMMR/Models/SegmentIdentifier.h"
 
 #include <Crypto/Models/Hash.h>
+#include <Common/Logger.h>
 
 #include <cstdint>
 #include <functional>
@@ -143,7 +144,7 @@ public:
 
 	Segment<TransactionKernel> GetKernelSegment(const SegmentIdentifier& identifier) const
 	{
-		return SegmentGenerator<TransactionKernel>::GenerateFromSource(
+		Segment<TransactionKernel> segment = SegmentGenerator<TransactionKernel>::GenerateFromSource(
 			identifier,
 			m_pKernelMMR->GetSize(),
 			nullptr,
@@ -169,6 +170,8 @@ public:
 
 				return std::optional<Hash>(std::move(*pHash));
 			});
+
+		return segment;
 	}
 
 	template<class TMMR>

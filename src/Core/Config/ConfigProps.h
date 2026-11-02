@@ -21,6 +21,10 @@ namespace ConfigProps
 		static const std::string PREFERRED_PEERS = "PREFERRED_PEERS";
 		static const std::string ALLOWED_PEERS = "ALLOWED_PEERS";
 		static const std::string BLOCKED_PEERS = "BLOCKED_PEERS";
+		static const std::string PIHD_MODE = "PIHD_MODE";
+		// Peers the node must never dial. Unlike BLOCKED_PEERS, this does not
+		// reject inbound connections (used to keep test topologies loop-free).
+		static const std::string BLOCKED_OUTBOUND_PEERS = "BLOCKED_OUTBOUND_PEERS";
 	}
 
 	namespace Dandelion

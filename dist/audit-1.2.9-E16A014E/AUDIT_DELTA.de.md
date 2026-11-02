@@ -1,4 +1,13 @@
 # AUDIT_DELTA (DE) — Grin++ 1.2.9 → Kompatibilität mit Grin v5.5.2
+**Aktueller Stand 02.11.2026.** Basis 1.2.9 `5f511e6`; Arbeitsbaum HEAD `69b3267` plus uncommittete Änderungen (inkl. PIHD-Client). Quellmetriken:
+
+- C++ hinzugefügt: **+16.695 Zeilen**; entfernt **−551**; 177 getrackte Dateien + 5 neue Dateien;
+- Diff-/neuer C++-Textumfang: **≈ +700.5 KiB**;
+- endgültige `GrinNode.exe`: **7.739.392 B = 7.558,0 KiB = 7,38 MiB**;
+- **Exe-Zuwachs gegenüber 1.2.9: NOT MEASURED** — kein Originalbinär vorhanden; 7,7 MB ist die Endgröße, kein Delta;
+- Artefakte: `GrinNode 9E6E92C9…`, `Tests 524FC297…`; Suite **198 / 2.265 PASS**.
+- **G-09 Stage 1:** identity-geprüfter P2P- + Rust-Lauf bei H=3.315.600 — PASS (7/7, 1673/1673, 1673/1673, 1637/1637); Roots stammen aus C++-REST, unabhängige H-Bestätigung und normale Rust-Node bleiben NOT VERIFIED.
+- **PIBD/PIHD-Guard:** Height-Cap 13, Overflow-Prüfung `idx*capacity`, PIHD-Antwort an Connection/Peer gebunden, Fallback ohne Chain-Height-Fortschritt; PIHD ist experimentell, `PIHD_HIST` wird nicht beworben, Snapshot/Cache/Rate-Limit bleiben offen.
 
 Basis: Grin++ 1.2.9 (`5f511e6`). Delta aktualisiert: 02.11.2026, HEAD `69b3267` (G-09/G-23/G-53/G-07/G-24).
 Begleitdokumente: `AUDIT_PACKAGE.md` (Paketregeln), `GAP_MATRIX.md` (Status aller

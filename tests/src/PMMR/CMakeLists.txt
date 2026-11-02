@@ -2,6 +2,7 @@ list_append_parent(
     test_sources
     ${CMAKE_CURRENT_LIST_DIR}
     "Test_MMRUtil.cpp"
+    "Test_Pihd.cpp"
     "Test_BitmapAssembly.cpp"
     "Test_PibdDownload.cpp"
     "Test_PibdSession.cpp"

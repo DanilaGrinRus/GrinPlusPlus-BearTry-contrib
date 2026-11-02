@@ -163,3 +163,15 @@
 * Не подтверждено: живой serving Rust-клиенту, legacy-фолбэк (G-41), reorg,
   crash/fuzz, **mainnet (G-45)**. Живой журнальный resume: replay подтверждён,
   полное завершение — G-43.
+* **G-44 (02.11.2026): PARTIAL.** Реализован experimental client-side PIHD:
+  сообщения 29/30, `PIHD_MODE=off|client` (default off), последовательный
+  PihdClient с привязкой ответа к connection/peer, fallback на legacy и
+  cooldown. `PIHD_HIST` не рекламируется, серверной части нет; со staging Rust
+  client-mode пока несовместим (Rust требует бит у запрашивающего). Остаются
+  in-flight 8/2, serving, live PIHD peer, snapshot/cache/rate-limit.
+* **G-09 serving (02.11.2026):** контролируемый P2P + Rust identity-checked
+  прогон на H=3 315 600 — PASS: 7/7 bitmap, 1673/1673 output, 1673/1673
+  rangeproof, 1637/1637 kernel. Roots взяты из C++ REST, независимое
+  подтверждение H и обычная Rust-нода остаются NOT VERIFIED.
+* Актуальная сборка: suite **198 / 2265 PASS**; `GrinNode 9E6E92C9…`,
+  `Tests 524FC297…`; exe 7 739 392 B.

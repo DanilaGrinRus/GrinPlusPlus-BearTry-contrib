@@ -142,6 +142,7 @@ int Config::GetMaxPeers() const noexcept { return m_pImpl->m_nodeConfig.GetP2P()
 void Config::SetMaxPeers(const int max_peers) noexcept { m_pImpl->m_nodeConfig.GetP2P().SetMaxConnections(max_peers); }
 
 uint16_t Config::GetP2PPort() const noexcept { return m_pImpl->m_nodeConfig.GetP2P().GetP2PPort(); }
+Pihd::EPihdMode Config::GetPihdMode() const noexcept { return m_pImpl->m_nodeConfig.GetP2P().GetPihdMode(); }
 uint16_t Config::GetPeerPort() const noexcept { return m_pImpl->m_nodeConfig.GetP2P().GetPeerPort(); }
 bool Config::IsPibdEnabled() const noexcept { return m_pImpl->m_nodeConfig.GetP2P().IsPibdEnabled(); }
 const std::vector<uint8_t>& Config::GetMagicBytes() const noexcept { return m_pImpl->m_nodeConfig.GetP2P().GetMagicBytes(); }
@@ -151,6 +152,7 @@ uint8_t Config::GetMinSyncPeers() const noexcept { return m_pImpl->m_nodeConfig.
 const std::unordered_set<IPAddress>& Config::GetPreferredPeers() const noexcept { return m_pImpl->m_nodeConfig.GetP2P().GetPreferredPeers(); }
 const std::unordered_set<IPAddress>& Config::GetAllowedPeers() const noexcept { return m_pImpl->m_nodeConfig.GetP2P().GetAllowedPeers(); }
 const std::unordered_set<IPAddress>& Config::GetBlockedPeers() const noexcept { return m_pImpl->m_nodeConfig.GetP2P().GetBlockedPeers(); }
+const std::unordered_set<IPAddress>& Config::GetBlockedOutboundPeers() const noexcept { return m_pImpl->m_nodeConfig.GetP2P().GetBlockedOutboundPeers(); }
 
 bool Config::IsPeerAllowed(const IPAddress& peer) {
 	const std::unordered_set<IPAddress>& vec = m_pImpl->m_nodeConfig.GetP2P().GetAllowedPeers();

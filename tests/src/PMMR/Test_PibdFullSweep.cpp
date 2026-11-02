@@ -2,6 +2,7 @@
 
 #include <Core/Models/BlockHeader.h>
 #include <Core/Serialization/ByteBuffer.h>
+#include <Core/Serialization/Serializer.h>
 #include <P2P/PIBD/PibdParams.h>
 #include <P2P/PIBD/PibdSegmentService.h>
 #include <PMMR/KernelMMR.h>
@@ -17,8 +18,7 @@ TEST_CASE("PibdSegmentService::FullSweepPpCkpt", "[.]")
 	const fs::path stateDir = "C:/DHW/.tmp/interop/pp-ckpt/.GrinPP/FLOONET/NODE/TXHASHSET";
 	const fs::path headerPath = "C:/DHW/.tmp/g09-replay/fixture/header.bin";
 	if (!fs::exists(stateDir / "output/pmmr_hash.bin") || !fs::exists(headerPath)) {
-		WARN("pp-ckpt/fixture absent; skipping full PIBD sweep");
-		return;
+		FAIL("pp-ckpt/fixture absent; full PIBD sweep was not executed");
 	}
 
 	std::ifstream headerFile(headerPath, std::ios::binary);
@@ -33,6 +33,32 @@ TEST_CASE("PibdSegmentService::FullSweepPpCkpt", "[.]")
 	PibdSegmentService service(pOutputPMMR, pRangeProofPMMR, pKernelMMR);
 	const VectorSegmentBitmap bitmap = service.GetOutputBitmap();
 	const Hash bitmapRoot = service.GetBitmapMmrRoot();
+	REQUIRE(service.GetOutputMmrSize() == header.GetOutputMMRSize());
+	REQUIRE(service.GetKernelMmrSize() == header.GetKernelMMRSize());
+	const auto bitmapMmr = service.BuildBitmapMmr();
+	const uint64_t bitmapSegments = SegmentIdentifier::CountSegmentsRequired(
+		bitmapMmr.GetSize(), PibdParams::BITMAP_SEGMENT_HEIGHT);
+	uint64_t bitmapFailures = 0;
+	for (uint64_t idx = 0; idx < bitmapSegments; ++idx) {
+		try {
+			const auto segment = service.GetBitmapSegment(
+				SegmentIdentifier(PibdParams::BITMAP_SEGMENT_HEIGHT, idx));
+			Serializer serializer(EProtocolVersion::V1000);
+			segment.Serialize(serializer);
+			ByteBuffer bytes(serializer.GetBytes(), EProtocolVersion::V1000);
+			const auto decoded = BitmapSegment::Deserialize(bytes);
+			if (bytes.GetRemainingSize() != 0) {
+				throw std::runtime_error("Trailing bitmap payload bytes");
+			}
+			decoded.ToSegment().ValidateWithOtherRoot(
+				bitmapMmr.GetSize(), nullptr, header.GetOutputRoot(),
+				header.GetOutputMMRSize(), service.GetOutputMmrRoot(), true);
+		} catch (const std::exception& e) {
+			if (bitmapFailures++ < 3) {
+				WARN("bitmap segment " << idx << " failed: " << e.what());
+			}
+		}
+	}
 
 	uint64_t outputFailures = 0;
 	uint64_t rangeProofFailures = 0;
@@ -83,9 +109,11 @@ TEST_CASE("PibdSegmentService::FullSweepPpCkpt", "[.]")
 		}
 	}
 
-	WARN("sweep: output " << outputFailures << "/" << outputSegments
+	WARN("sweep: bitmap " << bitmapFailures << "/" << bitmapSegments
+		<< ", output " << outputFailures << "/" << outputSegments
 		<< ", rangeproof " << rangeProofFailures << "/" << rangeProofSegments
 		<< ", kernel " << kernelFailures << "/" << kernelSegments);
+	CHECK(bitmapFailures == 0);
 	CHECK(outputFailures == 0);
 	CHECK(rangeProofFailures == 0);
 	CHECK(kernelFailures == 0);

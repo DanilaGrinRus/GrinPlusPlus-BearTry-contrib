@@ -40,7 +40,12 @@ namespace MessageTypes
 		GetRangeProofSegment = 25,
 		RangeProofSegment = 26,
 		GetKernelSegment = 27,
-		KernelSegment = 28
+		KernelSegment = 28,
+
+		// PIHD (Grin staging only; ids 29/30). The reference v5.5.2 tag has no
+		// such messages. The C++ node only parses them when PIHD_MODE=client/full.
+		GetHeaderSegment = 29,
+		HeaderSegment = 30
 	};
 
 	static constexpr uint64_t GetMaximumSize(const EMessageType messageType)
@@ -99,6 +104,11 @@ namespace MessageTypes
 			case RangeProofSegment:
 			case KernelSegment:
 				return 2 * P2P::MAX_BLOCK_SIZE;
+			case GetHeaderSegment:
+				return 9;
+			case HeaderSegment:
+				// SegmentIdentifier(9) + count(2) + max header size * 512.
+				return 9 + 2 + (uint64_t)578 * 512;
 		}
 
 		return 0;
@@ -166,6 +176,10 @@ namespace MessageTypes
 				return "Msg::GetKernelSegment";
 			case KernelSegment:
 				return "Msg::KernelSegment";
+			case GetHeaderSegment:
+				return "Msg::GetHeaderSegment";
+			case HeaderSegment:
+				return "Msg::HeaderSegment";
 		}
 
 		return "UNKNOWN";

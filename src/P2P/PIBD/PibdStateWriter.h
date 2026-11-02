@@ -178,6 +178,10 @@ private:
 		for (uint64_t pos0 = 0; pos0 < mmrSize; ++pos0) {
 			const int64_t parentPos = parent[(size_t)pos0];
 			if (hasData[(size_t)pos0] == 0 && (parentPos < 0 || hasData[(size_t)parentPos] == 1)) {
+				if (MMRUtil::IsLeaf(pos0)) {
+					throw SegmentException(ESegmentError::MissingLeaf,
+						treeName + " cannot store a hash-only leaf at position " + std::to_string(pos0));
+				}
 				// A fully pruned peak is a valid carried subtree root.
 				prunedRoot[(size_t)pos0] = 1;
 			}

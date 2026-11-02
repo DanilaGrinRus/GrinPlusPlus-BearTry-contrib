@@ -16,6 +16,7 @@ class Pipeline;
 class TxHashSetArchiveMessage;
 class TxHashSetRequestMessage;
 class PibdSync;
+class PihdClient;
 
 class MessageProcessor
 {
@@ -37,10 +38,16 @@ public:
 		const IBlockChain::Ptr& pBlockChain,
 		const std::shared_ptr<Pipeline>& pipeline,
 		SyncStatusConstPtr pSyncStatus,
-		std::shared_ptr<PibdSync> pPibdSync = nullptr
+		std::shared_ptr<PibdSync> pPibdSync = nullptr,
+		std::shared_ptr<PihdClient> pPihdClient = nullptr
 	);
 
 	void ProcessMessage(const std::shared_ptr<Connection>& pConnection, const RawMessage& rawMessage);
+
+	// Live chain values for handshake/Ping. SyncStatus can lag at startup while
+	// the chain store is already loaded, so read the authoritative chain here.
+	uint64_t GetBlockHeight() const;
+	uint64_t GetBlockDifficulty() const;
 
 private:
 	void ProcessMessageInternal(const std::shared_ptr<Connection>& pConnection, const RawMessage& rawMessage);
@@ -51,4 +58,5 @@ private:
 	std::shared_ptr<Pipeline> m_pPipeline;
 	SyncStatusConstPtr m_pSyncStatus;
 	std::shared_ptr<PibdSync> m_pPibdSync;
+	std::shared_ptr<PihdClient> m_pPihdClient;
 };

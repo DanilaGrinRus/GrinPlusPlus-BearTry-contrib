@@ -27,7 +27,8 @@ public:
 		const IBlockChain::Ptr& pBlockChain,
 		std::shared_ptr<Pipeline> pPipeline,
 		SyncStatusConstPtr pSyncStatus,
-		std::shared_ptr<PibdSync> pPibdSync = nullptr
+		std::shared_ptr<PibdSync> pPibdSync = nullptr,
+		std::shared_ptr<PihdClient> pPihdClient = nullptr
 	);
 	~Seeder();
 

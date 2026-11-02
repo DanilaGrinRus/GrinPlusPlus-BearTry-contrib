@@ -34,5 +34,6 @@ TEST_CASE("DataFile")
     // Reads outside the logical file must fail instead of over-reading the
     // mapped buffer or the append buffer.
     REQUIRE_THROWS(pDataFile->GetDataAt(4));
+    REQUIRE_THROWS(pDataFile->GetDataAt(1ULL << 59));
     REQUIRE_THROWS(pDataFile->GetDataAt(100));
 }

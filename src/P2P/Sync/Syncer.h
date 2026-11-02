@@ -11,6 +11,7 @@
 // Forward Declarations
 class SyncStatus;
 class PibdSync;
+class PihdClient;
 
 class Syncer
 {
@@ -20,7 +21,8 @@ public:
 		const IBlockChain::Ptr& pBlockChain,
 		std::shared_ptr<Pipeline> pPipeline,
 		SyncStatusPtr pSyncStatus,
-		std::shared_ptr<PibdSync> pPibdSync
+		std::shared_ptr<PibdSync> pPibdSync,
+		std::shared_ptr<PihdClient> pPihdClient = nullptr
 	);
 	~Syncer();
 
@@ -30,7 +32,8 @@ private:
 		const IBlockChain::Ptr& pBlockChain,
 		std::shared_ptr<Pipeline> pPipeline,
 		SyncStatusPtr pSyncStatus,
-		std::shared_ptr<PibdSync> pPibdSync
+		std::shared_ptr<PibdSync> pPibdSync,
+		std::shared_ptr<PihdClient> pPihdClient
 	);
 
 	static void Thread_Sync(Syncer& syncer);
@@ -41,6 +44,7 @@ private:
 	std::shared_ptr<Pipeline> m_pPipeline;
 	SyncStatusPtr m_pSyncStatus;
 	std::shared_ptr<PibdSync> m_pPibdSync;
+	std::shared_ptr<PihdClient> m_pPihdClient;
 
 	std::atomic<bool> m_terminate;
 	std::thread m_syncThread;

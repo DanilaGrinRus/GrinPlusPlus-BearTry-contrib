@@ -33,7 +33,8 @@ std::unique_ptr<Seeder> Seeder::Create(
     const IBlockChain::Ptr& pBlockChain,
     std::shared_ptr<Pipeline> pPipeline,
     SyncStatusConstPtr pSyncStatus,
-    std::shared_ptr<PibdSync> pPibdSync)
+    std::shared_ptr<PibdSync> pPibdSync,
+    std::shared_ptr<PihdClient> pPihdClient)
 {
     auto pMessageProcessor = std::make_shared<MessageProcessor>(
         connectionManager,
@@ -41,7 +42,8 @@ std::unique_ptr<Seeder> Seeder::Create(
         pBlockChain,
         pPipeline,
         pSyncStatus,
-        pPibdSync
+        pPibdSync,
+        pPihdClient
     );
     std::unique_ptr<Seeder> pSeeder(new Seeder(
         connectionManager,
@@ -195,6 +197,12 @@ bool Seeder::SeedNewConnection()
             std::make_shared<asio::ip::tcp::socket>(*m_pAsioContext)
         ));
         
+        const auto& blockedOutbound = Global::GetConfig().GetBlockedOutboundPeers();
+        if (std::find(blockedOutbound.begin(), blockedOutbound.end(), pSocket->GetIPAddress()) != blockedOutbound.end()) {
+            LOG_TRACE_F("peer is blocked for outbound: {}", pSocket->GetIPAddress());
+            return false;
+        }
+
         if (Global::GetConfig().IsPeerBlocked(pSocket->GetIPAddress())) {
             LOG_TRACE_F("peer is blocked: {}", pSocket->GetIPAddress());
             return false;

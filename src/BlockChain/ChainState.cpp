@@ -82,6 +82,14 @@ void ChainState::UpdateSyncStatus(SyncStatus& syncStatus) const
 	{
 		syncStatus.UpdateHeaderStatus(pCandidateHead->GetHeight(), pCandidateHead->GetTotalDifficulty());
 	}
+	else
+	{
+		// The chain store can know the tip before its header is readable from the
+		// block DB (e.g. immediately after a PIBD flush). Do not leave Ping at 0.
+		syncStatus.UpdateHeaderStatus(
+			GetHeight(EChainType::CANDIDATE),
+			GetTotalDifficulty(EChainType::CANDIDATE));
+	}
 
 	const Hash& confirmedHeadHash = GetChainStore()->GetChain(EChainType::CONFIRMED)->GetTipHash();
 	auto pConfirmedHead = GetBlockDB()->GetBlockHeader(confirmedHeadHash);
@@ -92,6 +100,13 @@ void ChainState::UpdateSyncStatus(SyncStatus& syncStatus) const
 			pConfirmedHead->GetTotalDifficulty(),
 			pConfirmedHead->GetTimestamp()
 		);
+	}
+	else
+	{
+		syncStatus.UpdateBlockStatus(
+			GetHeight(EChainType::CONFIRMED),
+			GetTotalDifficulty(EChainType::CONFIRMED),
+			0);
 	}
 }
 

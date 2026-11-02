@@ -13,6 +13,8 @@
 #include <PMMR/Common/MMRUtil.h>
 
 #include <P2P/Messages/SegmentRequestMessage.h>
+#include <P2P/Messages/GetHeaderSegmentMessage.h>
+#include <P2P/Messages/HeaderSegmentMessage.h>
 #include <P2P/Messages/SegmentResponseMessage.h>
 
 #include <cstdint>
@@ -565,4 +567,34 @@ TEST_CASE("BitmapSegment::ToSegmentAndValidate")
 	const BitmapSegment noProof(
 		SegmentIdentifier(0, 1), std::move(blocksNoProof), SegmentProof::Empty());
 	REQUIRE_THROWS_AS(noProof.ToSegment().Validate(3, root), SegmentException);
+}
+
+TEST_CASE("SegmentIdentifier::LeafOffsetOverflow")
+{
+	// height 32 => capacity 2^32; an index above 2^32-1 cannot be
+	// multiplied safely and must be rejected before scheduling work.
+	const SegmentIdentifier overflow((uint8_t)32, (uint64_t)1 << 32);
+	REQUIRE_THROWS_AS(overflow.LeafOffset(), DeserializationException);
+
+	const SegmentIdentifier valid((uint8_t)32, ((uint64_t)1 << 32) - 1);
+	REQUIRE_NOTHROW(valid.LeafOffset());
+}
+
+TEST_CASE("Pihd::MessagesRoundtrip")
+{
+	const SegmentIdentifier id((uint8_t)9, 7);
+	const GetHeaderSegmentMessage request(id);
+	const std::vector<uint8_t> requestBody = BodyOf(request);
+	ByteBuffer requestBuffer(requestBody, EProtocolVersion::V1);
+	const GetHeaderSegmentMessage decodedRequest = GetHeaderSegmentMessage::Deserialize(requestBuffer);
+	REQUIRE(decodedRequest.GetIdentifier() == id);
+	REQUIRE(requestBuffer.GetRemainingSize() == 0);
+
+	const HeaderSegmentMessage response(id, std::vector<BlockHeader>());
+	const std::vector<uint8_t> responseBody = BodyOf(response);
+	ByteBuffer responseBuffer(responseBody, EProtocolVersion::V1);
+	const HeaderSegmentMessage decodedResponse = HeaderSegmentMessage::Deserialize(responseBuffer);
+	REQUIRE(decodedResponse.GetIdentifier() == id);
+	REQUIRE(decodedResponse.GetHeaders().empty());
+	REQUIRE(responseBuffer.GetRemainingSize() == 0);
 }
