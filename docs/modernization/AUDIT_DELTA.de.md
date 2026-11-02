@@ -1,8 +1,8 @@
 # AUDIT_DELTA (DE) — Grin++ 1.2.9 → Kompatibilität mit Grin v5.5.2
 
-Basis: Grin++ 1.2.9 (`5f511e6`). Delta aktualisiert: 31.10.2026, HEAD `256cbe4`.
+Basis: Grin++ 1.2.9 (`5f511e6`). Delta aktualisiert: 02.11.2026, HEAD `69b3267` (G-09/G-23/G-53/G-07/G-24).
 Begleitdokumente: `AUDIT_PACKAGE.md` (Paketregeln), `GAP_MATRIX.md` (Status aller
-Lücken), `TEST_RESULTS.md` (Nachweise E1–E47), `DB_CONSISTENCY.md` (Design der
+Lücken), `TEST_RESULTS.md` (Nachweise E1–E84), `DB_CONSISTENCY.md` (Design der
 Chain-Speicher).
 
 Umfang: eine Karte pro Änderung am Code gegenüber der Basis oder pro untrennbarer
@@ -433,3 +433,71 @@ stehen in der Nachweiskarte, nicht als Karten.
 
 - G-44 (PIHD-Stillstand-Scaffold), G-45 (Mainnet-Dry-Run), G-49 (Rangeproof-Performance), G-51 (dieses Paket): abgeschlossen (Auditpaket; Eigentümer-Abnahme 01.11.2026).
 - Reine Dokumentations-Commits (`docs: …`): in der Nachweiskarte gelistet, nicht als Karten.
+## Aktualisierung 02.11.2026 — HEAD `69b3267`
+
+Basis unverändert (`5f511e6`). Dieser Stand enthält den G-09-Candidate-Merge,
+die G-23-Hash-Revalidierung, KernelIndex/get_kernel, NRD-Regeln und das lokale
+CI-Gate. Artefakte: `GrinNode E16A014E…`, `Tests CC6472B1…`; Suite **194 / 2227 PASS**.
+
+### G-09 — PIBD-Serving (PARTIAL, Live läuft)
+
+- Candidate-Patch zusammengeführt: `GetRawAt` prüft Compaction/Grenzen; ein
+  erforderliches Blatt ohne Daten liefert `MissingLeaf`; ein optionales Blatt
+  trägt einen prune-aware Hash; ein vollständig geprunter Segmentpfad läuft die
+  **gesamte** `familyBranch` bis zum ersten gespeicherten Vorfahren.
+- `PibdStateWriter`/`PibdTreeRebuilder` speichern hash-only Boundary-Leaves.
+- Read-Path: `AppendOnlyFile`, `MMRHashUtil`, `DataFile` sind grenzgeprüft;
+  `IsCompacted` berücksichtigt die Leaf-Set-Ausnahme; der prune-ignoring
+  Fallback wurde entfernt.
+- Serving-Gate: nur `NOT_SYNCING` und ein non-genesis Flushed-State.
+- Offline-Sweep auf `pp-ckpt` H=3.317.027: Output **0/1674**, Rangeproof
+  **0/1674**, Kernel **0/1638** Fehler; gesamt **4993/4993 PASS**.
+- Output-/Rangeproof-Fixture (11,1100) stimmte byte-genau mit dem
+  Rust-validierten Fixture überein; das externe Kernel-Fixture war unvollständig,
+  der vollständige Sweep validiert alle Kernel-Segmente.
+- Live: ein C++-PIBD-Client lädt den State am Horizont 3.315.600; der
+  Rust-Client folgt nach der Aktivierung. **Live-G-09 ist NOT VERIFIED** —
+  Offline-PASS ist keine Live-Abnahme.
+
+### G-23 — Hash-/Root-Revalidierung (PARTIAL)
+
+- Bei vorhandenem Checkpoint prüft der Startup jeden Header-Hash/Height/Link und
+  den Header-MMR-Leaf-Hash; ein offener TxHashSet muss zu seinen Flushed-Header-
+  Roots passen.
+- Live-Startup mit 3,3M-Header-Kette: API nach 75,4 s bereit, kein Mismatch.
+- Ein Ein-Byte-Korruptionstest für `header_mmr.bin` existiert; vollständige
+  Startup-Fault-Injection und ein PMMR-Node-Sweep sind **NOT VERIFIED**.
+
+### G-53 — KernelIndex/get_kernel (PARTIAL)
+
+- Persistenter generationenbasierter `excess → OutputLocation`-Index mit
+  Tip/Root/Count/Checksum; `get_kernel` Fast Path plus begrenzter Direct-Scan-
+  Fallback; N-06 nutzt jetzt 1-based PMMR-Positionen.
+- Drei Index-Tests / 48 Assertions. Live `/v2`, Reorg und Pagination sind NOT VERIFIED.
+
+### G-07 — NRD (PARTIAL)
+
+- Doppelte NRD-Kernel im Block und `diff < relative_height` werden abgelehnt;
+  Zwei-Wochen-Cutoff; Rewind/Startup/PIBD-Rebuild; NRD vor HF3 verboten.
+- Kein persistenter inkrementeller Index, kein vollständiger Block-/Reorg-NRD-Test,
+  kein Live-NRD-Peer.
+
+### G-24 — Build (PARTIAL)
+
+- `tools/build/ci.ps1` (Build + isolierte Tests + Manifest) und `BUILD_PINS.md`
+  hinzugefügt; Hosted-CI und vcpkg-Lauf auf sauberem Checkout sind NOT VERIFIED.
+
+### N-Funde
+
+- Behoben: N-01 (Commit-Threads), N-02 (Flush/Checkpoint-Replace), N-03
+  (Recovery-Zweig), N-04 (Async-Rate-Counter), N-05 (16-MiB-Write-Queue), N-06
+  (get_kernel-Positionen), N-07 (get_outputs-Fehler).
+- Fault-Injection für N-01/N-02/N-05 und Lasttests sind NOT VERIFIED.
+
+### Offen
+
+- **G-09 live**: Rust-PIBD-Client abschließen, Peer/H/Antwortzahl festhalten.
+- G-23 Fault-Injection/vollständiger PMMR-Node-Sweep.
+- G-53 Live-`/v2`/Reorg/Pagination.
+- G-07 persistenter Index/vollständiger Block-/Reorg-Test.
+- G-24 Hosted-CI; G-49 Rangeproof-Beschleunigung ist zurückgestellt.

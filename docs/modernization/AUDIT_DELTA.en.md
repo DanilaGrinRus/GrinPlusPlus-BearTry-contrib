@@ -1,8 +1,8 @@
 # AUDIT_DELTA (EN) — Grin++ 1.2.9 → Grin v5.5.2 compatibility
 
-Baseline: Grin++ 1.2.9 (`5f511e6`). Delta updated: 2026-10-31, HEAD `256cbe4`.
+Baseline: Grin++ 1.2.9 (`5f511e6`). Delta updated: 2026-11-02, HEAD `69b3267` (G-09/G-23/G-53/G-07/G-24).
 Companion documents: `AUDIT_PACKAGE.md` (package rules), `GAP_MATRIX.md`
-(status of every gap), `TEST_RESULTS.md` (E1–E47 evidence), `DB_CONSISTENCY.md`
+(status of every gap), `TEST_RESULTS.md` (E1–E84 evidence), `DB_CONSISTENCY.md`
 (chain-store design).
 
 Scope: one card per change where code differs from the baseline, or per
@@ -436,3 +436,70 @@ documentation-only commits are tracked in the evidence map, not as cards.
 - G-44 (PIHD dormant scaffold), G-45 (mainnet dry-run), G-49 (rangeproof
   performance), G-51 (this package): closed (audit package; owner acceptance 01.11.2026).
 - Documentation-only commits (`docs: …`): listed in the evidence map, not as cards.
+
+## Update 2026-11-02 — HEAD `69b3267`
+
+Baseline unchanged (`5f511e6`). This snapshot includes the G-09 candidate merge,
+G-23 hash revalidation, KernelIndex/get_kernel, NRD rules and the local CI gate.
+Artifacts: `GrinNode E16A014E…`, `Tests CC6472B1…`; suite **194 / 2227 PASS**.
+
+### G-09 — PIBD serving (PARTIAL, live in progress)
+
+- The candidate patch is merged: `GetRawAt` checks compaction/bounds; a required
+  leaf without data fails with `MissingLeaf`; an optional leaf carries a
+  prune-aware hash; a fully pruned segment walks the **whole** `familyBranch` to
+  the first stored ancestor.
+- `PibdStateWriter`/`PibdTreeRebuilder` persist hash-only boundary leaves.
+- Read-path: `AppendOnlyFile`, `MMRHashUtil`, `DataFile` are bounds-checked;
+  `IsCompacted` honors the leaf-set exception; the prune-ignoring fallback was
+  removed.
+- Serving gate: only `NOT_SYNCING` and a non-genesis flushed state.
+- Offline sweep on `pp-ckpt` H=3,317,027: output **0/1674**, rangeproof
+  **0/1674**, kernel **0/1638** failures; total **4993/4993 PASS**.
+- Output/rangeproof fixture (11,1100) matched the Rust-validated fixture
+  byte-for-byte; the external kernel fixture was incomplete, while the full
+  sweep validates every kernel segment.
+- Live: a C++ PIBD client is downloading the state at horizon 3,315,600; the Rust
+  client follows after activation. **Live G-09 is NOT VERIFIED** — offline PASS
+  is not live acceptance.
+
+### G-23 — hash/root revalidation (PARTIAL)
+
+- With a checkpoint present, startup validates every header hash/height/link and
+  the header-MMR leaf hash; an open TxHashSet must match its flushed header roots.
+- Live startup on a 3.3M-header chain reached API in 75.4 s with no mismatch.
+- A one-byte `header_mmr.bin` corruption test exists; full startup fault
+  injection and a complete PMMR-node sweep are **NOT VERIFIED**.
+
+### G-53 — KernelIndex/get_kernel (PARTIAL)
+
+- Persistent generation-based `excess → OutputLocation` index with tip/root/
+  count/checksum; `get_kernel` fast path plus bounded direct-scan fallback; N-06
+  now uses 1-based PMMR positions.
+- Three index tests / 48 assertions. Live `/v2`, reorg and pagination are NOT VERIFIED.
+
+### G-07 — NRD (PARTIAL)
+
+- Duplicate NRD kernels in a block and `diff < relative_height` are rejected;
+  two-week cutoff; rewind/startup/PIBD rebuild; NRD rejected before HF3.
+- No persisted incremental index, full block/reorg NRD test or live NRD peer.
+
+### G-24 — build (PARTIAL)
+
+- Added `tools/build/ci.ps1` (build + isolated tests + manifest) and
+  `BUILD_PINS.md`; hosted CI and a clean-checkout vcpkg run are NOT VERIFIED.
+
+### N findings
+
+- Fixed N-01 (commit threads), N-02 (flush/checkpoint replace), N-03 (recovery
+  branch), N-04 (async rate counter), N-05 (16 MiB write queue), N-06
+  (get_kernel positions) and N-07 (get_outputs errors).
+- Fault injection for N-01/N-02/N-05 and load tests are NOT VERIFIED.
+
+### Remaining
+
+- **G-09 live**: complete the Rust PIBD client and record peer/H/response count.
+- G-23 fault injection/full PMMR node sweep.
+- G-53 live `/v2`/reorg/pagination.
+- G-07 persisted index/full block/reorg.
+- G-24 hosted CI; G-49 rangeproof speed-up is deferred.

@@ -1,8 +1,8 @@
 # AUDIT_DELTA (RU) — Grin++ 1.2.9 → совместимость с Grin v5.5.2
 
-Базовая точка: Grin++ 1.2.9 (`5f511e6`). Дельта обновлена: 31.10.2026, HEAD `256cbe4`.
+Базовая точка: Grin++ 1.2.9 (`5f511e6`). Дельта обновлена: 02.11.2026, HEAD `69b3267` (G-09/G-23/G-53/G-07/G-24).
 Сопутствующие документы: `AUDIT_PACKAGE.md` (правила пакета), `GAP_MATRIX.md`
-(статус каждой лазейки), `TEST_RESULTS.md` (доказательства E1–E47),
+(статус каждой лазейки), `TEST_RESULTS.md` (доказательства E1–E84),
 `DB_CONSISTENCY.md` (устройство chain-хранилищ).
 
 Область: одна карточка на изменение кода относительно базовой точки либо на
@@ -433,3 +433,67 @@
 
 - G-44 (спящий каркас PIHD), G-45 (mainnet dry-run), G-49 (производительность rangeproofs), G-51 (этот пакет): закрыт (аудит-пакет; приёмка владельца 01.11.2026).
 - Чисто документальные коммиты (`docs: …`): перечислены в карте доказательств, не как карточки.
+## Актуализация 02.11.2026 — HEAD `69b3267`
+
+Базовая точка прежняя (`5f511e6`). Новый срез включает G-09-candidate merge,
+G-23 hash-ревалидацию, KernelIndex/get_kernel, NRD-правила и локальный CI-gate.
+Артефакты: `GrinNode E16A014E…`, `Tests CC6472B1…`; suite **194 / 2227 PASS**.
+
+### G-09 — PIBD serving (PARTIAL, live in progress)
+
+- Слит кандидатный патч: `GetRawAt` проверяет compaction/границы; required leaf
+  без данных → `MissingLeaf`; optional leaf → prune-aware hash; fully pruned
+  сегмент обходит **всю** `familyBranch` до первого сохранённого предка.
+- `PibdStateWriter`/`PibdTreeRebuilder` сохраняют hash-only boundary leaves.
+- Read-path: `AppendOnlyFile`, `MMRHashUtil`, `DataFile` проверяют границы;
+  `IsCompacted` учитывает leaf-set; prune-ignoring fallback удалён.
+- Serving gate: только `NOT_SYNCING` и non-genesis flushed state.
+- Offline sweep `pp-ckpt` H=3 317 027: output **0/1674**, rangeproof
+  **0/1674**, kernel **0/1638** ошибок; total **4993/4993 PASS**.
+- Output/rangeproof fixture (11,1100) — побайтно совпали с Rust-validated
+  fixture; kernel-fixture был неполным, полный sweep корректен.
+- Live: C++ PIBD-клиент качает state на горизонт 3 315 600; Rust-клиент будет
+  запущен после активации. **Live G-09 NOT VERIFIED** — offline PASS не считать
+  live-приёмкой.
+
+### G-23 — hash/root ревалидация (PARTIAL)
+
+- При наличии checkpoint startup проверяет hash/height/previous каждого
+  заголовка и leaf hash header MMR; открытый TxHashSet обязан совпасть с
+  flushed header roots.
+- Live startup на цепи 3.3M: API готов через 75.4 с, mismatch нет.
+- Есть тест порчи одного байта `header_mmr.bin`; fault-injection полного
+  startup-abort и полный PMMR-node sweep — **NOT VERIFIED**.
+
+### G-53 — KernelIndex/get_kernel (PARTIAL)
+
+- Persistent generation-based `excess → OutputLocation` индекс с tip/root/count/
+  checksum; `get_kernel` fast path + bounded direct-scan fallback; N-06 исправлен
+  на 1-based PMMR positions.
+- 3 теста индекса / 48 assertions. Live `/v2`, reorg и pagination — NOT VERIFIED.
+
+### G-07 — NRD (PARTIAL)
+
+- duplicate NRD в блоке и `diff < relative_height` отклоняются; cutoff 2 недели;
+  Rewind/startup/PIBD rebuild; до HF3 NRD запрещён.
+- Нет persisted incremental index, full block/reorg NRD-теста и live NRD peer.
+
+### G-24 — сборка (PARTIAL)
+
+- Добавлен `tools/build/ci.ps1` (build + isolated test + manifest) и
+  `BUILD_PINS.md`; hosted CI и pin vcpkg на чистом checkout — NOT VERIFIED.
+
+### N-находки
+
+- Исправлены N-01 (commit threads), N-02 (flush/checkpoint replace), N-03
+  (recovery branch), N-04 (async rate counter), N-05 (16 MiB write queue),
+  N-06 (get_kernel positions), N-07 (get_outputs errors).
+- Fault-injection для N-01/N-02/N-05 и нагрузочные тесты — NOT VERIFIED.
+
+### Остаётся
+
+- **G-09 live**: завершить Rust-клиент/PIBD и зафиксировать peer/H/число ответов.
+- G-23 fault injection/full PMMR node sweep.
+- G-53 live `/v2`/reorg/pagination.
+- G-07 persisted index/full block/reorg.
+- G-24 hosted CI; G-49 ускорение rangeproofs отложено.
