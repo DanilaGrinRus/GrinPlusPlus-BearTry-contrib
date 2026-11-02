@@ -1,5 +1,5 @@
 # AUDIT_DELTA (DE) — Grin++ 1.2.9 → Kompatibilität mit Grin v5.5.2
-**Aktueller Stand 02.11.2026.** Basis 1.2.9 `5f511e6`; Arbeitsbaum HEAD `49698ab`. Quellmetriken:
+**Aktueller Stand 02.11.2026.** Basis 1.2.9 `5f511e6`; Arbeitsbaum HEAD `508d2e1`. Quellmetriken:
 
 - C++ hinzugefügt: **+17.010 Zeilen**; entfernt **−594**; 187 Dateien;
 - Diff-/neuer C++-Textumfang: **≈ +717.7 KiB**;
@@ -9,7 +9,7 @@
 - **G-09 Stage 1:** identity-geprüfter P2P- + Rust-Lauf bei H=3.315.600 — PASS (7/7, 1673/1673, 1673/1673, 1637/1637); Roots stammen aus C++-REST, unabhängige H-Bestätigung und normale Rust-Node bleiben NOT VERIFIED.
 - **PIBD/PIHD-Guard:** Height-Cap 13, Overflow-Prüfung `idx*capacity`, PIHD-Antwort an Connection/Peer gebunden, Fallback ohne Chain-Height-Fortschritt; PIHD ist experimentell, `PIHD_HIST` wird nicht beworben, Snapshot/Cache/Rate-Limit bleiben offen.
 
-Basis: Grin++ 1.2.9 (`5f511e6`). Delta aktualisiert: 02.11.2026, HEAD `49698ab` (G-09/G-23/G-53/G-07/G-24).
+Basis: Grin++ 1.2.9 (`5f511e6`). Delta aktualisiert: 02.11.2026, HEAD `508d2e1` (G-09/G-23/G-53/G-07/G-24).
 Begleitdokumente: `AUDIT_PACKAGE.md` (Paketregeln), `GAP_MATRIX.md` (Status aller
 Lücken), `TEST_RESULTS.md` (Nachweise E1–E84), `DB_CONSISTENCY.md` (Design der
 Chain-Speicher).
@@ -442,7 +442,7 @@ stehen in der Nachweiskarte, nicht als Karten.
 
 - G-44 (PIHD-Stillstand-Scaffold), G-45 (Mainnet-Dry-Run), G-49 (Rangeproof-Performance), G-51 (dieses Paket): abgeschlossen (Auditpaket; Eigentümer-Abnahme 01.11.2026).
 - Reine Dokumentations-Commits (`docs: …`): in der Nachweiskarte gelistet, nicht als Karten.
-## Aktualisierung 02.11.2026 — HEAD `49698ab`
+## Aktualisierung 02.11.2026 — HEAD `508d2e1`
 
 Basis unverändert (`5f511e6`). Dieser Stand enthält den G-09-Candidate-Merge,
 die G-23-Hash-Revalidierung, KernelIndex/get_kernel, NRD-Regeln und das lokale
