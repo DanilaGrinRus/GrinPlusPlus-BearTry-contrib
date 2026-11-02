@@ -98,10 +98,10 @@
 
 ## Актуальные артефакты
 
-- `GrinNode.exe`: SHA-256 `92A8B53B3797D6856ED0B80AF4A24413321DB6945FB5A28404EDBA9BEDA4C434`,
+- `GrinNode.exe`: SHA-256 `19E0C97EDEFE0BDF3E2E1E57FB97ED85479E2C793927F13551A6832EBA910390`,
   **7 745 024 B = 7 563.5 KiB**.
-- `Tests.exe`: SHA-256 `B218A0B1D6D5732FC7C7623086DB4E77CE2A60E6B222A478993821F91BFA479C`.
-- Suite: **205 / 3697 PASS** (`C:\DHW\.tmp\tests-proof-boundaries.log`).
+- `Tests.exe`: SHA-256 `4F75DCD431DF4A26BB34B4548F078338D9E3FB48F1043E531B3A498CCA636C7B`.
+- Suite: **205 / 3700 PASS** (`C:\DHW\.tmp\tests-proof-boundaries.log`).
 - Wire PASS: `C:\DHW\.tmp\pibd-wire-lease.log`.
 - Active-sync kernel PASS: `C:\DHW\.tmp\pibd-kernel-lease-active.log`.
 - PIBD-state startup: `Could not rebuild NRD index` — 0 в логе; block sync

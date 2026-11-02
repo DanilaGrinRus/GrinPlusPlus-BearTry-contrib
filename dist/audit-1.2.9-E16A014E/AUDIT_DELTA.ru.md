@@ -5,7 +5,7 @@
 - объём diff/новых C++ файлов: **≈ +725.0 KiB**;
 - итоговый `GrinNode.exe`: **7 745 024 B = 7 563.5 KiB = 7.38 MiB**;
 - **прирост exe относительно 1.2.9: NOT MEASURED** — исходный бинарник отсутствует; 7.7 MB это итоговый размер, не дельта;
-- артефакты: `GrinNode 92A8B53B…`, `Tests B218A0B1…`; suite **205 / 3697 PASS**.
+- артефакты: `GrinNode 19E0C97E…`, `Tests 4F75DCD4…`; suite **205 / 3700 PASS**.
 - **G-09 live (03.11.2026): PASS для изолированного сценария.** Обычная Rust 5.5.2-нода дошла до `no_sync` на H=3 318 655 / hash `2945348e…`, с тем же C++ tip, 1 inbound / 0 outbound; PIBD 10 203 442/10 203 442, roots/rangeproof/kernel validation/body sync завершены. Причина прошлых рестартов — `missing left sibling` на output segment 1648; исправлена отправка листьев в `SegmentGenerator`. Ограничения: headers preseeded, reorg/restart/negative/mainnet не покрыты.
 - **PIBD/PIHD guard:** height-cap 13, overflow-check `idx*capacity`, привязка PIHD-ответа к connection/peer, fallback при отсутствии роста chain height; PIBD-ответ строится по одному `ApiStateSnapshot` с retry при смене sequence, bitmap/root кешируются по output root, лимит 500 запросов/мин на connection. PIHD experimental, `PIHD_HIST` не рекламируется; конкурентный apply/reorg-тест snapshot ещё открыт.
 

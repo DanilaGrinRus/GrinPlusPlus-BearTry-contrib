@@ -32,7 +32,7 @@
 | ID | Компонент | Эталон | Расхождение | Влияние | P | Действие | Проверка | Статус |
 |---|---|---|---|---|---|---|---|---|
 | G-08 | Набор сообщений | IDs 0..28 (`p2p/src/msg.rs:67-97`) | IDs 21/22 заняты несовместимыми `GetKernels/Kernels` (никуда не отправляются); 23-28 отсутствуют | Любая попытка использовать 21/22 будет принята Rust-нодой как PIBD-запрос | P0 | Убрать коллизию, завести таблицу 21-28 с размерами из Rust | `static_assert`/компиляция TU | **DONE-C** |
-| G-09 | PIBD (клиент+сервер) | `pibd.rs`, `desegmenter.rs`, `txhashset.rs`, `p2p/src/protocol.rs:21-28` | Загрузка/активация/догон PASS (E42); **live serving FAIL**: sibling hash 4513785 отсутствует в сегментах, PIBD-state, sidecar и pp-net (E56–E61). Внешние пиры архив не отдают; полного snapshot нет | Нужен внешний полный snapshot горизонта до pruning | E32–E34/E41/E42/E55–E63 | **PARTIAL (offline 4993/4993 PASS; live serving NOT VERIFIED; E80)** |
+| G-09 | PIBD (клиент+сервер) | `pibd.rs`, `desegmenter.rs`, `txhashset.rs`, `p2p/src/protocol.rs:21-28` | Загрузка/активация/догон PASS (E42); **fixed-H live serving PASS 03.11.2026**: обычная Rust 5.5.2 дошла до `no_sync` на H=3 318 655, PIBD 10 203 442/10 203 442, roots/validation/body sync. Прошлый sibling-hash дефект был в omission leaf data; исправлен. Архивный serving в обычном GrinNode, смена H, restart/reorg, негативные тесты ещё не интегрированы | Нужен внешний полный snapshot горизонта до pruning; PIBD не рекламируется обычной нодой до интеграции архива | E32–E34/E41/E42/E55–E63, G09_LIVE_PASS_2026-11-03 | **PARTIAL (fixed-H live PASS; archive/restart/reorg pending)** |
 | G-10 | Capabilities | `HEADER_HIST..PIBD_HIST_1` (`p2p/src/types.rs:381-399`) | Объявлены только 0x01/0x02/0x04; 0x08/0x10/0x20/0x40 отсутствуют | Невозможно корректно негодовать возможности; PIBD/BLOCK_HIST не рекламируются | P0 | Добавлен полный набор битов + `ADVERTISED` (PIBD/PIBD_1/BLOCK_HIST выключены до реализации) | `static_assert` в TU | **DONE-C** |
 | G-11 | Неизвестные типы сообщений | читать и отбрасывать (`default_max_msg_size`) | Grin++ рвал соединение на любом неизвестном типе (лимит 0) | Прямая несовместимость с новыми сообщениями; дисконнект от Rust-пиров при будущих расширениях | P1 | `MessageHeader`: неизвестный тип → лимит `MAX_BLOCK_SIZE*4` (как Rust) | компиляция TU | **DONE-C** |
 | G-12 | Проверка genesis в handshake | `BadHandshake` при ином genesis (`p2p/src/handshake.rs`) | Grin++ читал genesis пира и **не сравнивал** | Подключение к peer другой сети → поток «плохих» блоков/баны честных пиров | P1 | Сравнение с `Global::GetGenesisHash()` в Hand и Shake | только чтение кода (DONE-R) | **DONE-R** |
@@ -175,7 +175,7 @@
   прогон на H=3 315 600 — PASS: 7/7 bitmap, 1673/1673 output, 1673/1673
   rangeproof, 1637/1637 kernel. Roots взяты из C++ REST, независимое
   подтверждение H и обычная Rust-нода остаются NOT VERIFIED.
-* Актуальная сборка: suite **205 / 3697 PASS**; `GrinNode 92A8B53B…`,
+* Актуальная сборка: suite **205 / 3700 PASS**; `GrinNode 19E0C97E…`,
   `Tests 524FC297…`; exe 7 745 024 B.
 * **P0 crypto (02.11.2026): PARTIAL.** Кэш Bulletproofs теперь включает точные байты proof; batch валидирует пустые/разные длины и не пишет кэш до успеха. Нужны реальный warmed/cold proof-тест, Rust-дифференциал и fuzz.
 * **P0 NRD (02.11.2026): PARTIAL.** Rebuild идёт из kernel PMMR + header chain, без полных block bodies; неполный индекс fail-closed и отвергает NRD-блок. Live PIBD-state стартовал без предупреждений rebuild; нужны end-to-end NRD/reorg и сверка с Rust.

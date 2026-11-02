@@ -5,7 +5,7 @@
 - Diff-/neuer C++-Textumfang: **≈ +725.0 KiB**;
 - endgültige `GrinNode.exe`: **7.745.024 B = 7.563,5 KiB = 7,38 MiB**;
 - **Exe-Zuwachs gegenüber 1.2.9: NOT MEASURED** — kein Originalbinär vorhanden; 7,7 MB ist die Endgröße, kein Delta;
-- Artefakte: `GrinNode 92A8B53B…`, `Tests B218A0B1…`; Suite **205 / 3.697 PASS**.
+- Artefakte: `GrinNode 19E0C97E…`, `Tests 4F75DCD4…`; Suite **205 / 3.700 PASS**.
 - **G-09 live (03.11.2026): PASS für das isolierte Szenario.** Normale Rust-5.5.2-Node erreichte `no_sync` bei H=3.318.655 / Hash `2945348e…`, mit gleichem C++-Tip, 1 Inbound / 0 Outbound; PIBD 10.203.442/10.203.442, Roots/Rangeproof/Kernel-Validierung/Body-Sync abgeschlossen. Ursache der früheren Restarts war `missing left sibling` bei Output-Segment 1648; behoben durch Senden verfügbarer Leaves in `SegmentGenerator`. Grenzen: Headers preseeded, Reorg/Restart/Negativ/Mainnet nicht abgedeckt.
 - **PIBD/PIHD-Guard:** Height-Cap 13, Overflow-Prüfung `idx*capacity`, PIHD-Antwort an Connection/Peer gebunden, Fallback ohne Chain-Height-Fortschritt; PIHD ist experimentell, `PIHD_HIST` wird nicht beworben, Snapshot/Cache/Rate-Limit bleiben offen.
 

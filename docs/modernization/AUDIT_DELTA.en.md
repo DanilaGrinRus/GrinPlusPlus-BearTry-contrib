@@ -5,7 +5,7 @@
 - diff/new C++ text volume: **≈ +725.0 KiB**;
 - final `GrinNode.exe`: **7,745,024 B = 7,563.5 KiB = 7.38 MiB**;
 - **exe growth vs 1.2.9: NOT MEASURED** — no original binary is preserved; 7.7 MB is the final size, not a delta;
-- artifacts: `GrinNode 92A8B53B…`, `Tests B218A0B1…`; suite **205 / 3,697 PASS**.
+- artifacts: `GrinNode 19E0C97E…`, `Tests 4F75DCD4…`; suite **205 / 3,700 PASS**.
 - **G-09 live (2026-11-03): PASS for the isolated scenario.** Ordinary Rust 5.5.2 reached `no_sync` at H=3,318,655 / hash `2945348e…`, with the same C++ tip, 1 inbound / 0 outbound; PIBD 10,203,442/10,203,442, roots/rangeproof/kernel validation/body sync completed. The previous restarts were caused by `missing left sibling` at output segment 1648 and fixed by sending available leaves in `SegmentGenerator`. Limits: headers preseeded, reorg/restart/negative/mainnet not covered.
 - **PIBD/PIHD guard:** height cap 13, `idx*capacity` overflow check, PIHD response bound to connection/peer, fallback on no chain-height progress; PIBD responses use one `ApiStateSnapshot` with sequence retry, bitmap/root cached by output root, 500 requests/min per connection. PIHD is experimental, `PIHD_HIST` is not advertised; concurrent apply/reorg snapshot test remains open.
 

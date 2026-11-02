@@ -26,10 +26,10 @@ TEST_CASE("Capabilities::WireFormat")
 	REQUIRE((uint32_t)Capabilities::PIBD_HIST_1 == 0x40);
 	REQUIRE((uint32_t)Capabilities::PIHD_HIST == 0x80);
 
-	// PIBD serving is implemented, so both PIBD bits are advertised; peers may
-	// request bitmap/output/rangeproof/kernel segments from us at our flushed state.
-	REQUIRE(Capabilities(Capabilities::ADVERTISED).HasCapability(Capabilities::PIBD_HIST));
-	REQUIRE(Capabilities(Capabilities::ADVERTISED).HasCapability(Capabilities::PIBD_HIST_1));
+	// Archive serving is not integrated into the normal node yet. Do not claim
+	// PIBD capability while a normal Rust peer would select a different horizon.
+	REQUIRE_FALSE(Capabilities(Capabilities::ADVERTISED).HasCapability(Capabilities::PIBD_HIST));
+	REQUIRE_FALSE(Capabilities(Capabilities::ADVERTISED).HasCapability(Capabilities::PIBD_HIST_1));
 	REQUIRE(!Capabilities(Capabilities::ADVERTISED).HasCapability(Capabilities::BLOCK_HIST));
 
 	// Grin 5.5.2 has no PIHD messages (its enum ends at KernelSegment = 28), so
