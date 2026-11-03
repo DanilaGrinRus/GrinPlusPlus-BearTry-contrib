@@ -89,6 +89,9 @@ public:
 
 		const TransactionKernel* pKernel = nullptr;
 		std::optional<TransactionKernel> indexedKernel;
+		// The direct-scan fallback must also live until serialization; pointing at a
+		// block-local optional is a use-after-scope.
+		std::optional<TransactionKernel> resolvedKernel;
 		uint64_t mmrIndex = 0;
 		uint64_t height = 0;
 
@@ -142,7 +145,8 @@ public:
 				return request.BuildError("NOT_FOUND", "Kernel not found");
 			}
 
-			pKernel = &kernelWithIndex->first;
+			resolvedKernel.emplace(kernelWithIndex->first);
+			pKernel = &resolvedKernel.value();
 			mmrIndex = kernelWithIndex->second;
 			height = FindHeightForKernelIndex(mmrIndex, headHeight);
 			if (height == std::numeric_limits<uint64_t>::max()) {

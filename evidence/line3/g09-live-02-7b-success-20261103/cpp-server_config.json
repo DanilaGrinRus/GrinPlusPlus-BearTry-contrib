@@ -1,0 +1,33 @@
+{
+	"DATA_PATH" : "C:\\DHW\\.tmp\\g09-live-02\\cpp-profile",
+	"LOGGER" : 
+	{
+		"LOG_LEVEL" : "DEBUG"
+	},
+	"P2P" : 
+	{
+		"ALLOWED_PEERS" : 
+		[
+			"127.0.0.1"
+		],
+		"MAX_PEERS" : 2,
+		"MIN_PEERS" : 0,
+		"MIN_SYNC_PEERS" : 1,
+		"P2P_PEER_PORT" : 25537,
+		"P2P_PORT" : 25536,
+		"PIBD_ENABLED" : true,
+		"PREFERRED_PEERS" : 
+		[
+			"127.0.0.1"
+		]
+	},
+	"SERVER" : 
+	{
+		"REST_API_PORT" : 25430
+	},
+	"WALLET" : 
+	{
+		"DATABASE" : "SQLITE",
+		"MIN_CONFIRMATIONS" : 10
+	}
+}

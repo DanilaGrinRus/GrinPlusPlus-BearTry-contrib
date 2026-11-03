@@ -25,6 +25,7 @@ param(
     [switch]$SkipBuild,
     [switch]$RunFullSuite,
     [switch]$ParallelRegressions,
+    [switch]$IncludeTask9,
     [int]$PortWaitSeconds = 120,
     [string]$AsanTestsMini = '',
     [switch]$AsanSourceCurrent,
@@ -84,6 +85,7 @@ $regArgs = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $Re
     '-EvidenceRoot', $evDir)
 if ($ExpectedTestsSha) { $regArgs += @('-ExpectedSha', $ExpectedTestsSha) }
 if ($ParallelRegressions) { $regArgs += '-Parallel' }
+if ($IncludeTask9) { $regArgs += '-IncludeTask9' }
 & pwsh @regArgs | Out-Null
 $regExit = $LASTEXITCODE
 $regPath = Join-Path $evDir ($RunId + '-reg\regressions.json')
@@ -185,13 +187,14 @@ if (-not $AsanTestsMini) {
     foreach ($k in $asanFilters.Keys) {
         $rid = "$RunId-asan-$k"
         & pwsh -NoProfile -ExecutionPolicy Bypass -File (Join-Path $Repo 'tools\build\run-tests-isolated.ps1') `
-            -ExePath $AsanTestsMini -RunId $rid -RunRoot (Join-Path $RunRoot 'asan') -EvidenceRoot $evDir -KeepBinary -ExeArgs $asanFilters[$k] | Out-Null
+            -ExePath $AsanTestsMini -RunId $rid -RunRoot (Join-Path $RunRoot 'asan') -EvidenceRoot $evDir -KeepBinary -TestArgs @($asanFilters[$k]) -FailOnNoTests | Out-Null
         $rex = $LASTEXITCODE
         $rmp = Join-Path (Join-Path $RunRoot 'asan') ($rid + '\manifest.json')
         $rm = if (Test-Path -LiteralPath $rmp) { Get-Content -LiteralPath $rmp -Raw | ConvertFrom-Json } else { $null }
         $asanRuns += [ordered]@{
             filter = $asanFilters[$k]; run_id = $rid; exit_code = $rex
-            status = if ($rex -eq 0 -and $rm -and $rm.instances[0].exit_code.decimal -eq 0) { 'PASS' } else { 'FAIL' }
+            status = if ($rex -eq 0 -and $rm -and $rm.instances[0].status -eq 'PASS' -and $rm.instances[0].exit_code.decimal -eq 0) { 'PASS' } else { 'FAIL' }
+            no_tests_ran = [bool]($rm -and $rm.no_tests_ran)
             sha_match = [bool]($rm -and $rm.binary.source_sha256 -eq (Get-FileSha $AsanTestsMini))
             summary = if ($rm) { @($rm.instances[0].summary_lines | Select-Object -Last 2) } else { @() }
         }

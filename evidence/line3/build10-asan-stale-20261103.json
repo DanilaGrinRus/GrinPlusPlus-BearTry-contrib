@@ -1,0 +1,39 @@
+{
+  "schema": "gpp-line3-build10-asan-binding/v1",
+  "captured_utc": "2026-11-03T02:10:00Z",
+  "captured_local": "2026-11-03T09:10:00+07:00",
+  "status": "NOT RUN (STALE)",
+  "reason": "existing ASan tree/source binding is build-09; build-10 sources differ by 13 files; no ASan rebuild was performed under No build/commit",
+  "build10_normal": {
+    "tests_sha256": "C17C3BC04BE04C501DB425E3617A71E61985E9257EF41D879E130E28F8B621A4",
+    "grin_node_sha256": "60D7F7A6B3FFCC702B260E80036B7143A06DB9B036AD3DF3754B3C7B9438CB23",
+    "source_freeze": "evidence/line3/build-10-freeze-snapshot-final.json",
+    "source_freeze_sha256": "E84E31657CED042E7963AAF3FFF401FD95C6D4DC36D203DD5A8B53A3BD4488BE",
+    "source_aggregate_sha256": "F1E47615D024E566CFF6EB2E908326364529813CF85111F7280B41EC6ADD869C"
+  },
+  "existing_asan": {
+    "source_manifest_sha256": "CF78C188A3F69F242F326B5DEFDA3DFD1D4A1E3A11591DAB8A9CDBF98DB68D85",
+    "tests_mini_sha256": "12C3D16C21E80F86BC3C736BE5046872454D1A6D7FA26B018D782E89D153778B",
+    "git_head": "cb510302f5bebc0d64c5d6a1c0571046a63593ef",
+    "tree": "C:\\DHW\\.tmp\\asan-line3\\gpp-tree",
+    "build_manifest": "C:\\DHW\\.tmp\\asan-line3\\gpp-build\\build_manifest.json"
+  },
+  "mismatch_count": 13,
+  "mismatch_files": [
+    "include/Database/BlockDb.h",
+    "src/Database/BlockDBImpl.cpp",
+    "src/Database/BlockDBImpl.h",
+    "src/API/Node/Handlers/GetKernelHandler.h",
+    "tests/src/Database/CMakeLists.txt",
+    "tests/src/PMMR/Test_NrdSupport.h",
+    "tests/src/PMMR/CMakeLists.txt",
+    "tests/framework/include/TestServer.h",
+    "tests/src/API/CMakeLists.txt",
+    "tests/src/PMMR/Test_NrdKernelRange.cpp",
+    "tests/src/BlockChain/Test_KernelIndex.cpp",
+    "tests/src/API/Test_GetKernelHandler.cpp",
+    "tests/src/Database/Test_KernelIndexSchema.cpp"
+  ],
+  "asan_claim": "none for build-10",
+  "historical": "build-09 ASan PASS remains source-bound to CF78C188.../12C3D16C...; do not bind to build-10"
+}

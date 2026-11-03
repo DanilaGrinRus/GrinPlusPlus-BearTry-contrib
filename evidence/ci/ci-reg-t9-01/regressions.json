@@ -1,0 +1,93 @@
+{
+  "schema": "gpp-line3-ci-regressions/v1",
+  "run_id": "ci-reg-t9-01",
+  "created_utc": "2026-11-03T00:32:47.3208228Z",
+  "repo": "C:\\DHW\\Gplus\\src\\grinplusplus",
+  "git_head": "ee843f059b573159c79b0be14fff84440741d989",
+  "tests_exe": "C:\\DHW\\.tmp\\build-10-tests\\Tests-retry.exe",
+  "tests_sha256": "4F6319EBD8A399DEEAEB7C20E43470A06ECC17746CB9017341D2DB8F5F079CB1",
+  "expected_sha": "",
+  "parallel": false,
+  "result": "FAIL",
+  "failed_groups": [
+    "kernel-duplicate-range"
+  ],
+  "groups": [
+    {
+      "group": "get-kernel-handler",
+      "filter": "GetKernelHandler*",
+      "run_id": "ci-reg-t9-01-get-kernel-handler",
+      "started_utc": "2026-11-03T00:32:41.3366532Z",
+      "exit_code": 0,
+      "status": "PASS",
+      "no_tests_ran": false,
+      "tests_sha256": "4F6319EBD8A399DEEAEB7C20E43470A06ECC17746CB9017341D2DB8F5F079CB1",
+      "sha_match": true,
+      "summary": [
+        "Test Runtime Initialized.",
+        "Running Tests...",
+        "All tests passed (49 assertions in 2 test cases)"
+      ],
+      "manifest": "C:\\DHW\\.tmp\\ci-iso\\ci-reg-t9-01-get-kernel-handler\\manifest.json",
+      "manifest_sha256": "DEF52BE1AA8700329C57DE4359178230880204CF6EEF7646CDF4892A6F8F76A8",
+      "stderr": "C:\\DHW\\.tmp\\ci-iso\\ci-reg-t9-01-get-kernel-handler\\out\\instance-1.stderr.log",
+      "output_tail": [
+        "test data dir : C:\\DHW\\.tmp\\ci-iso\\ci-reg-t9-01-get-kernel-handler\\home\\.GrinPP\\AUTOMATED_TESTING (created=True)",
+        "user profile  : unchanged=True",
+        "events        : 0",
+        "manifest      : C:\\DHW\\Gplus\\src\\grinplusplus\\evidence\\ci\\ci-reg-t9-01\\runs\\ci-reg-t9-01-get-kernel-handler\\manifest.json"
+      ]
+    },
+    {
+      "group": "kernel-index-schema",
+      "filter": "KernelIndex schema v2*",
+      "run_id": "ci-reg-t9-01-kernel-index-schema",
+      "started_utc": "2026-11-03T00:32:44.4433877Z",
+      "exit_code": 0,
+      "status": "PASS",
+      "no_tests_ran": false,
+      "tests_sha256": "4F6319EBD8A399DEEAEB7C20E43470A06ECC17746CB9017341D2DB8F5F079CB1",
+      "sha_match": true,
+      "summary": [
+        "Test Runtime Initialized.",
+        "Running Tests...",
+        "All tests passed (26 assertions in 2 test cases)"
+      ],
+      "manifest": "C:\\DHW\\.tmp\\ci-iso\\ci-reg-t9-01-kernel-index-schema\\manifest.json",
+      "manifest_sha256": "B27BFA589B8F3A6E124C5379458820A81F7EE367FF10E54A010683F5B1678348",
+      "stderr": "C:\\DHW\\.tmp\\ci-iso\\ci-reg-t9-01-kernel-index-schema\\out\\instance-1.stderr.log",
+      "output_tail": [
+        "test data dir : C:\\DHW\\.tmp\\ci-iso\\ci-reg-t9-01-kernel-index-schema\\home\\.GrinPP\\AUTOMATED_TESTING (created=True)",
+        "user profile  : unchanged=True",
+        "events        : 0",
+        "manifest      : C:\\DHW\\Gplus\\src\\grinplusplus\\evidence\\ci\\ci-reg-t9-01\\runs\\ci-reg-t9-01-kernel-index-schema\\manifest.json"
+      ]
+    },
+    {
+      "group": "kernel-duplicate-range",
+      "filter": "TxHashSet duplicate-excess*",
+      "run_id": "ci-reg-t9-01-kernel-duplicate-range",
+      "started_utc": "2026-11-03T00:32:46.0333839Z",
+      "exit_code": 1,
+      "status": "FAIL",
+      "no_tests_ran": false,
+      "tests_sha256": "4F6319EBD8A399DEEAEB7C20E43470A06ECC17746CB9017341D2DB8F5F079CB1",
+      "sha_match": true,
+      "summary": [
+        "Running Tests...",
+        "test cases: 1 | 1 failed",
+        "assertions: 7 | 6 passed | 1 failed"
+      ],
+      "manifest": "C:\\DHW\\.tmp\\ci-iso\\ci-reg-t9-01-kernel-duplicate-range\\manifest.json",
+      "manifest_sha256": "61D41317988F426915F2BCF2B7B72F0BA9FA1F5349C3D69D5304DEAE403FCB6D",
+      "stderr": "C:\\DHW\\.tmp\\ci-iso\\ci-reg-t9-01-kernel-duplicate-range\\out\\instance-1.stderr.log",
+      "output_tail": [
+        "test data dir : C:\\DHW\\.tmp\\ci-iso\\ci-reg-t9-01-kernel-duplicate-range\\home\\.GrinPP\\AUTOMATED_TESTING (created=True)",
+        "user profile  : unchanged=True",
+        "events        : 0",
+        "manifest      : C:\\DHW\\Gplus\\src\\grinplusplus\\evidence\\ci\\ci-reg-t9-01\\runs\\ci-reg-t9-01-kernel-duplicate-range\\manifest.json"
+      ]
+    }
+  ],
+  "note": "Groups are serialized by default; parallel mode is only for non-port-binding regression groups. Wallet/full suite binds fixed 127.0.0.1:3421 and must be serialized. Filters are passed via -TestArgs (quoted per argument) and -FailOnNoTests, so a misquoted/empty filter fails instead of producing a false PASS. Task-9 groups require -IncludeTask9 (or explicit -Only)."
+}

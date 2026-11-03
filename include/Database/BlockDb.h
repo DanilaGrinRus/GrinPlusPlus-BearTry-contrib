@@ -72,7 +72,10 @@ public:
 	virtual void SetKernelIndexState(const KernelIndexState& state) = 0;
 	virtual void AddKernelPosition(uint64_t generation, const Commitment& kernelExcess, const OutputLocation& location) = 0;
 	virtual std::unique_ptr<OutputLocation> GetKernelPosition(uint64_t generation, const Commitment& kernelExcess) const = 0;
-	virtual void RemoveKernelPositions(uint64_t generation, const std::vector<Commitment>& kernelExcesses) = 0;
+	// Removes one exact kernel position (excess + location). Excess-only removal
+	// is deliberately not exposed: with duplicate excesses it could delete a
+	// surviving earlier occurrence.
+	virtual void RemoveKernelPosition(uint64_t generation, const Commitment& kernelExcess, const OutputLocation& location) = 0;
 	virtual void ClearKernelPositions(uint64_t generation) = 0;
 	virtual void ClearAllKernelPositions() = 0;
 	virtual uint64_t GetKernelPositionCount(uint64_t generation) const = 0;

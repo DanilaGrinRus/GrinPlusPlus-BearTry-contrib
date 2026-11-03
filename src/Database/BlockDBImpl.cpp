@@ -308,8 +308,12 @@ void BlockDB::ClearSpentPositions()
 
 namespace
 {
-	constexpr char KERNEL_POS_PREFIX[] = "KERNELPOS/";
-	constexpr char KERNEL_POS_STATE_KEY[] = "KERNELIDX/STATE";
+	// Schema v2: kernel positions are keyed by their unique PMMR position, with a
+	// secondary excess -> position mapping used by get_kernel. The old
+	// KERNELPOS/ KERNELIDX/STATE keys are intentionally ignored (lazy rebuild);
+	// deleting the legacy prefix is deferred to a migration step.
+	constexpr char KERNEL_POS_PREFIX[] = "KERNELPOS2/";
+	constexpr char KERNEL_POS_STATE_KEY[] = "KERNELIDX2/STATE";
 	constexpr char KERNEL_POS_TABLE[] = "default";
 
 	std::string GenerationPrefix(const uint64_t generation)
@@ -322,13 +326,64 @@ namespace
 		return prefix;
 	}
 
-	std::string KernelPositionKey(const uint64_t generation, const Commitment& kernelExcess)
+	// Big-endian encoding keeps RocksDB iterator order == numeric position order.
+	std::string EncodePosition(const uint64_t position)
 	{
-		std::string key = GenerationPrefix(generation);
+		std::string encoded(8, '\0');
+		for (size_t i = 0; i < 8; ++i) {
+			encoded[i] = static_cast<char>((position >> (8 * (7 - i))) & 0xFF);
+		}
+		return encoded;
+	}
+
+	std::string PrimaryPrefix(const uint64_t generation)
+	{
+		return GenerationPrefix(generation) + "P/";
+	}
+
+	std::string SecondaryPrefix(const uint64_t generation, const Commitment& kernelExcess)
+	{
+		std::string prefix = GenerationPrefix(generation) + "E/";
+		prefix.append(reinterpret_cast<const char*>(kernelExcess.data()), kernelExcess.size());
+		return prefix;
+	}
+
+	std::string PrimaryKey(
+		const uint64_t generation,
+		const Commitment& kernelExcess,
+		const OutputLocation& location)
+	{
+		std::string key = PrimaryPrefix(generation);
+		key.append(EncodePosition(location.GetLeafIndex().GetPosition()));
 		key.append(reinterpret_cast<const char*>(kernelExcess.data()), kernelExcess.size());
 		return key;
 	}
 
+	std::string SecondaryKey(
+		const uint64_t generation,
+		const Commitment& kernelExcess,
+		const OutputLocation& location)
+	{
+		std::string key = SecondaryPrefix(generation, kernelExcess);
+		key.append(EncodePosition(location.GetLeafIndex().GetPosition()));
+		return key;
+	}
+
+	std::string SecondaryKey(
+		const uint64_t generation,
+		const Commitment& kernelExcess,
+		const uint64_t position)
+	{
+		std::string key = SecondaryPrefix(generation, kernelExcess);
+		key.append(EncodePosition(position));
+		return key;
+	}
+
+	bool IsPrimaryKey(const std::string& key, const std::string& prefix)
+	{
+		return key.size() == prefix.size() + 8 + 33 &&
+			key.compare(0, prefix.size(), prefix) == 0;
+	}
 }
 
 std::unique_ptr<KernelIndexState> BlockDB::GetKernelIndexState() const
@@ -345,27 +400,53 @@ void BlockDB::SetKernelIndexState(const KernelIndexState& state)
 
 void BlockDB::AddKernelPosition(const uint64_t generation, const Commitment& kernelExcess, const OutputLocation& location)
 {
-	const std::string key = KernelPositionKey(generation, kernelExcess);
-	m_pRocksDB->Put(KERNEL_POS_TABLE, DBEntry<OutputLocation>(rocksdb::Slice(key), location));
+	// One primary entry per kernel leaf (duplicates by excess stay distinct), plus
+	// a secondary entry for excess -> position lookup. Keep the key strings alive
+	// through the Put call (rocksdb::Slice is a view).
+	const std::string primaryKey = PrimaryKey(generation, kernelExcess, location);
+	const std::string secondaryKey = SecondaryKey(generation, kernelExcess, location);
+	m_pRocksDB->Put(
+		KERNEL_POS_TABLE,
+		DBEntry<OutputLocation>(rocksdb::Slice(primaryKey), location));
+	m_pRocksDB->Put(
+		KERNEL_POS_TABLE,
+		DBEntry<OutputLocation>(rocksdb::Slice(secondaryKey), location));
 }
 
 std::unique_ptr<OutputLocation> BlockDB::GetKernelPosition(const uint64_t generation, const Commitment& kernelExcess) const
 {
-	const std::string key = KernelPositionKey(generation, kernelExcess);
-	return m_pRocksDB->Get<OutputLocation>(KERNEL_POS_TABLE, rocksdb::Slice(key));
+	// The secondary keys are ordered by position; the last one is the latest
+	// occurrence (Rust find_kernel returns the latest match in range).
+	const std::string prefix = SecondaryPrefix(generation, kernelExcess);
+	std::string lastKey;
+	auto pIterator = m_pRocksDB->GetIterator(KERNEL_POS_TABLE);
+	for (pIterator->Seek(prefix); pIterator->Valid(); pIterator->Next()) {
+		const rocksdb::Slice key = pIterator->key();
+		if (key.size() != prefix.size() + 8 || key.ToString().rfind(prefix, 0) != 0) {
+			break;
+		}
+
+		lastKey = key.ToString();
+	}
+
+	if (lastKey.empty()) {
+		return nullptr;
+	}
+
+	return m_pRocksDB->Get<OutputLocation>(KERNEL_POS_TABLE, rocksdb::Slice(lastKey));
 }
 
-void BlockDB::RemoveKernelPositions(const uint64_t generation, const std::vector<Commitment>& kernelExcesses)
+void BlockDB::RemoveKernelPosition(
+	const uint64_t generation,
+	const Commitment& kernelExcess,
+	const OutputLocation& location)
 {
-	std::vector<std::string> keys;
-	keys.reserve(kernelExcesses.size());
-	for (const Commitment& kernelExcess : kernelExcesses) {
-		keys.push_back(KernelPositionKey(generation, kernelExcess));
-	}
-
-	if (!keys.empty()) {
-		m_pRocksDB->Delete(KERNEL_POS_TABLE, keys);
-	}
+	// Exact-position removal only; another occurrence of the same excess (earlier
+	// or later) must survive a partial reorg.
+	const std::string primaryKey = PrimaryKey(generation, kernelExcess, location);
+	const std::string secondaryKey = SecondaryKey(generation, kernelExcess, location);
+	m_pRocksDB->Delete(KERNEL_POS_TABLE, rocksdb::Slice(primaryKey));
+	m_pRocksDB->Delete(KERNEL_POS_TABLE, rocksdb::Slice(secondaryKey));
 }
 
 void BlockDB::ClearKernelPositions(const uint64_t generation)
@@ -414,7 +495,7 @@ void BlockDB::ClearAllKernelPositions()
 
 uint64_t BlockDB::GetKernelPositionCount(const uint64_t generation) const
 {
-	const std::string prefix = GenerationPrefix(generation);
+	const std::string prefix = PrimaryPrefix(generation);
 	uint64_t count = 0;
 	auto pIterator = m_pRocksDB->GetIterator(KERNEL_POS_TABLE);
 	for (pIterator->Seek(prefix); pIterator->Valid(); pIterator->Next()) {
@@ -423,7 +504,9 @@ uint64_t BlockDB::GetKernelPositionCount(const uint64_t generation) const
 			break;
 		}
 
-		count++;
+		if (IsPrimaryKey(key.ToString(), prefix)) {
+			count++;
+		}
 	}
 
 	return count;
@@ -431,14 +514,18 @@ uint64_t BlockDB::GetKernelPositionCount(const uint64_t generation) const
 
 Hash BlockDB::GetKernelPositionChecksum(const uint64_t generation) const
 {
-	const std::string prefix = GenerationPrefix(generation);
+	const std::string prefix = PrimaryPrefix(generation);
 	Hash checksum;
 	auto pIterator = m_pRocksDB->GetIterator(KERNEL_POS_TABLE);
 	for (pIterator->Seek(prefix); pIterator->Valid(); pIterator->Next()) {
 		const rocksdb::Slice key = pIterator->key();
 		const std::string keyString = key.ToString();
-		if (keyString.size() != prefix.size() + 33 || keyString.rfind(prefix, 0) != 0) {
+		if (keyString.rfind(prefix, 0) != 0) {
 			break;
+		}
+
+		if (!IsPrimaryKey(keyString, prefix)) {
+			continue;
 		}
 
 		const auto pLocation = m_pRocksDB->Get<OutputLocation>(KERNEL_POS_TABLE, key);
@@ -448,7 +535,7 @@ Hash BlockDB::GetKernelPositionChecksum(const uint64_t generation) const
 		}
 
 		const std::vector<uint8_t> excessBytes(
-			keyString.begin() + static_cast<std::ptrdiff_t>(prefix.size()),
+			keyString.begin() + static_cast<std::ptrdiff_t>(prefix.size() + 8),
 			keyString.end());
 		const Commitment excess{CBigInteger<33>(excessBytes)};
 		checksum = KernelIndexXorHash(checksum, excess, *pLocation);

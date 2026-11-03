@@ -1,0 +1,21 @@
+{
+  "schema": "line3-task9-pattern-lifetime-evidence/v1",
+  "generated_utc": "2026-11-02T23:58:50.8502937Z",
+  "purpose": "pattern-level failing-before/fixed-after evidence for GetKernelHandler direct-scan use-after-scope; NOT a real-handler or build-09 reproduction",
+  "source": "C:\\DHW\\.tmp\\task9-api-harness\\repro_lifetime_pattern.cpp",
+  "source_sha256": "26D3745472470851C440BD743BDB45C28EA25CDB6CD39FDEDF8443BEE8672EE6",
+  "exe_sha256": "D83E4882158647C4EC84136BC77D823A00B24EF1D104B4C20D48D0EB07B2C910",
+  "toolchain": "MSVC 14.44.35207, /W4 /WX /Od /Ob0 /Zi /MT /EHsc /std:c++17 /fsanitize=address",
+  "observed": {
+    "buggy": 16045690984833335030,
+    "fixed": 12,
+    "expected_fixed": 12
+  },
+  "checks": {
+    "fixed_equals_expected": true,
+    "buggy_differs_from_fixed": true
+  },
+  "asan_note": "MSVC ASan did not emit stack-use-after-scope for this pattern in this toolchain; do not use an ASan report as the only failing-before proof. clang-cl with -fsanitize-address-use-after-scope is not available in this environment.",
+  "result": "PASS",
+  "constraints": "no source/build-commit changes; no node/profile changes; pattern-level only"
+}

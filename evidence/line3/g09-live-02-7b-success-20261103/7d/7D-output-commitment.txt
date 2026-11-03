@@ -1,0 +1,9 @@
+TASK-7D OUTPUT COMMITMENT REPRO/CLASSIFICATION - 2026-11-03T01:46:31.7913664Z
+live runs scanned: cpp-7B-final-Node.log, rust-7B-final-grin.log, restart cpp-new.log, restart rust-new.log -> matches for "Output Commitment not found"/"Commitment not found" = 0
+source mechanism (code-confirmed): src/Core/Models/TransactionInput.cpp:27-31 V3 Deserialize reads only Commitment then calls Global::GetCoinView()->GetOutputType(commitment) to recover features
+src/BlockChain/CoinView.cpp:5-17: GetOutputType -> BlockDB->GetOutputPosition; if null throws BLOCK_CHAIN_EXCEPTION_F("Output {} not found.", commitment); otherwise txhashset GetOutput(...).GetFeatures()
+=> a V3 transaction input deserialization is order-dependent on the producing output already being applied/indexed; if a dependent block B is deserialized before block A that creates the output, deserialization fails before block validation
+note: the exact string "Output Commitment not found" is not in the C++ tree (doc §7); observed wording may be an outer/client wrapper; actual C++ exception text is "Output <commitment> not found."
+live result: clean ordinary 7B sync (headers from zero -> PIBD H=3315600 -> activation -> body 3315600..3318655) produced no such error; retry/restart also clean
+controlled repro: NOT EXECUTED/BLOCKED under no-source/no-build; needs a crafted A->B test (deserialize B before applying A, expect throw; apply A, deserialize B succeeds) or an out-of-order wire harness; no production change made
+classification: plausible static order-dependence; NOT REPRODUCED, NOT root-caused to an observed live failure; no consensus/PIBD impact shown; proposed owner line1/lina2 test + line3 ASan regression

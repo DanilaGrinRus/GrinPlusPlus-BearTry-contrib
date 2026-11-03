@@ -1,0 +1,8 @@
+TASK-7B RESTART RESULT (frozen) - 2026-11-03T01:45:32.0979883Z
+final=NO_SYNC; Rust tip=3318655 hash=2945348e...; C++ chain=3318655 FULLY_SYNCED inbound=1
+no new PIBD: cpp segment-request matches=0; rust PIBD markers=0; archive H=3315600 was already prepared by C++ at startup (expected server-side ready), no Rust re-download
+restart statuses: awaiting_peers(tip 3318655) -> no_sync at 08:44:56; C++ connect at 08:44:51
+separate finding: C++ ArchivePibdState after activation failed with "Rewind: Spent output not found for Commitment{0989ac92...}" (count=1); archive regeneration issue, not affecting restart no_sync, needs line2/G-09 archive review
+liveness finding: C++ 60s receive-idle during 7B rangeproof validation (see 7B-liveness.txt); reconnect succeeded, body sync completed
+preserved: 7B-restart.txt, 7B-restart-status.jsonl, 7B-restart-cpp-new.log, 7B-restart-rust-new.log; logs hashes computed in evidence
+classification: restart PASS (no PIBD re-download, same tip/hash, no crash/wrong H); reorg/horizon BLOCKED; negative wire tests separate

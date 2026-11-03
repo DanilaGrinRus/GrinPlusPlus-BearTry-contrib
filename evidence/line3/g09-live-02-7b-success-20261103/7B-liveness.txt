@@ -1,0 +1,6 @@
+TASK-7B LIVENESS FINDING (do not patch yet) - 2026-11-03T01:14:28.2159986Z
+observed: C++ 60s receive-idle timeout disconnected Rust during txhashset_rangeproofs_validation after PIBD transfer completed
+Rust was ~1.23M/2.94M rangeproofs at Lead observation; do NOT restart Rust; validation continues
+expected follow-up: check C++/Rust reconnect + handshake + body sync to no_sync
+contract finding: C++ fixed 60s receive-idle is too aggressive for long state validation; needs Ping/Pong heartbeat or bounded grace (no patch in this task)
+logs: cpp-Node.log, rust-grin.log (copies in this dir)

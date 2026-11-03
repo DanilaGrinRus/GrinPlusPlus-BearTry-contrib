@@ -658,3 +658,79 @@ Get-WinEvent -FilterHashtable @{LogName='Application'; Id=1000; StartTime='2026-
   **with exception** (не fully green); ASan = source-bound
   `CF78C188…`/TestsMini `12C3D16C…`; C8C/build-08/930/8F10/DDC/FD7C —
   historical. Hosted CI NOT VERIFIED.
+
+## 20. G-09 7B live PASS — build-09, scenario-scoped (2026-11-03)
+
+Lead independently observed the final success; line1 final evidence captured
+2026-11-03T01:35:38Z (08:35:38+07:00). Rust `no_sync` tip 3318655 hash
+`2945348ef765160a160008cfd7c2b41aa44ed3cea77d6bcfe2083acf0fc4bbf1`, conn=1;
+C++ `FULLY_SYNCED`, same tip/hash/TD, conn=1, in/out=1/0. This is the first
+ordinary repo-binary full PIBD → validation → activation → body sync → no_sync
+on the fixture.
+
+- **Build binding:** GrinNode `F90EEF38…` (7 805 440 B) + build-09 freeze
+  `cb510302f5bebc0d64c5d6a1c0571046a63593ef`; 1289 files aggregate
+  `832C378C…`; `MessageProcessor.cpp` `964FE6D7…`; freeze snapshot
+  `8DADD770…`. Tests `0A3B7D66…` was not used in the live 7B run. Current HEAD
+  `ee843f05…` is post-build evidence/docs/task-9 and is **not** the build-09
+  source freeze.
+- **Rust reference:** `G09RustLive.exe` `E5219C91…`, user agent
+  `MW/Grin 5.5.2.dbaff34`.
+- **Restart PASS:** persisted profile restarted (C++ first, then Rust); final
+  Rust `no_sync` tip 3318655 same hash, C++ `FULLY_SYNCED` inbound=1; **0** new
+  C++ PIBD segment requests and **0** Rust PIBD markers. Evidence
+  `7B-restart-final.txt` `A6105921…`, status `A14B96DE…`, cpp-new
+  `0AC62411…`, rust-new `545119FF…`.
+- **Scope:** initial correct-H fixture only; C++ fixture data; loopback
+  allow-list; no public peers; initial run no restart. Reorg/horizon are
+  BLOCKED; negative/resource and Output Commitment are NOT VERIFIED. Build-10
+  final normal/ASan remains pending; no ASan claim.
+- **Live findings (no patch):** 60s C++ receive-idle drop during rangeproof
+  validation self-healed; C++ `ArchivePibdState` logged once
+  `Rewind: Spent output not found for Commitment{0989ac92…}` after activation,
+  archive-regeneration issue separate from restart `no_sync`, needs
+  line2/G-09 archive review.
+- **7D Output Commitment:** 0 live occurrences in 7B/restart logs; static
+  `TransactionInput.cpp:27-31` / `CoinView.cpp:5-17` mechanism code-confirmed;
+  controlled A→B repro NOT EXECUTED/BLOCKED under no-source; evidence
+  `7D-output-commitment.txt` `BF4DF41D…`. Not reproduced, no consensus/PIBD
+  impact shown.
+- **Evidence:** `evidence/line3/g09-live-02-7b-success-20261103.md` +
+  `.../MANIFEST.json`; final line1 copies verified byte-for-byte (7B-pass
+  `A18EA2C2…`, cpp log `77518AEA…`, rust log `B904A7A7…`, post-validation
+  `C0054CAB…`). Nodes were stopped after evidence capture; line3 did not restart.
+
+## 21. FINAL build-10 normal audit — bodyless-only exception; ASan STALE (2026-11-03)
+
+Final candidate identity: Tests
+`C17C3BC04BE04C501DB425E3617A71E61985E9257EF41D879E130E28F8B621A4`
+(9,410,560 B, PE `0x6AE93F14`) + GrinNode
+`60D7F7A6B3FFCC702B260E80036B7143A06DB9B036AD3DF3754B3C7B9438CB23`
+(7,809,024 B, PE `0x6AE93E33`); BUILD OK; preserved `C:\DHW\.tmp\build-10`
+and `line1-build-10`.
+
+- **Clean full:** serialized `b10-full-02` **254 cases / 253 passed / 1 failed;
+  4118 assertions / 4117 passed**; zero `mg_start`; sole failure is known
+  test-only `Test_NrdBodylessRestart.cpp(103)`.
+- **Invalid run:** `b10-full-01` (254/238/16; 15× wallet/Tor `mg_start`
+  port-3421 collision) caused by a parallel line2 Tests process; preserved but
+  **not counted**.
+- **Filters all PASS:** archive 8/187, `Nrd*` 30/428, `KernelIndex*` 5/74,
+  `GetKernelHandler*` 2/49, `KernelIndex schema v2*` 2/26,
+  `TxHashSet duplicate-excess*` 1/10, `P2P::AdvertisedTip*` 2/15. Quoted
+  `-TestArgs`, `-FailOnNoTests`, `-KeepBinary`; source SHA checked in each
+  manifest; real user profile unchanged.
+- **Result:** normal **FAIL overall, bodyless-only**; production/agreed-suite
+  failures = 0; bound as final normal candidate **with explicit exception**,
+  not fully green. Bodyless-NRD/kill recovery remain NOT VERIFIED.
+- **Source freeze:** `evidence/line3/build-10-freeze-snapshot-final.json`
+  (`E84E3165…`, 1002 files, aggregate `F1E47615…`, HEAD `ee843f05…`); only docs
+  changed after build.
+- **ASan:** current ASan tree remains build-09
+  `CF78C188…`/TestsMini `12C3D16C…`; comparison vs build-10 sources gives
+  **mismatch=13**; ASan refresh **NOT RUN (STALE)** under No build/commit. No
+  ASan claim for build-10; prior build-09 ASan PASS is historical.
+- **Evidence:** `normal-binary-build10-audit-20261103.md`,
+  `build10-asan-stale-20261103.json`, `evidence/line3/b10-*-02/` run manifests.
+
+

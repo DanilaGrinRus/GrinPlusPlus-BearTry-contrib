@@ -56,7 +56,7 @@ public:
 	void SetKernelIndexState(const KernelIndexState& state) final;
 	void AddKernelPosition(uint64_t generation, const Commitment& kernelExcess, const OutputLocation& location) final;
 	std::unique_ptr<OutputLocation> GetKernelPosition(uint64_t generation, const Commitment& kernelExcess) const final;
-	void RemoveKernelPositions(uint64_t generation, const std::vector<Commitment>& kernelExcesses) final;
+	void RemoveKernelPosition(uint64_t generation, const Commitment& kernelExcess, const OutputLocation& location) final;
 	void ClearKernelPositions(uint64_t generation) final;
 	void ClearAllKernelPositions() final;
 	uint64_t GetKernelPositionCount(uint64_t generation) const final;

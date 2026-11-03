@@ -1,0 +1,170 @@
+{
+  "schema": "gpp-line3-g09-7b-success/v1",
+  "captured_utc": "2026-11-03T01:47:00Z",
+  "captured_local": "2026-11-03T08:47:00+07:00",
+  "status": "PASS_SCOPED",
+  "scope": "G-09 7B correct-H full PIBD -> validation -> activation -> body sync -> no_sync; plus persisted-profile restart PASS",
+  "not_in_scope": [
+    "full G-09 PASS",
+    "reorg/horizon/negative/resource scenarios",
+    "Output Commitment repro (7D BLOCKED)",
+    "build-10 normal/ASan audit",
+    "public-network peers"
+  ],
+  "line1_evidence_source": "C:\\DHW\\.tmp\\task7-B\\evidence (originals preserved, not modified)",
+  "final_observation_utc": "2026-11-03T01:35:38Z",
+  "final_observation_local": "2026-11-03T08:35:38+07:00",
+  "restart_observation_utc": "2026-11-03T01:45:32Z",
+  "line3_independent_check_local": "2026-11-03T08:31:00+07:00",
+  "line3_independent_check_note": "TCP established; Rust body_sync 3318589/3318655; final success captured by line1/Lead before stop; line3 did not re-query after stop and did not restart nodes",
+  "initial_7b_no_restart": true,
+  "persisted_profile_restart_tested": true,
+  "line3_restarted_nodes": false,
+  "processes": {
+    "cpp_pid": 4724,
+    "rust_pid": 31792,
+    "stopped_after_evidence": true
+  },
+  "build09": {
+    "label": "build-09 normal authoritative",
+    "source_freeze_git_head": "cb510302f5bebc0d64c5d6a1c0571046a63593ef",
+    "compiled_root_files": 1289,
+    "source_aggregate_sha256": "832C378CC5F58555B5638F752A74C42DF09A4B32AA5A3B26C009688F7DAC1AFD",
+    "message_processor_sha256": "964FE6D745C5EF4987FB699E3856BDE7C40277885CD338A7D17F1504C812830B",
+    "freeze_snapshot": "evidence/line3/build-09-freeze-snapshot-final.json",
+    "freeze_snapshot_sha256": "8DADD770AAAA73DCD1D3F33752CFF01EB8E34DEE8BBA722A8B9A1965B2FDA8B8",
+    "current_repo_head_at_capture": "ee843f059b573159c79b0be14fff84440741d989",
+    "current_head_note": "post-build docs/task-9 commits; NOT the build-09 source freeze",
+    "grin_node": {
+      "path": "C:\\DHW\\.tmp\\line1-build-09\\GrinNode-F90EEF389D1B.exe",
+      "sha256": "F90EEF389D1B35B7A17BD8E3C35F06AECFD9C39410C4F755713E1CD1F448A2F8",
+      "bytes": 7805440,
+      "pe_timestamp": "0x6AE919F2"
+    },
+    "tests": {
+      "path": "C:\\DHW\\.tmp\\line1-build-09\\Tests-0A3B7D66E78F.exe",
+      "sha256": "0A3B7D66E78F5E70A6D95616F0138D994AEB820796C0C77E98AEC7EAC4F2735B",
+      "bytes": 9335808,
+      "pe_timestamp": "0x6AE91AB1",
+      "used_in_live_run": false
+    }
+  },
+  "rust_reference": {
+    "path": "C:\\Users\\nurli\\Documents\\Codex\\2026-11-02\\c-grin-1-2-9-c\\work\\G09RustLive.exe",
+    "sha256": "E5219C9144FFED1C9A7D5368919ADCFF32FD39D48F449AA13521E1D100E776B8",
+    "bytes": 10947072,
+    "user_agent": "MW/Grin 5.5.2.dbaff34"
+  },
+  "fixture": {
+    "root": "C:\\DHW\\.tmp\\g09-live-02",
+    "preserve": true,
+    "chain": "floonet/testnet",
+    "cpp_rest_port": 25430,
+    "cpp_p2p_port": 25536,
+    "rust_rest_port": 25431,
+    "rust_p2p_port": 25537,
+    "loopback_allow_list": true,
+    "public_peers": false,
+    "archive_serving_opt_in": "GRINPP_PIBD_ARCHIVE_SERVING=1",
+    "archive_horizon": 3315600,
+    "archive_zip": "C:\\DHW\\.tmp\\g09-live-02\\cpp-profile\\NODE\\TXHASHSET\\archive\\TxHashSet.3315600.3615bb625917.zip",
+    "archive_sha256": "13F9781E207F787F5F58367F9C98947D4A645D660E1CA23186AD55D9D064C530",
+    "trimmed_candidate_body_tip": 3318655
+  },
+  "final_state": {
+    "tip_height": 3318655,
+    "tip_hash": "2945348ef765160a160008cfd7c2b41aa44ed3cea77d6bcfe2083acf0fc4bbf1",
+    "cpp_sync": "FULLY_SYNCED",
+    "cpp_in_out": "1/0",
+    "rust_sync": "no_sync",
+    "rust_connections": 1,
+    "rust_sync_info": null,
+    "roots": {
+      "kernel_root_hash": "17d1cc11e3f913533865a1cd9d71785c758f44945bda42849e5ff89823f7d1dd",
+      "output_root_hash": "8a9be5f8f3b16ca4b19a84e5d931e0307e77bdd8ac91c515a6439a0c4cd48d25",
+      "range_proof_root_hash": "971c4ebdb3776d4c48dcc4ae6d866f4919435500aa71cd5564092a9bb27ceae1"
+    }
+  },
+  "restart": {
+    "result": "PASS",
+    "persisted_profile": true,
+    "final_rust_sync": "no_sync",
+    "final_rust_tip": 3318655,
+    "final_rust_hash": "2945348ef765160a160008cfd7c2b41aa44ed3cea77d6bcfe2083acf0fc4bbf1",
+    "final_rust_connections": 1,
+    "final_cpp_sync": "FULLY_SYNCED",
+    "final_cpp_inbound": 1,
+    "new_cpp_pibd_segment_requests": 0,
+    "new_rust_pibd_markers": 0,
+    "status_sequence": ["UNAVAILABLE", "awaiting_peers@3318655", "no_sync@3318655"],
+    "cpp_connect_local": "08:44:51+07:00",
+    "no_sync_local": "08:44:56+07:00",
+    "evidence": [
+      "restart/7B-restart-final.txt",
+      "restart/7B-restart.txt",
+      "restart/7B-restart-status.jsonl",
+      "restart/7B-restart-cpp-new.log",
+      "restart/7B-restart-rust-new.log"
+    ]
+  },
+  "findings": {
+    "pibd_archive_state_rewind": {
+      "observed_once": true,
+      "message": "ArchivePibdState: Failed to archive the activated TxHashSet: Rewind: Spent output not found for Commitment{0989ac92...}",
+      "impact": "did not prevent restart no_sync; archive-regeneration issue needs line2/G-09 archive review",
+      "patch": false,
+      "root_caused": false
+    },
+    "cpp_60s_receive_idle": {
+      "observed": "C++ disconnected Rust after PIBD transfer during long rangeproof validation",
+      "recovered": true,
+      "impact": "test-environment liveness finding; reconnect and body sync completed",
+      "production_fix": false
+    }
+  },
+  "7d": {
+    "result": "BLOCKED",
+    "live_occurrences": 0,
+    "scanned": ["cpp-7B-final-Node.log", "rust-7B-final-grin.log", "7B-restart-cpp-new.log", "7B-restart-rust-new.log"],
+    "static_mechanism_confirmed": true,
+    "code_refs": ["src/Core/Models/TransactionInput.cpp:27-31", "src/BlockChain/CoinView.cpp:5-17"],
+    "controlled_ab_repro": "NOT EXECUTED / BLOCKED under no-source/no-build",
+    "classification": "plausible static order-dependence; NOT REPRODUCED; no consensus/PIBD impact shown",
+    "evidence": "7d/7D-output-commitment.txt",
+    "evidence_sha256": "BF4DF41DA5F20E6C31AEF3BCF9DF0D4D7D3CCFDCCAAA40E62FD22F1F7C15CBC8"
+  },
+  "artifacts": [
+    {"name": "7B-pass.txt", "sha256": "A18EA2C274D4E0DDD4755A11D3A214CE026EB2DE8F185F9AEB7A159C9A99CE91", "bytes": 2241},
+    {"name": "7B-freeze.txt", "sha256": "828730EB170C2FB562D2B014DCE571042224D6538E8F4AAF56109BD7A52CB499", "bytes": 3217},
+    {"name": "7B-liveness.txt", "sha256": "FFA5EAFEF7AB487A008ADA2E4FCD972D244D8DEFAFEFD43FE1F7014501E37FEF", "bytes": 597},
+    {"name": "7B-post-validation.jsonl", "sha256": "C0054CAB4170EE04ED1AADF07A68DE868237A40D074C2601F88AEE18B1463043", "bytes": 11012},
+    {"name": "7B-status.jsonl", "sha256": "5E7BD61142A4C1281F15E794E64CE980FBA9503586895AAD0A18A9F4DD782363", "bytes": 80976},
+    {"name": "7B-rust.pid", "sha256": "0F79F667FC6EDD9D7ACC402D9DF337CAAA1F146A2B92253A79A5C350264D831E", "bytes": 7},
+    {"name": "cpp-7B-final-Node.log", "sha256": "77518AEA4AB6CC50AE91F73FAFF4A5D6D2AB7486C70C87BD4D0110CFA208C99D", "bytes": 3075445},
+    {"name": "rust-7B-final-grin.log", "sha256": "B904A7A73AAB162964951C0C497C363E76130CA5B315EEFC272D099EF2FEB518", "bytes": 2766191},
+    {"name": "cpp-server_config.json", "sha256": "355B15F769C182CFAE00096146AF441A60F50732F38D27C521C56A9495307C7C", "bytes": 466},
+    {"name": "rust-grin.toml", "sha256": "AEE5E75375B23902A2B4DE0BCA3B372CB599BEC8FEAC4DB0F7C375079F2B8B2B", "bytes": 8563},
+    {"name": "restart/7B-restart-final.txt", "sha256": "A6105921E6A463ECC7DC704CDD341054D26438A3531AF7AE963A5B362CD4A331", "bytes": 1065},
+    {"name": "restart/7B-restart.txt", "sha256": "A5C5347828D37F3768E39F7E94067D58B05D9706B29BFA4813983F1A8B29049E", "bytes": 601},
+    {"name": "restart/7B-restart-status.jsonl", "sha256": "A14B96DEB6F2ABC12EFB9A05D5B1690B055DDB6601CEEC772D268E5093D88DAB", "bytes": 589},
+    {"name": "restart/7B-restart-cpp-new.log", "sha256": "0AC6241121FF35BECD29632540B326B7467CAD720E6B5476BF46E23AFBA11086", "bytes": 4581},
+    {"name": "restart/7B-restart-rust-new.log", "sha256": "545119FFCD4F628D52CC9B6151A4CECB53E1F5856B13814523BE0DF78FDA4742", "bytes": 5558},
+    {"name": "7d/7D-output-commitment.txt", "sha256": "BF4DF41DA5F20E6C31AEF3BCF9DF0D4D7D3CCFDCCAAA40E62FD22F1F7C15CBC8", "bytes": 1698}
+  ],
+  "verification": {
+    "line1_declared_log_hashes_match_copies": true,
+    "line1_declared_key_evidence_hashes_match_copies": true,
+    "cpp_config_hash_matches_line1": true,
+    "rust_config_hash_matches_line1": true,
+    "archive_hash_matches_line1": true,
+    "restart_evidence_hashes_match": true,
+    "restart_final_no_sync_same_tip_hash": true,
+    "restart_new_cpp_pibd_segment_requests": 0,
+    "restart_new_rust_pibd_markers": 0,
+    "7d_evidence_hash_matches": true,
+    "7d_live_occurrences": 0,
+    "final_jsonl_last_line": "{\"cpp_in\":1,\"cpp_out\":0,\"reqH\":null,\"cpp_tip\":3318655,\"ts\":\"2026-11-03T01:35:19.1521378Z\",\"hash\":\"2945348ef765160a160008cfd7c2b41aa44ed3cea77d6bcfe2083acf0fc4bbf1\",\"tip\":3318655,\"conn\":1,\"rust_status\":\"no_sync\"}",
+    "independent_observation": "Lead; line3 pre-final check only",
+    "nodes_restarted_by_line3": false
+  }
+}

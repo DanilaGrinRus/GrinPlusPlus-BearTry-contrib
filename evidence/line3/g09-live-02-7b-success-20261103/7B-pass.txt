@@ -1,0 +1,12 @@
+TASK-7B CORRECT-H FULL PIBD PASS - 2026-11-03T01:35:38.5252224Z
+binaries: GrinNode build-09 F90EEF389D1B35B7A17BD8E3C35F06AECFD9C39410C4F755713E1CD1F448A2F8; Tests build-09 0A3B7D66E78F5E70A6D95616F0138D994AEB820796C0C77E98AEC7EAC4F2735B
+fixture: C:\DHW\.tmp\g09-live-02, trimmed candidate==body==3318655, archive H=3315600, header=3318655; kernel index fail-closed direct scan (separate known issue)
+rust final: sync_status=no_sync tip=3318655/2945348ef765160a160008cfd7c2b41aa44ed3cea77d6bcfe2083acf0fc4bbf1 conn=1 sync_info=null
+cpp final: chain=3318655/2945348ef765160a160008cfd7c2b41aa44ed3cea77d6bcfe2083acf0fc4bbf1 header=3318655 in/out=1/0 sync=FULLY_SYNCED
+cpp roots: {"kernel_root_hash":"17d1cc11e3f913533865a1cd9d71785c758f44945bda42849e5ff89823f7d1dd","output_root_hash":"8a9be5f8f3b16ca4b19a84e5d931e0307e77bdd8ac91c515a6439a0c4cd48d25","range_proof_root_hash":"971c4ebdb3776d4c48dcc4ae6d866f4919435500aa71cd5564092a9bb27ceae1"}
+sequence: rust from-zero header sync started 06:43:59 -> H selected 3315600 at 07:21:00 -> PIBD leaves complete 10,203,442 by 07:58:41 -> txhashset_setup -> rangeproofs validation 08:01:01..08:21:58 (~2.94M rproofs) -> kernels validation -> txhashset_save 08:24:58 -> activation/transient no_sync at tip 3315600 08:25:38 -> body_sync from 3315626 08:26:18 -> final no_sync 08:35:19 tip 3318655 hash 2945348ef765160a160008cfd7c2b41aa44ed3cea77d6bcfe2083acf0fc4bbf1, conn=1, cpp_in/out=1/0
+liveness finding: C++ 60s receive-idle disconnected Rust during rangeproof validation (~08:13-08:14); Rust continued validation offline; C++ reconnected ~08:26:18 and body sync completed; see 7B-liveness.txt
+PIBD serves/refusals counted from final Node.log: segment-serve matches=0; wrong-hash ignore matches=0
+logs: cpp-7B-final-Node.log sha256=77518AEA4AB6CC50AE91F73FAFF4A5D6D2AB7486C70C87BD4D0110CFA208C99D bytes=3075445
+logs: rust-7B-final-grin.log sha256=B904A7A73AAB162964951C0C497C363E76130CA5B315EEFC272D099EF2FEB518 bytes=2766191
+classification: 7B PASS for correct-H full PIBD/roots/validation/activation/body sync/no_sync; separate liveness finding recorded (no patch); full G-09 PASS still pending remaining C scenarios (3 restart/reorg/horizon/negative/resources, 4 Output Commitment)

@@ -31,6 +31,7 @@ list_append_parent(
     "Test_NrdPolicy.cpp"
     "Test_NrdFalseBan.cpp"
     "Test_NrdBatchSafety.cpp"
+    "Test_NrdKernelRange.cpp"
     "Test_KernelLookup.cpp"
     "Test_TxHashSetStaging.cpp"
     "LeafSet/Test_LeafSet.cpp"

@@ -160,8 +160,17 @@ buggy=16045690984833335030 fixed=12
   real-handler regression must assert correct JSON/behavior (and use ASan only
   if the toolchain actually reports the class);
 - this is **pattern-level**, not a build-09 API reproduction. Real-handler run
-  remains **planned** until the fake-based test is wired with Lead approval and
-  line2's fix.
+  remains **planned** until the fake-based test is wired after line2's fix and
+  build-10; the test stays unregistered.
+- Deterministic evidence pipeline: `run_evidence.ps1` → **PASS**
+  (`buggy=16045690984833335030`, `fixed=12`); evidence.json sha256
+  `759F26902995E79D51FB12DF7F63F8D1FFA6EE4C5B19F5EAAF26B916873BE33D`;
+  permanent copy `evidence/line3/task9-pattern-lifetime-evidence.json`.
+- ASan applicability: MSVC 14.44 ASan does not report this class here;
+  `clang-cl -fsanitize-address-use-after-scope` unavailable. Real-handler target
+  likely normal-only (BlockChain/Database/rocksdb link boundary); ASan attempt
+  only if line2's fix permits a fake-only link, otherwise record NOT APPLICABLE.
+  Pre-fix real-handler run may pass numerically (UB not guaranteed).
 
 ## Evidence / constraints
 

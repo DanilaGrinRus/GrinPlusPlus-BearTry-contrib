@@ -1,0 +1,16 @@
+{
+  "schema": "line3-runner-quoting-guard/v1",
+  "created_utc": "2026-11-03T00:33:16.4587203Z",
+  "runner": "2A842CE1BE71392A10440075CB75154274FCB8A8B1BA69EFDABC3077E10B5BA9",
+  "ci_regressions": "AA378EDC658C3D3E4F30151D84264E6A3B2B6217EA8D27319A740ECC44A51853",
+  "binary": "C:\\DHW\\.tmp\\build-10-tests\\Tests-retry.exe",
+  "binary_sha": "4F6319EBD8A399DEEAEB7C20E43470A06ECC17746CB9017341D2DB8F5F079CB1",
+  "checks": {
+    "quoted_filter_via_TestArgs": "PASS 2 cases / 26 assertions; args quoted as \"KernelIndex schema v2*\"",
+    "bogus_filter_FailOnNoTests": "FAIL_NO_TESTS, runner exit 1",
+    "zero_test_without_flag": "PASS (teardown-regression compatible)",
+    "ci_regressions_task9_groups": "get-kernel-handler PASS; kernel-index-schema PASS; kernel-duplicate-range FAIL (known line2 test fix pending new build)",
+    "evidence_ci": "evidence/ci/ci-reg-t9-01/regressions.json"
+  },
+  "constraints": "no build/commit; build-09 binding unchanged"
+}

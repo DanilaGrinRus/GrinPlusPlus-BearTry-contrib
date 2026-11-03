@@ -64,8 +64,10 @@ TEST_CASE("KernelIndex is chain-bound and detects corrupted mappings")
 	const Commitment missing{CBigInteger<33>::ValueOf(1)};
 	REQUIRE(LookupKernel(pBlockDB, pState->GetGeneration(), missing) == nullptr);
 
-	// Corrupt one mapping while keeping the entry count unchanged. The count-only
-	// check used by the old implementation would accept this state.
+	// Corrupt the index with an extra primary mapping. Schema v2 keys entries by
+	// position+excess, so this adds a 9th leaf instead of overwriting an existing
+	// excess key; EnsureKernelIndex must detect the count/checksum mismatch and
+	// rebuild a clean generation.
 	const TransactionKernel& tipKernel = chain.back().block.GetKernels().front();
 	{
 		auto pWriter = pBlockDB->Write();
@@ -75,7 +77,7 @@ TEST_CASE("KernelIndex is chain-bound and detects corrupted mappings")
 			OutputLocation(LeafIndex::At(1), 1));
 	}
 	REQUIRE(pBlockDB->Read()->GetKernelPositionCount(pState->GetGeneration()) ==
-		pState->GetKernelCount());
+		pState->GetKernelCount() + 1);
 
 	REQUIRE(pChain->EnsureKernelIndex());
 	const std::unique_ptr<KernelIndexState> pRepaired = pBlockDB->Read()->GetKernelIndexState();

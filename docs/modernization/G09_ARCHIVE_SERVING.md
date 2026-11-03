@@ -4,12 +4,14 @@
 > Актуальный срез: [THREE_LINE_STATUS.md](THREE_LINE_STATUS.md); матрица рисков:
 > [GAP_MATRIX.md](GAP_MATRIX.md). Build-07 (`Tests C8C386BE…`,
 > `GrinNode F9EF06B4…`) — принятое evidence только для своего снимка.
-> Финальный кандидат — build-09 (`Tests 0A3B7D66…`, `GrinNode F90EEF38…`);
-> независимый full/ASan аудит ещё идёт. Build-08 (`7994F191…`) — historical,
-> non-green (wallet-port env + test-only bodyless). Archive serving —
-> **default-off, opt-in**. Ordinary live G-09 остаётся **NOT VERIFIED/BLOCKED**:
-> Pong snapshot fix и 7C/7B live-проверки выполняются; fixed-H PASS ниже —
-> историческое доказательство, не готовность обычного бинарника.
+> Финальный кандидат — build-10 (`Tests C17C3BC0…`, `GrinNode 60D7F7A6…`);
+> независимый full/ASan аудит ещё идёт. На build-09 ordinary scenario
+> **7B PASS + restart PASS**: Rust с чистыми headers/state → H=3315600 →
+> PIBD 10 203 442 → validation → activation → body sync → `no_sync` tip 3318655 /
+> hash `2945348e…`; restart без повторного PIBD. Это scenario PASS, не полный
+> G-09/Mainnet: reorg/horizon BLOCKED, negative/resources NOT VERIFIED,
+> Output Commitment NOT REPRODUCED, C++ fixture-based/loopback.
+> Детали: [G09_ORDINARY_LIVE_PASS_2026-11-03.md](G09_ORDINARY_LIVE_PASS_2026-11-03.md).
 >
 > Разделы ниже — хронология review/реализации/прогонов. Начальные фразы
 > «review candidate / no code implemented» относятся к раннему снимку и не
@@ -971,13 +973,28 @@ Reported by the Lead for the integrated working tree:
   in `C:\DHW\.tmp\line1-build-06\`). Suite grew by the advert case + 5 line2
   `NrdFalseBan` cases. Live: handshake TD fixed and no overshoot, but Rust stayed
   `header_sync` without reaching H selection -> L1 PARTIAL/BLOCKED (§8.9).
-- **Line 1 build 07 FINAL (2026-11-03):** `-Target "GrinNode;Tests"` BUILD OK
-  (exit 0); `Tests.exe`
-  `C8C386BE576A62604404E0FA02E56EE9E8F06B50EA0B15AD109F36F5AFF5B7FE` (245 cases /
-  4013 assertions PASS; archive 8/187; advert 2 cases/15 assertions), `GrinNode.exe`
-  `F9EF06B4CB0962B50E6DDBD186E1C61F5872FAFF9E41A779EE7C317A2ED25BDA`; both
-  preserved in `C:\DHW\.tmp\line1-build-07\`. Line3 independent audit PASS
-  (normal binding updated; ASan stale for this SHA under no-build).
+- **Line 1 build 09 FINAL (2026-11-03):** Build-08 was historical/non-green
+  (test-only Bodyless + kill-harness failures). Build-09 `-Target "GrinNode;Tests"`
+  BUILD OK; `Tests.exe`
+  `0A3B7D66E78F5E70A6D95616F0138D994AEB820796C0C77E98AEC7EAC4F2735B`
+  (9,335,808 B, PE `0x6AE91AB1`), `GrinNode.exe`
+  `F90EEF389D1B35B7A17BD8E3C35F06AECFD9C39410C4F755713E1CD1F448A2F8`
+  (7,805,440 B, PE `0x6AE919F2`); production frozen hash
+  `src/P2P/MessageProcessor.cpp` 964FE6D7…. Tests (line3 audit): full 249 cases /
+  248 pass / 1 test-only Bodyless fail (4033/4032); Nrd 30/428, KernelIndex 3/48,
+  archive 8/187, advert 2/15, BlockPipe 3/16; ASan refresh on frozen sources
+  0 reports; explicit exception recorded, not a full green.
+- **Build-10 final binaries (2026-11-03, Lead-owned):** BUILD OK;
+  `Tests.exe` `C17C3BC04BE04C501DB425E3617A71E61985E9257EF41D879E130E28F8B621A4`
+  (9,410,560 B, PE `0x6AE93F14`), `GrinNode.exe`
+  `60D7F7A6B3FFCC702B260E80036B7143A06DB9B036AD3DF3754B3C7B9438CB23`
+  (7,809,024 B, PE `0x6AE93E33`), preserved in
+  `C:\DHW\.tmp\line1-build-10\`; production
+  `MessageProcessor.cpp` remains 964FE6D7…. Build-10 persisted-state restart:
+  Rust `no_sync` at 3318655/`2945348e…` with **0 new PIBD requests**, C++
+  inbound=1/FULLY_SYNCED; kernel index now publishes (generation 1, 3,354,613
+  kernels) instead of build-09's fail-closed direct scan. Line2/line3 audits of
+  build-10 were still pending at this report; build-09 remains the audited pair.
 - **Independent normal-binary audit (line3-fuzz): PASS.** Repo
   `bin\Release\Release\Tests.exe` == the preserved
   `C:\DHW\.tmp\line1-build-03\Tests-FD7C04922A2E.exe` == SHA-256
@@ -1242,10 +1259,11 @@ No other production changes. Expected effect: peer height/TD become
 StateSync runs, Rust selects H=3317040, and the wrong-H refusal becomes
 observable.
 
-Build sequencing: build-07 `C8C386BE…`/`F9EF06B4…` remain accepted evidence for
-their source snapshot but are no longer source-current (line2 post-build test
-additions). build-08 is the frozen build containing line2 task-8 tests + this
-Pong fix; no further source edits after build-08 without new approval.
+Build sequencing: build-08 was historical/non-green. The final frozen pair is
+build-09 (`Tests 0A3B7D66…`, `GrinNode F90EEF38…`, production
+`MessageProcessor.cpp` 964FE6D7…); no source edits after build-09. The Pong fix
+was validated live: with the old untrimmed fixture Rust now moved from
+`awaiting_peers` to `txhashsetpibd_download` and selected H=3317040 (§8.12).
 
 ### 8.11 Task-7B fixture inventory (read-only)
 
@@ -1271,12 +1289,105 @@ Pong fix; no further source edits after build-08 without new approval.
   4. on load, `BlockChainImpl` sees header MMR leaves 3,320,006 > candidate
      entries 3,318,656 and truncates the MMR to the candidate under that
      checkpoint contract, then writes a fresh checkpoint.
-  No fabricated blocks: every retained hash is from the valid fixture. Validation
-  and the acceptance run happen only after build-08.
+  No fabricated blocks: every retained hash is from the valid fixture.
+  **Execution result:** copy `C:\DHW\.tmp\g09-live-02` (134 files, 11.09 GB);
+  candidate.chain truncated to 106,196,992 B; checkpoint rewritten
+  (`Sequence 1758`, `MmrLeaves/CandidateEntries/ConfirmedEntries = 3,318,656`,
+  checksum `16658916402016309643`); header_mmr.bin left at 212,480,064 B so the
+  load contract performs the truncation. On first start the node truncated the
+  MMR ("Header MMR is ahead ... truncating") and rebuilt the kernel index; the
+  rebuild verification fail-closed (count 3,354,326 / 3,354,613, checksum
+  mismatch → direct-scan, known line2/API issue), then started. REST:
+  `chain=3318655/2945348e…`, `header=3318655` (candidate == body), archive ready
+  at H=3315600; the run is in progress. Evidence:
+  `C:\DHW\.tmp\task7-B\evidence\kernel-index-fixture.txt`,
+  `cpp-g09-live-02-Node.log` (sha256 B0F1E90C…59C7).
 - Archive-at-H=3317040 is **not sufficient** for a consistent same-tip fixture:
   C++ bodies end at 3318655, so a header head of 3320005 cannot reach `no_sync`
   (body sync would request 3318656..3320005, which the fixture does not have).
   The chosen B path is trim-to-3318655 + the existing archive at H=3315600.
+
+### 8.12 Task-7C wrong-H safe refusal (build-09)
+
+Runtime: build-09 `GrinNode F90EEF38…`. Fixture: untrimmed profile
+`C:\DHW\.tmp\g09-live-01` (confirmed body 3318655, candidate header 3320005,
+archive ready H=3315600). Rust restarted on the persisted header chain (header
+head 3320005, body tip 0). With the Pong fix the sync state moved from
+`awaiting_peers` to `txhashsetpibd_download` and selected **H=3317040**
+(`required_height=3317040`).
+
+C++ served no archive data: 7 exact-hash refusals
+`Ignoring Msg::GetOutputBitmapSegment from Connection{127.0.0.1}: requested hash
+is neither the flushed state nor a ready archive horizon` (no response, no ban).
+Rust PIBD progress stayed at 3/10207809 leaves; no wrong data was observed and
+neither process crashed. Status sequence: `awaiting_peers → txhashsetpibd_download
+(leaves 3/10207809) → no_sync/conn=0 → reconnect → txhashsetpibd_download`. The
+bounded run (~420 s) was stopped before the long legacy TxHashSet fallback, so:
+**wrong-H safe refusal = PASS (bounded); fallback = NOT VERIFIED**. No full PIBD
+PASS is claimed. Evidence: `C:\DHW\.tmp\task7-C3\7C-refusal.txt`, `cpp-Node.log`,
+`rust-grin.log`.
+
+### 8.13 Task-7B full PIBD + restart (build-09) — PASS
+
+Trimmed fixture `C:\DHW\.tmp\g09-live-02` (candidate == body == 3318655;
+archive H=3315600, SHA-256 `13F9781E…C530`; Rust headers from zero). Build-09
+`GrinNode F90EEF38…`.
+
+- Header sync from zero reached H selection **3315600** at 07:21:00; PIBD
+  downloaded all **10,203,442** leaves by 07:58:41.
+- Validation: rangeproofs **2,943,034** (08:01:01..08:21:58), kernels
+  validation, `txhashset_save` 08:24:58; activation with transient `no_sync` at
+  tip 3315600 (08:25:38); body sync 3315600→3318655 (08:26:18..08:35:19).
+- Final: Rust `no_sync` tip **3318655** hash
+  `2945348ef765160a160008cfd7c2b41aa44ed3cea77d6bcfe2083acf0fc4bbf1`,
+  connections 1; C++ chain 3318655 / same hash, header 3318655,
+  `FULLY_SYNCED`, in/out 1/0. C++ roots: kernel `17d1cc11…`, output
+  `8a9be5f8…`, rangeproof `971c4ebd…`.
+- **Liveness finding:** C++'s fixed 60 s receive-idle disconnected Rust during
+  rangeproof validation (~08:13–08:14); Rust continued validation offline and C++
+  reconnected ~08:26:18, after which body sync completed. The C++ side needs a
+  Ping/Pong heartbeat or bounded validation grace (no patch in this task).
+- **Restart PASS:** C++ restarted first, then Rust on the persisted profile.
+  Rust `awaiting_peers` (tip 3318655) → `no_sync` at 08:44:56, same tip/hash,
+  conn=1; C++ inbound=1, FULLY_SYNCED; new C++ PIBD segment requests **0**,
+  Rust PIBD markers **0** (no re-download); no crash/wrong H.
+- **Separate archive-regeneration finding:** after restart C++
+  `ArchivePibdState` warned `Failed to archive the activated TxHashSet: Rewind:
+  Spent output not found for Commitment{0989ac92…}` once. It did not affect the
+  restart `no_sync`, but archive regeneration after activation needs line2/G-09
+  review; not patched.
+- Caveats: fixture-based C++ data (checkpoint-trimmed), loopback allow-list, no
+  public peers; kernel index fail-closed direct scan (line2/API known, build-09).
+- **Build-10 persisted-state restart:** same profile, C++ `GrinNode 60D7F7A6…`
+  first, then Rust persisted. Rust `no_sync` at 08:59:29 tip 3318655 /
+  `2945348e…`, conn=1; C++ inbound=1/FULLY_SYNCED; new C++ PIBD segment requests
+  **0**, Rust PIBD markers **0**; no crash/wrong H. Build-10 kernel index
+  published (generation 1, 3,354,613 kernels); the `ArchivePibdState`
+  "Spent output not found" warning still occurs once, so archive regeneration
+  after activation remains an open finding. Evidence:
+  `C:\DHW\.tmp\task7-B\evidence\build10\build10-restart-final.txt` (sha256
+  `405DB2EB…`), plus `build10-cpp-new.log` and `build10-rust-new.log`.
+  Evidence: `C:\DHW\.tmp\task7-B\evidence\7B-pass.txt`, `7B-freeze.txt`,
+  `7B-liveness.txt`, `7B-restart-final.txt`, logs/JSONL with SHAs.
+
+### 8.14 Task-7D `Output Commitment not found` classification
+
+Clean ordinary 7B and restart logs contain **zero** occurrences of
+`Output Commitment not found` / `Commitment not found`. Source mechanism is
+code-confirmed: `src/Core/Models/TransactionInput.cpp:27-31` (V3 `Deserialize`)
+reads only the commitment, then calls
+`Global::GetCoinView()->GetOutputType(commitment)` to recover features.
+`src/BlockChain/CoinView.cpp:5-17` looks up `BlockDB->GetOutputPosition`; if
+absent it throws `Output <commitment> not found.` (the literal
+`Output Commitment not found` is not in the C++ tree, §7). A V3 input
+deserialized before its producing output is applied/indexed therefore fails
+before block validation. **Live: not reproduced** in the full 7B path or the
+restart path. **Controlled reproduction is BLOCKED under no-source/no-build**:
+it needs a crafted A→B test (deserialize B before applying A → expect throw;
+then apply A → deserialize B succeeds) or an out-of-order wire harness. No
+production change was made; classification is "plausible order-dependence, not
+reproduced/live-confirmed; no consensus/PIBD impact shown".
+Evidence: `C:\DHW\.tmp\task7-B\evidence\7D-output-commitment.txt`.
 
 ## 9. Status matrix
 
@@ -1287,17 +1398,25 @@ Pong fix; no further source edits after build-08 without new approval.
 | DRAFT-patch review | **DELIVERED** | §5 |
 | Bounded archive serving (candidate) | **COMPILED (integrated build), default-off; behaviour NOT VERIFIED** | §8; gated by `ENABLED_BY_DEFAULT = false` |
 | Dynamic capability gating (candidate) | **COMPILED; off by default; gating test green** | §8.2, §8.5 |
-| Compile, integrated tree | **PASS: build-07 `C8C386BE…`/`F9EF06B4…`, 245/4013; independently audited** | §8.6; archive 8/187; advert 2/15; ASan stale under no-build |
+| Compile, integrated tree | **PASS with explicit exception: build-09 audited (`0A3B7D66…`/`F90EEF38…`); build-10 binaries ready (`C17C3BC0…`/`60D7F7A6…`), audits pending** | §8.6; full 249/4033 (build-09, 1 test-only Bodyless); archive 8/187; advert 2/15; ASan refresh 0 reports |
 | Negative/concurrent tests | **PASS: 11/11 new cases green (archive subset 8/187); line3 ASan subset (source-based)** | §8.5, §8.6 |
-| `Output Commitment not found` | **NOT VERIFIED (root cause candidate)** | §7; static analysis only |
-| G-09 ordinary-binary live acceptance | **NOT VERIFIED** | §8.9: L0 PASS, L1 FAIL/BLOCKED, L2+ NOT VERIFIED; fixture-based C++ |
-| Env opt-in `GRINPP_PIBD_ARCHIVE_SERVING` (Phase A) | **PASS (compiled build-07 `C8C386BE…`; activation observed live)** | §8.2, §8.9; mainnet refusal in code; default-off preserved |
+| `Output Commitment not found` | **NOT REPRODUCED in 7B/restart (0 matches); mechanism code-confirmed (V3 input deserialize coin-view lookup); controlled A→B repro BLOCKED under no-source** | §8.14; `TransactionInput.cpp:27-31`, `CoinView.cpp:5-17`; evidence 7D-output-commitment.txt |
+| Reorg / horizon switch (+720) | **BLOCKED — no +720-block source; fixture cannot advance without public sync** | §8.8/§8.11 |
+| Negative wire proof/root/segment-id tests | **NOT VERIFIED — needs separate wire harness (not in this run)** | task-7C list |
+| Resource limits under live PIBD | **NOT VERIFIED — no resource-pressure run performed** | §8.8 |
+| G-09 ordinary-binary live acceptance | **CORE PATH PASS (7B) + restart PASS; overall NOT VERIFIED** | §8.13: headers from zero → H=3315600 → PIBD 10.2M leaves → validation/activation/body → same-tip no_sync; reorg/horizon/negative/resources/Output Commitment still NOT VERIFIED |
+| Env opt-in `GRINPP_PIBD_ARCHIVE_SERVING` (Phase A) | **PASS (build-09 `F90EEF38…`; activation observed live)** | §8.2, §8.9; mainnet refusal in code; default-off preserved |
 | L1 header sync from zero (ordinary binaries) | **FAIL/BLOCKED — real C++ advertised-tip defect** | §8.9: confirmed-tip Pong vs candidate-header serving; Rust `header_sync.rs:70-78` early-return; minimal repro captured |
-| L1 advertised-tip P0 fix | **PASS: build-07 `C8C386BE…`/`F9EF06B4…`, 245/4013, advert 2/15, archive 8/187; independently audited** | §8.6, §8.9; advertisement + atomic snapshot implemented; live H selection still blocked |
-| L1 fixture-mismatch refusal (H=3317040 vs archive 3315600) | **BLOCKED / NOT VERIFIED — H selection never reached** | §8.9: build-07 Rust restart stayed `AwaitingPeers(false)` (tip 0, 1 conn); C++ saw only Pings; refusal untested |
-| Task-7A restart peer-wait root cause | **ROOT-CAUSED: Pong replied with CONFIRMED height/TD; one-file header-head snapshot fix implemented (uncommitted); build-08 pending** | §8.10; Rust Trace `header_head 3320005` vs `highest_height 3318655`; StateSync equality gate never satisfied |
-| Task-7B consistent fixture | **BLOCKED offline: raw candidate trim refused by checkpoint guard; archive-at-3317040 plan requires valid snapshot generation after build-08** | §8.11; no synthetic data; checkpoint CandidateEntries=3320006 vs target 3318656 |
-| Isolated live attempt (approved L0–L6) | **PARTIAL/BLOCKED: L0 PASS; L1 not completed (H selection/refusal NOT REACHED); L2–L5 NOT VERIFIED/NOT EXECUTED; no PASS** | fixture-based C++, Rust from zero + restart attempts, §8.9 |
+| L1 advertised-tip P0 fix (atomic snapshot + Pong) | **PASS at unit/integration + live H selection (build-09 `F90EEF38…`)** | §8.6, §8.10; Rust reached H=3317040; production hash 964FE6D7… |
+| Task-7C wrong-H safe refusal | **PASS (bounded): 7 exact-hash refusals, no data/wrong data/crash; fallback NOT VERIFIED** | §8.12; H=3317040 vs archive 3315600 |
+| Task-7A restart peer-wait root cause | **ROOT-CAUSED and FIXED: Pong built from CONFIRMED; build-09 Pong uses one header-head snapshot** | §8.10; Rust Trace `header_head 3320005` vs `highest_height 3318655`; live progression to H selection |
+| Task-7B consistent fixture | **PASS (fixture valid): candidate==body==3318655, header=3318655, archive H=3315600; kernel-index fail-closed direct scan noted** | §8.11; checkpoint-contract trim; no fabricated blocks |
+| Full PIBD/body-sync/no_sync on trimmed fixture (7B) | **PASS: H=3315600, 10,203,442 leaves, 2,943,034 rangeproofs, activation, body 3315600→3318655, no_sync same tip/hash** | §8.13; C++ FULLY_SYNCED inbound=1; caveats fixture-based/loopback |
+| Restart on persisted profile | **PASS: build-09 and build-10 both no PIBD re-download (0 requests), no_sync at 3318655/2945348e…, C++ inbound=1, no crash/wrong H** | §8.13; build-10 kernel index published; evidence `evidence\build10\build10-restart-final.txt` |
+| Liveness during state validation | **FINDING (not patched): C++ 60 s receive-idle disconnects during long rangeproof validation; reconnect succeeded** | §8.13; needs heartbeat/bounded grace |
+| Archive regeneration after activation | **FINDING (not patched): once `Failed to archive the activated TxHashSet: Rewind: Spent output not found…`; restart no_sync unaffected** | §8.13; line2/G-09 archive review |
+| Kernel index on fixture | **FAIL-CLOSED direct scan (3354326/3354613, checksum mismatch); duplicate-excess hypothesis line2, NOT consensus/PIBD** | line3/line2 finding; fixture evidence preserved |
+| Isolated live attempt (approved L0–L6) | **CORE PATH PASS: L0, L1 (from zero), 7C refusal (bounded), 7B full PIBD+no_sync, restart PASS; reorg/horizon/negative/resources/Output Commitment NOT VERIFIED** | fixture-based C++, loopback; §8.9–§8.13 |
 | Repo state left | uncommitted edits only | no commit/reset/clean performed |
 
 ## 10. Evidence and open questions

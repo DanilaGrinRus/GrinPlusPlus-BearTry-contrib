@@ -3,6 +3,7 @@ list_append_parent(
     ${CMAKE_CURRENT_LIST_DIR}
     "Test_NodeApiPrintables.cpp"
     "Test_UnspentPagination.cpp"
+    "Test_GetKernelHandler.cpp"
     "Wallet/Foreign/Test_CheckVersion.cpp"
     "Wallet/Owner/Test_CreateWallet.cpp"
     "Wallet/Owner/Test_EstimateFee.cpp"

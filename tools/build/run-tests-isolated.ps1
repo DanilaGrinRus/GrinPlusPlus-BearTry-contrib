@@ -37,7 +37,8 @@ param(
     [ValidateSet('PerRun', 'Shared')][string]$HomeMode = 'PerRun',
     [int]$Instances = 1,
     [switch]$KeepBinary,
-    [switch]$NoEvidenceCopy
+    [switch]$NoEvidenceCopy,
+    [switch]$FailOnNoTests
 )
 
 $ErrorActionPreference = 'Stop'
@@ -256,8 +257,25 @@ foreach ($rel in $provenanceFiles) {
 }
 
 # ---------------- run ----------------
-# Pass the raw command line, without PowerShell quoting each element.
-$argList = if ($ExeArgs) { $ExeArgs } elseif (@($TestArgs).Count -gt 0) { (@($TestArgs) -join ' ') } else { '' }
+# Argument handling:
+#   -TestArgs is the safe path: every element is quoted for the Windows
+#   command line, so filters containing spaces (e.g. "KernelIndex schema v2*")
+#   reach Catch2 as ONE argument. The old space-joined form silently turned such
+#   filters into "KernelIndexschemav2*" ("No tests ran", exit 0 => false PASS).
+#   -ExeArgs remains a raw command-line fragment for backward compatibility;
+#   callers using it are responsible for quoting.
+function ConvertTo-QuotedArg([string]$Value) {
+    if ($null -eq $Value) { return '""' }
+    if ($Value -eq '') { return '""' }
+    if ($Value -notmatch '[\s"]') { return $Value }
+    $escaped = $Value -replace '(\\*)"', '$1$1\"'
+    $escaped = $escaped -replace '(\\+)$', '$1$1'
+    return '"' + $escaped + '"'
+}
+
+$argList = if (@($TestArgs).Count -gt 0) {
+    (@($TestArgs) | ForEach-Object { ConvertTo-QuotedArg $_ }) -join ' '
+} elseif ($ExeArgs) { $ExeArgs } else { '' }
 $instancesInfo = @()
 $startUtc = (Get-Date).ToUniversalTime()
 $globalStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
@@ -300,6 +318,7 @@ foreach ($pi in $procs) {
     if ($stdoutText) {
         $summary = @($stdoutText -split "`r?`n" | Where-Object { $_ -match 'Passed all \d+ test cases|All tests passed|Failed \d+ test cases|test cases:|assertions:|Test Runtime Initialized|Running Tests' } | Select-Object -Last 8)
     }
+    $noTests = ($null -ne $stdoutText) -and ($stdoutText -match 'No tests ran|No test cases matched')
     $crash = ($exit -ne $null -and (($exit -band 0xFFFFFFFF) -eq 0xC0000409))
     $instancesInfo += [ordered]@{
         index             = $pi.index
@@ -307,7 +326,8 @@ foreach ($pi in $procs) {
         started_utc       = $pi.startedUtc.ToString('o')
         duration_sec      = [Math]::Round(((Get-Date).ToUniversalTime() - $pi.startedUtc).TotalSeconds, 3)
         exit_code         = if ($exitKnown) { Format-ExitCode ([int]$exit) } else { [ordered]@{ decimal = $null; hex = $null } }
-        status            = if (-not $exitKnown) { 'FAIL_NO_EXIT_CODE' } elseif ($crash) { 'FAIL_CRASH_0xC0000409' } elseif ($exit -eq 0) { 'PASS' } elseif ($anyTimeout) { 'TIMEOUT_OR_FAIL' } else { 'FAIL' }
+        status            = if (-not $exitKnown) { 'FAIL_NO_EXIT_CODE' } elseif ($crash) { 'FAIL_CRASH_0xC0000409' } elseif ($FailOnNoTests -and $noTests) { 'FAIL_NO_TESTS' } elseif ($exit -eq 0) { 'PASS' } elseif ($anyTimeout) { 'TIMEOUT_OR_FAIL' } else { 'FAIL' }
+        no_tests_ran      = [bool]$noTests
         stdout_path       = $pi.stdout
         stdout_sha256     = if (Test-Path -LiteralPath $pi.stdout) { Get-Sha256 $pi.stdout } else { $null }
         stdout_bytes      = if (Test-Path -LiteralPath $pi.stdout) { (Get-Item -LiteralPath $pi.stdout).Length } else { 0 }
@@ -330,13 +350,17 @@ $cwdGrinpp = Test-Path -LiteralPath (Join-Path $cwdAbs '.GrinPP')
 $events = Get-NewEvents -SinceUtc $startUtc.AddMinutes(-2) -UntilUtc $endUtc.AddMinutes(1) -PathNeedle $copyPath
 
 $allExitZero = ($instancesInfo | Where-Object { $_.exit_code.decimal -ne 0 }).Count -eq 0
+$allInstancesPass = ($instancesInfo | Where-Object { $_.status -ne 'PASS' }).Count -eq 0
+$anyNoTests = ($instancesInfo | Where-Object { $_.no_tests_ran }).Count -gt 0
 $isolationVerified = $userUnchanged -and $dataDirCreated -and (-not $cwdGrinpp) -and (-not $anyTimeout)
-$status = if ($allExitZero -and $isolationVerified) { 'PASS' } elseif (-not $userUnchanged) { 'FAIL_ISOLATION_USER_PROFILE_TOUCHED' } elseif ($anyTimeout) { 'TIMEOUT' } else { 'FAIL' }
+$status = if (-not $userUnchanged) { 'FAIL_ISOLATION_USER_PROFILE_TOUCHED' } elseif ($anyTimeout) { 'TIMEOUT' } elseif ($anyNoTests -and $FailOnNoTests) { 'FAIL_NO_TESTS' } elseif ($allExitZero -and $allInstancesPass -and $isolationVerified) { 'PASS' } else { 'FAIL' }
 
 $manifest = [ordered]@{
     schema                = 'gpp-line3-test-run/v1'
     run_id                = $RunId
     status                = $status
+    no_tests_ran          = $anyNoTests
+    fail_on_no_tests      = [bool]$FailOnNoTests
     created_utc           = (Get-Date).ToUniversalTime().ToString('o')
     repo                  = $Repo
     git_head              = $gitRev
@@ -393,6 +417,9 @@ $manifest = [ordered]@{
     command               = [ordered]@{
         exe           = $copyPath
         args          = $argList
+        test_args     = @($TestArgs)
+        raw_exe_args  = $ExeArgs
+        fail_on_no_tests = [bool]$FailOnNoTests
         working_dir   = $cwdAbs
         instances     = $Instances
         timeout_sec   = $TimeoutSec
@@ -435,4 +462,4 @@ Write-Host "user profile  : unchanged=$userUnchanged"
 Write-Host "events        : $($events.Count)"
 Write-Host "manifest      : $manifestPath"
 
-if ($allExitZero -and $isolationVerified) { exit 0 } else { exit 1 }
+if ($status -eq 'PASS') { exit 0 } else { exit 1 }

@@ -1,0 +1,8 @@
+TASK-7B RESTART TEST - 2026-11-03T01:45:18.4869598Z
+binaries: GrinNode F90EEF389D1B35B7A17BD8E3C35F06AECFD9C39410C4F755713E1CD1F448A2F8; Tests 0A3B7D66E78F5E70A6D95616F0138D994AEB820796C0C77E98AEC7EAC4F2735B
+fixture: g09-live-02 trimmed candidate==body==3318655; archive H=3315600; Rust header/state persisted from 7B PASS
+sequence: C++ restarted first (chain 3318655 ready), then Rust on persisted profile
+final=NO_SYNC
+cpp_new_PIBD_request_count=0
+rust_new_PIBD_markers=0
+PASS criterion: Rust no_sync at 3318655/2945348e... with no new PIBD archive download; C++ inbound=1; no crash/wrong H

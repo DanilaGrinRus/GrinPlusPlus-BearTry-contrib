@@ -214,7 +214,7 @@ namespace NrdTest
 		void SetKernelIndexState(const KernelIndexState&) final { }
 		void AddKernelPosition(uint64_t, const Commitment&, const OutputLocation&) final { }
 		std::unique_ptr<OutputLocation> GetKernelPosition(uint64_t, const Commitment&) const final { return nullptr; }
-		void RemoveKernelPositions(uint64_t, const std::vector<Commitment>&) final { }
+		void RemoveKernelPosition(uint64_t, const Commitment&, const OutputLocation&) final { }
 		void ClearKernelPositions(uint64_t) final { }
 		void ClearAllKernelPositions() final { }
 		uint64_t GetKernelPositionCount(uint64_t) const final { return 0; }

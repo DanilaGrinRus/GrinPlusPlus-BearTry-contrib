@@ -11,6 +11,7 @@
 #include <PMMR/TxHashSetManager.h>
 #include <TxPool/TransactionPool.h>
 #include <Wallet/WalletManager.h>
+#include <memory>
 #include <thread>
 
 // Forward Declarations
@@ -65,6 +66,13 @@ public:
 	void SetPreserveDataOnDestruct(const bool preserve) noexcept { m_preserveData = preserve; }
 
 	std::shared_ptr<IDatabase> GetDatabase() const noexcept { return m_pDatabase; }
+
+	// Smallest honest seam for handler-level API tests: the manager object itself
+	// (the Locked wrapper keeps owning it). Tests must not replace its txhashset.
+	std::shared_ptr<TxHashSetManager> GetTxHashSetManagerShared() const
+	{
+		return std::const_pointer_cast<TxHashSetManager>(m_pTxHashSetManager->Read().GetShared());
+	}
 
 	std::shared_ptr<Locked<IBlockDB>> GetBlockDB() const noexcept;
 	const std::shared_ptr<Locked<TxHashSetManager>>& GetTxHashSetManager() const noexcept { return m_pTxHashSetManager; }

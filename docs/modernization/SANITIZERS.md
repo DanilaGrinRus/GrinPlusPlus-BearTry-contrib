@@ -161,8 +161,16 @@ ASan refresh build-09 (ONE): source manifest `CF78C188…` (1290 files), TestsMi
 `12C3D16C…`; Nrd* 21/365, archive 8/187, Segment 16/68, P2P 7/61 (incl. advert),
 teardown PASS, 0 reports; BlockPipe/bodyless/kill/PreCommit/FalseBan/BatchSafety/
 KernelIndex — normal-only (rocksdb). Pipeline `ci-0a3-01` overall **FAIL** honest
-(full-suite test-only); asan-subset PASS. Build-10 — backlog по отдельному approval.
-(BlockChain→Database→rocksdb).
+(full-suite test-only); asan-subset PASS.
+
+**Build-10 final candidate (2026-11-03):** Tests
+`C17C3BC0…` + GrinNode `60D7F7A6…`; clean serialized full **254 cases /
+253 passed / 1 failed** (bodyless-only), all pre-registered filters PASS.
+ASan refresh **NOT RUN (STALE, mismatch=13)**: existing ASan tree remains
+build-09 `CF78C188…`/TestsMini `12C3D16C…`; no rebuild under No build/commit and
+no ASan claim for build-10. Details:
+`evidence/line3/normal-binary-build10-audit-20261103.md`,
+`evidence/line3/build10-asan-stale-20261103.json`.
 
 **Находка ASan — исправлено в тестовом runtime (Lead-approved option b):**
 исходный `tests/src/TestMain.cpp` (`static TestRuntime`) давал exit-time

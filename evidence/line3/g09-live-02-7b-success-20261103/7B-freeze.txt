@@ -1,0 +1,51 @@
+TASK-7B EVIDENCE FREEZE - 2026-11-03T01:35:55.8192578Z
+binaries: GrinNode F90EEF389D1B35B7A17BD8E3C35F06AECFD9C39410C4F755713E1CD1F448A2F8; Tests 0A3B7D66E78F5E70A6D95616F0138D994AEB820796C0C77E98AEC7EAC4F2735B
+fixture: C:\DHW\.tmp\g09-live-02 (preserved; do not delete); trimmed candidate==body==3318655 via checkpoint contract
+config_cpp_sha256=355B15F769C182CFAE00096146AF441A60F50732F38D27C521C56A9495307C7C
+config_rust_sha256=AEE5E75375B23902A2B4DE0BCA3B372CB599BEC8FEAC4DB0F7C375079F2B8B2B
+archive_sha256=13F9781E207F787F5F58367F9C98947D4A645D660E1CA23186AD55D9D064C530
+required_horizon=3315600; archive_height=3315600; pibd_leaves_required=10203442 (completed); fixture tip=3318655 hash=2945348ef765160a160008cfd7c2b41aa44ed3cea77d6bcfe2083acf0fc4bbf1
+validation phases: rangeproofs 2943034 (08:01:01..08:21:58), kernels validation, txhashset_save 08:24:58; activation/transient no_sync tip 3315600 08:25:38; body sync 3315600 -> 3318655 08:26:18..08:35:19
+cpp_log_count[GetOutputBitmapSegment]=7
+cpp_log_count[GetOutputSegment]=1720
+cpp_log_count[GetRangeProofSegment]=1700
+cpp_log_count[GetKernelSegment]=1637
+cpp_log_count[Sending SegmentResponse]=0
+cpp_log_count[OutputBitmapSegment]=7
+cpp_log_count[OutputSegment]=1720
+cpp_log_count[RangeProofSegment]=1700
+cpp_log_count[KernelSegment]=1637
+rust_log_count[txhashsetpibd_download]=0
+rust_log_count[txhashset_rangeproofs_validation]=0
+rust_log_count[txhashset_kernels_validation]=0
+rust_log_count[txhashset_save]=0
+rust_log_count[no_sync]=0
+rust_log_count[body_sync]=189
+no-restart marker: single Rust PID; rust log contains no PIBD restart after no_sync; process stopped only after final evidence
+artifact hashes:
+  cpp-7B-final-Node.log sha256=77518AEA4AB6CC50AE91F73FAFF4A5D6D2AB7486C70C87BD4D0110CFA208C99D bytes=3075445
+  rust-7B-final-grin.log sha256=B904A7A73AAB162964951C0C497C363E76130CA5B315EEFC272D099EF2FEB518 bytes=2766191
+  7B-status.jsonl sha256=5E7BD61142A4C1281F15E794E64CE980FBA9503586895AAD0A18A9F4DD782363 bytes=80976
+  7B-pass.txt sha256=A18EA2C274D4E0DDD4755A11D3A214CE026EB2DE8F185F9AEB7A159C9A99CE91 bytes=2241
+  7B-liveness.txt sha256=FFA5EAFEF7AB487A008ADA2E4FCD972D244D8DEFAFEFD43FE1F7014501E37FEF bytes=597
+rust_phase_count[TxHashsetPibd]=0
+rust_phase_count[TxHashsetRangeProofsValidation]=0
+rust_phase_count[TxHashsetKernelsValidation]=0
+rust_phase_count[TxHashsetSave]=0
+rust_phase_count[NoSync]=1
+rust_phase_count[BodySync]=189
+rust_phase_count[verify_rangeproofs]=0
+rust_phase_count[verify_kernels]=0
+7B-post-validation.jsonl sha256=C0054CAB4170EE04ED1AADF07A68DE868237A40D074C2601F88AEE18B1463043 bytes=11012
+
+CORRECTED PHASE COUNTS / ARTIFACTS (post-stop copy)
+rust_phase_count[TxHashsetPibd]=0
+rust_phase_count[TxHashsetRangeProofsValidation]=0
+rust_phase_count[TxHashsetKernelsValidation]=0
+rust_phase_count[TxHashsetSave]=0
+rust_phase_count[NoSync]=1
+rust_phase_count[BodySync]=189
+rust_phase_count[verify_rangeproofs]=0
+rust_phase_count[verify_kernels]=0
+7B-post-validation.jsonl sha256=C0054CAB4170EE04ED1AADF07A68DE868237A40D074C2601F88AEE18B1463043 bytes=11012
+rust_7B_final_log sha256=B904A7A73AAB162964951C0C497C363E76130CA5B315EEFC272D099EF2FEB518 bytes=2766191
