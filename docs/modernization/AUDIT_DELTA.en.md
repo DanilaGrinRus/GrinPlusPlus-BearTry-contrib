@@ -1,12 +1,27 @@
 # AUDIT_DELTA (EN) — Grin++ 1.2.9 → Grin v5.5.2 compatibility
+
+## Update — 2026-11-03
+
+Scope: Grin++ 1.2.9 and compatibility with Rust Grin v5.5.2. HEAD was `6dbf8a7` when reviewed; parallel working-tree changes are not bound to the binaries below. For the operational status and evidence see `THREE_LINE_STATUS.md`, `G09_ORDINARY_LIVE_PASS_2026-11-03.md` and `ARCHIVE_RECOVERY_2026-11-03.md`. Earlier statements below are historical where they conflict with this snapshot; cross-check the operational board against its primary evidence as well.
+
+- **G-09: PARTIAL.** In scenario 7B, ordinary build-09 C++ `GrinNode` and an ordinary Rust node, with clean headers/state, a local fixture and loopback, completed PIBD at H=3,315,600 (10,203,442/10,203,442), validation, activation, body sync and `no_sync` at H=3,318,655 (`2945348e…`); restart in that scenario PASS. This does not establish public-network or Mainnet operation.
+- Build-10: `GrinNode` SHA-256 `60D7F7A6B3FFCC702B260E80036B7143A06DB9B036AD3DF3754B3C7B9438CB23`; `Tests` `C17C3BC04BE04C501DB425E3617A71E61985E9257EF41D879E130E28F8B621A4`. Persisted-state restart reached the same tip without a PIBD download; it is not a fresh full PIBD run. Full suite: 254/253/1, failure in test scenario `Test_NrdBodylessRestart`; bodyless NRD and kill-recovery **NOT VERIFIED**. Results apply only to the identified builds.
+- Archive H=3,313,440: recovery **FAIL** at block 3,317,930, `Spent output not found`; the spent-position discrepancy and root cause are **NOT VERIFIED**. The tested H=3,315,600 scenario is different. Atomic archive publication remains OPEN on the operational board; work in progress is not a verified fix.
+- Reorg/horizon change **BLOCKED**; negative proof/root/segment-ID wire tests and resource limits **NOT VERIFIED**. `Output Commitment not found` was not reproduced in 7B; controlled reproduction is unavailable. The 60-second idle disconnect self-healed in the test; no decision to change timeout or add heartbeat has been made.
+- NRD differential and ASan evidence covers subsets only; D2 txpool/index policy remains open and RocksDB/DB is outside the stated ASan coverage. PIHD experimental/off. G-49 is a performance plan, not a demonstrated speedup; it needs a baseline and equivalent-result checks. Full G-09, public PIBD and Mainnet readiness **NOT VERIFIED**.
+
+## Historical cards and earlier snapshots
+
+Dates, hashes, counts, statuses and references to a “current” state in the preserved material below refer to their respective past snapshots. The cards are retained as history, not renewed acceptance of the current tree.
+
 **Current snapshot 2026-11-02.** Baseline 1.2.9 `5f511e6`; working tree HEAD `77b3970`. Source metrics:
 
 - C++ added: **+22,619 lines**; deleted **−625**; 191 tracked + 22 new;
 - diff/new C++ text volume: **≈ +927.8 KiB**;
-- final `GrinNode.exe`: **7,809,024 B = 7,622.5 KiB = 7.44 MiB**;
+- final `GrinNode.exe`: **7,846,912 B = 7,622.5 KiB = 7.44 MiB**;
 - **exe growth vs 1.2.9: NOT MEASURED** — no original binary is preserved; 7.7 MB is the final size, not a delta;
-- artifacts: `GrinNode 60D7F7A6…`, `Tests C17C3BC0…`; suite **254 cases / 253 passed / 1 test-only fail**, production 0 fails (explicit exception; see THREE_LINE_STATUS).
-- **G-09 fixed-H (experimental, 2026-11-03): historical PASS.** Build-09 `0A3B7D66…`/`F90EEF38…`: ordinary 7B full PIBD/activation/body sync/no_sync **PASS**, restart **PASS**. Build-10 `C17C3BC0…`/`60D7F7A6…`: clean full 254/253/1 (bodyless test-only), final-binary persisted restart **PASS**, kernel index published. Full G-09 still **NOT VERIFIED**: reorg/horizon BLOCKED, negative/resources NOT VERIFIED, Output Commitment not reproduced, C++ fixture-based/loopback. Ordinary Rust 5.5.2 reached `no_sync` at H=3,318,655 / hash `2945348e…`, with the same C++ tip, 1 inbound / 0 outbound; PIBD 10,203,442/10,203,442, roots/rangeproof/kernel validation/body sync completed. The previous restarts were caused by `missing left sibling` at output segment 1648 and fixed by sending available leaves in `SegmentGenerator`. Limits: headers preseeded, reorg/restart/negative/mainnet not covered.
+- artifacts: `GrinNode F39BDFE5…`, `Tests 001DF4BC…`; suite **257 cases / 256 passed / 1 test-only fail**, production 0 fails (explicit exception; see THREE_LINE_STATUS).
+- **G-09 fixed-H (experimental, 2026-11-03): historical PASS.** Build-09 `0A3B7D66…`/`F90EEF38…`: ordinary 7B full PIBD/activation/body sync/no_sync **PASS**, restart **PASS**. Build-13 `001DF4BC…`/`F39BDFE5…`: clean full 257/256/1 (bodyless test-only), final persisted restart **PASS**, H=3313440 recovery **PASS**, H=3315600 fresh snapshot **PASS**, SpentOutputs Release decode bug fixed. Full G-09 still **NOT VERIFIED**: reorg/horizon BLOCKED, negative/resources NOT VERIFIED, Output Commitment not reproduced, C++ fixture-based/loopback. Ordinary Rust 5.5.2 reached `no_sync` at H=3,318,655 / hash `2945348e…`, with the same C++ tip, 1 inbound / 0 outbound; PIBD 10,203,442/10,203,442, roots/rangeproof/kernel validation/body sync completed. The previous restarts were caused by `missing left sibling` at output segment 1648 and fixed by sending available leaves in `SegmentGenerator`. Limits: headers preseeded, reorg/restart/negative/mainnet not covered.
 - **PIBD/PIHD guard:** height cap 13, `idx*capacity` overflow check, PIHD response bound to connection/peer, fallback on no chain-height progress; PIBD responses use one `ApiStateSnapshot` with sequence retry, bitmap/root cached by output root, 500 requests/min per connection. PIHD is experimental, `PIHD_HIST` is not advertised; concurrent apply/reorg snapshot test remains open.
 
 Baseline: Grin++ 1.2.9 (`5f511e6`). Delta updated: 2026-11-02, HEAD `77b3970` (G-09/G-23/G-53/G-07/G-24).
@@ -452,7 +467,7 @@ Baseline unchanged (`5f511e6`). This snapshot includes the G-09 candidate merge,
 G-23 hash revalidation, KernelIndex/get_kernel, NRD rules and the local CI gate.
 Artifacts: `GrinNode E16A014E…`, `Tests CC6472B1…`; suite **194 / 2227 PASS**.
 
-### G-09 — PIBD serving (PARTIAL, live in progress)
+#### G-09 — PIBD serving (PARTIAL, live in progress)
 
 - The candidate patch is merged: `GetRawAt` checks compaction/bounds; a required
   leaf without data fails with `MissingLeaf`; an optional leaf carries a
@@ -472,7 +487,7 @@ Artifacts: `GrinNode E16A014E…`, `Tests CC6472B1…`; suite **194 / 2227 PASS*
   client follows after activation. **Live G-09 is NOT VERIFIED** — offline PASS
   is not live acceptance.
 
-### G-23 — hash/root revalidation (PARTIAL)
+#### G-23 — hash/root revalidation (PARTIAL)
 
 - With a checkpoint present, startup validates every header hash/height/link and
   the header-MMR leaf hash; an open TxHashSet must match its flushed header roots.
@@ -480,20 +495,20 @@ Artifacts: `GrinNode E16A014E…`, `Tests CC6472B1…`; suite **194 / 2227 PASS*
 - A one-byte `header_mmr.bin` corruption test exists; full startup fault
   injection and a complete PMMR-node sweep are **NOT VERIFIED**.
 
-### G-53 — KernelIndex/get_kernel (PARTIAL)
+#### G-53 — KernelIndex/get_kernel (PARTIAL)
 
 - Persistent generation-based `excess → OutputLocation` index with tip/root/
   count/checksum; `get_kernel` fast path plus bounded direct-scan fallback; N-06
   now uses 1-based PMMR positions.
 - Three index tests / 48 assertions. Live `/v2`, reorg and pagination are NOT VERIFIED.
 
-### G-07 — NRD (PARTIAL)
+#### G-07 — NRD (PARTIAL)
 
 - Duplicate NRD kernels in a block and `diff < relative_height` are rejected;
   two-week cutoff; rewind/startup/PIBD rebuild; NRD rejected before HF3.
 - No persisted incremental index, full block/reorg NRD test or live NRD peer.
 
-### G-24 — build (PARTIAL)
+#### G-24 — build (PARTIAL)
 
 - Added `tools/build/ci.ps1` (build + isolated tests + manifest) and
   `BUILD_PINS.md`; hosted CI and a clean-checkout vcpkg run are NOT VERIFIED.

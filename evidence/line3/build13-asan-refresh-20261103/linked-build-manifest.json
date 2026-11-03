@@ -1,0 +1,254 @@
+{
+  "schema": "gpp-line3-linked-asan-v1",
+  "created_utc": "2026-11-03T03:44:33.6967175Z",
+  "repo": "C:\\DHW\\Gplus\\src\\grinplusplus",
+  "git_head": "6dbf8a7da067f35ba585371d82123ad21edf3a9a",
+  "git_status": [
+    " M docs/modernization/ARCHIVE_RECOVERY_2026-11-03.md",
+    " M docs/modernization/AUDIT_DELTA.de.md",
+    " M docs/modernization/AUDIT_DELTA.en.md",
+    " M docs/modernization/AUDIT_DELTA.ru.md",
+    " M docs/modernization/AUDIT_README.de.md",
+    " M docs/modernization/AUDIT_README.en.md",
+    " M docs/modernization/AUDIT_README.ru.md",
+    " M docs/modernization/CI_REPRO.md",
+    " M docs/modernization/GAP_MATRIX.md",
+    " M docs/modernization/PERF_RANGEPROOF.md",
+    " M docs/modernization/SANITIZERS.md",
+    " M docs/modernization/THREE_LINE_STATUS.md",
+    " M evidence/line3/EVIDENCE_LINE3.md",
+    " M evidence/line3/normal-binary-build10-audit-20261103.md",
+    " M evidence/line3/task10-11-archive-recovery-independent-audit-20261103.md",
+    " M evidence/line3/task10-11-archive-recovery-manifest-20261103.json",
+    " M include/BlockChain/BlockChain.h",
+    " M include/Core/Models/SpentOutput.h",
+    " M src/BlockChain/BlockChainImpl.cpp",
+    " M src/BlockChain/BlockChainImpl.h",
+    " M src/Database/BlockDBImpl.cpp",
+    " M src/Database/RocksDB/RocksDB.h",
+    " M src/P2P/ArchivePublication.h",
+    " M src/P2P/Sync/StateSyncer.cpp",
+    " M src/P2P/Sync/StateSyncer.h",
+    " M tests/src/Database/Test_SpentOutputs.cpp",
+    " M tests/src/P2P/Test_BlockPipeBan.cpp",
+    "?? evidence/line3/asan-build11-refresh-20261103.md",
+    "?? evidence/line3/asan-build12-refresh-20261103.md",
+    "?? evidence/line3/b11-advert-01/",
+    "?? evidence/line3/b11-archive-01/",
+    "?? evidence/line3/b11-asan-archive-01/",
+    "?? evidence/line3/b11-asan-nrd-01/",
+    "?? evidence/line3/b11-asan-p2p-01/",
+    "?? evidence/line3/b11-asan-p2p-archive-01/",
+    "?? evidence/line3/b11-asan-segment-01/",
+    "?? evidence/line3/b11-asan-teardown-01/",
+    "?? evidence/line3/b11-dup-01/",
+    "?? evidence/line3/b11-full-01/",
+    "?? evidence/line3/b11-getkernel-01/",
+    "?? evidence/line3/b11-kernidx-01/",
+    "?? evidence/line3/b11-nrd-01/",
+    "?? evidence/line3/b11-p2p-archive-01/",
+    "?? evidence/line3/b11-schema-01/",
+    "?? evidence/line3/b12-advert-01/",
+    "?? evidence/line3/b12-archive-01/",
+    "?? evidence/line3/b12-asan-archive-01/",
+    "?? evidence/line3/b12-asan-nrd-01/",
+    "?? evidence/line3/b12-asan-p2p-01/",
+    "?? evidence/line3/b12-asan-p2p-archive-01/",
+    "?? evidence/line3/b12-asan-segment-01/",
+    "?? evidence/line3/b12-asan-teardown-01/",
+    "?? evidence/line3/b12-dup-01/",
+    "?? evidence/line3/b12-full-01/",
+    "?? evidence/line3/b12-getkernel-01/",
+    "?? evidence/line3/b12-kernidx-01/",
+    "?? evidence/line3/b12-nrd-01/",
+    "?? evidence/line3/b12-p2p-archive-01/",
+    "?? evidence/line3/b12-preflight-01/",
+    "?? evidence/line3/b12-preflight-02/",
+    "?? evidence/line3/b12-schema-01/",
+    "?? evidence/line3/b12-spent-01/",
+    "?? evidence/line3/b13-advert-01/",
+    "?? evidence/line3/b13-archive-01/",
+    "?? evidence/line3/b13-boundary-01/",
+    "?? evidence/line3/b13-dup-01/",
+    "?? evidence/line3/b13-full-01/",
+    "?? evidence/line3/b13-getkernel-01/",
+    "?? evidence/line3/b13-kernidx-01/",
+    "?? evidence/line3/b13-nrd-01/",
+    "?? evidence/line3/b13-preflight-01/",
+    "?? evidence/line3/b13-rewindpreflight-01/",
+    "?? evidence/line3/b13-schema-01/",
+    "?? evidence/line3/b13-spent-01/",
+    "?? evidence/line3/build-11-freeze-snapshot-final.json",
+    "?? evidence/line3/build-12-freeze-snapshot-final.json",
+    "?? evidence/line3/build-13-freeze-snapshot-final.json",
+    "?? evidence/line3/build11-asan-refresh-20261103.json",
+    "?? evidence/line3/build11-asan-refresh-20261103/",
+    "?? evidence/line3/build11-audit-complete-20261103.md",
+    "?? evidence/line3/build11-frozen-source-audit-20261103.json",
+    "?? evidence/line3/build11-readiness-audit-plan-20261103.md",
+    "?? evidence/line3/build12-asan-refresh-20261103.json",
+    "?? evidence/line3/build12-asan-refresh-20261103/",
+    "?? evidence/line3/build12-preaudit-20261103.json",
+    "?? evidence/line3/build12-preaudit-20261103.md",
+    "?? evidence/line3/build13-preaudit-20261103.json",
+    "?? evidence/line3/build13-preaudit-20261103.md",
+    "?? evidence/line3/build13-preauth-20261103/",
+    "?? evidence/line3/full-asan-20261103-095356/",
+    "?? evidence/line3/full-asan-20261103-101529/",
+    "?? evidence/line3/full-asan-20261103-104255/",
+    "?? evidence/line3/normal-binary-build11-audit-20261103.md",
+    "?? evidence/line3/normal-binary-build12-audit-20261103.md",
+    "?? evidence/line3/task10-11-spent-deserialize-rootcause-20261103/",
+    "?? evidence/line3/task11-spent-positions-fresh-copy-audit-20261103.json",
+    "?? tools/audit/nrd/evidence/isolated/b11-archivepub-20261103-095239/",
+    "?? tools/audit/nrd/evidence/isolated/b11-pibdarchive-20261103-095239/",
+    "?? tools/audit/nrd/evidence/isolated/b12-archivepub-20261103-101332/",
+    "?? tools/audit/nrd/evidence/isolated/b12-pibdarchive-20261103-101332/",
+    "?? tools/audit/nrd/evidence/isolated/b12-spent-20261103-101332/",
+    "?? tools/audit/nrd/evidence/isolated/b12x-preflight-20261103-101349/",
+    "?? tools/audit/nrd/evidence/isolated/b12x-spentdecode-20261103-101349/",
+    "?? tools/audit/nrd/evidence/isolated/b13-archivepub-20261103-104104/",
+    "?? tools/audit/nrd/evidence/isolated/b13-pibdarchive-20261103-104104/",
+    "?? tools/audit/nrd/evidence/isolated/b13-preflightboundary-20261103-104104/",
+    "?? tools/audit/nrd/evidence/isolated/b13-preflightchain-20261103-104104/",
+    "?? tools/audit/nrd/evidence/isolated/b13-spentdecode-20261103-104104/"
+  ],
+  "copied_tree": "C:\\DHW\\.tmp\\asan-line3\\gpp-tree",
+  "lib_dir": "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\bin\\Release\\Release",
+  "profile": "/W4 /WX /O1 /Zi /MT /EHsc /std:c++17 /fsanitize=address, linked against full-project ASan libs",
+  "asan_runtime": {
+    "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\clang_rt.asan_dynamic-x86_64.dll",
+    "sha256": "3AA742521E8CBD23252F0545AA51D5A15624A3E4430FBE2F81567AFAEB3FC59B"
+  },
+  "libraries": [
+    {
+      "name": "bitcoin.lib",
+      "sha256": "F0EAB487A8F357BCEB88319D6F388D03FCDCDD70CAAD76F197576F700D304A79",
+      "bytes": 738220
+    },
+    {
+      "name": "chachapoly.lib",
+      "sha256": "A60874CC030A6DFEAB6419400D1758D6F271718F0A93BE175576665AEBF32AF0",
+      "bytes": 159688
+    },
+    {
+      "name": "Common.lib",
+      "sha256": "2E0C94914AC4D671126713CDCAC980E09068F6FD0D15915A800E30A892E082B0",
+      "bytes": 12156750
+    },
+    {
+      "name": "Core.lib",
+      "sha256": "64854FD5DBC95CA55B01AF6A5E3D3D953FA15215FCC87B23DC51E797AC1E06AA",
+      "bytes": 40492250
+    },
+    {
+      "name": "Crypto.lib",
+      "sha256": "A897FB162EC592AFF39FAC2A87E6A747406B622052E4E77268A1D43AE09F17F9",
+      "bytes": 23862200
+    },
+    {
+      "name": "jsoncpp.lib",
+      "sha256": "DB4478F6DEA60BB357B0BF23F84DA1EEE7A5BAAC2AB05C48A22C788A3A5CB641",
+      "bytes": 2915210
+    },
+    {
+      "name": "Net.lib",
+      "sha256": "89F26109A2DBD83E90C4E4C1CE7DF35BB4147AA06FC344A72B9FD7B22E169095",
+      "bytes": 11428590
+    },
+    {
+      "name": "PMMR.lib",
+      "sha256": "54D4C61823C8F64B85CAFA3E2B5D50D806C3176EE6AE7D211F474D0CEA91589D",
+      "bytes": 34226558
+    },
+    {
+      "name": "rfc6234.lib",
+      "sha256": "33FB27D0B68D92B9D427476CEB8DE1A796B0ECB0EC027EABE2C11926AB4420E7",
+      "bytes": 165252
+    },
+    {
+      "name": "scrypt.lib",
+      "sha256": "F32DB315BF3A1B2B45935D9B0E064D90E7E63C562C67990A9B1697507DD01502",
+      "bytes": 77216
+    },
+    {
+      "name": "sha3.lib",
+      "sha256": "D2FB5049F20E1C9C6180511648A562D986513E1CAF4C98CEA1F41E4D3AFC4AA2",
+      "bytes": 132546
+    },
+    {
+      "name": "Tor.lib",
+      "sha256": "26A980E213BFCA4F1546D9D5C12ED64031E3FBEFE6AE9483FF8BAF4F4264DD9F",
+      "bytes": 20117344
+    }
+  ],
+  "targets": {
+    "p2p_responses": {
+      "exe": "C:\\DHW\\.tmp\\asan-line3\\fuzz-linked\\fuzz_p2p_responses.exe",
+      "log": "C:\\DHW\\.tmp\\asan-line3\\fuzz-linked\\logs\\build_p2p_responses.log",
+      "exit_code": 0,
+      "sources": [
+        "C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\fuzz_driver.cpp",
+        "C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\target_p2p_responses.cpp"
+      ],
+      "binary_sha256": "A1FDFC6E95433C84EEA9F6527D0A668AECF9D25888C152E0BE88B2220CDAEDA5",
+      "bytes": 3736064
+    },
+    "segment_validate": {
+      "exe": "C:\\DHW\\.tmp\\asan-line3\\fuzz-linked\\fuzz_segment_validate.exe",
+      "log": "C:\\DHW\\.tmp\\asan-line3\\fuzz-linked\\logs\\build_segment_validate.log",
+      "exit_code": 0,
+      "sources": [
+        "C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\fuzz_driver.cpp",
+        "C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\target_segment_validate.cpp"
+      ],
+      "binary_sha256": "309B68D859BFA83B0502E8D8B0CB794847EAA8DD0924646829F62B2F6CC1A669",
+      "bytes": 3638784
+    },
+    "tests_mini": {
+      "exe": "C:\\DHW\\.tmp\\asan-line3\\fuzz-linked\\TestsMini.exe",
+      "log": "C:\\DHW\\.tmp\\asan-line3\\fuzz-linked\\logs\\build_tests_mini.log",
+      "exit_code": 0,
+      "sources": [
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\TestMain.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_NrdDifferential.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_NrdIndexRebuild.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_NrdRules.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_NrdPolicy.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_Segment.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_PibdServing.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\Net\\Test_P2PCompat.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\src\\BlockChain\\Validators\\BlockValidator.cpp",
+        "C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\stub_chain_getbyheight.cpp"
+      ],
+      "binary_sha256": "ECDD6D5E70C65317D3A0A30F5BC35D4E86227A44776504FCEA10966CD6CEDDC4",
+      "bytes": 8391680
+    },
+    "diag_lifetime": {
+      "exe": "C:\\DHW\\.tmp\\asan-line3\\fuzz-linked\\fuzz_diag_lifetime.exe",
+      "log": "C:\\DHW\\.tmp\\asan-line3\\fuzz-linked\\logs\\build_diag_lifetime.log",
+      "exit_code": 0,
+      "sources": [
+        "C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\diag_runtime_lifetime.cpp"
+      ],
+      "binary_sha256": "E18CCE30CC82291823FF2BE829530FCD42CA367241EF514BA07A8BDC40659C2A",
+      "bytes": 4345856
+    },
+    "tests_mini_prefix": {
+      "exe": "C:\\DHW\\.tmp\\asan-line3\\fuzz-linked\\fuzz_tests_mini_prefix.exe",
+      "log": "C:\\DHW\\.tmp\\asan-line3\\fuzz-linked\\logs\\build_tests_mini_prefix.log",
+      "exit_code": 2,
+      "sources": [
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\TestMain_legacy_static.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_NrdDifferential.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_NrdIndexRebuild.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_Segment.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\Net\\Test_P2PCompat.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\src\\BlockChain\\Validators\\BlockValidator.cpp",
+        "C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\stub_chain_getbyheight.cpp"
+      ],
+      "binary_sha256": null,
+      "bytes": null
+    }
+  }
+}

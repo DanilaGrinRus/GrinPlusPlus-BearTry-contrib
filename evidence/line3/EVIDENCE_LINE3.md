@@ -749,15 +749,18 @@ Read-only audit; original `g09-live-02` not modified; no build/commit. Existing
   1 input / **0 spent positions**. Occurrences: 08:26:28, 08:45:10 (build-09
   restart), 08:59:42 (build-10 restart). Existing H=3315600 archive serving and
   7B body/no_sync are unaffected.
-- **Empty record, not missing:** `BlockDBImpl::GetSpentPositions` throws when a
-  record is absent; the log's `0 spent position(s)` means the `SPENT_OUTPUTS`
-  record exists with an empty vector. `TxHashSetImpl::Rewind` then fails each
-  input lookup. Root cause of the empty record remains task-11/line2.
-- **Atomic publication OPEN:** `StateSyncer::ArchivePibdState` copies the
-  snapshot zip directly to the final archive path with `fs::copy_file`
-  (no fsync/atomic rename); its error path does not remove a partial final
-  file, and readiness is `fs::exists` with no zip/roots validation. Task-10
-  requirement is not met.
+- **DB audit contradiction (line2 + line3 fresh copy):** canonical H=3317930
+  hash `30c524b8…bfcb` has SPENT_OUTPUTS count=1 (52 B, exact commitment,
+  leaf 6856589/output H=3317928); all 68 input-bearing blocks match spent/input
+  counts; 5,147 empty records are all 0-input blocks; 0 empty input-bearing
+  records. The logged 0 cannot come from the canonical key against the preserved
+  DB. Prior “empty record confirmed” inference is **RETRACTED**; actual Rewind
+  key/DB view is unknown and requires instrumentation. Line2 evidence
+  `7F636BBE…1856`; fresh-copy audit
+  `task11-spent-positions-fresh-copy-audit-20261103.json`.
+- **Atomic publication OPEN in build-10 source:** direct `fs::copy_file` final
+  publish, no fsync/atomic rename, no validation — line1's frozen build-11
+  `ArchivePublication.h` is intended to fix this but is unbuilt/unaudited here.
 - **Original hashes:** archive H=3315600 `13F9781E…`; marker
   `B671C82A…` = hash `84d7ac67…` / height `3313440`; configs `355B15F7…` /
   `AEE5E753…`; archive dir also contains untouched `.staging-3615bb625917`.
@@ -767,5 +770,162 @@ Read-only audit; original `g09-live-02` not modified; no build/commit. Existing
   `77518AEA…` (final), `0AC62411…` (build-09 restart), `CFB19A60…`
   (build-10 restart).
 
+## 23. Build-11 audit — normal bodyless-only + ASan subset PASS (2026-11-03)
 
+Build-11 retry is audited; build-10 remains final only for its own snapshot.
 
+- Tests `02DC3D9C00BB1E1B7256771A158F04F1DB3B739839A7AFF2391AEAA5DAAFC121`
+  (9,438,720 B, PE `0x6AE94C3F`); GrinNode
+  `565BC2DBF30C638F84B458012F1F07D091B8EF6DB9C933E821A58EF3CF6021A4`
+  (7,843,328 B, PE `0x6AE94B43`).
+- Build log `B274B34A…` BUILD OK; failed first attempt `ACED40F9…` (C1083)
+  excluded. Source freeze `build-11-freeze-snapshot-final.json` `E5F7519C…`;
+  HEAD `6dbf8a7`; 9-file set; include fixes ArchivePublication.h
+  `D6F3A1C8…`, StateSyncer.cpp `CF273B95…`; line2 files unchanged
+  (`BlockDBImpl.cpp F88A107D…`, `RocksDB.h 42B5BF3C…`, Test_BlockPipeBan.cpp
+  `FFBF3DF2…`, one inert AreSpentPositionsComplete stub).
+- Normal full: **255 cases / 254 passed / 1 failed; 4201 assertions / 4200
+  passed**; sole failure known test-only `Test_NrdBodylessRestart.cpp(103)`;
+  zero `mg_start`.
+- All groups PASS: archive 8/187, Nrd 30/428, KernelIndex 5/74,
+  GetKernelHandler 2/49, schema-v2 2/26, duplicate-range 1/10,
+  `P2P::ArchivePublication*` 1/83, advert 2/15.
+- ASan subset PASS: source manifest `69B01EE6…` (1293 files), full ASan
+  `full-asan-20261103-095356` BUILD_PASS 101.1 s, TestsMini `C76CCCF2…`;
+  copied tree matches freeze 1003/1003; Nrd 21/365, archive 8/187, Segment
+  16/68, P2P+advert 7/61, ArchivePublication 1/83, teardown PASS, **0 reports**.
+- Classification: normal **FAIL overall, known test-only bodyless**, production/
+  agreed-suite failures 0; ASan subset PASS. This is **not** full G-09/Mainnet
+  readiness.
+- Still open: build-12 **Release SpentOutputs fix + live H=3313440/H=3315600
+  recovery**. Build-11 has the confirmed NDEBUG assert-side-effect bug; its
+  normal/ASan PASS does not validate the fix. Existing 7B PASS remains valid
+  only for its fixed-H scenario.
+- Evidence: `normal-binary-build11-audit-20261103.md`,
+  `asan-build11-refresh-20261103.md`, `build11-asan-refresh-20261103.json`,
+  `build11-audit-complete-20261103.md`, `evidence/line3/b11-*-01/`,
+  `b11-asan-*-01/`, `full-asan-20261103-095356/`.
+
+## 24. Task-10/11 root cause — Release NDEBUG SpentOutputs (2026-11-03)
+
+**CONFIRMED production Release bug.** No build/commit by line3.
+
+- build-11 `SpentOutput.h` `F3F38B44…` line 95:
+  `assert(byteBuffer.ReadU8() == 0);`.
+- Release targets compile with NDEBUG (`GrinNode.vcxproj:156`,
+  `Tests.vcxproj:168`), so assert is a no-op and does not consume the version
+  byte. `ReadU16()` then reads `00 00` => count=0; every non-empty record
+  returns an empty map.
+- Live build-11 proof, Node.log:23840: canonical key
+  `30c524b8424f91e1b2b154112f19d77d4c0db6887d6a1cdc96ef2055e022bfcb`,
+  `rawBytes=52`, `rawHex=000001…32a0a8`, `mapEntries=0`; line 23841 preflight
+  fails “1 input(s) but 0 mapped spent position(s)” (target 3313440, flushed
+  3318655). Raw value is correct: version 00, count 0001.
+- DB record is **not** empty; earlier “unknown key / unresolved contradiction”
+  is resolved. Actual key is canonical, MANIFEST-000451.
+- Fix present but UNBUILT: `SpentOutput.h D27A607D…` explicit version read +
+  reject non-zero; regression `Test_SpentOutputs.cpp 6157AC56…` (Release
+  deserialize + preflight). Build-11 binaries contain old code and cannot
+  validate the fix.
+- Build-12 status: normal Release full **256/255/1** (4211/4210; only bodyless),
+  `SpentOutputs*` 1/6 PASS, exact preflight PASS, ArchivePublication 1/83, all
+  other groups PASS; ASan subset PASS (0 reports). Live `H=3313440` and
+  `H=3315600` recovery evidence is still **PENDING** (section 25).
+- Evidence: `task10-11-spent-deserialize-rootcause-20261103/README.md`,
+  `rootcause-20261103.json`, `Node.build11-live.log` (`6552D5E3…`),
+  `spent-diag-context.txt` (`22FDD497…`).
+
+## 25. Build-12 audit — normal bodyless-only + ASan subset PASS (2026-11-03)
+
+Build-12 retry is audited for normal/ASan; recovery remains open.
+
+- Tests `D1103F3470C1E7E2507093418392CC69CF24E52137AEB5FC81CB7CE8A06A38CD`
+  (9,449,472 B, PE `0x6AE95151`); GrinNode
+  `833CCBFD8C344D79AAC748107F60492B055D995BE4A2C70D6F19115C8A01751C`
+  (7,843,328 B, PE `0x6AE95056`); build log `76BC0E49…` BUILD OK.
+- Source freeze `build-12-freeze-snapshot-final.json` `64BE17E5…`; 11-file set;
+  `SpentOutput.h D27A607D…` explicit version fix; regression
+  `Test_SpentOutputs.cpp 6157AC56…`.
+- Normal full **256 cases / 255 passed / 1 failed; 4211 assertions / 4210
+  passed**; sole test-only bodyless `Test_NrdBodylessRestart.cpp(103)`.
+- PASS groups: `SpentOutputs*` 1/6, exact preflight PASS, ArchivePublication
+  1/83, archive 8/187, GetKernel 2/49, schema 2/26, duplicate-range 1/10,
+  Nrd 30/428, KernelIndex 5/74, advert 2/15.
+- ASan subset PASS: source manifest `3DB12364…` (1293 files), full ASan
+  `full-asan-20261103-101529` BUILD_PASS 96.4 s, TestsMini `CB09CEE8…`;
+  freeze match 1003/1003; Nrd 21/365, archive 8/187, Segment 16/68,
+  P2P+advert 7/61, ArchivePublication 1/83, teardown PASS, **0 reports**.
+  Test_SpentOutputs not in TestsMini; Release regression covered normal only.
+- Still pending: live copied-fixture recovery **H=3313440** (raw52 -> map1,
+  preflight pass, validated atomic archive) and **H=3315600** boundary;
+  crash-interrupted publication; full G-09/Mainnet. Task-10/11 remain open
+  until that evidence exists.
+- Evidence: `normal-binary-build12-audit-20261103.md` (`025B1F92…`),
+  `asan-build12-refresh-20261103.md` (`3AB72CD5…`),
+  `build12-asan-refresh-20261103.json` (`2645717B…`),
+  `build-12-freeze-snapshot-final.json` (`64BE17E5…`),
+  `evidence/line3/b12-*-01/`, `b12-asan-*-01/`,
+  `full-asan-20261103-101529/`.
+
+## 26. Build-12 recovery boundary — build-13 pending (2026-11-03)
+
+Build-12's SpentOutputs root-cause fix is **verified**: canonical raw 52 B
+`30c524b8…bfcb` now logs **`mapEntries=1`** (`h3313440-node1.log:24645`;
+build-11 was `mapEntries=0`). Normal 256/255/1 bodyless-only and ASan subset
+PASS.
+
+Recovery H=3313440 still fails on a **separate preflight boundary bug**:
+`StateSyncer::PreflightArchiveRewind` (`CF273B95…`, lines 454-490) includes
+`targetHeight` and requires the target block body/spent record. Build-12 log
+line 269:
+
+```text
+archive preflight: missing block body at height 3313440
+hash 84d7ac67…9ccea (target 3313440)
+```
+
+`TxHashSet::Rewind` (`TxHashSetImpl.cpp:665-720`) only processes blocks above
+the target; target body is not needed. Fix approved: validate target
+header/roots and preflight `flushedHeight..targetHeight+1`, no target body.
+Build-13 must audit H=3313440 and H=3315600 (line1 snapshot pending) on copies,
+with normal/ASan, atomic archive validation, no partial publish, and original
+untouched. Build-12 normal/ASan does not close task-10/11.
+
+- Evidence: `build13-preaudit-20261103.md`,
+  `build13-preaudit-20261103.json`,
+  `evidence/line3/build13-preauth-20261103/build12-h3313440-node.log`
+  (`270D4265…`).
+
+## 27. Build-13 audit — normal/ASan + H=3313440/H=3315600 recovery (2026-11-03)
+
+Build-13 is the next final candidate; build-12 historical.
+
+- Tests `001DF4BC31F194DCDDE83FE736B06EB6FD942666F2BEFF62FF1FB5F1BB8DB3A8`
+  (9,465,856 B, PE `0x6AE957C5`); GrinNode
+  `F39BDFE5A8DAB22BE969406874EDCEFD023770BE1A1BA6330D7506B2C2571201`
+  (7,846,912 B, PE `0x6AE956CB`); build log `8C54DD17…` BUILD OK.
+- Source freeze `build-13-freeze-snapshot-final.json` `4FC8DCE1…`; boundary
+  fix `StateSyncer.cpp FDC5B4BB…`, `ArchivePublication.h F1E43737…`, regression
+  `Test_SpentOutputs.cpp A80D1D97…`.
+- Normal full **257 cases / 256 passed / 1 failed; 4219 assertions / 4218
+  passed**; sole test-only bodyless. PASS: SpentOutputs 1/6, exact preflight
+  1/4, boundary 1/8, ArchivePublication 1/83, archive 8/187, GetKernel 2/49,
+  schema 2/26, duplicate 1/10, Nrd 30/428, KernelIndex 5/74, advert 2/15.
+- ASan subset PASS: source manifest `BFBF2186…` (1293 files), full ASan
+  `full-asan-20261103-104255` BUILD_PASS 87.5 s, TestsMini `ECDD6D5E…`;
+  freeze match 1003/1003; Nrd 21/365, archive 8/187, Segment 16/68,
+  P2P+advert 7/61, ArchivePublication 1/83, teardown PASS, **0 reports**.
+- **H=3313440 observed PASS:** archived `TxHashSet.3313440.84d7ac676356.zip`
+  3,116,449,317 B SHA `7FB23058…`; 17 entries/required/leaf; Extract +
+  `LoadAndValidate` before atomic publish; no failure signals; post tip/roots
+  unchanged; no partial H3313440 final.
+- **H=3315600 observed PASS:** new snapshot 3,118,756,420 B SHA `DA23A1C7…`;
+  old `13F9781E…` preserved; archived + PIBD serving ready, crosses 3317930.
+- **Line1 formal report pending.** No crash-interruption/full G-09/Mainnet
+  claim. Canonical build-12 map1 evidence remains `30c524b8…` raw52/map1;
+  build-13 archive success independently observed.
+- Evidence: `normal-binary-build13-audit-20261103.md`,
+  `asan-build13-refresh-20261103.md`, `build13-asan-refresh-20261103.json`,
+  `task10-11-build13-recovery-audit-20261103.md`,
+  `task10-11-build13-recovery-20261103.json`,
+  `build13-h3313440-node.log` (`D099D379…`), `b13-*-01/`, `b13-asan-*-01/`.

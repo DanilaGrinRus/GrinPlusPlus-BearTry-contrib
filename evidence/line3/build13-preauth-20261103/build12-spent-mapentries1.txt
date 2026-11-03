@@ -1,0 +1,3 @@
+# source: C:\DHW\.tmp\task10-build12-evidence\h3313440-node1.log
+# canonical build12 SPENT_DIAG (line 24645)
+[11/03/26 10:16:06.249+07:00] [warning] [SYNC:8940] GetSpentPositions(373) - SPENT_DIAG GetSpentPositions db=C:\DHW\.tmp\task10-build11-live\cpp-profile\NODE\DB\CHAIN CURRENT=MANIFEST-000457 MANIFEST=MANIFEST-000457 manifestBytes=5597 CF=SPENT_OUTPUTS key=30c524b8424f91e1b2b154112f19d77d4c0db6887d6a1cdc96ef2055e022bfcb rawPresent=true rawBytes=52 rawHex=0000010989ac92c748aaf654f06fb9023746d3d34358b051dd2ac952bec39fecc62889670000000000689f8d000000000032a0a8 mapEntries=1

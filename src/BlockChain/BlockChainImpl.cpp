@@ -17,6 +17,7 @@
 #include <PMMR/Common/LeafIndex.h>
 #include <Core/Serialization/Serializer.h>
 #include <Database/DbBackup.h>
+#include <Database/BlockDb.h>
 
 #include <Consensus.h>
 #include <GrinVersion.h>
@@ -516,6 +517,25 @@ fs::path BlockChain::SnapshotTxHashSet(BlockHeaderPtr pBlockHeader)
 	}
 
 	return pBatch->GetTxHashSetManager()->SaveSnapshot(pBatch->GetBlockDB(), pBlockHeader);
+}
+
+bool BlockChain::AreSpentPositionsComplete(
+	const Hash& blockHash,
+	const std::vector<Commitment>& inputs,
+	size_t& mappedCount) const
+{
+	const auto pBlockDB = m_pChainState->Read()->GetBlockDB();
+	const std::unordered_map<Commitment, OutputLocation> spent =
+		pBlockDB->GetSpentPositions(blockHash);
+	mappedCount = spent.size();
+
+	for (const Commitment& commitment : inputs) {
+		if (spent.find(commitment) == spent.end()) {
+			return false;
+		}
+	}
+
+	return true;
 }
 
 EBlockChainStatus BlockChain::ProcessTransactionHashSet(const Hash& blockHash, const fs::path& path, SyncStatus& syncStatus)

@@ -1,0 +1,64 @@
+{
+  "schema": "gpp-line3-build13-preauth/v1",
+  "captured_utc": "2026-11-03T03:30:00Z",
+  "captured_local": "2026-11-03T10:30:00+07:00",
+  "status": "PRE_AUDIT / BUILD12_FIX_VERIFIED / BOUNDARY_FIX_PENDING / AWAITING_BUILD13_SHA",
+  "build12": {
+    "tests_sha256": "D1103F3470C1E7E2507093418392CC69CF24E52137AEB5FC81CB7CE8A06A38CD",
+    "grin_node_sha256": "833CCBFD8C344D79AAC748107F60492B055D995BE4A2C70D6F19115C8A01751C",
+    "normal": "256/255/1 bodyless-only; SpentOutputs* 1/6 PASS; ASan subset PASS",
+    "root_cause_fix_verified": "SPENT_DIAG raw 52 B/count1 -> mapEntries=1 in build12 live log",
+    "recovery_3313440": "FAIL: archive preflight missing block body at height 3313440 hash 84d7ac... (target 3313440)",
+    "canonical_mapentries1_line": "evidence/line3/build13-preauth-20261103/build12-spent-mapentries1.txt",
+    "canonical_mapentries1_sha256": "215C56F4B1928796469E3E32DC668FD3E254760B2AC678B895B501E098B06054"
+  },
+  "boundary_defect": {
+    "file": "src/P2P/Sync/StateSyncer.cpp",
+    "current_sha256": "CF273B95F7014E7829C8EC480FDA73107B625D8959409286A97417A971A71742",
+    "lines": "454-490 PreflightArchiveRewind",
+    "current_behavior": "loop includes targetHeight; requires target FullBlock body + target SPENT_OUTPUTS record",
+    "rewind_reference": "src/PMMR/TxHashSetImpl.cpp:665-720 Rewind loops while *m_pBlockHeader != target; processes only blocks above target",
+    "target_header": {
+      "height": 3313440,
+      "hash": "84d7ac6763566ac67eaa8393688320c79a644321124d7ba94a1300f56af9ccea",
+      "output_root": "49fe85ec2ad085bfc3292d6993d574810c7011b7a11abc3d31e35bcbaf90c8e6",
+      "range_proof_root": "38a596b7c8d6056aef486e260ff7114b9f9e8bce93ba813f11ae86b93e3a7d7b",
+      "kernel_root": "0cba0e2ad887f55fd7b99835d479874bef9c0c8ec6f52f76e156369629b846f1"
+    },
+    "required_fix": "validate target header; preflight bodies/spent for flushed..target+1 only; do not require target body; preserve fail-closed for blocks above target"
+  },
+  "build13_acceptance": {
+    "normal": [
+      "full",
+      "SpentOutputs*",
+      "exact preflight",
+      "P2P::ArchivePublication*",
+      "PibdArchiveServer::*",
+      "GetKernelHandler*",
+      "KernelIndex schema v2*",
+      "TxHashSet duplicate-excess*",
+      "Nrd*",
+      "KernelIndex*",
+      "P2P::AdvertisedTip*"
+    ],
+    "boundary_regression": [
+      "target body absent + above complete => PASS",
+      "missing body above target => FAIL",
+      "target header missing => FAIL",
+      "incomplete spent above target => FAIL"
+    ],
+    "recovery_3313440": "copy only; SPENT_DIAG raw52 mapEntries1; preflight no target body; validated H=3313440 archive; roots; atomic publish; no partial; no loop",
+    "recovery_3315600": "line1 new snapshot identity; existing archive validate/serve; copied regeneration passes; exact height/roots; no fs::exists-only readiness",
+    "asan": "build13 source manifest; subset Nrd/archive/Segment/P2P+advert/ArchivePublication, teardown, 0 reports",
+    "freeze": "build13 SHA/bytes/PE/source freeze before PASS"
+  },
+  "blockers": [
+    "build13 SHA absent",
+    "boundary fix not in current StateSyncer CF273B95...",
+    "line1 H=3315600 snapshot not yet identified",
+    "live recovery evidence absent"
+  ],
+  "build": false,
+  "commit": false,
+  "original_g09_live_02_modified": false
+}

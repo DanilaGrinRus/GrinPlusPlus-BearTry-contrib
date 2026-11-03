@@ -1,0 +1,15 @@
+{
+  "schema": "gpp-line3-build13-asan-refresh/v1",
+  "captured_utc": "2026-11-03T03:50:00Z",
+  "captured_local": "2026-11-03T10:50:00+07:00",
+  "status": "PASS_SUBSET",
+  "source": {"tree":"C:\\DHW\\.tmp\\asan-line3\\gpp-tree","source_manifest_sha256":"BFBF218697466C50A0422F36835E00545C0F316836F9C000491BBD92551D94C3","source_files":1293,"git_head":"6dbf8a7da067f35ba585371d82123ad21edf3a9a","build13_freeze_snapshot":"evidence/line3/build-13-freeze-snapshot-final.json","build13_freeze_entries":1003,"freeze_match":"0 mismatch, 0 missing"},
+  "full_asan_build": {"run_id":"full-asan-20261103-104255","result":"BUILD_PASS","manifest":"evidence/line3/full-asan-20261103-104255/build_manifest.json","manifest_sha256":"1938D573297672641129B9D339C0142A50D7A999AE2D6D82E3A20E4493425891","targets":["Common","Core","Crypto","PMMR"],"wall_sec":87.5},
+  "tests_mini":{"sha256":"ECDD6D5E70C65317D3A0A30F5BC35D4E86227A44776504FCEA10966CD6CEDDC4","pe_timestamp":"0x6AE958CA","linked_manifest":"evidence/line3/build13-asan-refresh-20261103/linked-build-manifest.json","linked_manifest_sha256":"2B4A53DC6A5D18046C705D485D6BC997F32BA0C27E08F075007739E02AA8D8AD","tests_mini_prefix":"NOT BUILT: missing TestMain_legacy_static.cpp","spent_outputs_asan":"NOT COVERED: Test_SpentOutputs.cpp not in TestsMini; normal Release PASS"},
+  "runs":{"nrd":{"filter":"Nrd*","result":"PASS","cases":21,"assertions":365,"run_id":"b13-asan-nrd-01"},"archive":{"filter":"PibdArchiveServer::*","result":"PASS","cases":8,"assertions":187,"run_id":"b13-asan-archive-01"},"segment":{"filter":"Segment*","result":"PASS","cases":16,"assertions":68,"run_id":"b13-asan-segment-01"},"p2p_advert":{"filter":"Capabilities::*,MessageTypes::*,GrinVersion::*,P2P::AdvertisedTip*","result":"PASS","cases":7,"assertions":61,"run_id":"b13-asan-p2p-01"},"p2p_archive_publication":{"filter":"P2P::ArchivePublication*","result":"PASS","cases":1,"assertions":83,"run_id":"b13-asan-p2p-archive-01"},"teardown":{"result":"PASS","run_id":"b13-asan-teardown-01","zero_tests_ran":true,"exit_code":0,"asan_report":false,"runtime_dll_copied":true}},
+  "asan_reports":0,
+  "boundaries":{"spent_outputs_asan":"NOT COVERED (not in TestsMini)","asan_blocked_normal_only":["Test_NrdPreCommit","Test_NrdFalseBan","Test_NrdBatchSafety","Test_KernelIndex","BlockPipe","bodyless","kill"],"not_instrumented":["Database/ChainState/rocksdb","sysroot C libraries"],"no_claim":["full Tests.exe ASan","SpentOutputs/boundary ASan","live recovery","fuzz/coverage","hosted CI","full G-09"]},
+  "build":true,
+  "build_scope":"ASan copied tree only; normal build was Lead's; no commit",
+  "commit":false
+}

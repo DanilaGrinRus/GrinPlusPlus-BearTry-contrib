@@ -4,6 +4,13 @@ Status: **FAIL overall, only known test-only bodyless**; zero
 production/agreed-suite failures. Bound as final normal candidate **with explicit
 exception**, not fully green.
 
+Scope note (2026-11-03 09:43): this binding is **only** for the build-10
+snapshot (`C17C3BC0…` / `60D7F7A6…` / source freeze `0E51D632…`). Current HEAD
+`6dbf8a7` contains unbuilt archive/recovery and task-11 diagnostic source; it
+is **not** covered by this audit and must not be cited as final. Build-11 is
+awaiting Lead order and a consistent frozen source set; no build-11 binary
+exists.
+
 Date: 2026-11-03. No source edits, no build, no commit. Tests were run with the
 isolated runner, quoted `-TestArgs`, `-FailOnNoTests` on filtered runs,
 `-KeepBinary`, and per-run HOME/TMP.

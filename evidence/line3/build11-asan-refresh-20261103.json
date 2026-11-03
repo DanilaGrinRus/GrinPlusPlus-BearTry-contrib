@@ -1,0 +1,49 @@
+{
+  "schema": "gpp-line3-build11-asan-refresh/v1",
+  "captured_utc": "2026-11-03T03:00:00Z",
+  "captured_local": "2026-11-03T10:00:00+07:00",
+  "status": "PASS_SUBSET",
+  "source": {
+    "tree": "C:\\DHW\\.tmp\\asan-line3\\gpp-tree",
+    "source_manifest_sha256": "69B01EE653BBC2CFE815FEF26530BC40E6C4A3C9F775967197600EABB5479008",
+    "source_files": 1293,
+    "git_head": "6dbf8a7da067f35ba585371d82123ad21edf3a9a",
+    "build11_freeze_snapshot": "evidence/line3/build-11-freeze-snapshot-final.json",
+    "build11_freeze_entries": 1003,
+    "freeze_match": "0 mismatch, 0 missing"
+  },
+  "full_asan_build": {
+    "run_id": "full-asan-20261103-095356",
+    "result": "BUILD_PASS",
+    "manifest": "evidence/line3/full-asan-20261103-095356/build_manifest.json",
+    "manifest_sha256": "E5137B7DCB4BFDA5FB55048C7B27B83697F24ED0ABDBC2D97B552790744255B3",
+    "targets": ["Common", "Core", "Crypto", "PMMR"],
+    "wall_sec": 101.1,
+    "asan_runtime_sha256": "3AA742521E8CBD23252F0545AA51D5A15624A3E4430FBE2F81567AFAEB3FC59B"
+  },
+  "tests_mini": {
+    "sha256": "C76CCCF2F8FB5F2B3154ABC5676AE0D877B20CFA3C3845E167CABC0C7D82C344",
+    "bytes": 8343552,
+    "pe_timestamp": "0x6AE94D5C",
+    "linked_manifest": "evidence/line3/build11-asan-refresh-20261103/linked-build-manifest.json",
+    "linked_manifest_sha256": "BB350D440BC16255CD447B77D5DF68E449306F2D69FA69D8CCF999BCDDDE3071",
+    "tests_mini_prefix": "NOT BUILT: missing TestMain_legacy_static.cpp; optional/not used by teardown"
+  },
+  "runs": {
+    "nrd": {"filter": "Nrd*", "result": "PASS", "cases": 21, "assertions": 365, "run_id": "b11-asan-nrd-01"},
+    "archive": {"filter": "PibdArchiveServer::*", "result": "PASS", "cases": 8, "assertions": 187, "run_id": "b11-asan-archive-01"},
+    "segment": {"filter": "Segment*", "result": "PASS", "cases": 16, "assertions": 68, "run_id": "b11-asan-segment-01"},
+    "p2p_advert": {"filter": "Capabilities::*,MessageTypes::*,GrinVersion::*,P2P::AdvertisedTip*", "result": "PASS", "cases": 7, "assertions": 61, "run_id": "b11-asan-p2p-01"},
+    "p2p_archive_publication": {"filter": "P2P::ArchivePublication*", "result": "PASS", "cases": 1, "assertions": 83, "run_id": "b11-asan-p2p-archive-01"},
+    "teardown": {"result": "PASS", "run_id": "b11-asan-teardown-01", "zero_tests_ran": true, "exit_code": 0, "asan_report": false, "runtime_dll_copied": true}
+  },
+  "asan_reports": 0,
+  "boundaries": {
+    "asan_blocked_normal_only": ["Test_NrdPreCommit", "Test_NrdFalseBan", "Test_NrdBatchSafety", "Test_KernelIndex", "BlockPipe", "bodyless", "kill"],
+    "not_instrumented": ["Database/ChainState/rocksdb", "sysroot C libraries"],
+    "no_claim": ["full Tests.exe ASan", "live recovery/crash publication", "fuzz/coverage", "hosted CI", "full G-09"]
+  },
+  "build": true,
+  "build_scope": "ASan copied tree only; no shared build; no normal build/commit",
+  "commit": false
+}

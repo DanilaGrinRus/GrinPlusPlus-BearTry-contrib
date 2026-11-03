@@ -1,12 +1,13 @@
 #pragma once
 
 #include <Core/File/FileSync.h>
-#include <PMMR/Zip/ZipFile.h>
+#include "../PMMR/Zip/ZipFile.h"
 
 #include <filesystem.h>
 
 #include <cctype>
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <system_error>
 #include <vector>
@@ -211,5 +212,88 @@ namespace ArchivePublication
 	inline bool SameRecoveryTarget(const std::string& failedMarkerContent, const std::string& targetHex)
 	{
 		return FirstLine(failedMarkerContent) == targetHex;
+	}
+
+	// One confirmed-chain view for the archive-rewind preflight. The target block
+	// body/spent record is deliberately not part of the required set: Rewind
+	// unwinds heights flushedTip..target+1 and stops at the target header.
+	struct RewindPreflightView
+	{
+		bool headerPresent = false;
+		bool bodyPresent = false;
+		bool spentComplete = false;
+		size_t inputCount = 0;
+		size_t mappedCount = 0;
+		std::string headerHashHex;
+	};
+
+	using RewindPreflightViewFn = std::function<RewindPreflightView(uint64_t)>;
+
+	inline bool ValidateRewindPreflight(
+		const std::string& targetHashHex,
+		const uint64_t targetHeight,
+		const uint64_t flushedHeight,
+		const RewindPreflightViewFn& viewAtHeight,
+		std::string* pError = nullptr)
+	{
+		if (targetHeight > flushedHeight) {
+			return Fail(
+				"archive preflight: target height " + std::to_string(targetHeight) +
+				" is above flushed tip " + std::to_string(flushedHeight),
+				pError);
+		}
+
+		const RewindPreflightView targetView = viewAtHeight(targetHeight);
+		if (!targetView.headerPresent) {
+			return Fail(
+				"archive preflight: missing confirmed header at height " +
+				std::to_string(targetHeight) + " (target " + std::to_string(targetHeight) +
+				", flushed " + std::to_string(flushedHeight) + ")",
+				pError);
+		}
+		if (targetView.headerHashHex != targetHashHex) {
+			return Fail(
+				"archive preflight: target header mismatch at height " +
+				std::to_string(targetHeight) + " expected " + targetHashHex +
+				" got " + targetView.headerHashHex,
+				pError);
+		}
+
+		// A no-op rewind only needs the target header. Do not require the target
+		// body or its SPENT_OUTPUTS record; Rewind never consumes them.
+		if (targetHeight == flushedHeight) {
+			return true;
+		}
+
+		for (uint64_t height = flushedHeight; height > targetHeight; --height) {
+			const RewindPreflightView view = viewAtHeight(height);
+			if (!view.headerPresent) {
+				return Fail(
+					"archive preflight: missing confirmed header at height " +
+					std::to_string(height) + " (target " + std::to_string(targetHeight) +
+					", flushed " + std::to_string(flushedHeight) + ")",
+					pError);
+			}
+
+			if (!view.bodyPresent) {
+				return Fail(
+					"archive preflight: missing block body at height " +
+					std::to_string(height) + " hash " + view.headerHashHex +
+					" (target " + std::to_string(targetHeight) + ")",
+					pError);
+			}
+
+			if (!view.spentComplete) {
+				return Fail(
+					"archive preflight: block " + std::to_string(height) + " hash " +
+					view.headerHashHex + " has " + std::to_string(view.inputCount) +
+					" input(s) but " + std::to_string(view.mappedCount) +
+					" mapped spent position(s) (target " + std::to_string(targetHeight) +
+					", flushed " + std::to_string(flushedHeight) + ")",
+					pError);
+			}
+		}
+
+		return true;
 	}
 }

@@ -176,6 +176,55 @@ bodyless/kill; rocksdb and sysroot C libs uninstrumented. Optional
 `evidence/line3/asan-build10-refresh-20261103.md`,
 `evidence/line3/build10-asan-refresh-20261103.json`.
 
+**Build-11 final candidate (2026-11-03, retry):** Tests
+`02DC3D9C…` + GrinNode `565BC2DB…`; full **255 cases / 254 passed / 1 failed**
+(bodyless-only); all groups PASS including `P2P::ArchivePublication*` 1/83.
+ASan refresh **PASS (subset)**: source manifest `69B01EE6…` (1293 files), full
+ASan BUILD_PASS 101.1 s, TestsMini `C76CCCF2…`; copied tree matches build-11
+freeze 1003/1003; Nrd* 21/365, archive 8/187, Segment 16/68, P2P+advert 7/61,
+ArchivePublication 1/83, teardown PASS, **0 ASan reports**; ASan-BLOCKED
+normal-only PreCommit/FalseBan/BatchSafety/KernelIndex/BlockPipe/bodyless/kill;
+rocksdb/sysroot uninstrumented. Failed first attempt C1083 `ACED40F9…`
+excluded; retry log `B274B34A…`; freeze `E5F7519C…`. Details:
+`evidence/line3/normal-binary-build11-audit-20261103.md`,
+`evidence/line3/asan-build11-refresh-20261103.md`,
+`evidence/line3/build11-asan-refresh-20261103.json`.
+
+**Build-11 post-audit bug / build-12 pending:** build-11 contains the production
+Release `SpentOutputs::Deserialize` NDEBUG assert-side-effect bug (old
+`SpentOutput.h F3F38B44…`; raw 52 B/count1 reads as 0). Its normal/ASan PASS does
+not validate the fix. Build-12 must audit `SpentOutput.h D27A607D…` + regression
+`Test_SpentOutputs.cpp 6157AC56…`, then live H=3313440/H=3315600 recovery.
+Evidence: `task10-11-spent-deserialize-rootcause-20261103/`,
+`build12-preaudit-20261103.md`.
+
+**Build-12 final candidate (2026-11-03):** Tests `D1103F34…` + GrinNode
+`833CCBFD…`; full normal **256/255/1** (bodyless-only), `SpentOutputs*` 1/6
+PASS, exact preflight PASS, all groups incl. ArchivePublication 1/83 PASS.
+ASan refresh **PASS (subset)**: source manifest `3DB12364…` (1293 files), full
+ASan BUILD_PASS 96.4 s, TestsMini `CB09CEE8…`; freeze match 1003/1003; Nrd
+21/365, archive 8/187, Segment 16/68, P2P+advert 7/61, ArchivePublication 1/83,
+teardown PASS, **0 ASan reports**. `Test_SpentOutputs.cpp` is not in TestsMini;
+Release regression covered normal only. Live H=3313440/H=3315600 recovery still
+pending. Details: `normal-binary-build12-audit-20261103.md`,
+`asan-build12-refresh-20261103.md`, `build12-asan-refresh-20261103.json`.
+
+**Build-13 final candidate (2026-11-03):** Tests `001DF4BC…` + GrinNode
+`F39BDFE5…`; full normal **257/256/1** (bodyless-only), `SpentOutputs*` 1/6,
+exact preflight 1/4, **boundary regression 1/8**, ArchivePublication 1/83 and
+all groups PASS. ASan refresh **PASS (subset)**: source manifest `BFBF2186…`
+(1293 files), full ASan BUILD_PASS 87.5 s, TestsMini `ECDD6D5E…`; freeze match
+1003/1003; Nrd 21/365, archive 8/187, Segment 16/68, P2P+advert 7/61,
+ArchivePublication 1/83, teardown PASS, **0 ASan reports**. SpentOutputs/
+boundary tests not in TestsMini; normal Release PASS. Recovery H3313440
+observed PASS (archive 3,116,449,317 B SHA `7FB23058…`, LoadAndValidate before
+publish) and H3315600 snapshot/serving observed (3,118,756,420 B SHA
+`DA23A1C7…`); line1 formal report pending. Details:
+`normal-binary-build13-audit-20261103.md`,
+`asan-build13-refresh-20261103.md`,
+`build13-asan-refresh-20261103.json`,
+`task10-11-build13-recovery-audit-20261103.md`.
+
 **Находка ASan — исправлено в тестовом runtime (Lead-approved option b):**
 исходный `tests/src/TestMain.cpp` (`static TestRuntime`) давал exit-time
 heap-use-after-free: статические `SHARED_CONTEXT`/`GLOBAL_CONTEXT` из

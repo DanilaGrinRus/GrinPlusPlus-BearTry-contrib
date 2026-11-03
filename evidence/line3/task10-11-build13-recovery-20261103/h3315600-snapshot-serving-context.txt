@@ -1,0 +1,10 @@
+# source: C:\DHW\.tmp\task10-build12-evidence\h3315600-window-final.log
+[11/03/26 10:29:31.659+07:00] [info] [SYNC:23136] Extract(37) - Successfully extracted zip file.
+[11/03/26 10:29:31.660+07:00] [info] [SYNC:23136] Load(195) - File C:\DHW\.tmp\task10-build11-live\tmp\g09-archive-validate-3615bb625917-0\output\pmmr_leafset.bin does not exist. Creating it now.
+[11/03/26 10:29:36.960+07:00] [info] [SYNC:23136] Load(195) - File C:\DHW\.tmp\task10-build11-live\tmp\g09-archive-validate-3615bb625917-0\rangeproof\pmmr_leafset.bin does not exist. Creating it now.
+[11/03/26 10:29:42.333+07:00] [info] [SYNC:23136] ArchivePibdState(568) - Archived TxHashSet at height 3315600 for serving (C:\DHW\.tmp\task10-build11-live\cpp-profile\NODE\TXHASHSET\archive\TxHashSet.3315600.3615bb625917.zip)
+[11/03/26 10:29:42.526+07:00] [info] [SYNC:23136] RemoveFile(90) - Removed C:\DHW\.tmp\task10-build11-live\tmp\g09-archive-validate-3615bb625917-0 with status The operation completed successfully.
+[11/03/26 10:29:51.210+07:00] [info] [PIBD_ARCHIVE:32584] Extract(37) - Successfully extracted zip file.
+[11/03/26 10:29:51.211+07:00] [info] [PIBD_ARCHIVE:32584] Load(195) - File C:\DHW\.tmp\task10-build11-live\cpp-profile\NODE\TXHASHSET\archive\.staging-3615bb625917\output\pmmr_leafset.bin does not exist. Creating it now.
+[11/03/26 10:29:56.570+07:00] [info] [PIBD_ARCHIVE:32584] Load(195) - File C:\DHW\.tmp\task10-build11-live\cpp-profile\NODE\TXHASHSET\archive\.staging-3615bb625917\rangeproof\pmmr_leafset.bin does not exist. Creating it now.
+[11/03/26 10:30:01.860+07:00] [info] [PIBD_ARCHIVE:32584] Tick(810) - PIBD archive: ready at height 3315600 (zip 3118756420 B, extracted 3117478404 B)

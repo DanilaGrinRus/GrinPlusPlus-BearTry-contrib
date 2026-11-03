@@ -1,9 +1,27 @@
 # Archive recovery and spent-position failure (2026-11-03)
 
-Status: **FAIL for the observed old-archive recovery attempt**; root cause
-**NOT VERIFIED**. Existing archive serving at H=3315600 and the 7B live PASS remain
-valid for their scenario. This is a blocker for automatic horizon regeneration
-and Mainnet acceptance, not for the already verified testnet serving path.
+Status: **root cause FIXED and recovery PASS on build-13** for H=3313440 and
+fresh H=3315600 snapshot; crash-interrupted publication and automatic horizon
+cycling remain NOT VERIFIED. Existing archive serving and 7B live PASS remain valid.
+
+## Final build-13 result
+
+- Root cause: Release-only side-effect in `SpentOutputs::Deserialize` (fixed in
+  build-12); build-12 diagnostic changed `mapEntries=0` → `mapEntries=1`.
+- Preflight boundary bug: target body was wrongly required; fixed in build-13
+  (target header only; bodies/spent for `target+1..flushed`).
+- **H=3313440 recovery: PASS** — archived 3,116,449,317 B
+  SHA-256 `7FB230583BD697EA3FF3B58A073462144750E3D07DC02820FBE99649E39AB837`,
+  17 entries, validated before atomic publish; no partial final file; tip/roots
+  unchanged; no failure-marker loop.
+- **H=3315600 fresh snapshot from tip 3318655: PASS** — 3,118,756,420 B
+  SHA-256 `DA23A1C721BE96BA215A70022B3C26DC262E3122E5BE41CDBDA560631F0E78F5`,
+  crosses block 3317930, 17 entries; old archive `13F9781E…` preserved.
+- Build-13 normal: 257 cases / 256 passed / 1 known test-only bodyless fail;
+  ASan subset PASS, 0 reports.
+- Still open: crash-interrupted publication, automatic horizon regeneration
+  loop/live behavior, full G-09/Mainnet.
+
 
 ## Observed failure
 
@@ -41,6 +59,21 @@ and Mainnet acceptance, not for the already verified testnet serving path.
   not by a fresh rewind from the final tip, so it does not prove that boundary safe.
 - Existing H=3315600 serving has passed size/root/MMR and Rust consumption;
   this does not make old-archive regeneration valid.
+
+## Root cause (confirmed by build-11 diagnostics)
+
+- Build-11 `GRINPP_SPENT_DIAG=1` on a fresh copy logs for block 3317930:
+  `rawPresent=true rawBytes=52 rawHex=0000010989ac92…689f8d…32a0a8 mapEntries=0`.
+- `include/Core/Models/SpentOutput.h`, `SpentOutputs::Deserialize`:
+  `assert(byteBuffer.ReadU8() == 0);` — the version read is a **side effect inside
+  `assert`**. Under Release/NDEBUG the whole expression is compiled out, so the
+  version byte is not consumed; `ReadU16()` then reads the first two bytes
+  `00 00` instead of `00 01` and returns count **0**.
+- Therefore every `SPENT_OUTPUTS` record with inputs can deserialize as an empty
+  map in Release. The canonical DB is intact; the reader is wrong.
+- Required fix: explicitly read/validate the version byte (no side-effect assert)
+  and add a Release-mode serialize→deserialize→BuildMap regression with a
+  one-entry record. Then rerun recovery and fail-closed/preflight tests.
 
 ## Atomic publication risk (static, confirmed)
 

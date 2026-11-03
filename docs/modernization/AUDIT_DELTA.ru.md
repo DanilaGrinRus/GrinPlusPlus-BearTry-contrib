@@ -1,11 +1,26 @@
 # AUDIT_DELTA (RU) — Grin++ 1.2.9 → совместимость с Grin v5.5.2
+
+## Актуализация — 03.11.2026
+
+Область: Grin++ 1.2.9 и совместимость с Rust Grin v5.5.2. При подготовке среза HEAD `6dbf8a7`; параллельные изменения рабочего дерева не привязаны к указанным бинарникам. Оперативный статус и ссылки на свидетельства — `THREE_LINE_STATUS.md`, `G09_ORDINARY_LIVE_PASS_2026-11-03.md` и `ARCHIVE_RECOVERY_2026-11-03.md`. При расхождении старых записей ниже с этим срезом старые записи считаются историческими; оперативную доску также следует сверять с её первичными свидетельствами.
+
+- **G-09: PARTIAL.** Build-09, обычный C++ `GrinNode` и обычная Rust-нода: в сценарии 7B с чистыми headers/state, локальной fixture и loopback выполнены PIBD на H=3 315 600 (10 203 442/10 203 442), проверка, активация, body sync и `no_sync` на H=3 318 655 (`2945348e…`); restart в этом сценарии PASS. Это не проверка публичной сети или Mainnet.
+- Build-10: `GrinNode` SHA-256 `60D7F7A6B3FFCC702B260E80036B7143A06DB9B036AD3DF3754B3C7B9438CB23`; `Tests` `C17C3BC04BE04C501DB425E3617A71E61985E9257EF41D879E130E28F8B621A4`. Повторный запуск сохранённого состояния достиг того же tip без повторной загрузки PIBD; это не новый полный прогон PIBD. Full suite: 254/253/1, ошибка тестового сценария `Test_NrdBodylessRestart`; bodyless NRD и kill-recovery **NOT VERIFIED**. Указанные результаты относятся только к идентифицированным сборкам.
+- Архив H=3 313 440: восстановление **FAIL** на блоке 3 317 930, `Spent output not found`; расхождение данных spent-позиций и первопричина **NOT VERIFIED**. Проверенный сценарий H=3 315 600 другой. Атомарная публикация архива остаётся OPEN по оперативной доске; незавершённые правки не считать проверенным исправлением.
+- Reorg/смена горизонта **BLOCKED**; отрицательные wire-тесты proof/root/segment ID и лимиты ресурсов **NOT VERIFIED**. `Output Commitment not found` в 7B не воспроизведён, контролируемое воспроизведение отсутствует. Отключение по 60-секундному idle в испытании самовосстановилось; решение менять таймаут или heartbeat не принято.
+- NRD: differential и ASan подтверждены только на ограниченных наборах; D2 txpool/index policy открыта, RocksDB/DB не входит в указанное ASan-покрытие. PIHD experimental/off. G-49 — план оптимизации, а не подтверждённое ускорение; нужен baseline и проверка идентичности результата. Full G-09, публичный PIBD и готовность Mainnet **NOT VERIFIED**.
+
+## Исторические карточки и прежние срезы
+
+Все даты, SHA, счётчики, статусы и слова «актуальный» в следующем сохранённом материале относятся к соответствующим прошлым срезам. Карточки сохранены для истории, не как повторная приёмка текущего дерева.
+
 **Актуальный срез 02.11.2026.** База 1.2.9 `5f511e6`; рабочее дерево HEAD `77b3970`. Метрики исходников:
 
 - добавлено C++: **+22 619 строк**; удалено **−625**; 191 tracked + 22 новых;
 - объём diff/новых C++ файлов: **≈ +927.8 KiB**;
-- итоговый `GrinNode.exe`: **7 809 024 B = 7 622.5 KiB = 7.44 MiB**;
+- итоговый `GrinNode.exe`: **7 846 912 B = 7 622.5 KiB = 7.44 MiB**;
 - **прирост exe относительно 1.2.9: NOT MEASURED** — исходный бинарник отсутствует; 7.7 MB это итоговый размер, не дельта;
-- артефакты: `GrinNode 60D7F7A6…`, `Tests C17C3BC0…`; suite **254 cases / 253 passed / 1 test-only fail**, production 0 fails (explicit exception; см. THREE_LINE_STATUS).
+- артефакты: `GrinNode F39BDFE5…`, `Tests 001DF4BC…`; suite **257 cases / 256 passed / 1 test-only fail**, production 0 fails (explicit exception; см. THREE_LINE_STATUS).
 - **G-09 fixed-H (экспериментальный, 03.11.2026): PASS исторически.** Build-09 `0A3B7D66…`/`F90EEF38…`: unit/archive/ASan-subset PASS; ordinary live **частично проверен** — 7C wrong-H refusal PASS, 7B full PIBD/no_sync в процессе, full ordinary PASS **NOT VERIFIED**. Обычная Rust 5.5.2-нода дошла до `no_sync` на H=3 318 655 / hash `2945348e…`, с тем же C++ tip, 1 inbound / 0 outbound; PIBD 10 203 442/10 203 442, roots/rangeproof/kernel validation/body sync завершены. Причина прошлых рестартов — `missing left sibling` на output segment 1648; исправлена отправка листьев в `SegmentGenerator`. Ограничения: headers preseeded, reorg/restart/negative/mainnet не покрыты.
 - **PIBD/PIHD guard:** height-cap 13, overflow-check `idx*capacity`, привязка PIHD-ответа к connection/peer, fallback при отсутствии роста chain height; PIBD-ответ строится по одному `ApiStateSnapshot` с retry при смене sequence, bitmap/root кешируются по output root, лимит 500 запросов/мин на connection. PIHD experimental, `PIHD_HIST` не рекламируется; конкурентный apply/reorg-тест snapshot ещё открыт.
 
@@ -448,7 +463,7 @@
 G-23 hash-ревалидацию, KernelIndex/get_kernel, NRD-правила и локальный CI-gate.
 Артефакты: `GrinNode E16A014E…`, `Tests CC6472B1…`; suite **194 / 2227 PASS**.
 
-### G-09 — PIBD serving (PARTIAL, live in progress)
+#### G-09 — PIBD serving (PARTIAL, live in progress)
 
 - Слит кандидатный патч: `GetRawAt` проверяет compaction/границы; required leaf
   без данных → `MissingLeaf`; optional leaf → prune-aware hash; fully pruned
@@ -465,7 +480,7 @@ G-23 hash-ревалидацию, KernelIndex/get_kernel, NRD-правила и 
   запущен после активации. **Live G-09 NOT VERIFIED** — offline PASS не считать
   live-приёмкой.
 
-### G-23 — hash/root ревалидация (PARTIAL)
+#### G-23 — hash/root ревалидация (PARTIAL)
 
 - При наличии checkpoint startup проверяет hash/height/previous каждого
   заголовка и leaf hash header MMR; открытый TxHashSet обязан совпасть с
@@ -474,20 +489,20 @@ G-23 hash-ревалидацию, KernelIndex/get_kernel, NRD-правила и 
 - Есть тест порчи одного байта `header_mmr.bin`; fault-injection полного
   startup-abort и полный PMMR-node sweep — **NOT VERIFIED**.
 
-### G-53 — KernelIndex/get_kernel (PARTIAL)
+#### G-53 — KernelIndex/get_kernel (PARTIAL)
 
 - Persistent generation-based `excess → OutputLocation` индекс с tip/root/count/
   checksum; `get_kernel` fast path + bounded direct-scan fallback; N-06 исправлен
   на 1-based PMMR positions.
 - 3 теста индекса / 48 assertions. Live `/v2`, reorg и pagination — NOT VERIFIED.
 
-### G-07 — NRD (PARTIAL)
+#### G-07 — NRD (PARTIAL)
 
 - duplicate NRD в блоке и `diff < relative_height` отклоняются; cutoff 2 недели;
   Rewind/startup/PIBD rebuild; до HF3 NRD запрещён.
 - Нет persisted incremental index, full block/reorg NRD-теста и live NRD peer.
 
-### G-24 — сборка (PARTIAL)
+#### G-24 — сборка (PARTIAL)
 
 - Добавлен `tools/build/ci.ps1` (build + isolated test + manifest) и
   `BUILD_PINS.md`; hosted CI и pin vcpkg на чистом checkout — NOT VERIFIED.

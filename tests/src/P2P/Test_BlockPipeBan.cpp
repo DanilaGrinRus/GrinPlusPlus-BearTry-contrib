@@ -81,6 +81,11 @@ namespace
 		std::vector<std::pair<uint64_t, Hash>> GetBlocksNeeded(const uint64_t) const override { return {}; }
 		bool ProcessNextOrphanBlock() override { return false; }
 		bool HasOrphan(const Hash&) const override { return false; }
+		bool AreSpentPositionsComplete(const Hash&, const std::vector<Commitment>&, size_t& mappedCount) const override
+		{
+			mappedCount = 0;
+			return false;
+		}
 	};
 
 	FullBlock MakeCraftedNrdBlock()

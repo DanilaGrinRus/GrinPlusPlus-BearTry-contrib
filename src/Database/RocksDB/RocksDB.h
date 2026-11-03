@@ -15,6 +15,8 @@
 #include <filesystem.h>
 #include <cassert>
 #include <memory>
+#include <optional>
+#include <string>
 #include <vector>
 
 class RocksDB : public Traits::IBatchable
@@ -92,6 +94,35 @@ public:
 	std::unique_ptr<T> Get(const std::string& tableName, const rocksdb::Slice& key, const EProtocolVersion protocol = EProtocolVersion::V1) const
 	{
 		return Get<T>(GetTable(tableName), key, protocol);
+	}
+
+	// Diagnostic-only raw read used by GRINPP_SPENT_DIAG. Returns nullopt when the
+	// key is absent; throws on any other RocksDB error. No default-path caller.
+	std::optional<std::string> GetRawValue(const std::string& tableName, const rocksdb::Slice& key) const
+	{
+		const RocksDBTable& table = GetTable(tableName);
+		std::string value;
+		rocksdb::Status status;
+		if (m_pTransaction != nullptr)
+		{
+			status = m_pTransaction->Get(rocksdb::ReadOptions(), table.GetHandle(), key, &value);
+		}
+		else
+		{
+			status = m_pTransactionDB->GetBaseDB()->Get(rocksdb::ReadOptions(), table.GetHandle(), key, &value);
+		}
+
+		if (status.IsNotFound())
+		{
+			return std::nullopt;
+		}
+
+		if (!status.ok())
+		{
+			throw DATABASE_EXCEPTION_F("Failed to read raw value from {}", tableName);
+		}
+
+		return value;
 	}
 
 	template<typename T,

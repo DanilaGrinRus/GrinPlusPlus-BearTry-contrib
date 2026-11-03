@@ -67,6 +67,10 @@ public:
 	std::unique_ptr<FullBlock> GetBlockByHash(const Hash& blockHash) const final;
 	std::unique_ptr<FullBlock> GetBlockByHeight(const uint64_t height) const final;
 	bool HasBlock(const uint64_t height, const Hash& blockHash) const final;
+	bool AreSpentPositionsComplete(
+		const Hash& blockHash,
+		const std::vector<Commitment>& inputs,
+		size_t& mappedCount) const final;
 
 	std::vector<BlockWithOutputs> GetOutputsByHeight(const uint64_t startHeight, const uint64_t maxHeight) const final;
 	std::vector<std::pair<uint64_t, Hash>> GetBlocksNeeded(const uint64_t maxNumBlocks) const final;

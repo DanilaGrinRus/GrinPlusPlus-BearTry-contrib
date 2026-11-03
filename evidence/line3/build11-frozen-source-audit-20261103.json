@@ -1,0 +1,99 @@
+{
+  "schema": "gpp-line3-build11-frozen-source-preaudit/v1",
+  "captured_utc": "2026-11-03T02:43:00Z",
+  "captured_local": "2026-11-03T09:43:00+07:00",
+  "status": "SUPERSEDED by build-11-freeze-snapshot-final.json after successful retry; audit complete",
+  "build10_final_scope": {
+    "tests_sha256": "C17C3BC04BE04C501DB425E3617A71E61985E9257EF41D879E130E28F8B621A4",
+    "grin_node_sha256": "60D7F7A6B3FFCC702B260E80036B7143A06DB9B036AD3DF3754B3C7B9438CB23",
+    "source_freeze": "evidence/line3/build-10-freeze-snapshot-final.json",
+    "source_freeze_sha256": "0E51D63287AF8F96B3094A9F24B120C2F663736CAA1E9B4DF5E8C2B6EB6CCA5E",
+    "note": "final only for this snapshot; current HEAD is unbuilt and must not be cited as final"
+  },
+  "repo": {
+    "path": "C:\\DHW\\Gplus\\src\\grinplusplus",
+    "head": "6dbf8a7da067f35ba585371d82123ad21edf3a9a",
+    "head_subject": "evidence: archive recovery discrepancy and atomic-publication audit"
+  },
+  "line1_declared_frozen": {
+    "ArchivePublication.h": "D6F3A1C8B6D26AB2E0DBAE11F547865787B752F6189BD5791578157BF0781991",
+    "PibdArchiveServer.h": "7F6308F9E0908F1C87B4EA291794275095D921BDB15488CB5F3A8EF644D0056B",
+    "TxHashSetPipe.cpp": "C508EA486C8A21AEF102949A016E485B7638BA2E04A06104874CADB81AC70291",
+    "StateSyncer.cpp": "CF273B95F7014E7829C8EC480FDA73107B625D8959409286A97417A971A71742",
+    "Test_PibdServing.cpp": "E3A5543DE8616019AD156EE9C8941698534AF623C89698B9F72C03B9732E19DC",
+    "BlockChain.h": "DE7231DF332BB4D6438B179252B29F9873BE7ABDE154F9AD093F412D14815178",
+    "BlockChainImpl.cpp": "F0E51263FEC872E43E04C33B87C1C71F005AFEA105F437392F861ECB0351CA3D",
+    "StateSyncer.h": "134CD9D6D68F741B8915525DB11BDCBB03237BCE0D0167BD7ECF602592A39A9B",
+    "BlockChainImpl.h": "C5667C946020674893EE0E9E5F8543A2A86B6996F93507ADF77D2FA6975AA0C2",
+    "FakeBlockChain_claimed_untouched": "7DA77CDB (line1 prefix; full hash not supplied)"
+  },
+  "actual_hashes_verified": {
+    "src/P2P/ArchivePublication.h": "D6F3A1C8B6D26AB2E0DBAE11F547865787B752F6189BD5791578157BF0781991",
+    "src/P2P/PIBD/PibdArchiveServer.h": "7F6308F9E0908F1C87B4EA291794275095D921BDB15488CB5F3A8EF644D0056B",
+    "src/P2P/Pipeline/TxHashSetPipe.cpp": "C508EA486C8A21AEF102949A016E485B7638BA2E04A06104874CADB81AC70291",
+    "src/P2P/Sync/StateSyncer.cpp": "CF273B95F7014E7829C8EC480FDA73107B625D8959409286A97417A971A71742",
+    "tests/src/PMMR/Test_PibdServing.cpp": "E3A5543DE8616019AD156EE9C8941698534AF623C89698B9F72C03B9732E19DC",
+    "include/BlockChain/BlockChain.h": "DE7231DF332BB4D6438B179252B29F9873BE7ABDE154F9AD093F412D14815178",
+    "src/BlockChain/BlockChainImpl.cpp": "F0E51263FEC872E43E04C33B87C1C71F005AFEA105F437392F861ECB0351CA3D",
+    "src/P2P/Sync/StateSyncer.h": "134CD9D6D68F741B8915525DB11BDCBB03237BCE0D0167BD7ECF602592A39A9B",
+    "src/BlockChain/BlockChainImpl.h": "C5667C946020674893EE0E9E5F8543A2A86B6996F93507ADF77D2FA6975AA0C2",
+    "tests/src/P2P/Test_BlockPipeBan.cpp": "FFBF3DF2F715548689DB85FCF22BEFA5844069977C7B5CB715CD4BFC6E37B446",
+    "src/Database/BlockDBImpl.cpp": "F88A107D711CC340CEB8F232FD1A5559B8E06261FE2F9DD32FDD9399BE0F3F02",
+    "src/Database/RocksDB/RocksDB.h": "42B5BF3C9CD477C5715DAE628A18B303BBE74BEF3D2D62512EAE1B8F4F2EF22F"
+  },
+  "uncommitted_source_set": [
+    "include/BlockChain/BlockChain.h",
+    "src/BlockChain/BlockChainImpl.h",
+    "src/BlockChain/BlockChainImpl.cpp",
+    "src/P2P/ArchivePublication.h",
+    "src/P2P/Sync/StateSyncer.h",
+    "src/P2P/Sync/StateSyncer.cpp",
+    "src/Database/BlockDBImpl.cpp",
+    "src/Database/RocksDB/RocksDB.h",
+    "tests/src/P2P/Test_BlockPipeBan.cpp"
+  ],
+  "blockers": {
+    "fake_block_chain": "RESOLVED: FFBF3DF2..., exactly one inert AreSpentPositionsComplete override; line1/line2 agree",
+    "line2_diagnostics": "CONFIRMED unchanged: BlockDBImpl F88A107D..., RocksDB 42B5BF3C...; GRINPP_SPENT_DIAG only there",
+    "fullblock_include": "C1083 localized fixes applied: ArchivePublication.h D6F3A1C8..., StateSyncer.cpp CF273B95...; retry running",
+    "build11_binary": "absent; no build performed under Lead order",
+    "build10_scope": "build-10 final only for C17C3BC0/60D7F7A6 snapshot; current HEAD unbuilt",
+    "active_build": "build-11 started 09:36:34 without Lead order; Test_BlockPipeBan mtime 09:36:24 (FFBF) predates build, but no source freeze/binary yet; build still running; not auditable until Lead order + completion"
+  },
+  "build": false,
+  "commit": false,
+  "original_g09_live_02_modified": false,
+  "active_build_observed": {
+    "started_local": "2026-11-03T09:42:05+07:00",
+    "output": "C:\\DHW\\.tmp\\build-11\\build-console-retry.log",
+    "pwsh_pid": 31584,
+    "msbuild_pid": 19060,
+    "cl_pid": 26348,
+    "command": "tools/build/build.ps1 -Target 'GrinNode;Tests'",
+    "source_mutation_during_build": {
+      "note": "not asserted; FFBF mtime predates build start"
+    },
+    "line3_started": false,
+    "line3_killed": false,
+    "auditable": false,
+    "reason": "retry with include fixes; no final binary/source manifest yet; audit only after completion and Lead order",
+    "source_mutation_observed": {
+      "note": "D11872BF -> FFBF3DF2 was observed between line3 audits; FFBF mtime 2026-11-03T09:36:24+07, ten seconds before build start 09:36:34, so it may predate compilation but no freeze/manifest exists",
+      "test_file_current": "FFBF3DF2F715548689DB85FCF22BEFA5844069977C7B5CB715CD4BFC6E37B446"
+    }
+  },
+  "failed_attempt": {
+    "log": "C:\\DHW\\.tmp\\build-11\\build-console.log",
+    "sha256": "ACED40F9391B86698A27F39DB8D73AC5B183222B03CDEDAC262486F8661116A4",
+    "bytes": 20361,
+    "excluded": true,
+    "reason": "C1083 PMMR Zip includes; do not audit"
+  },
+  "superseded_by": "evidence/line3/build-11-freeze-snapshot-final.json",
+  "final_candidate": {
+    "tests_sha256": "02DC3D9C00BB1E1B7256771A158F04F1DB3B739839A7AFF2391AEAA5DAAFC121",
+    "grin_node_sha256": "565BC2DBF30C638F84B458012F1F07D091B8EF6DB9C933E821A58EF3CF6021A4",
+    "normal": "FAIL bodyless-only 255/254/1",
+    "asan": "PASS subset, 0 reports"
+  }
+}

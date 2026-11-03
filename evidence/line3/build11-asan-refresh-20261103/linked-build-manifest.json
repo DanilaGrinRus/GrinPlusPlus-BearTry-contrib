@@ -1,0 +1,185 @@
+{
+  "schema": "gpp-line3-linked-asan-v1",
+  "created_utc": "2026-11-03T02:55:48.7002605Z",
+  "repo": "C:\\DHW\\Gplus\\src\\grinplusplus",
+  "git_head": "6dbf8a7da067f35ba585371d82123ad21edf3a9a",
+  "git_status": [
+    " M docs/modernization/AUDIT_DELTA.de.md",
+    " M docs/modernization/AUDIT_DELTA.en.md",
+    " M docs/modernization/AUDIT_DELTA.ru.md",
+    " M docs/modernization/AUDIT_README.de.md",
+    " M docs/modernization/AUDIT_README.en.md",
+    " M docs/modernization/AUDIT_README.ru.md",
+    " M docs/modernization/GAP_MATRIX.md",
+    " M docs/modernization/PERF_RANGEPROOF.md",
+    " M docs/modernization/THREE_LINE_STATUS.md",
+    " M evidence/line3/EVIDENCE_LINE3.md",
+    " M evidence/line3/normal-binary-build10-audit-20261103.md",
+    " M evidence/line3/task10-11-archive-recovery-independent-audit-20261103.md",
+    " M evidence/line3/task10-11-archive-recovery-manifest-20261103.json",
+    " M include/BlockChain/BlockChain.h",
+    " M src/BlockChain/BlockChainImpl.cpp",
+    " M src/BlockChain/BlockChainImpl.h",
+    " M src/Database/BlockDBImpl.cpp",
+    " M src/Database/RocksDB/RocksDB.h",
+    " M src/P2P/ArchivePublication.h",
+    " M src/P2P/Sync/StateSyncer.cpp",
+    " M src/P2P/Sync/StateSyncer.h",
+    " M tests/src/P2P/Test_BlockPipeBan.cpp",
+    "?? evidence/line3/b11-advert-01/",
+    "?? evidence/line3/b11-archive-01/",
+    "?? evidence/line3/b11-dup-01/",
+    "?? evidence/line3/b11-full-01/",
+    "?? evidence/line3/b11-getkernel-01/",
+    "?? evidence/line3/b11-kernidx-01/",
+    "?? evidence/line3/b11-nrd-01/",
+    "?? evidence/line3/b11-p2p-archive-01/",
+    "?? evidence/line3/b11-schema-01/",
+    "?? evidence/line3/build-11-freeze-snapshot-final.json",
+    "?? evidence/line3/build11-frozen-source-audit-20261103.json",
+    "?? evidence/line3/build11-readiness-audit-plan-20261103.md",
+    "?? evidence/line3/full-asan-20261103-095356/",
+    "?? evidence/line3/normal-binary-build11-audit-20261103.md",
+    "?? evidence/line3/task11-spent-positions-fresh-copy-audit-20261103.json",
+    "?? tools/audit/nrd/evidence/isolated/b11-archivepub-20261103-095239/",
+    "?? tools/audit/nrd/evidence/isolated/b11-pibdarchive-20261103-095239/"
+  ],
+  "copied_tree": "C:\\DHW\\.tmp\\asan-line3\\gpp-tree",
+  "lib_dir": "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\bin\\Release\\Release",
+  "profile": "/W4 /WX /O1 /Zi /MT /EHsc /std:c++17 /fsanitize=address, linked against full-project ASan libs",
+  "asan_runtime": {
+    "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\clang_rt.asan_dynamic-x86_64.dll",
+    "sha256": "3AA742521E8CBD23252F0545AA51D5A15624A3E4430FBE2F81567AFAEB3FC59B"
+  },
+  "libraries": [
+    {
+      "name": "bitcoin.lib",
+      "sha256": "841522F1E34ED9BCD770CFDD5565B69DEC9CB496ABED87C237186EFC4148CB32",
+      "bytes": 738220
+    },
+    {
+      "name": "chachapoly.lib",
+      "sha256": "19A4A4C94A00F57EDEDB8A869CBD81CDFF512C4F3443D9B051D46E34C9AC7B50",
+      "bytes": 159688
+    },
+    {
+      "name": "Common.lib",
+      "sha256": "97C091A62A8FA523A5919CC73633DF8DE4FEB2566856EED692E459CD6F0239AE",
+      "bytes": 12156750
+    },
+    {
+      "name": "Core.lib",
+      "sha256": "47F7399C7EB79E8BF91E891818E4AD39CBF08CA54424FFC9078F06198DE2B073",
+      "bytes": 40492250
+    },
+    {
+      "name": "Crypto.lib",
+      "sha256": "1DC688E08F1C364318663421B75C33F24940346A2DC722EB6EBFA8EA6FCBCED1",
+      "bytes": 23862200
+    },
+    {
+      "name": "jsoncpp.lib",
+      "sha256": "EFC5F46589D9A6C8B9211DA93F2EB0F1176C149735731F6883284850B1A44E72",
+      "bytes": 2915210
+    },
+    {
+      "name": "Net.lib",
+      "sha256": "FA4900DDB64CB8B5EC36943703CFD7993E4E7F8355C6C15705C6D8FA0065E8F2",
+      "bytes": 11428590
+    },
+    {
+      "name": "PMMR.lib",
+      "sha256": "8721889CEE0BC20AD7748BD96670D6B1E5AB50F7AF38A2E829B91CE76FA07D0E",
+      "bytes": 34225910
+    },
+    {
+      "name": "rfc6234.lib",
+      "sha256": "BA6737735233FC73AD9B30675111FDEA659BF8C701429EB652BD979080D4FDFC",
+      "bytes": 165252
+    },
+    {
+      "name": "scrypt.lib",
+      "sha256": "36511F27F7E735C43BB0D7D77701E7D56636ACB2DD4BEB35D632E31DF2CC188B",
+      "bytes": 77216
+    },
+    {
+      "name": "sha3.lib",
+      "sha256": "F4047045037A3B4271162F5B45FE69813B33407C12DB098B6F682581803B7BF1",
+      "bytes": 132546
+    },
+    {
+      "name": "Tor.lib",
+      "sha256": "10C78E31F733C9327E1B51C1D3CCBA506D1FB8B3BDD67143830940AE59787F30",
+      "bytes": 20117344
+    }
+  ],
+  "targets": {
+    "p2p_responses": {
+      "exe": "C:\\DHW\\.tmp\\asan-line3\\fuzz-linked\\fuzz_p2p_responses.exe",
+      "log": "C:\\DHW\\.tmp\\asan-line3\\fuzz-linked\\logs\\build_p2p_responses.log",
+      "exit_code": 0,
+      "sources": [
+        "C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\fuzz_driver.cpp",
+        "C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\target_p2p_responses.cpp"
+      ],
+      "binary_sha256": "1A17B454223995E96C0910447320E413DCCB2FC21BC7B3A6515EE72E40FAB675",
+      "bytes": 3736064
+    },
+    "segment_validate": {
+      "exe": "C:\\DHW\\.tmp\\asan-line3\\fuzz-linked\\fuzz_segment_validate.exe",
+      "log": "C:\\DHW\\.tmp\\asan-line3\\fuzz-linked\\logs\\build_segment_validate.log",
+      "exit_code": 0,
+      "sources": [
+        "C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\fuzz_driver.cpp",
+        "C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\target_segment_validate.cpp"
+      ],
+      "binary_sha256": "A3B0D7913C56B03FC6AE7B1EBA5C8EF832222B59F62E4BECBDC7B44ED49579EE",
+      "bytes": 3638784
+    },
+    "tests_mini": {
+      "exe": "C:\\DHW\\.tmp\\asan-line3\\fuzz-linked\\TestsMini.exe",
+      "log": "C:\\DHW\\.tmp\\asan-line3\\fuzz-linked\\logs\\build_tests_mini.log",
+      "exit_code": 0,
+      "sources": [
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\TestMain.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_NrdDifferential.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_NrdIndexRebuild.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_NrdRules.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_NrdPolicy.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_Segment.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_PibdServing.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\Net\\Test_P2PCompat.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\src\\BlockChain\\Validators\\BlockValidator.cpp",
+        "C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\stub_chain_getbyheight.cpp"
+      ],
+      "binary_sha256": "C76CCCF2F8FB5F2B3154ABC5676AE0D877B20CFA3C3845E167CABC0C7D82C344",
+      "bytes": 8391680
+    },
+    "diag_lifetime": {
+      "exe": "C:\\DHW\\.tmp\\asan-line3\\fuzz-linked\\fuzz_diag_lifetime.exe",
+      "log": "C:\\DHW\\.tmp\\asan-line3\\fuzz-linked\\logs\\build_diag_lifetime.log",
+      "exit_code": 0,
+      "sources": [
+        "C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\diag_runtime_lifetime.cpp"
+      ],
+      "binary_sha256": "8B5E7E32C6E07C138F8711D2889BEF9C4B2143F889CDB26ABEF7433826757D74",
+      "bytes": 4345856
+    },
+    "tests_mini_prefix": {
+      "exe": "C:\\DHW\\.tmp\\asan-line3\\fuzz-linked\\fuzz_tests_mini_prefix.exe",
+      "log": "C:\\DHW\\.tmp\\asan-line3\\fuzz-linked\\logs\\build_tests_mini_prefix.log",
+      "exit_code": 2,
+      "sources": [
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\TestMain_legacy_static.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_NrdDifferential.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_NrdIndexRebuild.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_Segment.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\Net\\Test_P2PCompat.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\src\\BlockChain\\Validators\\BlockValidator.cpp",
+        "C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\stub_chain_getbyheight.cpp"
+      ],
+      "binary_sha256": null,
+      "bytes": null
+    }
+  }
+}

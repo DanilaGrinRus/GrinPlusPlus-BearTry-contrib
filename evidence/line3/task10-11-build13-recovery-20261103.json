@@ -1,0 +1,50 @@
+{
+  "schema": "gpp-line3-build13-recovery-audit/v1",
+  "captured_utc": "2026-11-03T03:55:00Z",
+  "captured_local": "2026-11-03T10:55:00+07:00",
+  "status": "H3313440_OBSERVED_PASS / H3315600_OBSERVED_PASS / LINE1_FORMAL_PENDING",
+  "build13": {"tests_sha256":"001DF4BC31F194DCDDE83FE736B06EB6FD942666F2BEFF62FF1FB5F1BB8DB3A8","grin_node_sha256":"F39BDFE5A8DAB22BE969406874EDCEFD023770BE1A1BA6330D7506B2C2571201","freeze":"evidence/line3/build-13-freeze-snapshot-final.json","freeze_sha256":"4FC8DCE123D7DFD138B1AA9BB10EB7F9CC3683B4A76E35279DC7E868A261FAA3"},
+  "copy": {"profile":"C:\\DHW\\.tmp\\task10-build11-live","original":"C:\\DHW\\.tmp\\g09-live-02","original_modified":false},
+  "h3313440": {
+    "target_hash":"84d7ac6763566ac67eaa8393688320c79a644321124d7ba94a1300f56af9ccea",
+    "target_height":3313440,
+    "flushed_height":3318655,
+    "flushed_hash":"2945348ef765160a160008cfd7c2b41aa44ed3cea77d6bcfe2083acf0fc4bbf1",
+    "archive":"C:\\DHW\\.tmp\\task10-build11-live\\cpp-profile\\NODE\\TXHASHSET\\archive\\TxHashSet.3313440.84d7ac676356.zip",
+    "archive_bytes":3116449317,
+    "archive_sha256":"7FB230583BD697EA3FF3B58A073462144750E3D07DC02820FBE99649E39AB837",
+    "zip_entries":17,
+    "required_entries":true,
+    "leaf_entries":["output/pmmr_leaf.bin.84d7ac676356","rangeproof/pmmr_leaf.bin.84d7ac676356"],
+    "archived_log":"[11/03/26 10:43:40.660+07:00] ArchivePibdState(564) - Archived TxHashSet at height 3313440 for serving",
+    "validation_path":"ArchivePibdState extracts staged zip to private temp and calls PibdArchiveServer::LoadAndValidate before PublishStaged (StateSyncer.cpp:532-558)",
+    "preflight_failure_signals":"none (no missing block body / 0 mapped / spent output not found)",
+    "post_status":{"height":3318655,"hash":"2945348ef765160a160008cfd7c2b41aa44ed3cea77d6bcfe2083acf0fc4bbf1","unchanged":true},
+    "post_roots":{"kernel_root_hash":"17d1cc11e3f913533865a1cd9d71785c758f44945bda42849e5ff89823f7d1dd","output_root_hash":"8a9be5f8f3b16ca4b19a84e5d931e0307e77bdd8ac91c515a6439a0c4cd48d25","range_proof_root_hash":"971c4ebdb3776d4c48dcc4ae6d866f4919435500aa71cd5564092a9bb27ceae1"},
+    "mapentries1_lines_in_window":53,
+    "canonical_map1_evidence":"build12 h3315600-window-final.log:744 and h3313440-node1.log:24645 (raw 52 B key 30c524... mapEntries=1); build13 archive success implies decode; line1 formal full-window report pending"
+  },
+  "h3315600": {
+    "new_archive":"C:\\DHW\\.tmp\\task10-build11-live\\cpp-profile\\NODE\\TXHASHSET\\archive\\TxHashSet.3315600.3615bb625917.zip",
+    "new_sha256":"DA23A1C721BE96BA215A70022B3C26DC262E3122E5BE41CDBDA560631F0E78F5",
+    "new_bytes":3118756420,
+    "old_sha256":"13F9781E207F787F5F58367F9C98947D4A645D660E1CA23186AD55D9D064C530",
+    "old_bytes":3118746579,
+    "zip_entries":17,
+    "required_entries":true,
+    "archived_log":"[11/03/26 10:29:42.333+07:00] Archived TxHashSet at height 3315600 for serving",
+    "serving_ready_log":"[11/03/26 10:30:01.860+07:00] PIBD archive: ready at height 3315600 (zip 3118756420 B, extracted 3117478404 B)",
+    "crosses_3317930":true
+  },
+  "classification":"H3313440 observed PASS (validated archive/atomic publish, no partial, tip/roots unchanged); H3315600 snapshot/serving observed PASS. Line1 formal report pending. No crash-interruption/full G-09/Mainnet claim.",
+  "evidence":{
+    "node_log":"evidence/line3/task10-11-build13-recovery-20261103/build13-h3313440-node.log",
+    "node_log_sha256":"D099D3798F592FD7BCAA50E035DF31EF09AB91523880E87C370BAB1B6E8211F8",
+    "h3315600_context":"evidence/line3/task10-11-build13-recovery-20261103/h3315600-snapshot-serving-context.txt",
+    "h3315600_context_sha256":"97B55E8CBE7FD31D51AEE69FB1ECDF215991FDFAE7778BCC18B548A868FC490C",
+    "post_status":"evidence/line3/task10-11-build13-recovery-20261103/post-status.json",
+    "post_roots":"evidence/line3/task10-11-build13-recovery-20261103/post-roots.json"
+  },
+  "build":false,
+  "commit":false
+}

@@ -12,13 +12,56 @@
 #include <cstdio>
 #include <cstring>
 #include <Common/Logger.h>
+#include <Common/Util/HexUtil.h>
 #include <Common/Util/StringUtil.h>
+#include <cstdlib>
+#include <fstream>
+#include <optional>
 #include <utility>
 #include <string>
 #include <filesystem.h>
 
 using namespace rocksdb;
 
+namespace
+{
+	// Temporary task-11 diagnostics. Default off; no default-path behavior change.
+	bool SpentDiagnosticsEnabled()
+	{
+		static const bool enabled = []() {
+#if defined(_WIN32)
+			char* pValue = nullptr;
+			size_t valueLength = 0;
+			if (_dupenv_s(&pValue, &valueLength, "GRINPP_SPENT_DIAG") != 0 ||
+				pValue == nullptr) {
+				return false;
+			}
+
+			const std::string value(pValue);
+			std::free(pValue);
+#else
+			const char* raw = std::getenv("GRINPP_SPENT_DIAG");
+			if (raw == nullptr) {
+				return false;
+			}
+			const std::string value(raw);
+#endif
+			return value == "1" || value == "true" || value == "TRUE" || value == "yes";
+		}();
+		return enabled;
+	}
+
+	std::string ReadCurrentManifestName(const fs::path& dbPath)
+	{
+		std::ifstream currentFile(dbPath / "CURRENT");
+		std::string name;
+		std::getline(currentFile, name);
+		if (!name.empty() && name.back() == '\r') {
+			name.pop_back();
+		}
+		return name;
+	}
+}
 
 BlockDB::BlockDB(const Config& config, std::unique_ptr<RocksDB>&& pRocksDB)
 	: m_config(config), m_pRocksDB(std::move(pRocksDB)), m_blockHeadersCache(128)
@@ -289,7 +332,47 @@ std::unordered_map<Commitment, OutputLocation> BlockDB::GetSpentPositions(const 
 {
 	rocksdb::Slice key((const char*)blockHash.data(), blockHash.size());
 
+	const bool diagnosticsEnabled = SpentDiagnosticsEnabled();
+	std::optional<std::string> rawValue;
+	if (diagnosticsEnabled)
+	{
+		rawValue = m_pRocksDB->GetRawValue("SPENT_OUTPUTS", key);
+	}
+
 	auto pSpent = m_pRocksDB->Get<SpentOutputs>("SPENT_OUTPUTS", key);
+	if (diagnosticsEnabled)
+	{
+		const fs::path dbPath = m_config.GetDatabasePath() / "CHAIN";
+		const std::string manifestName = ReadCurrentManifestName(dbPath);
+		std::error_code sizeError;
+		const uintmax_t manifestBytes = manifestName.empty()
+			? 0
+			: fs::file_size(dbPath / manifestName, sizeError);
+
+		std::string rawHex;
+		if (rawValue.has_value())
+		{
+			const std::vector<unsigned char> rawBytes(rawValue->begin(), rawValue->end());
+			rawHex = HexUtil::ConvertToHex(rawBytes);
+			if (rawHex.size() > 512) {
+				rawHex = rawHex.substr(0, 512) + "...";
+			}
+		}
+
+		const std::vector<unsigned char> keyBytes(blockHash.data(), blockHash.data() + blockHash.size());
+		LOG_WARNING_F(
+			"SPENT_DIAG GetSpentPositions db={} CURRENT={} MANIFEST={} manifestBytes={} CF=SPENT_OUTPUTS key={} rawPresent={} rawBytes={} rawHex={} mapEntries={}",
+			dbPath.string(),
+			manifestName,
+			manifestName,
+			manifestBytes,
+			HexUtil::ConvertToHex(keyBytes),
+			rawValue.has_value(),
+			rawValue.has_value() ? rawValue->size() : 0,
+			rawHex,
+			pSpent != nullptr ? pSpent->BuildMap().size() : 0);
+	}
+
 	if (pSpent == nullptr)
 	{
 		LOG_ERROR_F("Failed to retrieve spent positions for block ({})", blockHash);

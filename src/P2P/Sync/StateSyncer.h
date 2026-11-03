@@ -53,6 +53,10 @@ private:
 	// atomic publication happen before the archive becomes visible; returns false
 	// with pError on failure.
 	bool ArchivePibdState(const Hash& horizonHash, std::string* pError = nullptr);
+	// Fail-closed preflight before any snapshot/rewind: every block from the
+	// target state through the confirmed flushed tip must have a body record and
+	// every input commitment must be present in the canonical SPENT_OUTPUTS map.
+	bool PreflightArchiveRewind(const BlockHeaderPtr& pTarget, std::string* pError = nullptr) const;
 	// If a previous activation left pibd_state.complete but no archive (e.g. the
 	// snapshot failed), retry once on startup.
 	void TryRecoverArchive();

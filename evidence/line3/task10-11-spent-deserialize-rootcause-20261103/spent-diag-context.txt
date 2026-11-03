@@ -1,0 +1,4 @@
+# source log: C:\DHW\.tmp\task10-build11-live\cpp-profile\LOGS\Node.log
+# Node.log was in use; snippets captured at 2026-11-03T10:02:42.3014634+07:00
+[11/03/26 09:56:08.262+07:00] [warning] [SYNC:35036] GetSpentPositions(373) - SPENT_DIAG GetSpentPositions db=C:\DHW\.tmp\task10-build11-live\cpp-profile\NODE\DB\CHAIN CURRENT=MANIFEST-000451 MANIFEST=MANIFEST-000451 manifestBytes=5597 CF=SPENT_OUTPUTS key=30c524b8424f91e1b2b154112f19d77d4c0db6887d6a1cdc96ef2055e022bfcb rawPresent=true rawBytes=52 rawHex=0000010989ac92c748aaf654f06fb9023746d3d34358b051dd2ac952bec39fecc62889670000000000689f8d000000000032a0a8 mapEntries=0
+[11/03/26 09:56:08.271+07:00] [warning] [SYNC:35036] TryRecoverArchive(421) - TxHashSet archive recovery failed (bounded; no retry for this target): archive preflight: block 3317930 hash 30c524b8424f91e1b2b154112f19d77d4c0db6887d6a1cdc96ef2055e022bfcb has 1 input(s) but 0 mapped spent position(s) (target 3313440, flushed 3318655)

@@ -1,5 +1,13 @@
 # Grin++ 1.2.9 — compatibility audit package (EN, canonical)
 
+## Current pointer — 2026-11-03
+
+Package status does not establish Mainnet readiness. For the updated snapshot and limitations see `AUDIT_DELTA.en.md`; operational tracking and evidence: `THREE_LINE_STATUS.md`. G-09: scenario 7B PASS, full G-09 and public PIBD NOT VERIFIED; old-archive recovery FAIL, root cause NOT VERIFIED. Build-10 full suite 254/253/1; bodyless NRD and kill-recovery NOT VERIFIED. Cross-check the operational board against primary evidence.
+
+## Historical package as of 2026-11-01
+
+The counts, acceptance statuses, results and hashes below belong to an earlier package and do not describe the current build.
+
 Status: **closed by owner acceptance (01.11.2026)**; independent reviewer not assigned.
 
 ## What is in this package

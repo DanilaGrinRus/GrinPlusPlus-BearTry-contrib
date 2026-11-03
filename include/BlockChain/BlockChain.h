@@ -158,6 +158,16 @@ public:
 	//
 	virtual bool HasBlock(const uint64_t height, const Hash& blockHash) const = 0;
 
+	//
+	// Read-only preflight for an archive rewind: true when every input commitment
+	// of the block is present in the canonical SPENT_OUTPUTS record. Fills
+	// mappedCount with the record's mapped entry count for exact diagnostics.
+	//
+	virtual bool AreSpentPositionsComplete(
+		const Hash& blockHash,
+		const std::vector<Commitment>& inputs,
+		size_t& mappedCount) const = 0;
+
 
 	virtual std::vector<BlockWithOutputs> GetOutputsByHeight(const uint64_t startHeight, const uint64_t maxHeight) const = 0;
 

@@ -4,7 +4,7 @@
 #include "../PIBD/PibdArchiveServer.h"
 #include "../PIBD/PibdSync.h"
 #include <P2P/TxHashSetArchive.h>
-#include <PMMR/Zip/TxHashSetZip.h>
+#include "../../PMMR/Zip/TxHashSetZip.h"
 #include <atomic>
 #include <fstream>
 
@@ -15,6 +15,7 @@
 #include <Core/File/FileRemover.h>
 #include <Core/File/FileSync.h>
 #include <Core/Global.h>
+#include <Core/Models/FullBlock.h>
 #include <P2P/Capabilities.h>
 #include <P2P/ConnectedPeer.h>
 #include <P2P/Peer.h>
@@ -425,6 +426,68 @@ void StateSyncer::TryRecoverArchive()
 	}
 }
 
+bool StateSyncer::PreflightArchiveRewind(const BlockHeaderPtr& pTarget, std::string* pError) const
+{
+	std::string localError;
+	std::string& error = pError != nullptr ? *pError : localError;
+
+	if (pTarget == nullptr) {
+		error = "archive preflight: target header is missing";
+		return false;
+	}
+
+	const BlockHeaderPtr pFlushed =
+		m_pBlockChain->GetTipBlockHeader(EChainType::CONFIRMED);
+	if (pFlushed == nullptr) {
+		error = "archive preflight: confirmed flushed tip header is missing";
+		return false;
+	}
+
+	const uint64_t targetHeight = pTarget->GetHeight();
+	const uint64_t flushedHeight = pFlushed->GetHeight();
+	const std::string targetHashHex =
+		HexUtil::ConvertToHex(pTarget->GetHash().GetData());
+
+	// The target body/spent record is not required: Rewind unwinds only
+	// heights flushedTip..target+1 and stops at the target header. Target hash
+	// equality is still checked exactly.
+	const auto viewAtHeight = [this, targetHeight](const uint64_t height) {
+		ArchivePublication::RewindPreflightView view;
+		const BlockHeaderPtr pHeader =
+			m_pBlockChain->GetBlockHeaderByHeight(height, EChainType::CONFIRMED);
+		if (pHeader == nullptr) {
+			return view;
+		}
+
+		view.headerPresent = true;
+		view.headerHashHex = HexUtil::ConvertToHex(pHeader->GetHash().GetData());
+		if (height == targetHeight) {
+			return view;
+		}
+
+		const std::unique_ptr<FullBlock> pBlock = m_pBlockChain->GetBlockByHeight(height);
+		if (pBlock == nullptr) {
+			return view;
+		}
+
+		view.bodyPresent = true;
+		const std::vector<Commitment> inputs = pBlock->GetInputCommitments();
+		view.inputCount = inputs.size();
+		size_t mappedCount = 0;
+		view.spentComplete = m_pBlockChain->AreSpentPositionsComplete(
+			pHeader->GetHash(), inputs, mappedCount);
+		view.mappedCount = mappedCount;
+		return view;
+	};
+
+	return ArchivePublication::ValidateRewindPreflight(
+		targetHashHex,
+		targetHeight,
+		flushedHeight,
+		viewAtHeight,
+		&error);
+}
+
 bool StateSyncer::ArchivePibdState(const Hash& horizonHash, std::string* pError)
 {
 	std::string localError;
@@ -445,6 +508,13 @@ bool StateSyncer::ArchivePibdState(const Hash& horizonHash, std::string* pError)
 		if (ArchivePublication::IsReadyArchive(archivePath)) {
 			ClearRecoveryBlocked();
 			return true;
+		}
+
+		// Refuse before any copy/rewrite when the canonical DB cannot support the
+		// rewind. This does not mutate the chain or the live txhashset, and a
+		// failure is persisted by the caller so restart does not retry forever.
+		if (!PreflightArchiveRewind(pHeader, &error)) {
+			return false;
 		}
 
 		const fs::path zipPath = m_pBlockChain->SnapshotTxHashSet(pHeader);
