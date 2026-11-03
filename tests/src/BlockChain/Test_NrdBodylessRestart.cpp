@@ -77,9 +77,11 @@ namespace
 	};
 }
 
-// Known bodyless reorg/restart blocker: this test now reaches phase 3
-// (OpenExisting after the reorg) and hangs in startup truncation. It is kept as
-// a hidden reproducer, not as a passing acceptance test; see REMAINING/Layer A.
+// Full bodyless reproducer, currently BLOCKED after the reorg: phase-3
+// OpenExisting fails closed with "kernel MMR has 34 leaves but tip header claims
+// 32" (NRD index refuses to start). The earlier deadlock was fixed by scoping the
+// chain-store writer; this remaining state-reconciliation defect needs a separate
+// fix. Hidden so it cannot poison the default suite's DB lock; not a PASS.
 TEST_CASE("Bodyless NRD index rebuilds and survives reorg and restart", "[.]")
 {
 	const NrdBeforeHf3ForTesting nrdSeam;
@@ -215,14 +217,15 @@ TEST_CASE("Bodyless NRD index rebuilds and survives reorg and restart", "[.]")
 		FullBlock block31b = miner.MineNextBlock(pTip30, *coinbase31b.pTransaction, {});
 		Test::Tx coinbase32b = txBuilder.BuildCoinbaseTx(KeyChainPath({ 0, 132 }));
 		FullBlock block32b = miner.MineNextBlock(pTip30, *coinbase32b.pTransaction, { block31b });
-		std::cerr << "phase2: reorg blocks mined" << std::endl;
+		REQUIRE(pTip30->GetHeight() == 30);
+		REQUIRE(block31b.GetHeight() == 31);
+		REQUIRE(block31b.GetPreviousHash() == pTip30->GetHash());
+		REQUIRE(block32b.GetHeight() == 32);
+		REQUIRE(block32b.GetPreviousHash() == block31b.GetHash());
+		REQUIRE(block31b.GetHash() != block31.GetHash());
 
-		std::cerr << "phase2: adding block31b" << std::endl;
 		REQUIRE(pChain->AddBlock(block31b) == EBlockChainStatus::SUCCESS);
-		std::cerr << "phase2: block31b accepted" << std::endl;
-		std::cerr << "phase2: adding block32b" << std::endl;
 		REQUIRE(pChain->AddBlock(block32b) == EBlockChainStatus::SUCCESS);
-		std::cerr << "phase2: block32b accepted" << std::endl;
 		REQUIRE(pChain->GetHeight(EChainType::CONFIRMED) == 32);
 		REQUIRE(pChain->GetTipBlockHeader(EChainType::CONFIRMED)->GetHash() == block32b.GetHash());
 		REQUIRE(RequireCompleteNrdIndex(pChain)->GetRecentNrdEntries(nrdExcess).size() == 1);
@@ -230,9 +233,7 @@ TEST_CASE("Bodyless NRD index rebuilds and survives reorg and restart", "[.]")
 
 	// ---- phase 3: restart again on the reorged bodyless state ----
 	{
-		std::cerr << "phase3: OpenExisting" << std::endl;
 		TestServer::Ptr pServer = TestServer::OpenExisting();
-		std::cerr << "phase3: opened" << std::endl;
 		pServer->SetPreserveDataOnDestruct(true);
 		IBlockChain::Ptr pChain = pServer->GetBlockChain();
 		REQUIRE(pChain->GetHeight(EChainType::CONFIRMED) == 32);
@@ -240,5 +241,3 @@ TEST_CASE("Bodyless NRD index rebuilds and survives reorg and restart", "[.]")
 		REQUIRE(pChain->GetBlockByHeight(32) != nullptr);
 	}
 }
-
-

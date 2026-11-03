@@ -10,12 +10,13 @@ PIHD, UI и тестов остаются в своих разделах, но �
 приёмочной сводкой. При расхождении статуса сверять более свежие первичные
 свидетельства и обновлять этот список; не переписывать прошлые результаты.
 
-**Срез / не переносить на другую сборку:** build-30 `Tests A686C609…`,
-`GrinNode 0EF111EF…` — source-bound локальный кандидат с исправлением
-`TransactionKernel::IsCoinbase` (NRD больше не считается coinbase). Default
-full suite **272/272**, но bodyless-тест скрыт (`[.]`) как reproducer: полный
-bodyless reorg+restart **FAIL/BLOCKED** на фазе 3 OpenExisting (Node.log:
-confirmed 33 > candidate 31, truncation не завершился). Это **не** bodyless PASS.
+**Срез / не переносить на другую сборку:** build-34 `Tests DFB15F48…`,
+`GrinNode 6E2303BA…` — source-bound кандидат с исправлением
+`TransactionKernel::IsCoinbase` (NRD больше не считается coinbase) и scope
+fix для chain-store writer. Default full suite **272/272**, но bodyless-тест
+скрыт (`[.]`) как reproducer: полный bodyless reorg+restart **FAIL/BLOCKED**
+после reorg на phase-3 OpenExisting (`kernel MMR 34 leaves vs tip header 32`;
+NRD-index rebuild refusing to start). Это **не** bodyless PASS.
 Layer A public-Floonet PASS — build-16 `GrinNode 7E3AA29E…`, `Tests 1592F3DF…`:
 FULLY_SYNCED 3 321 243, restart catch-up 3 321 250, 0 state re-download/PIBD
 requests, A3 PASS; public PIBD serving **NOT VERIFIED** (disabled). Public legacy
@@ -51,11 +52,13 @@ PASS на build-13. Recovery H3313440/H3315600 и staging-kill — PASS в пр�
   (ASan-only extended link set). Public PIBD serving NOT VERIFIED, safely disabled.
   Bodyless full scenario **FAIL/BLOCKED**: `TransactionKernel::IsCoinbase` fixed
   (NRD no longer counted as coinbase; test added), real TestServer/BlockDB/OpenExisting
-  path reaches reorg then hangs in phase-3 startup truncation; test hidden as
-  reproducer, not PASS. Default full **272/272** excludes it. Peak validation RSS
+  path reaches reorg and then **fails closed** in phase-3 NRD-index rebuild
+  (`kernel MMR 34 vs tip header 32`); test hidden as reproducer, not PASS.
+  Default full **272/272** excludes it. Peak validation RSS
   ~9.7 GB, post-sync ~2.8 GB; practical ≥12 GB free RAM. Public legacy fallback
   **BLOCKED/PARTIAL**: fresh public profile stopped at headers 27 648; prior
-  legacy transfer ~0.46 MB/s at ~501 MB.
+  legacy transfer ~0.46 MB/s at ~501 MB. Bodyless deadlock was fixed; remaining
+  failure is the post-reorg NRD-index/MMR reconciliation, not a timeout.
 
 ### Ворота B — готовность к Mainnet
 
@@ -72,9 +75,10 @@ PASS на build-13. Recovery H3313440/H3315600 и staging-kill — PASS в пр�
   staging-kill PASS build-13; полный PUB/RES crash matrix NOT VERIFIED; no partial
   final archive observed.
 - [ ] **B3. NRD / криптография:** D2 txpool unit PASS; **IsCoinbase exact-match bug
-  fixed** (NRD was treated as coinbase; build-30 regression PASS). Full bodyless
-  TestServer/BlockDB/OpenExisting/reorg/restart **FAIL/BLOCKED**: phase-3 startup
-  truncation hangs; hidden reproducer only, not PASS —
+  fixed** (NRD was treated as coinbase; build-30 regression PASS); chain-store
+  writer deadlock fixed. Full bodyless TestServer/BlockDB/OpenExisting/reorg/restart
+  **FAIL/BLOCKED:** phase-3 NRD-index rebuild fails closed (`kernel MMR 34 vs tip
+  header 32`); hidden reproducer only, not PASS —
   [bodyless evidence](../../evidence/line3/bodyless-nrd-20261103.md). Real bodyless
   PIBD state and kill/recovery remain NOT VERIFIED.
 - [ ] **B4. БД и устойчивость:** G-23 corrupted HeaderMMR/partial PMMR fault

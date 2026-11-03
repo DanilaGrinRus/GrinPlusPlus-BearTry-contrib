@@ -38,28 +38,34 @@ HF3 rejection. This is a test configuration, not a production-consensus change.
   real BlockDB; coinbase verification now passes after the IsCoinbase fix;
 - phase 2: `OpenExisting()` rebuilds the bodyless NRD index; block 31 accepted;
   reorg branch blocks 31b/32b accepted;
-- phase 3: `TestServer::OpenExisting()` after the reorg **hangs** in startup.
-  `Node.log` ends with:
-  `Confirmed chain is ahead of the candidate chain (33 > 31); truncating the
-  confirmed chain.` No completion, no error; test timeout at 120 s.
+- phase 3: `TestServer::OpenExisting()` after the reorg **fails closed**:
+  `NRD recent-kernel index rebuild is incomplete` / `kernel MMR has 34 leaves but
+  the tip header claims 32`. Chain/MMR state is inconsistent after the bodyless
+  reorg. This is the current blocker, not a timeout.
+- A first attempt hung earlier because the chain-store writer was held while
+  re-reading the store in `BlockChainImpl`; that deadlock was fixed by scoping the
+  writer to its commit. The remaining failure is a separate state-reconciliation
+  defect.
 
-The test is hidden (`[.]`) as a reproducer so the default suite does not hang;
-the full bodyless scenario is **not** a PASS. The hidden tag is explicitly
-recorded here and must not be presented as equivalent coverage.
+The test is hidden (`[.]`) as a reproducer so the default suite does not hang or
+leave a RocksDB LOCK on a failing run; the full bodyless scenario is **not** a
+PASS. The hidden tag is explicitly recorded here and must not be presented as
+equivalent coverage.
 
 ## Evidence
 
-- `C:\DHW\.tmp\build-30\Tests.exe` (A686C609…), full run
-  `evidence/line3/b30-full` (272/272), kernel test
-  `evidence/line3/b30-kernelfeatures`.
-- Bodyless hidden run: `evidence/line3/bodyless-stage-b29` / `bodyless-seam-b28`
-  (`TIMEOUT`, stdout/stderr, Node.log at
-  `C:\DHW\.tmp\line3-iso\bodyless-stage-b29\home\.GrinPP\AUTOMATED_TESTING\LOGS\Node.log`).
+- Final build candidate: Tests `DFB15F48…` (build-34), default full **272/272,
+  4 314 assertions** — hidden bodyless excluded.
+- Bodyless hidden run: `evidence/line3/bodyless-final-b33` (FAIL, 44 assertions,
+  43 passed) and `bodyless-assert-b32`; Node.log at
+  `C:\DHW\.tmp\line3-iso\bodyless-final-b33\home\.GrinPP\AUTOMATED_TESTING\LOGS\Node.log`.
 - `tests/src/BlockChain/Test_NrdBodylessRestart.cpp` — real scenario kept,
-  hidden, with exact stage comments.
+  hidden, with the exact failure comment.
+- `src/BlockChain/BlockChainImpl.cpp` — writer-scope deadlock fix (read after
+  commit); production path, no test bypass.
 
 ## Remaining work
 
-Fix the confirmed-chain truncation/restart path (or reproduce on a real Floonet
-bodyless snapshot) and remove the hidden tag only when the complete scenario
-passes. Until then: **bodyless NOT VERIFIED; do not claim closure.**
+Reconcile the bodyless TxHashSet/chain state after reorg so the NRD index rebuild
+can complete (and remove the hidden tag only when the complete scenario passes).
+Until then: **bodyless FAIL/BLOCKED; do not claim closure.**

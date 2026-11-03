@@ -1,28 +1,30 @@
 # Gplus: статус трёх линий (оперативная доска)
 
-Дата сверки: 2026-11-03. **Layer A PASS на build-16**
+Дата сверки: 2026-11-04. **Layer A PASS на build-16**
 (`GrinNode 7E3AA29E…`, `Tests 1592F3DF…`): public Floonet `FULLY_SYNCED`,
 restart resumed without state re-download, owner API protected; public PIBD
-serving DISABLED/NOT VERIFIED. **Build-30** (`Tests A686C609…`,
-`GrinNode 0EF111EF…`) — source-bound кандидат с исправлением `IsCoinbase`:
-default full **272/272**, но bodyless hidden reproducer **FAIL/BLOCKED**;
-public legacy fallback **BLOCKED/PARTIAL**. Build-13 остаётся full 7B live
-binding. Сводный план — [REMAINING.md](REMAINING.md); Layer A —
+serving DISABLED/NOT VERIFIED. **Build-34** (`Tests DFB15F48…`,
+`GrinNode 6E2303BA…`) — source-bound кандидат с исправлениями `IsCoinbase` и
+chain-store writer: default full **272/272**, но bodyless hidden reproducer
+**FAIL/BLOCKED** на post-reorg NRD-index; public legacy fallback
+**BLOCKED/PARTIAL**. Build-13 остаётся full 7B live binding. Сводный план —
+[REMAINING.md](REMAINING.md); Layer A —
 [LAYER_A_FLOONET_2026-11-03.md](LAYER_A_FLOONET_2026-11-03.md).
 
 ## Артефакты
 
-### Build-30 — IsCoinbase fix / bodyless reproducer
+### Build-34 — IsCoinbase/deadlock fix / bodyless reproducer
 
-- Tests `A686C6091D0F0886AE3572FF2CF5A3A559EB7C37A841C81648FBE13FF4015D29`,
-  9 582 592 B; GrinNode `0EF111EFBEDF1F53CF0CBD46185A5159DABFBE6BD924DA54F8C5DEE0F2026502`,
-  7 854 080 B.
+- Tests `DFB15F48BA833DA338DF1F993E382028C5DED1F1610725C569C2651D30C54236`,
+  9 584 128 B; GrinNode `6E2303BAD0176093B64BC5E790C09079B0EC37DD4D68CDDDDF66E2A1107BF998`,
+  7 853 056 B.
 - Default full **272/272, 4 314 assertions**; bodyless test is hidden (`[.]`) and
-  is **not** a PASS: phase-3 OpenExisting after reorg hangs at confirmed-chain
-  truncation. A real `TransactionKernel::IsCoinbase` bug was found/fixed and
-  regression-tested.
-- Public legacy fallback: fresh public PIBD-off profile stopped at headers 27 648;
-  prior transfer ~0.46 MB/s at ~501 MB — BLOCKED/PARTIAL, no PASS.
+  is **not** a PASS: after the chain-store writer deadlock was fixed, phase-3
+  OpenExisting after reorg fails closed with `kernel MMR has 34 leaves but tip
+  header claims 32` (NRD index refuses to start). A real
+  `TransactionKernel::IsCoinbase` bug was also found/fixed and regression-tested.
+- Public legacy fallback: fresh public PIBD-off run reached headers 3 321 636 and
+  started state download; full transfer/restart **BLOCKED/PARTIAL**, no PASS.
 
 ### Build-18 — B1/B2 hardening candidate (historical)
 
@@ -44,9 +46,10 @@ binding. Сводный план — [REMAINING.md](REMAINING.md); Layer A —
   API loopback-only; PIBD serving/PIHD off and not advertised.
 - A4: independent second public node PASS (6 real Rust peers, restart resume
   367,616→529,408, non-loopback API refused); ASan F13/archive PASS with 0 reports;
-  public PIBD serving NOT VERIFIED/disabled; **bodyless IsCoinbase bug fixed but
-  full reorg/restart FAIL/BLOCKED** (hidden reproducer); public legacy fallback
-  BLOCKED/PARTIAL; peak validation RSS ~9.7 GB, post-sync ~2.8 GB.
+  public PIBD serving NOT VERIFIED/disabled; **bodyless IsCoinbase and writer
+  deadlock fixed, full reorg/restart still FAIL/BLOCKED at post-reorg NRD-index**
+  (hidden reproducer); public legacy fallback long run in progress, full
+  end-to-end not yet verified; peak validation RSS ~9.7 GB, post-sync ~2.8 GB.
 
 
 ### Build-13 — full 7B live binding

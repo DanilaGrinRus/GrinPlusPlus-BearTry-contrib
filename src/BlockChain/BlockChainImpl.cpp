@@ -217,14 +217,16 @@ std::shared_ptr<BlockChain> BlockChain::Create(
 			// tail was lost between two commits.
 			if (confirmedEntries < checkpoint.ConfirmedEntries) {
 				ensureBackup();
-				auto pChainStoreWriter = pChainStore->Write();
-				auto pConfirmedChain = pChainStoreWriter->GetConfirmedChain();
-				const auto pCandidateChain = pChainStore->Read()->GetCandidateChain();
-				const uint64_t target = (std::min)(checkpoint.ConfirmedEntries, candidateEntries);
-				for (uint64_t height = confirmedEntries; height < target; height++) {
-					pConfirmedChain->AddBlock(pCandidateChain->GetHash(height), height);
+				{
+					auto pChainStoreWriter = pChainStore->Write();
+					auto pConfirmedChain = pChainStoreWriter->GetConfirmedChain();
+					const auto pCandidateChain = pChainStore->Read()->GetCandidateChain();
+					const uint64_t target = (std::min)(checkpoint.ConfirmedEntries, candidateEntries);
+					for (uint64_t height = confirmedEntries; height < target; height++) {
+						pConfirmedChain->AddBlock(pCandidateChain->GetHash(height), height);
+					}
+					pChainStoreWriter->Commit();
 				}
-				pChainStoreWriter->Commit();
 				confirmedEntries = pChainStore->Read()->GetConfirmedChain()->GetHeight() + 1;
 				LOG_WARNING_F("Restored confirmed chain to {} entries.", confirmedEntries);
 			}
@@ -255,9 +257,11 @@ std::shared_ptr<BlockChain> BlockChain::Create(
 				"Confirmed chain is ahead of the candidate chain ({} > {}); truncating the confirmed chain.",
 				confirmedEntries,
 				candidateEntries);
-			auto pChainStoreWriter = pChainStore->Write();
-			pChainStoreWriter->GetConfirmedChain()->Rewind(candidateEntries - 1);
-			pChainStoreWriter->Commit();
+			{
+				auto pChainStoreWriter = pChainStore->Write();
+				pChainStoreWriter->GetConfirmedChain()->Rewind(candidateEntries - 1);
+				pChainStoreWriter->Commit();
+			}
 			confirmedEntries = pChainStore->Read()->GetConfirmedChain()->GetHeight() + 1;
 		}
 

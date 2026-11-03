@@ -1,7 +1,7 @@
 # Public Floonet legacy fallback — attempted end-to-end (2026-11-03)
 
-Status: **BLOCKED / PARTIAL.** No full public-to-public legacy txhashset
-download was completed; no PASS claim.
+Status: **BLOCKED / PARTIAL; long run left active.** No full public-to-public
+legacy txhashset download completed at the time of this report; no PASS claim.
 
 ## What was run
 
@@ -11,8 +11,11 @@ download was completed; no PASS claim.
   127.0.0.1:25650; no loopback allowlist; no fixture; no wallet.
 - Config explicitly `PIBD_ENABLED=false`, `PIHD_MODE=off`, archive serving
   disabled.
-- Run stopped deliberately after ~1 minute at header height **27,648** (network
-  tip 3,321,443); 4 public peers, status `SYNCING_HEADERS`.
+- Run stopped deliberately? No — the long run is left running as requested; current
+  observation: headers **3,321,636**, network tip ~3,321,443, status
+  `DOWNLOADING_TXHASHSET`, 4 public peers; no txhashset file yet. The process is
+  `C:\DHW\.tmp\build-30\GrinNode.exe`, PID 30012, profile
+  `C:\DHW\.tmp\task2-legacy-public`; logs `cpp-profile\LOGS\Node.log`.
 
 ## Why it did not reach the legacy path
 
