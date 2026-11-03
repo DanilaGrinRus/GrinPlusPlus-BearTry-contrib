@@ -1,5 +1,5 @@
 # AUDIT_DELTA (RU) — Grin++ 1.2.9 → совместимость с Grin v5.5.2
-**Актуальный срез 02.11.2026.** База 1.2.9 `5f511e6`; рабочее дерево HEAD `793b7db`. Метрики исходников:
+**Актуальный срез 02.11.2026.** База 1.2.9 `5f511e6`; рабочее дерево HEAD `77b3970`. Метрики исходников:
 
 - добавлено C++: **+22 619 строк**; удалено **−625**; 191 tracked + 22 новых;
 - объём diff/новых C++ файлов: **≈ +927.8 KiB**;
@@ -9,7 +9,7 @@
 - **G-09 fixed-H (экспериментальный, 03.11.2026): PASS исторически.** Build-09 `0A3B7D66…`/`F90EEF38…`: unit/archive/ASan-subset PASS; ordinary live **частично проверен** — 7C wrong-H refusal PASS, 7B full PIBD/no_sync в процессе, full ordinary PASS **NOT VERIFIED**. Обычная Rust 5.5.2-нода дошла до `no_sync` на H=3 318 655 / hash `2945348e…`, с тем же C++ tip, 1 inbound / 0 outbound; PIBD 10 203 442/10 203 442, roots/rangeproof/kernel validation/body sync завершены. Причина прошлых рестартов — `missing left sibling` на output segment 1648; исправлена отправка листьев в `SegmentGenerator`. Ограничения: headers preseeded, reorg/restart/negative/mainnet не покрыты.
 - **PIBD/PIHD guard:** height-cap 13, overflow-check `idx*capacity`, привязка PIHD-ответа к connection/peer, fallback при отсутствии роста chain height; PIBD-ответ строится по одному `ApiStateSnapshot` с retry при смене sequence, bitmap/root кешируются по output root, лимит 500 запросов/мин на connection. PIHD experimental, `PIHD_HIST` не рекламируется; конкурентный apply/reorg-тест snapshot ещё открыт.
 
-Базовая точка: Grin++ 1.2.9 (`5f511e6`). Дельта обновлена: 02.11.2026, HEAD `793b7db` (G-09/G-23/G-53/G-07/G-24).
+Базовая точка: Grin++ 1.2.9 (`5f511e6`). Дельта обновлена: 02.11.2026, HEAD `77b3970` (G-09/G-23/G-53/G-07/G-24).
 Сопутствующие документы: `AUDIT_PACKAGE.md` (правила пакета), `GAP_MATRIX.md`
 (статус каждой лазейки), `TEST_RESULTS.md` (доказательства E1–E84),
 `DB_CONSISTENCY.md` (устройство chain-хранилищ).
@@ -442,7 +442,7 @@
 
 - G-44 (спящий каркас PIHD), G-45 (mainnet dry-run), G-49 (производительность rangeproofs), G-51 (этот пакет): закрыт (аудит-пакет; приёмка владельца 01.11.2026).
 - Чисто документальные коммиты (`docs: …`): перечислены в карте доказательств, не как карточки.
-## Актуализация 02.11.2026 — HEAD `793b7db`
+## Актуализация 02.11.2026 — HEAD `77b3970`
 
 Базовая точка прежняя (`5f511e6`). Новый срез включает G-09-candidate merge,
 G-23 hash-ревалидацию, KernelIndex/get_kernel, NRD-правила и локальный CI-gate.
