@@ -10,87 +10,62 @@ PIHD, UI и тестов остаются в своих разделах, но �
 приёмочной сводкой. При расхождении статуса сверять более свежие первичные
 свидетельства и обновлять этот список; не переписывать прошлые результаты.
 
-**Срез / не переносить на другую сборку:** HEAD `921bcfd`; build-15
-`GrinNode A7D28BCC…`, `Tests 920F000F…` — source-bound кандидат hardening,
-full suite **260/259/1 FAIL** (единственный известный bodyless test failure),
-F11/F13/D2 normal PASS, ASan subset PASS с существенными исключениями; на нём
-проверен restart сохранённого состояния. Full local PIBD 7B с чистыми Rust
-headers/state до `no_sync` — **PASS на build-13**, не на build-15. Recovery
-архивов H3313440/H3315600 и один сценарий kill во время staging — PASS build-13
-в зафиксированных пределах; независимый отчёт о полной crash-матрице этот
-результат не подтверждает. [Build-15](../../evidence/line3/normal-binary-build15-audit-20261103.md),
-[ASan](../../evidence/line3/build15-asan-refresh-20261103.md),
+**Срез / не переносить на другую сборку:** HEAD `674136c` (build-18);
+Layer A public-Floonet PASS выполнялся на **build-16** `GrinNode 7E3AA29E…`,
+`Tests 1592F3DF…`. Build-18 `GrinNode 43E0C3A7…`, `Tests 2DACE82F…` —
+source-bound B1/B2 candidate: full **271/270/1** (единственный известный bodyless
+test-only failure), B1 negative/resource и R2/R4/owner-auth PASS.
+Публичный Floonet build-16: A2 PASS (FULLY_SYNCED 3 321 243 → restart catch-up
+3 321 250, 0 state re-download/PIBD requests), A3 PASS; public PIBD serving
+**NOT VERIFIED** (disabled). Full local PIBD 7B — PASS на build-13. Recovery
+архивов H3313440/H3315600 и staging-kill — PASS в зафиксированных пределах.
+[Layer A](LAYER_A_FLOONET_2026-11-03.md),
+[build-18](../../evidence/line3/build18-audit-20261103.md),
 [build-13 live](../../evidence/line3/build13-7b-full-audit-20261103.md),
 [отчёт по архиву](ARCHIVE_RECOVERY_2026-11-03.md).
 
 ### Ворота A — готовность ограниченного тестнета / Floonet
 
-**Статус: NOT VERIFIED для финального пакета в публичной сети.** Это готовность
-запустить ограниченное тестирование без реальных средств, а не признание полного
-G-09 или Mainnet. Экспериментальные и непроверенные функции можно держать off.
+**Статус: A1/A2/A3 — PASS на build-16; A4 — исключения зафиксированы.
+Публичный PIBD-serving не проверялся и остаётся DISABLED.**
+Это ограниченный public-Floonet клиентский сценарий, не полный G-09/Mainnet.
+Экспериментальные функции выключены. ([Layer A](LAYER_A_FLOONET_2026-11-03.md))
 
-- [ ] **A1. Зафиксировать испытуемый кандидат:** commit + незакоммиченные
-  изменения, freeze/toolchain и SHA реальных exe; не переносить результаты
-  build-13 автоматически на build-15 или следующую сборку. Сборка `/W4 /WX`,
-  минимальные профильные проверки и известные исключения зафиксированы.
-- [ ] **A2. Обычная нода в публичном Floonet:** независимый изолированный профиль,
-  соединения с реальными Rust-пирами, синхронизация до актуального tip/hash,
-  стабильная работа и повторный запуск без повреждения данных/необоснованных
-  банов. Для заявляемых возможностей отдельно записать, что реально обменивалось.
-- [ ] **A3. Безопасные границы:** сетевые сообщения и ошибки локального состояния
-  не приводят к недоказанным банам или неограниченному расходу ресурсов; API
-  управления защищён, неготовый PIBD-serving/PIHD по умолчанию off. Если заявлять
-  публичный PIBD-serving, нужны именно его публичный тест и negative proof/root/ID;
-  иначе не рекламировать его как проверенный публичный сервис.
-- [ ] **A4. Определить исключения:** единственный известный bodyless harness
-  failure и границы ASan/fuzz в отчёте; оценить последствия для конкретного
-  testnet-сценария, не подменять FAIL зелёной цифрой. Непроверенное не включать
-  как заявленную функциональность. G-53/UI/кошелёк принимаются отдельно, если
-  входят в поставку; запуск одной ноды не требует готового UI.
+- [x] **A1. Кандидат:** build-16 `GrinNode 7E3AA29E…`, `Tests 1592F3DF…`,
+  `/W4 /WX`, source-bound build; known bodyless test-only exception; полный
+  список ограничений в отчёте Layer A.
+- [x] **A2. Публичный Floonet:** изолированный профиль, реальные Rust-пиры
+  (caps 95/223, UA 5.4.0/5.5.1/5.5.2), headers from zero, PIBD client state sync,
+  body sync, `FULLY_SYNCED` 3 321 243 / `17c9300b…b4eb5b`; restart resumed at
+  3 321 243, catch-up to 3 321 250 / `1dc25a89…c906a41`, 0 state re-download,
+  0 PIBD requests, 0 banned.
+- [x] **A3. Безопасные границы:** REST только 127.0.0.1; owner reads PRIVATE,
+  get_config PRIVATE, update_config ADMIN; foreign public; PIBD serving/PIHD OFF,
+  PIBD/PIHD bits не рекламируются. Публичный PIBD serving — **NOT VERIFIED**.
+- [x] **A4. Исключения:** bodyless test-only; ASan F13/archive normal-only;
+  публичный PIBD serving исключён; peak RSS ~9.7 GB во время validation
+  (наблюдение, не доказательство утечки); legacy fallback public partial.
 
 ### Ворота B — готовность к Mainnet
 
-**Статус: NOT VERIFIED.** Базовая цель — совместимость с Rust Grin v5.5.2,
-целостность состояния и разумный риск для сети и пользователя; абсолютная
-безошибочность не заявляется. Ниже — условия для оценки предлагаемого режима
-релиза, а не требование реализовать выключенные экспериментальные функции.
+**Статус: PARTIAL/NOT VERIFIED.** B1/B2 подтверждены unit/build-18 и
+ограниченным crash-publication; B3/B4/B5 остаются открытыми. Абсолютная
+безошибочность не заявляется; ниже — условия для оценки режима релиза.
 
-- [ ] **B1. G-09 / межсетевой PIBD:** negative wire proof/root/ID, ресурсные
-  лимиты и конкурентная выдача; controlled reorg/смена горизонта при наличии
-  источника (сейчас BLOCKED), public Floonet и поведение fallback/restart.
-  Если serving отключён в поставке, отдельно доказать безопасное отключение и
-  явно исключить serving из заявлений; не превращать один loopback PASS в полный.
-- [ ] **B2. Fail-closed и публикация:** F11/F13/D2 normal PASS build-15 —
-  зафиксированные частичные результаты; отдельно подтвердить confirmed/flushed
-  mismatch, root-valid readiness, ошибку записи failure-marker и rollback в
-  пределах заявленного режима. Один retry на процесс при каждом рестарте — не
-  in-process цикл; при неработающей записи нельзя обещать персистентный лимит
-  без другого механизма. Проверить разумный минимум прерываний публикации на
-  копиях; учитывать уже пройденный build-13 staging-kill, не повторять его
-  ради счётчика. Убедиться: нет partial/wrong-root служащего архива, tip/root
-  целы при ошибке. Не требовать весь исторический PUB/RES-список без оценки риска.
-- [ ] **B3. NRD / криптография:** D2 txpool unit PASS build-15 не заменяет
-  проверку index policy, bodyless NRD, reorg и restart/kill на реалистичном
-  состоянии. Адресные Rust differential и проверки proof/парсеров соразмерно
-  риску; указать недоступные для ASan RocksDB/DB и F11/F13/D2 paths. Текущий
-  bodyless test fail исправить как тест или получить эквивалентные доказательства,
-  не объявляя сам сценарий PASS по исключению.
-- [ ] **B4. БД и устойчивость:** G-23 startup на повреждённом HeaderMMR,
-  recovery/rollback при релевантных сбоях и отсутствии данных; не повторять
-  уже пройденный исторический hard-kill без основания. `Output Commitment not
-  found` не воспроизведён в 7B — наблюдать, при воспроизведении диагностировать.
-  Исторический `0xC0000409` относится к Tests.exe, причина NOT VERIFIED; без
-  повторения или новых данных отдельное расследование не блокирует работу.
-- [ ] **B5. Релизная воспроизводимость и сеть:** чистый checkout/toolchain/pins,
-  SHA и соответствующие проверки кандидата; hosted CI или явно принятое
-  эквивалентное доказательство. Публичный Floonet и сравнение с Rust, затем
-  отдельный изолированный G-45 Mainnet dry-run без реальных средств, tip/hash,
-  restart/догон и контроль окружения. Решение о включении mainnet принимает
-  владелец после отчёта об оставшихся рисках.
-- [ ] **B6. Если релиз включает кошелёк/UI:** G-53 live node/wallet API,
-  owner/foreign auth, pagination/reorg, безопасное хранение и реальные
-  пользовательские сценарии в изолированном Floonet; затем отдельная проверка
-  кошелькового поведения для Mainnet. Готовность ноды и кошелька не смешивать.
+- [ ] **B1. G-09 / межсетевой PIBD:** negative wire/resource unit PASS build-18;
+  public PIBD serving NOT VERIFIED (disabled); controlled reorg/horizon BLOCKED;
+  public fallback/restart ограниченно проверены A2.
+- [x] **B2. Fail-closed и публикация:** R1/R2/R3/R4/D2 PASS build-18;
+  staging-kill PASS build-13; полный PUB/RES crash matrix NOT VERIFIED; no partial
+  final archive observed.
+- [ ] **B3. NRD / криптография:** D2 txpool unit PASS; bodyless-NRD и kill/recovery
+  NOT VERIFIED; реальный bodyless PIBD state/reorg/restart NOT VERIFIED.
+- [ ] **B4. БД и устойчивость:** G-23 corrupted HeaderMMR/partial PMMR fault
+  injection NOT VERIFIED; disk-full/power-loss NOT VERIFIED; Output Commitment
+  not reproduced; historical 0xC0000409 NOT VERIFIED.
+- [ ] **B5. Релизная воспроизводимость и сеть:** clean checkout/toolchain pins,
+  hosted CI/эквивалент и Mainnet dry-run NOT VERIFIED; public Floonet A2 PASS.
+- [ ] **B6. Кошелёк/UI:** отдельная приёмка; не входит в текущий A/B результат.
 
 ### Полнота пользовательского продукта — после базовых ворот / параллельно
 

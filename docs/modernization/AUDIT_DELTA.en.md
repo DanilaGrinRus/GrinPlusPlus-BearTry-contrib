@@ -33,9 +33,9 @@ Dates, hashes, counts, statuses and references to a “current” state in the p
 
 - C++ added: **+22,619 lines**; deleted **−625**; 191 tracked + 22 new;
 - diff/new C++ text volume: **≈ +927.8 KiB**;
-- final `GrinNode.exe`: **7,850,496 B = 7,622.5 KiB = 7.44 MiB**;
+- final `GrinNode.exe`: **7,854,080 B = 7,622.5 KiB = 7.44 MiB**;
 - **exe growth vs 1.2.9: NOT MEASURED** — no original binary is preserved; 7.7 MB is the final size, not a delta;
-- artifacts: `GrinNode A7D28BCC…`, `Tests 920F000F…`; suite **260 cases / 259 passed / 1 test-only fail**, production 0 fails (explicit exception; see THREE_LINE_STATUS).
+- artifacts: `GrinNode 43E0C3A7…`, `Tests 2DACE82F…`; suite **271 cases / 270 passed / 1 test-only fail**, production 0 fails (explicit exception; see THREE_LINE_STATUS).
 - **G-09 fixed-H (experimental, 2026-11-03): historical PASS.** Build-09 `0A3B7D66…`/`F90EEF38…`: ordinary 7B full PIBD/activation/body sync/no_sync **PASS**, restart **PASS**. Build-13 `001DF4BC…`/`F39BDFE5…`: clean full 7B PASS (PIBD 10,203,442, no_sync 3318655/2945348e); H=3313440 recovery, H=3315600 snapshot, crash publication PASS. Build-15 `920F000F…`/`A7D28BCC…`: full 260/259/1 (bodyless test-only), F11/F13/D2/archive PASS, persisted restart PASS; F13 ASan link-blocked. Full G-09 still **NOT VERIFIED**: reorg/horizon BLOCKED, negative/resources NOT VERIFIED, Output Commitment not reproduced, C++ fixture-based/loopback. Ordinary Rust 5.5.2 reached `no_sync` at H=3,318,655 / hash `2945348e…`, with the same C++ tip, 1 inbound / 0 outbound; PIBD 10,203,442/10,203,442, roots/rangeproof/kernel validation/body sync completed. The previous restarts were caused by `missing left sibling` at output segment 1648 and fixed by sending available leaves in `SegmentGenerator`. Limits: headers preseeded, reorg/restart/negative/mainnet not covered.
 - **PIBD/PIHD guard:** height cap 13, `idx*capacity` overflow check, PIHD response bound to connection/peer, fallback on no chain-height progress; PIBD responses use one `ApiStateSnapshot` with sequence retry, bitmap/root cached by output root, 500 requests/min per connection. PIHD is experimental, `PIHD_HIST` is not advertised; concurrent apply/reorg snapshot test remains open.
 

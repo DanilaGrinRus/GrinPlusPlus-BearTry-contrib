@@ -33,9 +33,9 @@ Datumsangaben, Hashes, Zähler, Status und Verweise auf einen „aktuellen“ St
 
 - C++ hinzugefügt: **+22.619 Zeilen**; entfernt **−625**; 191 getrackte + 22 neue;
 - Diff-/neuer C++-Textumfang: **≈ +927.8 KiB**;
-- endgültige `GrinNode.exe`: **7.850.496 B = 7.622,5 KiB = 7,44 MiB**;
+- endgültige `GrinNode.exe`: **7.854.080 B = 7.622,5 KiB = 7,44 MiB**;
 - **Exe-Zuwachs gegenüber 1.2.9: NOT MEASURED** — kein Originalbinär vorhanden; 7,7 MB ist die Endgröße, kein Delta;
-- Artefakte: `GrinNode A7D28BCC…`, `Tests 920F000F…`; Suite **260 Fälle / 259 bestanden / 1 test-only Fehler**, Produktion 0 Fehler (explizite Ausnahme; siehe THREE_LINE_STATUS).
+- Artefakte: `GrinNode 43E0C3A7…`, `Tests 2DACE82F…`; Suite **271 Fälle / 270 bestanden / 1 test-only Fehler**, Produktion 0 Fehler (explizite Ausnahme; siehe THREE_LINE_STATUS).
 - **G-09 fixed-H (experimentell, 03.11.2026): historischer PASS.** Build-09 `0A3B7D66…`/`F90EEF38…`: ordinary 7B PIBD/Activation/Body-Sync/no_sync **PASS**, Restart **PASS**. Build-13 `001DF4BC…`/`F39BDFE5…`: Full 7B PASS (PIBD 10.203.442, no_sync 3318655/2945348e); Recovery H=3313440, Snapshot H=3315600, Crash-Publication PASS. Build-15 `920F000F…`/`A7D28BCC…`: Full 260/259/1 (bodyless test-only), F11/F13/D2/Archive PASS, Restart PASS; F13 ASan link-blocked. Full G-09 weiterhin **NOT VERIFIED**: Reorg/Horizont BLOCKED, Negative/Resources NOT VERIFIED, Output Commitment nicht reproduziert, C++ fixture/loopback. Normale Rust-5.5.2-Node erreichte `no_sync` bei H=3.318.655 / Hash `2945348e…`, mit gleichem C++-Tip, 1 Inbound / 0 Outbound; PIBD 10.203.442/10.203.442, Roots/Rangeproof/Kernel-Validierung/Body-Sync abgeschlossen. Ursache der früheren Restarts war `missing left sibling` bei Output-Segment 1648; behoben durch Senden verfügbarer Leaves in `SegmentGenerator`. Grenzen: Headers preseeded, Reorg/Restart/Negativ/Mainnet nicht abgedeckt.
 - **PIBD/PIHD-Guard:** Height-Cap 13, Overflow-Prüfung `idx*capacity`, PIHD-Antwort an Connection/Peer gebunden, Fallback ohne Chain-Height-Fortschritt; PIHD ist experimentell, `PIHD_HIST` wird nicht beworben, Snapshot/Cache/Rate-Limit bleiben offen.
 

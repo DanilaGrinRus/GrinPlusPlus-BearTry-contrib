@@ -1,30 +1,36 @@
 # Gplus: статус трёх линий (оперативная доска)
 
-Дата сверки: 2026-11-03. **Build-15** (`Tests 920F000F…6227D`,
-`GrinNode A7D28BCC…7246C`) — source-bound fail-closed/D2 candidate. Full 7B
-live binding остаётся за **build-13** (`Tests 001DF4BC…`, `GrinNode F39BDFE5…`).
-Привязка: [build-13 live audit](../../evidence/line3/build13-7b-full-audit-20261103.md),
-[build-15 normal audit](../../evidence/line3/normal-binary-build15-audit-20261103.md).
-
-Единый план и критерии готовности — [REMAINING.md](REMAINING.md). Эта доска
-сохраняет оперативные результаты линий; технические досье и прошлые срезы
-нужно сверять с датированными первичными свидетельствами.
+Дата сверки: 2026-11-03. **Layer A PASS на build-16**
+(`GrinNode 7E3AA29E…`, `Tests 1592F3DF…`): public Floonet `FULLY_SYNCED`,
+restart resumed without state re-download, owner API protected; public PIBD
+serving DISABLED/NOT VERIFIED. **Build-18** (`GrinNode 43E0C3A7…`,
+`Tests 2DACE82F…`) — source-bound B1/B2 candidate; build-13 остаётся full 7B
+live binding. Сводный план — [REMAINING.md](REMAINING.md); Layer A —
+[LAYER_A_FLOONET_2026-11-03.md](LAYER_A_FLOONET_2026-11-03.md).
 
 ## Артефакты
 
-### Build-15 — current source-bound hardening candidate
+### Build-18 — B1/B2 hardening candidate
 
-- Tests `920F000F38958DA545ED3BC57DB796A0062CB5EF6E304E7DB354DAD065E6227D`,
-  9 495 552 B.
-- GrinNode `A7D28BCC2F4A1B8FC5D57083E0F5F43F75A81BDF1771C946BE041A4CADA7246C`,
-  7 850 496 B.
-- Full: **260 / 259 passed / 1 failed** — только test-only bodyless.
-- PASS: F11 Rewind fail-closed 1/2, F13 archive readiness 1/38, D2 txpool 1/8,
-  PibdArchiveServer 9/225, ArchivePublication 1/83, SpentOutputs 1/6,
-  preflight 1/4, boundary 1/8, Nrd 30/428, KernelIndex 5/74, остальные группы.
-- ASan: source `BBEFC6FC…`, TestsMini partial PASS, 0 reports; F13/archive
-  ASan link-blocked (NORMAL-only), не full ASan claim.
-- Build-15 full 7B не прогонялся; final persisted restart **PASS**: no_sync 3318655/2945348e…, 0 PIBD re-downloads, 0 recovery/preflight/Rewind, marker absent.
+- Tests `2DACE82FBFAD465E2838DBCE486A422B465D7310A3C01992ACB36406EEDF5C01`,
+  9 577 472 B; GrinNode `43E0C3A70F78AA969CB6AF375D65FA1A3CE1E0AB12A13634A2271DB4D9A76553`,
+  7 854 080 B.
+- Full: **271 / 270 passed / 1 failed** — только test-only bodyless.
+- PASS: B1 wire-negative 5/5, B1 resource 2/14, StateSyncer R2/R4/F12/F14 2/12,
+  owner auth PRIVATE/ADMIN, archive/preflight/Nrd/KernelIndex/handler groups.
+- Build-15 остаётся historical; build-18 не проходил full 7B/public live.
+
+### Layer A — public Floonet PASS (build-16)
+
+- A2: headers from zero; PIBD client state sync; FULLY_SYNCED
+  **3 321 243 / `17c9300b…b4eb5b`**; restart resumed 3 321 243 → catch-up
+  **3 321 250 / `1dc25a89…c906a41`**, 4 real Rust peers, 0 banned, 0 state
+  re-download/PIBD requests.
+- A3: owner reads PRIVATE, get_config PRIVATE, update_config ADMIN, foreign public,
+  API loopback-only; PIBD serving/PIHD off and not advertised.
+- A4: public PIBD serving NOT VERIFIED; bodyless/ASan exceptions documented;
+  peak validation RSS ~9.7 GB.
+
 
 ### Build-13 — full 7B live binding
 
