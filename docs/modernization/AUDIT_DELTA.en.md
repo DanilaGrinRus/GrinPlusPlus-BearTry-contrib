@@ -27,7 +27,7 @@ Scope: Grin++ 1.2.9 and compatibility with Rust Grin v5.5.2. HEAD was `6dbf8a7` 
 
 Dates, hashes, counts, statuses and references to a “current” state in the preserved material below refer to their respective past snapshots. The cards are retained as history, not renewed acceptance of the current tree.
 
-**Current snapshot 2026-11-02.** Baseline 1.2.9 `5f511e6`; working tree HEAD `361e94d`. Source metrics:
+**Current snapshot 2026-11-02.** Baseline 1.2.9 `5f511e6`; working tree HEAD `e944239`. Source metrics:
 
 - C++ added: **+22,619 lines**; deleted **−625**; 191 tracked + 22 new;
 - diff/new C++ text volume: **≈ +927.8 KiB**;
@@ -37,7 +37,7 @@ Dates, hashes, counts, statuses and references to a “current” state in the p
 - **G-09 fixed-H (experimental, 2026-11-03): historical PASS.** Build-09 `0A3B7D66…`/`F90EEF38…`: ordinary 7B full PIBD/activation/body sync/no_sync **PASS**, restart **PASS**. Build-13 `001DF4BC…`/`F39BDFE5…`: clean full 7B PASS (PIBD 10,203,442, no_sync 3318655/2945348e); H=3313440 recovery, H=3315600 snapshot, crash publication PASS. Build-15 `920F000F…`/`A7D28BCC…`: full 260/259/1 (bodyless test-only), F11/F13/D2/archive PASS, persisted restart PASS; F13 ASan link-blocked. Full G-09 still **NOT VERIFIED**: reorg/horizon BLOCKED, negative/resources NOT VERIFIED, Output Commitment not reproduced, C++ fixture-based/loopback. Ordinary Rust 5.5.2 reached `no_sync` at H=3,318,655 / hash `2945348e…`, with the same C++ tip, 1 inbound / 0 outbound; PIBD 10,203,442/10,203,442, roots/rangeproof/kernel validation/body sync completed. The previous restarts were caused by `missing left sibling` at output segment 1648 and fixed by sending available leaves in `SegmentGenerator`. Limits: headers preseeded, reorg/restart/negative/mainnet not covered.
 - **PIBD/PIHD guard:** height cap 13, `idx*capacity` overflow check, PIHD response bound to connection/peer, fallback on no chain-height progress; PIBD responses use one `ApiStateSnapshot` with sequence retry, bitmap/root cached by output root, 500 requests/min per connection. PIHD is experimental, `PIHD_HIST` is not advertised; concurrent apply/reorg snapshot test remains open.
 
-Baseline: Grin++ 1.2.9 (`5f511e6`). Delta updated: 2026-11-02, HEAD `361e94d` (G-09/G-23/G-53/G-07/G-24).
+Baseline: Grin++ 1.2.9 (`5f511e6`). Delta updated: 2026-11-02, HEAD `e944239` (G-09/G-23/G-53/G-07/G-24).
 Companion documents: `AUDIT_PACKAGE.md` (package rules), `GAP_MATRIX.md`
 (status of every gap), `TEST_RESULTS.md` (E1–E84 evidence), `DB_CONSISTENCY.md`
 (chain-store design).
@@ -474,7 +474,7 @@ documentation-only commits are tracked in the evidence map, not as cards.
   performance), G-51 (this package): closed (audit package; owner acceptance 01.11.2026).
 - Documentation-only commits (`docs: …`): listed in the evidence map, not as cards.
 
-## Update 2026-11-02 — HEAD `361e94d`
+## Update 2026-11-02 — HEAD `e944239`
 
 Baseline unchanged (`5f511e6`). This snapshot includes the G-09 candidate merge,
 G-23 hash revalidation, KernelIndex/get_kernel, NRD rules and the local CI gate.

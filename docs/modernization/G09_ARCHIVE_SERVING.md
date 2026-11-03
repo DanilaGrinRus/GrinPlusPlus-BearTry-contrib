@@ -21,7 +21,7 @@ Status of the initial review snapshot (historical): **review candidate**. No cod
 from that draft was implemented at review time. Line 1, 2026-11-03.
 
 - Repository: `C:\DHW\Gplus\src\grinplusplus`
-- Code integration commit: `361e94d`; docs commit `cb51030`.
+- Code integration commit: `e944239`; docs commit `cb51030`.
 - Initial review HEAD: `e0a5d2d68b990234e7bf1fb1b651f868dc30e9b6`.
 - At initial review time, auditor-owned uncommitted files existed; they were
   preserved and later included in the integration commit, not overwritten.
