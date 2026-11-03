@@ -5,6 +5,8 @@
 #include <atomic>
 #include <mutex>
 #include <string>
+#include <utility>
+#include <vector>
 
 enum class ESyncStatus
 {
@@ -154,6 +156,50 @@ public:
 	void UpdateDownloaded(const uint64_t downloaded) { m_txHashSetDownloaded = downloaded; }
 	void UpdateDownloadSize(const uint64_t downloadSize) { m_txHashSetTotalSize = downloadSize; }
 	void UpdateProcessingStatus(const uint8_t processingStatus) { m_txHashSetProcessingStatus = processingStatus; }
+	void SetTxHashSetDownloading(const bool downloading) const { m_txHashSetDownloading = downloading; }
+	bool IsTxHashSetDownloading() const { return m_txHashSetDownloading.load(); }
+
+	// Request identity for late/duplicate TxHashSet responses. The protocol has
+	// no request id, so peer + archive header hash (and height when available) is
+	// the strongest correlation available. A late response for a previously
+	// requested archive is not abuse.
+	void RecordTxHashSetRequest(
+		const std::string& peer,
+		const std::string& blockHash,
+		const uint64_t height) const
+	{
+		std::lock_guard<std::mutex> lock(m_txHashSetRequestMutex);
+		m_currentTxHashSetPeer = peer;
+		m_currentTxHashSetHash = blockHash;
+		m_currentTxHashSetHeight = height;
+		m_txHashSetRequestHistory.emplace_back(peer, blockHash);
+		if (m_txHashSetRequestHistory.size() > 8) {
+			m_txHashSetRequestHistory.erase(m_txHashSetRequestHistory.begin());
+		}
+	}
+
+	bool IsCurrentTxHashSetRequest(
+		const std::string& peer,
+		const std::string& blockHash) const
+	{
+		std::lock_guard<std::mutex> lock(m_txHashSetRequestMutex);
+		return !m_currentTxHashSetHash.empty() &&
+			m_currentTxHashSetPeer == peer &&
+			m_currentTxHashSetHash == blockHash;
+	}
+
+	bool WasTxHashSetRequested(
+		const std::string& peer,
+		const std::string& blockHash) const
+	{
+		std::lock_guard<std::mutex> lock(m_txHashSetRequestMutex);
+		for (const auto& entry : m_txHashSetRequestHistory) {
+			if (entry.first == peer && entry.second == blockHash) {
+				return true;
+			}
+		}
+		return false;
+	}
 
 private:
 	std::atomic<ESyncStatus> m_syncStatus;
@@ -174,8 +220,14 @@ private:
 	mutable std::atomic<uint64_t> m_blockReassignments;
 	mutable std::atomic<uint64_t> m_bansFraudHeight;
 	mutable std::atomic<uint64_t> m_bansInvalidData;
+	mutable std::atomic_bool m_txHashSetDownloading{ false };
 	mutable std::mutex m_headerTipMutex;
 	mutable std::mutex m_reasonMutex;
+	mutable std::mutex m_txHashSetRequestMutex;
+	mutable std::string m_currentTxHashSetPeer;
+	mutable std::string m_currentTxHashSetHash;
+	mutable uint64_t m_currentTxHashSetHeight = 0;
+	mutable std::vector<std::pair<std::string, std::string>> m_txHashSetRequestHistory;
 	mutable std::string m_waitingReason;
 	mutable std::string m_pibdPeer;
 	mutable std::atomic<uint64_t> m_pibdReceived;

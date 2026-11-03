@@ -1,5 +1,17 @@
 # AUDIT_DELTA (EN) — Grin++ 1.2.9 → Grin v5.5.2 compatibility
 
+## Audit note — public legacy TxHashSet, 2026-11-04 (UTC+07)
+
+Snapshot: HEAD `fdb0606` (build-45); live Floonet used separate build-33. Concurrent uncommitted fixes and tests are NOT VERIFIED. This is a technical note; [REMAINING.md](REMAINING.md) is the single current plan; see [legacy evidence](../../evidence/line3/public-legacy-fallback-20261103.md).
+
+- Public build-33 downloaded and extracted a ZIP, then `Failed to rewind to size 3354438` and BadTxHashSet ban. Affected MMR/file, cause, archive validity and ban justification are NOT VERIFIED; ZIP was deleted before validation completed. Full public sync/restart was NOT VERIFIED at this snapshot.
+- The log records three `Abusive` bans for responses during another archive transfer; this branch exists in the 1.2.9 import `5f511e6`. Match each response to a prior request and assess later rotation changes. Do not ban late requested responses; retain protection against unsolicited data.
+- Hypothesis: C++ uses 114-byte kernel records; Rust v5.5.2 supports variable-size kernels and v1/v2 serialization. Actual archive format and relation to 3354438 are NOT VERIFIED. Compare the same ZIP/header, lengths, Rust v1/v2 decoding and roots; compare baseline and current loader on one copy. Do not weaken validation.
+- Static finding, P0 candidate: at `fdb0606`, `ProcessTransactionHashSet` can return `STORE_ERROR`, while `TxHashSetPipe` moves any status except `INVALID` to SYNCING_BLOCKS. Reproduce with controlled failure; transition must require SUCCESS. No live defect claimed.
+- Static finding: ZIP download does not check stream after open/write/close; compressed size capped at 8 GiB, but no explicit decompressed byte cap was found in inspected `ZipFile::ExtractFile`. Test disk-full/short-write and bounded extraction in isolation; exploitation not demonstrated.
+- Follow-up: track request/response peer/hash/height using available fields; retain completed failed ZIP/staging and SHA with resource bounds; monotonic no-progress watchdog after partial transfer; late/unsolicited response, cancellation and no-ban tests. Do not copy a ZIP during writes or disturb the running test. Build and repeat public run in a separately coordinated slot.
+
+
 > **Single current Testnet/Mainnet readiness plan:** [REMAINING.md](REMAINING.md). Cards and snapshots are dated; older “open/remaining” lists are historical, not competing current task lists.
 
 ## Update — 2026-11-03, 13:30 (UTC+07)

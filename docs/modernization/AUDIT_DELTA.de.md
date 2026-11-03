@@ -1,5 +1,17 @@
 # AUDIT_DELTA (DE) — Grin++ 1.2.9 → Kompatibilität mit Grin v5.5.2
 
+## Auditnotiz — öffentliches Legacy-TxHashSet, 04.11.2026 (UTC+07)
+
+Stand: HEAD `fdb0606` (Build-45); der öffentliche Floonet-Lauf nutzte separat Build-33. Parallele uncommittete Änderungen und Tests sind NICHT VERIFIZIERT. Technische Notiz; [REMAINING.md](REMAINING.md) bleibt der einzige aktuelle Plan; siehe [Legacy-Nachweis](../../evidence/line3/public-legacy-fallback-20261103.md).
+
+- Öffentlicher Build-33 lud und entpackte ZIP, danach `Failed to rewind to size 3354438` und BadTxHashSet-Bann. Betroffene MMR/Datei, Ursache, Archivvalidität und Bannbegründung sind NICHT VERIFIZIERT; ZIP wurde vor Abschluss gelöscht. Vollständiger public Sync/Neustart blieb NICHT VERIFIZIERT.
+- Das Log zeigt drei `Abusive`-Banns für Antworten während einer anderen Verarbeitung; dieser Zweig existiert bereits im 1.2.9-Import `5f511e6`. Jede Antwort früheren Anfragen zuordnen und Einfluss späterer Rotation prüfen. Verspätete angeforderte Antworten nicht falsch bannen; Schutz vor unaufgeforderten Daten erhalten.
+- Hypothese: C++ nutzt Kernel mit festen 114 Bytes; Rust v5.5.2 unterstützt variable Größe und Serialisierung v1/v2. Tatsächliches Archivformat und Zusammenhang mit 3354438 NICHT VERIFIZIERT. Dasselbe ZIP/Header, Dateilängen, Rust-v1/v2-Dekodierung und Roots vergleichen; Baseline und aktuellen Loader auf einer Kopie prüfen. Validierung nicht abschwächen.
+- Statischer Befund, P0-Kandidat: Bei `fdb0606` kann `ProcessTransactionHashSet` `STORE_ERROR` liefern, während `TxHashSetPipe` jeden Status außer `INVALID` zu SYNCING_BLOCKS überführt. Kontrollierten Fehler testen; Wechsel nur bei SUCCESS. Kein Live-Defekt behauptet.
+- Statischer Befund: ZIP-Download prüft den Stream nach open/write/close nicht; komprimiertes ZIP auf 8 GiB begrenzt, aber keine explizite Grenze für entpackte Bytes in der geprüften `ZipFile::ExtractFile` sichtbar. Disk-full/short-write und begrenztes Entpacken isoliert testen; Ausnutzung nicht belegt.
+- Weiteres Vorgehen: Anfrage/Antwort anhand verfügbarer Peer/Hash/Höhe-Felder verfolgen; fehlgeschlagenes vollständiges ZIP/Staging und SHA begrenzt aufbewahren; monotoner No-progress-Watchdog nach Teil-Download; Tests für späte/unaufgeforderte Antworten, Abbruch und no-ban. ZIP nicht während des Schreibens kopieren und laufenden Test nicht stören. Build und neuer Public-Lauf in separat abgestimmtem Zeitfenster.
+
+
 > **Einziger aktueller Testnet/Mainnet-Bereitschaftsplan:** [REMAINING.md](REMAINING.md). Karten und Stände sind datiert; ältere Listen „offen“ sind historisch und kein zweiter aktueller Aufgabenplan.
 
 ## Aktualisierung — 03.11.2026, 13:30 (UTC+07)

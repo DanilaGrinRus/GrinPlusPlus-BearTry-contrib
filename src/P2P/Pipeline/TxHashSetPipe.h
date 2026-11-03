@@ -58,7 +58,8 @@ private:
 		TxHashSetPipe& pipeline,
 		std::shared_ptr<Connection> pConnection,
 		const uint64_t zipped_size,
-		const Hash blockHash
+		const Hash blockHash,
+		const uint64_t attemptId
 	);
 
 	static void Thread_SendTxHashSet(
@@ -71,4 +72,5 @@ private:
 	std::vector<std::thread> m_sendThreads;
 
 	std::atomic_bool m_processing;
+	std::atomic<uint64_t> m_attemptCounter{ 0 };
 };

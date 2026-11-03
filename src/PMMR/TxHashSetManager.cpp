@@ -12,6 +12,7 @@
 #include <Core/File/BitmapFile.h>
 
 #include <filesystem.h>
+#include <stdexcept>
 #include <thread>
 
 TxHashSetManager::TxHashSetManager(const Config& config)
@@ -67,22 +68,55 @@ std::shared_ptr<ITxHashSet> TxHashSetManager::LoadFromZip(
 		if (zip.Extract(zipFilePath, *pHeader, txHashSetPath))
 		{
 			LOG_INFO_F("{} extracted successfully", zipFilePath);
-			FileUtil::RemoveFile(zipFilePath);
+
+			LOG_INFO_F(
+				"Loading extracted TxHashSet for header {} at height {}: kernels={}, outputs={}",
+				pHeader->GetHash(),
+				pHeader->GetHeight(),
+				pHeader->GetNumKernels(),
+				pHeader->GetNumOutputs());
 
 			// Rewind Kernel MMR
 			std::shared_ptr<KernelMMR> pKernelMMR = KernelMMR::Load(txHashSetPath);
-			pKernelMMR->Rewind(pHeader->GetNumKernels());
-			pKernelMMR->Commit();
+			const uint64_t kernelMmrSize = pKernelMMR->GetSize();
+			try {
+				pKernelMMR->Rewind(pHeader->GetNumKernels());
+				pKernelMMR->Commit();
+			}
+			catch (const std::exception& e) {
+				throw std::runtime_error(StringUtil::Format(
+					"Kernel MMR rewind failed: target kernels={}, actual MMR size={} ({}); header={} height={}",
+					pHeader->GetNumKernels(), kernelMmrSize, e.what(),
+					pHeader->GetHash(), pHeader->GetHeight()));
+			}
 
 			// Rewind Output MMR
 			std::shared_ptr<OutputPMMR> pOutputPMMR = OutputPMMR::Load(txHashSetPath);
-			pOutputPMMR->Rewind(pHeader->GetNumOutputs(), {});
-			pOutputPMMR->Commit();
+			const uint64_t outputMmrSize = pOutputPMMR->GetSize();
+			try {
+				pOutputPMMR->Rewind(pHeader->GetNumOutputs(), {});
+				pOutputPMMR->Commit();
+			}
+			catch (const std::exception& e) {
+				throw std::runtime_error(StringUtil::Format(
+					"Output MMR rewind failed: target outputs={}, actual MMR size={} ({}); header={} height={}",
+					pHeader->GetNumOutputs(), outputMmrSize, e.what(),
+					pHeader->GetHash(), pHeader->GetHeight()));
+			}
 
 			// Rewind RangeProof MMR
 			std::shared_ptr<RangeProofPMMR> pRangeProofPMMR = RangeProofPMMR::Load(txHashSetPath);
-			pRangeProofPMMR->Rewind(pHeader->GetNumOutputs(), {});
-			pRangeProofPMMR->Commit();
+			const uint64_t rangeProofMmrSize = pRangeProofPMMR->GetSize();
+			try {
+				pRangeProofPMMR->Rewind(pHeader->GetNumOutputs(), {});
+				pRangeProofPMMR->Commit();
+			}
+			catch (const std::exception& e) {
+				throw std::runtime_error(StringUtil::Format(
+					"RangeProof MMR rewind failed: target outputs={}, actual MMR size={} ({}); header={} height={}",
+					pHeader->GetNumOutputs(), rangeProofMmrSize, e.what(),
+					pHeader->GetHash(), pHeader->GetHeight()));
+			}
 
 			return std::shared_ptr<TxHashSet>(new TxHashSet(pKernelMMR, pOutputPMMR, pRangeProofPMMR, pHeader));
 		}
@@ -90,6 +124,26 @@ std::shared_ptr<ITxHashSet> TxHashSetManager::LoadFromZip(
 	catch (std::exception& e)
 	{
 		LOG_ERROR_F("Failed to load: {}", e.what());
+
+		// Keep one bounded copy of the failed archive for diagnosis. The live
+		// TxHashSet is untouched; only the temp archive is renamed, never copied
+		// while it is being written.
+		std::error_code error;
+		if (fs::exists(zipFilePath, error)) {
+			const fs::path failedPath = fs::temp_directory_path() / "txhashset_failed.zip";
+			fs::remove(failedPath, error);
+			fs::rename(zipFilePath, failedPath, error);
+			if (!error) {
+				LOG_ERROR_F(
+					"Preserved failed TxHashSet archive {} ({} bytes) for header {} height {}.",
+					failedPath,
+					FileUtil::GetFileSize(failedPath),
+					pHeader != nullptr ? pHeader->GetHash() : ZERO_HASH,
+					pHeader != nullptr ? pHeader->GetHeight() : 0);
+			} else {
+				LOG_ERROR_F("Could not preserve failed TxHashSet archive: {}", error.message());
+			}
+		}
 	}
 
 	return nullptr;

@@ -170,6 +170,14 @@ bool StateSyncer::IsStateSyncDue(const SyncStatus& syncStatus) const
 		return false;
 	}
 
+	// One transfer owns the temp archive at a time. Do not rotate peers while a
+	// download is active; the pipe watchdog terminates a genuinely stalled
+	// transfer and clears this flag, after which a new request is allowed.
+	if (syncStatus.IsTxHashSetDownloading())
+	{
+		return false;
+	}
+
 	if (status == ESyncStatus::TXHASHSET_SYNC_FAILED)
 	{
 		LOG_WARNING("TxHashSet sync failed.");
@@ -201,13 +209,15 @@ bool StateSyncer::IsStateSyncDue(const SyncStatus& syncStatus) const
 		return true;
 	}
 
-	// If 10 seconds elapsed with no progress, try another peer.
-	if ((m_timeRequested + std::chrono::seconds(10)) < std::chrono::system_clock::now())
+	// Give the peer a bounded start window before rotating. Ten seconds was too
+	// aggressive for public peers and caused overlapping requests; late answers
+	// are now ignored without bans, but avoiding the overlap is cheaper.
+	if ((m_timeRequested + std::chrono::seconds(120)) < std::chrono::system_clock::now())
 	{
 		const uint64_t downloaded = syncStatus.GetDownloaded();
 		if (downloaded == 0)
 		{
-			LOG_WARNING("10 seconds elapsed and download still not started.");
+			LOG_WARNING("120 seconds elapsed and download still not started.");
 			return true;
 		}
 	}
@@ -221,7 +231,7 @@ bool StateSyncer::IsStateSyncDue(const SyncStatus& syncStatus) const
 	return false;
 }
 
-bool StateSyncer::RequestState(const SyncStatus& syncStatus)
+bool StateSyncer::RequestState(SyncStatus& syncStatus)
 {
 	// Never send a second request while the first one is still outstanding:
 	// the server treats repeated TxHashSet requests within two hours as abuse.
@@ -252,6 +262,7 @@ bool StateSyncer::RequestState(const SyncStatus& syncStatus)
 		// (same rule as the PIBD horizon and grin txhashset_archive_header).
 		requestedHeight -= requestedHeight % Consensus::TXHASHSET_ARCHIVE_INTERVAL;
 		Hash hash = m_pBlockChain->GetBlockHeaderByHeight(requestedHeight, EChainType::CANDIDATE)->GetHash();
+		const std::string requestedHashHex = HexUtil::ConvertToHex(hash.GetData());
 
 		const TxHashSetRequestMessage txHashSetRequestMessage(std::move(hash), requestedHeight);
 		m_pPeer = m_pConnectionManager.lock()->SendMessageToMostWorkPeer(txHashSetRequestMessage);
@@ -260,6 +271,10 @@ bool StateSyncer::RequestState(const SyncStatus& syncStatus)
 		{
 			m_timeRequested = std::chrono::system_clock::now();
 			m_requestedHeight = requestedHeight;
+			syncStatus.RecordTxHashSetRequest(
+				m_pPeer->GetIPAddress().Format(),
+				requestedHashHex,
+				requestedHeight);
 		}
 	}
 

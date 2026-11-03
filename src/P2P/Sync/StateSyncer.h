@@ -52,7 +52,7 @@ public:
 
 private:
 	bool IsStateSyncDue(const SyncStatus& syncStatus) const;
-	bool RequestState(const SyncStatus& syncStatus);
+	bool RequestState(SyncStatus& syncStatus);
 
 	// PIBD path: starts the segment download, feeds requests to a capable peer and
 	// installs the state once it has been written and activated.

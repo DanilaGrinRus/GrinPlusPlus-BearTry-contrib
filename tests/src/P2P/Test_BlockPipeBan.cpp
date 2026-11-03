@@ -2,14 +2,20 @@
 
 #include <TestServer.h>
 #include <TestMiner.h>
+#include <TxBuilder.h>
 
 #include "../PMMR/Test_NrdSupport.h"
 
 #include <BlockChain/BlockChain.h>
 #include <Core/Global.h>
 #include <Core/Models/CompactBlock.h>
+#include <Core/Models/SpentOutput.h>
+#include <Core/Util/TransactionUtil.h>
+#include <Database/BlockDb.h>
 #include <P2P/Peer.h>
 #include <P2P/Pipeline/BlockPipe.h>
+#include <PMMR/Common/LeafIndex.h>
+#include <Wallet/Keychain/KeyChain.h>
 
 #include <atomic>
 #include <chrono>
@@ -192,4 +198,100 @@ TEST_CASE("BlockPipe still bans a peer when AddBlock throws")
 	REQUIRE(pBlockChain->SawNrdKernel.load());
 	REQUIRE(pPeer->IsBanned());
 	REQUIRE(pPeer->GetBanReason() == EBanReason::BadBlock);
+}
+TEST_CASE("BlockPipe refuses missing spent position as local rewind data missing")
+{
+	Hash tip30aHash;
+	FullBlock block30b;
+	const auto keyChain = KeyChain::FromRandom();
+	{
+		TestServer::Ptr pServer = TestServer::Create();
+		pServer->SetPreserveDataOnDestruct(true);
+		TestMiner miner(pServer);
+		TxBuilder txBuilder(keyChain);
+		IBlockChain::Ptr pChain = pServer->GetBlockChain();
+
+		const std::vector<MinedBlock> minedChain = miner.MineChain(keyChain, 30);
+		REQUIRE(minedChain.size() == 30);
+
+		Test::Input input({
+			{ minedChain[1].block.GetOutputs().front().GetFeatures(),
+			  minedChain[1].block.GetOutputs().front().GetCommitment() },
+			minedChain[1].coinbasePath.value(),
+			minedChain[1].coinbaseAmount
+		});
+		TxBuilder::Criteria spendCriteria;
+		spendCriteria.inputs = { input };
+		spendCriteria.outputs = {
+			Test::Output{ KeyChainPath({ 1, 0 }), 10'000'000 },
+			Test::Output{ KeyChainPath({ 1, 1 }), minedChain[1].coinbaseAmount - 10'000'000 }
+		};
+		spendCriteria.include_change = false;
+		spendCriteria.fee_base = 0;
+		spendCriteria.num_kernels = 1;
+		const Transaction spend = txBuilder.BuildTx(spendCriteria);
+
+		Test::Tx coinbase30a = txBuilder.BuildCoinbaseTx(KeyChainPath({ 0, 30 }));
+		TransactionPtr combined30a = TransactionUtil::Aggregate({
+			coinbase30a.pTransaction, std::make_shared<Transaction>(spend)
+		});
+		FullBlock block30a = miner.MineNextBlock(minedChain.back().block.GetHeader(), *combined30a);
+		REQUIRE(block30a.GetInputs().size() == 1);
+		REQUIRE(pChain->AddBlock(block30a) == EBlockChainStatus::SUCCESS);
+		tip30aHash = block30a.GetHash();
+
+		// A conflicting height-30 branch is valid except for the local spent row.
+		Test::Tx coinbase30b = txBuilder.BuildCoinbaseTx(KeyChainPath({ 1, 30 }));
+		block30b = miner.MineNextBlock(minedChain.back().block.GetHeader(), *coinbase30b.pTransaction);
+
+		// The confirmed block has an input; inject the spent-position record so
+		// the test controls exactly one missing entry, then remove it.
+		const std::vector<Commitment> blockInputs({ input.input.GetCommitment() });
+		{
+			auto pWriter = pServer->GetBlockDB()->Write();
+			pWriter->AddSpentPositions(
+				tip30aHash,
+				std::vector<SpentOutput>({
+					SpentOutput(input.input.GetCommitment(), OutputLocation(LeafIndex::At(0), 1))
+				}));
+			pWriter->Commit();
+		}
+		size_t mappedCount = 0;
+		REQUIRE(pChain->AreSpentPositionsComplete(tip30aHash, blockInputs, mappedCount));
+		REQUIRE(mappedCount == 1);
+		{
+			auto pWriter = pServer->GetBlockDB()->Write();
+			pWriter->ClearSpentPositions();
+			pWriter->Commit();
+		}
+		mappedCount = 0;
+		REQUIRE_THROWS(pChain->AreSpentPositionsComplete(tip30aHash, blockInputs, mappedCount));
+
+		const PeerPtr pPeer = MakeLoopbackPeer();
+		{
+			auto pBlockPipe = BlockPipe::Create(Global::GetConfig(), pChain);
+			REQUIRE(pBlockPipe->AddBlockToProcess(pPeer, block30b));
+			REQUIRE(WaitFor([&] {
+				return !pBlockPipe->IsProcessingBlock(block30b.GetHash());
+			}, 10000));
+		}
+
+		REQUIRE_FALSE(pPeer->IsBanned());
+		REQUIRE(pPeer->GetBanReason() == EBanReason::None);
+		std::cout << "post_refusal_confirmed_height=" << pChain->GetHeight(EChainType::CONFIRMED)
+			<< " post_refusal_candidate_height=" << pChain->GetHeight(EChainType::CANDIDATE)
+			<< " post_refusal_header_mmr_leaves=" << pServer->GetHeaderMMR()->Read()->GetLeafCount()
+			<< std::endl;
+		REQUIRE(pChain->GetHeight(EChainType::CONFIRMED) == 30);
+		REQUIRE(pChain->GetTipBlockHeader(EChainType::CONFIRMED)->GetHash() == tip30aHash);
+	}
+
+	// Restart from the unchanged, body-present but spent-position-missing state.
+	{
+		TestServer::Ptr pServer = TestServer::OpenExisting();
+		IBlockChain::Ptr pChain = pServer->GetBlockChain();
+		REQUIRE(pChain->GetHeight(EChainType::CONFIRMED) == 30);
+		REQUIRE(pChain->GetTipBlockHeader(EChainType::CONFIRMED)->GetHash() == tip30aHash);
+		REQUIRE(pServer->GetBlockDB()->Read()->GetBlock(tip30aHash) != nullptr);
+	}
 }

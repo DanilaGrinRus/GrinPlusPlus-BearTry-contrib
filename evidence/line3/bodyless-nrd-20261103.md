@@ -7,10 +7,11 @@ mutation and restarts consistently on the original tip.
 
 ## Final build
 
-- Build-45 **Tests `B0F4CE1E64A599B050C40F49CD564141A3DFAD21D560BE92BA03FE5948E6B3E3`**,
-  GrinNode `4F9859C2480ABA572BC5C41EDEA21EB7188BF360FC6F5C3C0CBF7A43262A4160`.
-- Normal `/W4 /WX` build PASS; bodyless targeted test **PASS 41 assertions**;
-  full suite **274/274, 4,360 assertions** on the same Tests binary.
+- Build-56 **Tests `91465CDEE2C23E9FA87719DBF1E39F34CEDCA0522A9601AA06E2E358BFBE3014`**,
+  GrinNode `E3B38A5B4FC15E6264CC4EF1D0C1F93FFE3D501ECAD563D917BF2A02CE7093A3`.
+- Normal `/W4 /WX` build PASS; bodyless targeted **41 assertions**, spent-position
+  integration **15 assertions**, BlockPipe **36 assertions / 5 cases**;
+  full suite **276/276, 4,387 assertions** on the same Tests binary.
 - Test is visible (no `[.]`); it asserts safe refusal plus post-restart
   tip/NRD-index consistency.
 - `EBlockChainStatus::LOCAL_REWIND_DATA_MISSING` is the typed result for missing
@@ -79,9 +80,12 @@ unsupported and is not claimed.
 
 ## Evidence
 
-- Build-45 Tests `B0F4CE1E…` / GrinNode `4F9859C2…`; bodyless targeted **PASS
-  (41 assertions)**, full **274/274, 4360 assertions**.
-- `evidence/line3/bodyless-failclosed-b45` — PASS run/manifest.
+- Build-56 Tests `91465CDE…` / GrinNode `E3B38A5B…`; bodyless targeted **PASS
+  (41 assertions)**, spent integration **PASS (15)**, BlockPipe **PASS (36/5)**;
+  full **276/276, 4387 assertions**.
+- `evidence/line3/b56-bodyless`, `b56-spent`, `b56-blockpipe`, `b56-full`.
+- After refusal in the spent integration: confirmed height 30, candidate height 30,
+  header MMR leaves 31 — candidate/header MMR unchanged **in this scenario**.
 - `tests/src/BlockChain/Test_NrdBodylessRestart.cpp` — visible test: prebuilt
   conflicting block, bodyless state, typed `LOCAL_REWIND_DATA_MISSING`, state
   unchanged, restart.

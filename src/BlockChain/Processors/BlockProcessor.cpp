@@ -116,17 +116,28 @@ EBlockChainStatus BlockProcessor::ProcessBlockInternal(const FullBlock& block)
 				return EBlockChainStatus::LOCAL_REWIND_DATA_MISSING;
 			}
 
-			const auto spentPositions = pBlockDB->GetSpentPositions(hash);
-			for (const TransactionInput& input : pBody->GetInputs())
+			try
 			{
-				if (spentPositions.find(input.GetCommitment()) == spentPositions.cend())
+				const auto spentPositions = pBlockDB->GetSpentPositions(hash);
+				for (const TransactionInput& input : pBody->GetInputs())
 				{
-					LOG_WARNING_F(
-						"Refusing reorg: spent position for commitment {} in confirmed block {} "
-						"at height {} is missing; local rewind data is incomplete.",
-						input.GetCommitment(), hash, height);
-					return EBlockChainStatus::LOCAL_REWIND_DATA_MISSING;
+					if (spentPositions.find(input.GetCommitment()) == spentPositions.cend())
+					{
+						LOG_WARNING_F(
+							"Refusing reorg: spent position for commitment {} in confirmed block {} "
+							"at height {} is missing; local rewind data is incomplete.",
+							input.GetCommitment(), hash, height);
+						return EBlockChainStatus::LOCAL_REWIND_DATA_MISSING;
+					}
 				}
+			}
+			catch (const std::exception& e)
+			{
+				LOG_WARNING_F(
+					"Refusing reorg: spent-position set for confirmed block {} at height {} "
+					"could not be read ({}); local rewind data is incomplete.",
+					hash, height, e.what());
+				return EBlockChainStatus::LOCAL_REWIND_DATA_MISSING;
 			}
 		}
 	}

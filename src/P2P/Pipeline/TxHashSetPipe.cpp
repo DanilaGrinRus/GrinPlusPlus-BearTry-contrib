@@ -15,6 +15,7 @@
 #include <BlockChain/BlockChain.h>
 
 #include <filesystem.h>
+#include <chrono>
 #include <fstream>
 
 static const int BUFFER_SIZE = 128 * 1024;
@@ -39,48 +40,83 @@ std::shared_ptr<TxHashSetPipe> TxHashSetPipe::Create(
 
 void TxHashSetPipe::ReceiveTxHashSet(const Connection::Ptr& pConnection, const TxHashSetArchiveMessage& archive_msg)
 {
+	const std::string peer = pConnection->GetPeer()->GetIPAddress().Format();
+	const std::string blockHashHex = HexUtil::ConvertToHex(archive_msg.GetBlockHash().GetData());
+	const bool currentRequest =
+		m_pSyncStatus->IsCurrentTxHashSetRequest(peer, blockHashHex);
+	const bool previouslyRequested =
+		m_pSyncStatus->WasTxHashSetRequested(peer, blockHashHex);
+
 	if (m_pSyncStatus->GetStatus() != ESyncStatus::SYNCING_TXHASHSET)
 	{
-		// An archive that we never requested must not be written to disk or
-		// processed: it would let any peer push an arbitrary snapshot at us.
-		LOG_WARNING_F("Received unrequested TxHashSet from {}. Banning.", *pConnection);
-		pConnection->BanPeer(EBanReason::BadTxHashSet);
+		LOG_WARNING_F(
+			"Ignoring {} TxHashSet from {} (status is not syncing); no ban.",
+			previouslyRequested ? "late" : "unrequested",
+			*pConnection);
+		pConnection->DisableReceives(true);
+		return;
+	}
+
+	if (!currentRequest)
+	{
+		// Late answer to an earlier request, or an unsolicited archive. Neither is
+		// proof of malice: reject without writing/processing and without a ban.
+		LOG_WARNING_F(
+			"Ignoring {} TxHashSet from {} (current request does not match); no ban.",
+			previouslyRequested ? "late" : "unrequested",
+			*pConnection);
+		pConnection->DisableReceives(true);
 		return;
 	}
 
 	const bool processing = m_processing.exchange(true);
 	if (processing) {
-		LOG_WARNING_F("Received TxHashSet from {} when already processing another.", *pConnection);
-		pConnection->BanPeer(EBanReason::Abusive);
+		LOG_WARNING_F(
+			"Ignoring duplicate TxHashSet from {} because another archive is already being processed; no ban.",
+			*pConnection);
+		pConnection->DisableReceives(true);
 		return;
 	}
 
 	LOG_INFO_F("Disabling receives for {}", pConnection);
 	pConnection->DisableReceives(true);
+	m_pSyncStatus->SetTxHashSetDownloading(true);
 
 	ThreadUtil::Join(m_txHashSetThread);
+	const uint64_t attemptId = ++m_attemptCounter;
 
 	m_txHashSetThread = std::thread(
 		Thread_ProcessTxHashSet,
 		std::ref(*this),
 		pConnection,
 		archive_msg.GetZippedSize(),
-		archive_msg.GetBlockHash()
+		archive_msg.GetBlockHash(),
+		attemptId
 	);
 }
 
-void TxHashSetPipe::Thread_ProcessTxHashSet(TxHashSetPipe& pipeline, Connection::Ptr pConnection, const uint64_t zipped_size, const Hash blockHash)
+void TxHashSetPipe::Thread_ProcessTxHashSet(
+	TxHashSetPipe& pipeline,
+	Connection::Ptr pConnection,
+	const uint64_t zipped_size,
+	const Hash blockHash,
+	const uint64_t attemptId)
 {
 	const std::string fileName = StringUtil::Format(
-		"txhashset_{}.zip",
-		HASH::ShortHash(blockHash)
+		"txhashset_{}_attempt_{}.zip",
+		HASH::ShortHash(blockHash),
+		attemptId
 	);
 	const fs::path txHashSetPath = fs::temp_directory_path() / fileName;
+	const auto clearDownloading = [&pipeline]() {
+		pipeline.m_pSyncStatus->SetTxHashSetDownloading(false);
+	};
 
 	if (!TxHashSetLimits::IsPlausibleSize(zipped_size)) {
 		LOG_ERROR_F("Rejecting TxHashSet with implausible size {}.", zipped_size);
 		pipeline.m_processing = false;
 		pipeline.m_pSyncStatus->UpdateStatus(ESyncStatus::TXHASHSET_SYNC_FAILED);
+		clearDownloading();
 		pConnection->BanPeer(EBanReason::BadTxHashSet);
 		return;
 	}
@@ -106,7 +142,24 @@ void TxHashSetPipe::Thread_ProcessTxHashSet(TxHashSetPipe& pipeline, Connection:
 
 		size_t bytesReceived = 0;
 		std::vector<uint8_t> buffer(BUFFER_SIZE, 0);
+		auto lastProgress = std::chrono::steady_clock::now();
 		while (bytesReceived < zipped_size) {
+			// Monotonic no-progress watchdog for a partially received archive.
+			// The socket receive timeout is only 10s; this catches a peer that
+			// keeps the connection open but stops making progress.
+			if (std::chrono::steady_clock::now() - lastProgress > std::chrono::minutes(10)) {
+				LOG_ERROR_F(
+					"TxHashSet download made no progress for 10 minutes at {}/{} bytes; "
+					"aborting, no ban.",
+					bytesReceived, zipped_size);
+				fout.close();
+				FileUtil::RemoveFile(txHashSetPath);
+				pipeline.m_processing = false;
+				pipeline.m_pSyncStatus->UpdateStatus(ESyncStatus::TXHASHSET_SYNC_FAILED);
+				clearDownloading();
+				return;
+			}
+
 			const size_t bytesToRead = (size_t)(std::min<uint64_t>(
 				zipped_size - bytesReceived,
 				(uint64_t)BUFFER_SIZE));
@@ -114,18 +167,19 @@ void TxHashSetPipe::Thread_ProcessTxHashSet(TxHashSetPipe& pipeline, Connection:
 			const bool received = pConnection->ReceiveSync(buffer, bytesToRead);
 			if (!received || !Global::IsRunning()) {
 				LOG_INFO_F("bytesReceived: {} zipped_size: {}", bytesReceived, zipped_size);
-				LOG_ERROR("Transmission ended abruptly");
+				LOG_ERROR("Transmission ended abruptly; not treating network/truncation as peer evidence (no ban).");
 				fout.close();
 				FileUtil::RemoveFile(txHashSetPath);
 				pipeline.m_processing = false;
 				pipeline.m_pSyncStatus->UpdateStatus(ESyncStatus::TXHASHSET_SYNC_FAILED);
-				pConnection->BanPeer(EBanReason::BadTxHashSet);
+				clearDownloading();
 
 				return;
 			}
 
 			fout.write((char*)&buffer[0], bytesToRead);
 			bytesReceived += bytesToRead;
+			lastProgress = std::chrono::steady_clock::now();
 
 			pipeline.m_pSyncStatus->UpdateDownloaded(bytesReceived);
 		}
@@ -143,9 +197,13 @@ void TxHashSetPipe::Thread_ProcessTxHashSet(TxHashSetPipe& pipeline, Connection:
 		EBlockChainStatus processStatus = pipeline.m_pBlockChain->ProcessTransactionHashSet(blockHash, txHashSetPath, *pSyncStatus);
 		if (processStatus == EBlockChainStatus::INVALID)
 		{
-			LOG_ERROR("Invalid TxHashSet received.");
+			// Local rewind/extraction failures and peer-provided invalid data are
+			// currently conflated at this boundary. Do not ban until the failure is
+			// classified; the archive is rejected either way.
+			LOG_ERROR(
+				"TxHashSet rejected as invalid; peer validity not proven, no ban "
+				"(classification required before any ban).");
 			pSyncStatus->UpdateStatus(ESyncStatus::TXHASHSET_SYNC_FAILED);
-			pConnection->BanPeer(EBanReason::BadTxHashSet);
 		}
 		else
 		{
@@ -157,20 +215,25 @@ void TxHashSetPipe::Thread_ProcessTxHashSet(TxHashSetPipe& pipeline, Connection:
 	catch (std::exception& e)
 	{
 		LOG_ERROR_F(
-			"Exception thrown while downloading/processing TxHashSet from {} (size {}): {}",
+			"Exception thrown while downloading/processing TxHashSet from {} (size {}): {}; "
+			"local/ambiguous failure, no ban.",
 			*pConnection, zipped_size, e.what());
 		pipeline.m_pSyncStatus->UpdateStatus(ESyncStatus::TXHASHSET_SYNC_FAILED);
-		pConnection->BanPeer(EBanReason::BadTxHashSet);
+		clearDownloading();
 		FileUtil::RemoveFile(txHashSetPath);
 	}
 	catch (...)
 	{
-		LOG_ERROR_F("Unknown exception while downloading/processing TxHashSet from {}", *pConnection);
+		LOG_ERROR_F(
+			"Unknown exception while downloading/processing TxHashSet from {}; "
+			"local/ambiguous failure, no ban.",
+			*pConnection);
 		pipeline.m_pSyncStatus->UpdateStatus(ESyncStatus::TXHASHSET_SYNC_FAILED);
-		pConnection->BanPeer(EBanReason::BadTxHashSet);
+		clearDownloading();
 		FileUtil::RemoveFile(txHashSetPath);
 	}
 
+	clearDownloading();
 	pipeline.m_processing = false;
 }
 

@@ -1,0 +1,385 @@
+{
+  "schema": "gpp-line3-test-run/v1",
+  "run_id": "spent-reorg-b50",
+  "status": "FAIL",
+  "no_tests_ran": false,
+  "fail_on_no_tests": false,
+  "created_utc": "2026-11-03T20:54:49.7130577Z",
+  "repo": "C:\\DHW\\Gplus\\src\\grinplusplus",
+  "git_head": "fdb0606ed681b1f09f9ce5accedd4479c3e249c1",
+  "git_status_porcelain": [
+    "M tests/src/P2P/Test_BlockPipeBan.cpp",
+    "?? evidence/line3/spent-reorg-b46/",
+    "?? evidence/line3/spent-reorg-b47/",
+    "?? evidence/line3/spent-reorg-b48/",
+    "?? evidence/line3/spent-reorg-b49/"
+  ],
+  "git_diff_stat": "warning: in the working copy of 'tests/src/P2P/Test_BlockPipeBan.cpp', LF will be replaced by CRLF the next time Git touches it\r\n tests/src/P2P/Test_BlockPipeBan.cpp | 101 ++++++++++++++++++++++++++++++++++++\r\n 1 file changed, 101 insertions(+)",
+  "source_hashes": {
+    "tests/src/TestMain.cpp": "6BAC17446DE696518FD364220569185F43769B813F59A25372037FBC53D8527B",
+    "tests/src/PMMR/CMakeLists.txt": "EAC368A9F15AA54A0CD27F96787FCF3562C41812264699CEF455B61266F549C5",
+    "tests/src/PMMR/Test_ZipFile.cpp": "B9BE2B4AA86EDC7DEE478BC230C186066B0255F1F3E1B5728E4656E757D55B75",
+    "include/P2P/Capabilities.h": "FD3997F591512A83E23DBEC2CFF3DFAC5D247E470D87E2000690F85AAD97665E",
+    "src/PMMR/Zip/ZipFile.cpp": "0097B38DF25439C7EBA6EEA3C8260C246C79BC0F600D57A3099CCFC08A0026C3",
+    "include/PMMR/NrdRules.h": "0F63E0CDEF08EAD92A39F9321D92A40019B3AFAC68E65BA28DCE0618C1262A2C",
+    "include/PMMR/KernelIndex.h": "419A037C83F6D3B689950E6EE4D18A64A4690DB13B0CE0A9C04CE89AD1BCDDBA",
+    "src/PMMR/KernelIndex.cpp": "AD0350E991830DCEB062FE3737267E96665B372C8F62DC15363D6434B8B3D4DE",
+    "tests/src/PMMR/Test_NrdRules.cpp": "E5E720584BDBE8AC2A35008C986FE52ED8DCABDBEFAD25BA1C225ABB81267503",
+    "tests/src/PMMR/Test_NrdDifferential.cpp": "5026F63ACB93A884232CB651CCAE116BA76FF87C475AF72FD380A9C26D5831FE",
+    "tests/src/PMMR/Test_NrdIndexRebuild.cpp": "4C47A0B0290F11BC03B3971AE9BDE30DAD71D2A476598BF608D91B2186A9A94E",
+    "tests/src/PMMR/Test_NrdSupport.h": "1AC6059F8958D78EDC18B0564AEFCA47B800C1DCAD9CF881B81823E6F7082B84"
+  },
+  "host": {
+    "os": "Microsoft Windows NT 10.0.26300.0",
+    "pwsh": "7.6.9",
+    "architecture": "AMD64",
+    "user_profile": "C:\\Users\\nurli",
+    "utc_offset_min": 420
+  },
+  "binary": {
+    "source_path": "C:\\DHW\\.tmp\\build-50\\Tests.exe",
+    "source_sha256": "C4430CB2EC0A8EBBA9C76BE699724C26DC4071919508D9D4119F5A7BD604F85F",
+    "copy_path": "C:\\DHW\\.tmp\\line3-iso\\spent-reorg-b50\\bin\\Tests.exe",
+    "copy_sha256": "C4430CB2EC0A8EBBA9C76BE699724C26DC4071919508D9D4119F5A7BD604F85F",
+    "copy_sha256_after": "C4430CB2EC0A8EBBA9C76BE699724C26DC4071919508D9D4119F5A7BD604F85F",
+    "copy_unchanged": true,
+    "bytes": 9601536,
+    "pe_timestamp": {
+      "raw_hex": "0x6AEA4A13",
+      "utc": "2026-11-03T20:54:43.0000000Z"
+    },
+    "pe_timestamp_copy": {
+      "raw_hex": "0x6AEA4A13",
+      "utc": "2026-11-03T20:54:43.0000000Z"
+    },
+    "copied_asan_runtime": []
+  },
+  "isolation": {
+    "mode": "PerRun",
+    "run_dir": "C:\\DHW\\.tmp\\line3-iso\\spent-reorg-b50",
+    "cwd": "C:\\DHW\\.tmp\\line3-iso\\spent-reorg-b50\\cwd",
+    "home_dir": "C:\\DHW\\.tmp\\line3-iso\\spent-reorg-b50\\home",
+    "tmp_dir": "C:\\DHW\\.tmp\\line3-iso\\spent-reorg-b50\\tmp",
+    "env": {
+      "HOMEDRIVE": "C:",
+      "HOMEPATH": "C:\\DHW\\.tmp\\line3-iso\\spent-reorg-b50\\home",
+      "USERPROFILE": "C:\\DHW\\.tmp\\line3-iso\\spent-reorg-b50\\home",
+      "HOME": "C:\\DHW\\.tmp\\line3-iso\\spent-reorg-b50\\home",
+      "TMP": "C:\\DHW\\.tmp\\line3-iso\\spent-reorg-b50\\tmp",
+      "TEMP": "C:\\DHW\\.tmp\\line3-iso\\spent-reorg-b50\\tmp",
+      "TMPDIR": "C:\\DHW\\.tmp\\line3-iso\\spent-reorg-b50\\tmp"
+    },
+    "env_before": {
+      "HOMEDRIVE": "C:",
+      "HOMEPATH": "\\Users\\nurli",
+      "USERPROFILE": "C:\\Users\\nurli",
+      "HOME": null,
+      "TMP": "C:\\Users\\nurli\\AppData\\Local\\Temp",
+      "TEMP": "C:\\Users\\nurli\\AppData\\Local\\Temp",
+      "TMPDIR": null
+    },
+    "expected_test_data_dir": "C:\\DHW\\.tmp\\line3-iso\\spent-reorg-b50\\home\\.GrinPP\\AUTOMATED_TESTING",
+    "test_data_dir_created": true,
+    "test_log_dir_created": true,
+    "cwd_tree": null,
+    "home_tree_sample": [
+      {
+        "rel": ".GrinPP",
+        "dir": true,
+        "bytes": 1
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING",
+        "dir": true,
+        "bytes": 1
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\LOGS",
+        "dir": true,
+        "bytes": 1
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\LOGS\\Node.log",
+        "dir": false,
+        "bytes": 28790
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\LOGS\\Wallet.log",
+        "dir": false,
+        "bytes": 0
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE",
+        "dir": true,
+        "bytes": 1
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\CHAIN",
+        "dir": true,
+        "bytes": 1
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\CHAIN\\candidate.chain",
+        "dir": false,
+        "bytes": 960
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\CHAIN\\chain.checkpoint",
+        "dir": false,
+        "bytes": 52
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\CHAIN\\confirmed.chain",
+        "dir": false,
+        "bytes": 960
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\CHAIN\\header_mmr.bin",
+        "dir": false,
+        "bytes": 1792
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\DB",
+        "dir": true,
+        "bytes": 1
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\DB\\CHAIN",
+        "dir": true,
+        "bytes": 1
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\DB\\CHAIN\\000003.log",
+        "dir": false,
+        "bytes": 63525
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\DB\\CHAIN\\CURRENT",
+        "dir": false,
+        "bytes": 16
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\DB\\CHAIN\\IDENTITY",
+        "dir": false,
+        "bytes": 36
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\DB\\CHAIN\\LOCK",
+        "dir": false,
+        "bytes": 0
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\DB\\CHAIN\\LOG",
+        "dir": false,
+        "bytes": 66803
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\DB\\CHAIN\\MANIFEST-000001",
+        "dir": false,
+        "bytes": 13
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\DB\\CHAIN\\MANIFEST-000006",
+        "dir": false,
+        "bytes": 385
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\DB\\CHAIN\\OPTIONS-000018",
+        "dir": false,
+        "bytes": 22461
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\DB\\PEERS",
+        "dir": true,
+        "bytes": 1
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\DB\\PEERS\\000003.log",
+        "dir": false,
+        "bytes": 0
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\DB\\PEERS\\CURRENT",
+        "dir": false,
+        "bytes": 16
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\DB\\PEERS\\IDENTITY",
+        "dir": false,
+        "bytes": 36
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\DB\\PEERS\\LOCK",
+        "dir": false,
+        "bytes": 0
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\DB\\PEERS\\LOG",
+        "dir": false,
+        "bytes": 20248
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\DB\\PEERS\\MANIFEST-000001",
+        "dir": false,
+        "bytes": 13
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\DB\\PEERS\\OPTIONS-000005",
+        "dir": false,
+        "bytes": 5283
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\TXHASHSET",
+        "dir": true,
+        "bytes": 1
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\TXHASHSET\\kernel",
+        "dir": true,
+        "bytes": 1
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\TXHASHSET\\kernel\\pmmr_data.bin",
+        "dir": false,
+        "bytes": 3420
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\TXHASHSET\\kernel\\pmmr_hash.bin",
+        "dir": false,
+        "bytes": 1792
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\TXHASHSET\\output",
+        "dir": true,
+        "bytes": 1
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\TXHASHSET\\output\\pmmr_data.bin",
+        "dir": false,
+        "bytes": 1020
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\TXHASHSET\\output\\pmmr_hash.bin",
+        "dir": false,
+        "bytes": 1792
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\TXHASHSET\\output\\pmmr_leafset.bin",
+        "dir": false,
+        "bytes": 4
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\TXHASHSET\\output\\version1",
+        "dir": false,
+        "bytes": 0
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\TXHASHSET\\rangeproof",
+        "dir": true,
+        "bytes": 1
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\TXHASHSET\\rangeproof\\pmmr_data.bin",
+        "dir": false,
+        "bytes": 20490
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\TXHASHSET\\rangeproof\\pmmr_hash.bin",
+        "dir": false,
+        "bytes": 1792
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\TXHASHSET\\rangeproof\\pmmr_leafset.bin",
+        "dir": false,
+        "bytes": 4
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\TXHASHSET\\rangeproof\\version1",
+        "dir": false,
+        "bytes": 0
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\TOR",
+        "dir": true,
+        "bytes": 1
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\TOR\\.torrc",
+        "dir": false,
+        "bytes": 0
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\WALLET",
+        "dir": true,
+        "bytes": 1
+      }
+    ],
+    "home_tree_entries": 46,
+    "user_profile_before": {
+      "path": "C:\\Users\\nurli\\.GrinPP",
+      "exists": true,
+      "recursive_entries": 17,
+      "total_bytes": 458535,
+      "latest_write_utc": "2026-11-02T14:43:40.7615748Z",
+      "listing_sha256": "889c1f5e0241fcb61cbd6a234cb00af02b5ee017da7f69b5f65b69289cefa6b6"
+    },
+    "user_profile_after": {
+      "path": "C:\\Users\\nurli\\.GrinPP",
+      "exists": true,
+      "recursive_entries": 17,
+      "total_bytes": 458535,
+      "latest_write_utc": "2026-11-02T14:43:40.7615748Z",
+      "listing_sha256": "889c1f5e0241fcb61cbd6a234cb00af02b5ee017da7f69b5f65b69289cefa6b6"
+    },
+    "user_profile_unchanged": true,
+    "reparse_point_check": "passed",
+    "disposable_base": "C:\\DHW\\.tmp\\line3-iso"
+  },
+  "command": {
+    "exe": "C:\\DHW\\.tmp\\line3-iso\\spent-reorg-b50\\bin\\Tests.exe",
+    "args": "\"BlockPipe refuses missing spent*\"",
+    "test_args": [
+      "BlockPipe refuses missing spent*"
+    ],
+    "raw_exe_args": "",
+    "fail_on_no_tests": false,
+    "working_dir": "C:\\DHW\\.tmp\\line3-iso\\spent-reorg-b50\\cwd",
+    "instances": 1,
+    "timeout_sec": 300,
+    "started_utc": "2026-11-03T20:54:47.8765968Z",
+    "finished_utc": "2026-11-03T20:54:49.5275598Z",
+    "wall_sec": 1.649
+  },
+  "instances": [
+    {
+      "index": 1,
+      "pid": 15892,
+      "started_utc": "2026-11-03T20:54:48.0980996Z",
+      "duration_sec": 1.444,
+      "exit_code": {
+        "decimal": 1,
+        "hex": "0x00000001"
+      },
+      "status": "FAIL",
+      "no_tests_ran": false,
+      "stdout_path": "C:\\DHW\\.tmp\\line3-iso\\spent-reorg-b50\\out\\instance-1.stdout.log",
+      "stdout_sha256": "7F59C4FE7732F4C638582ACA3D5345E10C414545E358E507CF2BF421AF38D505",
+      "stdout_bytes": 3522,
+      "stderr_path": "C:\\DHW\\.tmp\\line3-iso\\spent-reorg-b50\\out\\instance-1.stderr.log",
+      "stderr_sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "stderr_bytes": 0,
+      "summary_lines": [
+        "Test Runtime Initialized.",
+        "Running Tests...",
+        "test cases: 1 | 1 failed",
+        "assertions: 9 | 8 passed | 1 failed"
+      ]
+    }
+  ],
+  "windows_application_events": null,
+  "notes": [
+    "Non-instrumented build: no sanitizer. Evidence covers test-run isolation and runtime behavior only.",
+    "stdout redirected to a file is block-buffered; an empty log does not prove the process died before printing.",
+    "Windows Application Error events are matched by the unique copy path inside this run directory."
+  ]
+}

@@ -3,28 +3,34 @@
 Дата сверки: 2026-11-04. **Layer A PASS на build-16**
 (`GrinNode 7E3AA29E…`, `Tests 1592F3DF…`): public Floonet `FULLY_SYNCED`,
 restart resumed without state re-download, owner API protected; public PIBD
-serving DISABLED/NOT VERIFIED. **Build-45** (`Tests B0F4CE1E…`,
-`GrinNode 4F9859C2…`) — source-bound кандидат с `IsCoinbase`, chain-store writer,
-reorg-preflight и typed `LOCAL_REWIND_DATA_MISSING`: **bodyless safe-refusal
-PASS**, test visible, full **274/274, 4360 assertions**; full bodyless reorg не
-поддерживается/не заявляется. Public legacy fallback **BLOCKED/PARTIAL**
-(PID 3680 active). Build-13 остаётся full 7B live binding. Сводный план —
-[REMAINING.md](REMAINING.md); Layer A —
+serving DISABLED/NOT VERIFIED. **Build-56** (`Tests 91465CDE…`,
+`GrinNode E3B38A5B…`) — source-bound кандидат с `IsCoinbase`, chain-store writer,
+reorg-preflight, typed `LOCAL_REWIND_DATA_MISSING` и spent-position integration:
+**bodyless safe-refusal PASS**, test visible, full **276/276, 4387 assertions**;
+full bodyless reorg не поддерживается/не заявляется. Public legacy fallback
+**BLOCKED/PARTIAL** (PID 3680 active). Build-13 остаётся full 7B live binding.
+Сводный план — [REMAINING.md](REMAINING.md); Layer A —
 [LAYER_A_FLOONET_2026-11-03.md](LAYER_A_FLOONET_2026-11-03.md).
 
 ## Артефакты
 
-### Build-45 — bodyless fail-closed with typed local-missing status
+### Build-56 — bodyless fail-closed + spent-position integration
 
-- Tests `B0F4CE1E64A599B050C40F49CD564141A3DFAD21D560BE92BA03FE5948E6B3E3`,
-  9 586 176 B; GrinNode `4F9859C2480ABA572BC5C41EDEA21EB7188BF360FC6F5C3C0CBF7A43262A4160`,
-  7 856 640 B.
-- Bodyless targeted **PASS**, 41 assertions; full **274/274, 4360 assertions**.
-  Missing body/spent position yields typed `LOCAL_REWIND_DATA_MISSING`; BlockPipe
-  does not ban the peer; tip/NRD index survive restart. Full bodyless reorg is
-  **not** supported/claimed.
+- Tests `91465CDEE2C23E9FA87719DBF1E39F34CEDCA0522A9601AA06E2E358BFBE3014`,
+  9 616 384 B; GrinNode `E3B38A5B4FC15E6264CC4EF1D0C1F93FFE3D501ECAD563D917BF2A02CE7093A3`,
+  7 866 368 B.
+- Bodyless targeted **PASS**, 41 assertions; spent-position integration **PASS**,
+  15 assertions; BlockPipe **PASS**, 36 assertions / 5 cases; full **276/276,
+  4387 assertions**.
+- Missing body/spent position yields typed `LOCAL_REWIND_DATA_MISSING`; BlockPipe
+  does not ban the peer; confirmed tip/NRD index survive restart. In the spent
+  integration scenario, post-refusal candidate height stayed 30 and header MMR
+  leaves 31, i.e. candidate headers/MMR did not change.
+- Full bodyless reorg is **not** supported/claimed.
 - Public legacy fallback: pre-reboot 369 360 896 B temporary archive reached;
-  resumed PID 3680 active at DOWNLOADING_TXHASHSET; no complete/activation PASS.
+  resumed PID 3680 remains active; no complete/activation PASS.
+
+### Build-45 — historical bodyless fail-closed baseline
 
 ### Build-43 — historical bodyless fail-closed baseline
 
