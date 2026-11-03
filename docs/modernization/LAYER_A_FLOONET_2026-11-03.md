@@ -53,21 +53,24 @@ REST 127.0.0.1:25450, no loopback allowlist, no fixture, no wallet.
 - **Public PIBD serving — NOT VERIFIED, safely disabled:** serving remains default
   off, no PIBD/PIHD bits advertised; public serving was not exercised. This is an
   explicit exclusion and must not be described as a tested public service.
-- **Bodyless test-only failure — accepted exception:** the original test asks for
-  header v4 + NRD at height 30 under `AUTOMATED_TESTING`, while consensus returns
-  header v1 there; it is structurally invalid without a test-consensus seam. The
-  existing synthetic replacement was not applied because it would drop real
-  BlockDB/OpenExisting/reorg/restart coverage. Full suite remains **271/270/1**,
-  only this test-only failure; no production failure is claimed fixed.
+- **Bodyless — FAIL/BLOCKED, not PASS:** the test-only NRD seam now reaches the
+  real TestServer/BlockDB/OpenExisting/reorg path and exposed a real bug:
+  `TransactionKernel::IsCoinbase()` treated NRD (features=3) as coinbase by a
+  bitwise test. Exact-match fix + regression PASS. After that fix, phase 3
+  `OpenExisting()` after the reorg hangs in startup truncation (`Confirmed chain
+  is ahead of the candidate chain (33 > 31)`); the test is hidden (`[.]`) as a
+  reproducer. Default full suite is **272/272**, but this is not bodyless PASS.
 - **RSS/resource observation:** peak RSS ~**9.7 GB** during public state validation,
   falling to ~2.8 GB after sync; no leak claim either way. A practical minimum for
   this validation profile is ≥12 GB free RAM; archive-serving resource limits are
   not measured.
-- **Legacy public fallback — PARTIAL:** public legacy txhashset was ~0.46 MB/s and
-  was abandoned at ~501 MB; ordinary PIBD client completed. Legacy fallback remains
-  supported in controlled/fixture runs but was not proven end-to-end on public
-  Floonet.
+- **Legacy public fallback — BLOCKED/PARTIAL:** public legacy txhashset was
+  ~0.46 MB/s and was abandoned at ~501 MB; a fresh PIBD-off public profile stopped
+  after headers 27,648. Ordinary PIBD client completed (Layer A A2). Legacy
+  fallback remains supported in controlled/fixture runs but was not proven
+  end-to-end public-to-public.
 - No wallet/UI were used; no mainnet, no real funds, no secrets logged.
+
 
 ## Evidence
 

@@ -3,14 +3,28 @@
 Дата сверки: 2026-11-03. **Layer A PASS на build-16**
 (`GrinNode 7E3AA29E…`, `Tests 1592F3DF…`): public Floonet `FULLY_SYNCED`,
 restart resumed without state re-download, owner API protected; public PIBD
-serving DISABLED/NOT VERIFIED. **Build-18** (`GrinNode 43E0C3A7…`,
-`Tests 2DACE82F…`) — source-bound B1/B2 candidate; build-13 остаётся full 7B
-live binding. Сводный план — [REMAINING.md](REMAINING.md); Layer A —
+serving DISABLED/NOT VERIFIED. **Build-30** (`Tests A686C609…`,
+`GrinNode 0EF111EF…`) — source-bound кандидат с исправлением `IsCoinbase`:
+default full **272/272**, но bodyless hidden reproducer **FAIL/BLOCKED**;
+public legacy fallback **BLOCKED/PARTIAL**. Build-13 остаётся full 7B live
+binding. Сводный план — [REMAINING.md](REMAINING.md); Layer A —
 [LAYER_A_FLOONET_2026-11-03.md](LAYER_A_FLOONET_2026-11-03.md).
 
 ## Артефакты
 
-### Build-18 — B1/B2 hardening candidate
+### Build-30 — IsCoinbase fix / bodyless reproducer
+
+- Tests `A686C6091D0F0886AE3572FF2CF5A3A559EB7C37A841C81648FBE13FF4015D29`,
+  9 582 592 B; GrinNode `0EF111EFBEDF1F53CF0CBD46185A5159DABFBE6BD924DA54F8C5DEE0F2026502`,
+  7 854 080 B.
+- Default full **272/272, 4 314 assertions**; bodyless test is hidden (`[.]`) and
+  is **not** a PASS: phase-3 OpenExisting after reorg hangs at confirmed-chain
+  truncation. A real `TransactionKernel::IsCoinbase` bug was found/fixed and
+  regression-tested.
+- Public legacy fallback: fresh public PIBD-off profile stopped at headers 27 648;
+  prior transfer ~0.46 MB/s at ~501 MB — BLOCKED/PARTIAL, no PASS.
+
+### Build-18 — B1/B2 hardening candidate (historical)
 
 - Tests `2DACE82FBFAD465E2838DBCE486A422B465D7310A3C01992ACB36406EEDF5C01`,
   9 577 472 B; GrinNode `43E0C3A70F78AA969CB6AF375D65FA1A3CE1E0AB12A13634A2271DB4D9A76553`,
@@ -30,8 +44,9 @@ live binding. Сводный план — [REMAINING.md](REMAINING.md); Layer A 
   API loopback-only; PIBD serving/PIHD off and not advertised.
 - A4: independent second public node PASS (6 real Rust peers, restart resume
   367,616→529,408, non-loopback API refused); ASan F13/archive PASS with 0 reports;
-  public PIBD serving NOT VERIFIED/disabled; bodyless test-only accepted;
-  peak validation RSS ~9.7 GB, post-sync ~2.8 GB.
+  public PIBD serving NOT VERIFIED/disabled; **bodyless IsCoinbase bug fixed but
+  full reorg/restart FAIL/BLOCKED** (hidden reproducer); public legacy fallback
+  BLOCKED/PARTIAL; peak validation RSS ~9.7 GB, post-sync ~2.8 GB.
 
 
 ### Build-13 — full 7B live binding
@@ -479,6 +494,12 @@ RocksDB/DB под ASan и причина исторического `0xC0000409`
 от snapshot API и живого staging-стенда; не обещание срока.
 
 ## G-53 / UI — отдельный слой Flint: Tor-мессенджер и Slatepack
+
+**Зависимость перед подключением UI:** дождаться результатов исследования
+`C:/DHW/Gplus/wallet-backend-audit/README.md` и `PLAN.md`, оценить результаты и
+учесть готовность и риски wallet backend/API в интеграционном плане. Результат
+аудита сам по себе не является PASS реализации или приёмки кошелька. Действующий
+порядок и ограничение слоя C — [REMAINING.md](REMAINING.md).
 
 **Цель владельца:** при доработке интерфейса текущего Grin++ выделить отдельный
 слой обмена сообщениями и автоматизированного приёма Slatepack по образцу Flint.

@@ -77,7 +77,12 @@ void BlockValidator::VerifyKernelFeatures(const FullBlock& block)
 		// rejects any NRD kernel when header.version < HeaderVersion(4) (HF3).
 		// core/tests/block.rs "block_with_nrd_kernel_pre_post_hf3" pins version 3
 		// to Error::NRDKernelPreHF3 and version 4 to valid.
-		if (kernel.GetFeatures() == EKernelFeatures::NO_RECENT_DUPLICATE && version < 4) {
+		// The only exception is the explicit bodyless-NRD test seam, which is
+		// restricted to AUTOMATED_TESTING and is off by default.
+		const bool allowNrdBeforeHf3ForTesting =
+			Global::IsAutomatedTesting() && Consensus::IsNrdBeforeHf3OverrideForTesting();
+		if (kernel.GetFeatures() == EKernelFeatures::NO_RECENT_DUPLICATE && version < 4 &&
+			!allowNrdBeforeHf3ForTesting) {
 			throw BAD_DATA_EXCEPTION_F(
 				EBanReason::BadBlock,
 				"NRD kernel {} in block {} is not valid before header version 4",

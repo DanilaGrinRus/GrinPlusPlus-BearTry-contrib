@@ -10,18 +10,22 @@ PIHD, UI и тестов остаются в своих разделах, но �
 приёмочной сводкой. При расхождении статуса сверять более свежие первичные
 свидетельства и обновлять этот список; не переписывать прошлые результаты.
 
-**Срез / не переносить на другую сборку:** HEAD `674136c` (build-18);
-Layer A public-Floonet PASS выполнялся на **build-16** `GrinNode 7E3AA29E…`,
-`Tests 1592F3DF…`. Build-18 `GrinNode 43E0C3A7…`, `Tests 2DACE82F…` —
-source-bound B1/B2 candidate: full **271/270/1** (единственный известный bodyless
-test-only failure), B1 negative/resource и R2/R4/owner-auth PASS.
-Публичный Floonet build-16: A2 PASS (FULLY_SYNCED 3 321 243 → restart catch-up
-3 321 250, 0 state re-download/PIBD requests), A3 PASS; public PIBD serving
-**NOT VERIFIED** (disabled). Full local PIBD 7B — PASS на build-13. Recovery
-архивов H3313440/H3315600 и staging-kill — PASS в зафиксированных пределах.
+**Срез / не переносить на другую сборку:** build-30 `Tests A686C609…`,
+`GrinNode 0EF111EF…` — source-bound локальный кандидат с исправлением
+`TransactionKernel::IsCoinbase` (NRD больше не считается coinbase). Default
+full suite **272/272**, но bodyless-тест скрыт (`[.]`) как reproducer: полный
+bodyless reorg+restart **FAIL/BLOCKED** на фазе 3 OpenExisting (Node.log:
+confirmed 33 > candidate 31, truncation не завершился). Это **не** bodyless PASS.
+Layer A public-Floonet PASS — build-16 `GrinNode 7E3AA29E…`, `Tests 1592F3DF…`:
+FULLY_SYNCED 3 321 243, restart catch-up 3 321 250, 0 state re-download/PIBD
+requests, A3 PASS; public PIBD serving **NOT VERIFIED** (disabled). Public legacy
+fallback **BLOCKED/PARTIAL**: fresh public profile with PIBD off stopped after
+headers 27 648; prior legacy transfer ~0.46 MB/s at ~501 MB. Full local PIBD 7B —
+PASS на build-13. Recovery H3313440/H3315600 и staging-kill — PASS в пределах.
 [Layer A](LAYER_A_FLOONET_2026-11-03.md),
-[build-18](../../evidence/line3/build18-audit-20261103.md),
-[build-13 live](../../evidence/line3/build13-7b-full-audit-20261103.md),
+[bodyless](../../evidence/line3/bodyless-nrd-20261103.md),
+[legacy](../../evidence/line3/public-legacy-fallback-20261103.md),
+[build-13 live](../../evidence/line3/build13-7b-full-audit-20261103.md).
 [отчёт по архиву](ARCHIVE_RECOVERY_2026-11-03.md).
 
 ### Ворота A — готовность ограниченного тестнета / Floonet
@@ -45,11 +49,13 @@ test-only failure), B1 negative/resource и R2/R4/owner-auth PASS.
 - [x] **A4. Исключения:** независимая вторая public-нода PASS (6 real Rust peers,
   restart resume 367 616 → 529 408, API auth); ASan F13/archive PASS 0 reports
   (ASan-only extended link set). Public PIBD serving NOT VERIFIED, safely disabled.
-  Bodyless test-only failure remains accepted: original test is structurally
-  invalid (v4 NRD at height 30); synthetic patch not applied to avoid losing real
-  BlockDB/restart coverage. Full 271/270/1, only that test. Peak validation RSS
-  ~9.7 GB, post-sync ~2.8 GB; practical ≥12 GB free RAM. Legacy public fallback
-  PARTIAL (PIBD client completed; legacy abandoned at ~501 MB).
+  Bodyless full scenario **FAIL/BLOCKED**: `TransactionKernel::IsCoinbase` fixed
+  (NRD no longer counted as coinbase; test added), real TestServer/BlockDB/OpenExisting
+  path reaches reorg then hangs in phase-3 startup truncation; test hidden as
+  reproducer, not PASS. Default full **272/272** excludes it. Peak validation RSS
+  ~9.7 GB, post-sync ~2.8 GB; practical ≥12 GB free RAM. Public legacy fallback
+  **BLOCKED/PARTIAL**: fresh public profile stopped at headers 27 648; prior
+  legacy transfer ~0.46 MB/s at ~501 MB.
 
 ### Ворота B — готовность к Mainnet
 
@@ -59,12 +65,18 @@ test-only failure), B1 negative/resource и R2/R4/owner-auth PASS.
 
 - [ ] **B1. G-09 / межсетевой PIBD:** negative wire/resource unit PASS build-18;
   public PIBD serving NOT VERIFIED (disabled); controlled reorg/horizon BLOCKED;
-  public fallback/restart ограниченно проверены A2.
+  public PIBD client/restart PASS A2 build-16; **public legacy fallback
+  BLOCKED/PARTIAL** (fresh run only reached headers; prior legacy ~501 MB at
+  ~0.46 MB/s) — [legacy evidence](../../evidence/line3/public-legacy-fallback-20261103.md).
 - [x] **B2. Fail-closed и публикация:** R1/R2/R3/R4/D2 PASS build-18;
   staging-kill PASS build-13; полный PUB/RES crash matrix NOT VERIFIED; no partial
   final archive observed.
-- [ ] **B3. NRD / криптография:** D2 txpool unit PASS; bodyless-NRD и kill/recovery
-  NOT VERIFIED; реальный bodyless PIBD state/reorg/restart NOT VERIFIED.
+- [ ] **B3. NRD / криптография:** D2 txpool unit PASS; **IsCoinbase exact-match bug
+  fixed** (NRD was treated as coinbase; build-30 regression PASS). Full bodyless
+  TestServer/BlockDB/OpenExisting/reorg/restart **FAIL/BLOCKED**: phase-3 startup
+  truncation hangs; hidden reproducer only, not PASS —
+  [bodyless evidence](../../evidence/line3/bodyless-nrd-20261103.md). Real bodyless
+  PIBD state and kill/recovery remain NOT VERIFIED.
 - [ ] **B4. БД и устойчивость:** G-23 corrupted HeaderMMR/partial PMMR fault
   injection NOT VERIFIED; disk-full/power-loss NOT VERIFIED; Output Commitment
   not reproduced; historical 0xC0000409 NOT VERIFIED.
@@ -74,7 +86,24 @@ test-only failure), B1 negative/resource и R2/R4/owner-auth PASS.
 
 ### Полнота пользовательского продукта — после ворот A и B по указанию владельца
 
-- [ ] **P1. UI + слой Flint:** адаптировать Electron/React UI к C++ wallet API;
+- [ ] **P1. UI + слой Flint:** до подключения UI дождаться результатов отдельного
+  исследования C++ wallet backend и Rust grin-wallet, оценить выявленные риски,
+  совместимость и готовность wallet API и учесть их в интеграционном плане.
+  Материалы: `C:/DHW/Gplus/wallet-backend-audit/README.md`, `VERIFICATION_2026-11-03.md`,
+  `PLAN.md` и `START_READINESS.md`. Сам по себе результат аудита не означает, что
+  исправления или приёмка кошелька завершены. Подготовка к старту (DoR, backlog, оценки,
+  UI-контракт) — `C:/DHW/Gplus/wallet-backend-audit/START_READINESS.md`; реализация не
+  начата, старт заблокирован воротами A/B и отсутствием указания владельца.
+  Реализация слоя C — после ворот A и B и отдельного указания владельца.
+  Отдельный проект собственного открытого протокола Flint Messenger и адаптеров
+  Rust/C++: `C:/DHW/Gplus/flint-messenger-project/PLAN.md`. Выбраны direct Tor,
+  отдельная chat identity с проверяемой привязкой к кошельку, новый протокол без
+  миграции. Дополнительно запланировано исследование собственной P2P-сети с
+  добровольным транзитом и защитой метаданных: `C:/DHW/Gplus/flint-messenger-project/OWN_NETWORK_RESEARCH.md`.
+  I2P/Lokinet/Nostr — возможные будущие адаптеры; централизованный relay и
+  гарантированная offline-доставка не входят. Планирование не снимает запрет
+  на реализацию слоя C до ворот A/B и отдельного указания владельца.
+  Затем адаптировать Electron/React UI к C++ wallet API;
   отдельный Tor/messenger слой с контактами, устойчивой inbox/outbox и opt-in
   приёмом Slatepack. Сначала выбрать безопасную интеграцию, проверить лицензии,
   границы ключей/IPC и сохранение профилей; исходящая отправка требует явного
