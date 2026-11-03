@@ -20,9 +20,10 @@ NRD-index rebuild refusing to start). Это **не** bodyless PASS.
 Layer A public-Floonet PASS — build-16 `GrinNode 7E3AA29E…`, `Tests 1592F3DF…`:
 FULLY_SYNCED 3 321 243, restart catch-up 3 321 250, 0 state re-download/PIBD
 requests, A3 PASS; public PIBD serving **NOT VERIFIED** (disabled). Public legacy
-fallback **BLOCKED/PARTIAL**: fresh public profile with PIBD off stopped after
-headers 27 648; prior legacy transfer ~0.46 MB/s at ~501 MB. Full local PIBD 7B —
-PASS на build-13. Recovery H3313440/H3315600 и staging-kill — PASS в пределах.
+fallback **BLOCKED/PARTIAL**: pre-reboot public profile reached headers
+3 321 636 and a 369 360 896 B temporary archive; post-reboot long run PID 3680
+remains active at DOWNLOADING_TXHASHSET. No completed/activated legacy state yet.
+Full local PIBD 7B — PASS на build-13. Recovery H3313440/H3315600 и staging-kill — PASS в пределах.
 [Layer A](LAYER_A_FLOONET_2026-11-03.md),
 [bodyless](../../evidence/line3/bodyless-nrd-20261103.md),
 [legacy](../../evidence/line3/public-legacy-fallback-20261103.md),
@@ -56,9 +57,10 @@ PASS на build-13. Recovery H3313440/H3315600 и staging-kill — PASS в пр�
   (`kernel MMR 34 vs tip header 32`); test hidden as reproducer, not PASS.
   Default full **272/272** excludes it. Peak validation RSS
   ~9.7 GB, post-sync ~2.8 GB; practical ≥12 GB free RAM. Public legacy fallback
-  **BLOCKED/PARTIAL**: fresh public profile stopped at headers 27 648; prior
-  legacy transfer ~0.46 MB/s at ~501 MB. Bodyless deadlock was fixed; remaining
-  failure is the post-reorg NRD-index/MMR reconciliation, not a timeout.
+  **BLOCKED/PARTIAL**: pre-reboot run reached headers 3 321 636 and a 369 MB
+  temporary archive; resumed long run remains active. Bodyless deadlock was
+  fixed; remaining failure is the post-reorg NRD-index/MMR reconciliation, not a
+  timeout.
 
 ### Ворота B — готовность к Mainnet
 
@@ -69,8 +71,8 @@ PASS на build-13. Recovery H3313440/H3315600 и staging-kill — PASS в пр�
 - [ ] **B1. G-09 / межсетевой PIBD:** negative wire/resource unit PASS build-18;
   public PIBD serving NOT VERIFIED (disabled); controlled reorg/horizon BLOCKED;
   public PIBD client/restart PASS A2 build-16; **public legacy fallback
-  BLOCKED/PARTIAL** (fresh run only reached headers; prior legacy ~501 MB at
-  ~0.46 MB/s) — [legacy evidence](../../evidence/line3/public-legacy-fallback-20261103.md).
+  BLOCKED/PARTIAL** (long run active; pre-reboot 369 MB temporary archive, no
+  activation/restart) — [legacy evidence](../../evidence/line3/public-legacy-fallback-20261103.md).
 - [x] **B2. Fail-closed и публикация:** R1/R2/R3/R4/D2 PASS build-18;
   staging-kill PASS build-13; полный PUB/RES crash matrix NOT VERIFIED; no partial
   final archive observed.

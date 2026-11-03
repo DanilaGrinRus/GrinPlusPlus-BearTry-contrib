@@ -23,8 +23,9 @@ chain-store writer: default full **272/272**, но bodyless hidden reproducer
   OpenExisting after reorg fails closed with `kernel MMR has 34 leaves but tip
   header claims 32` (NRD index refuses to start). A real
   `TransactionKernel::IsCoinbase` bug was also found/fixed and regression-tested.
-- Public legacy fallback: fresh public PIBD-off run reached headers 3 321 636 and
-  started state download; full transfer/restart **BLOCKED/PARTIAL**, no PASS.
+- Public legacy fallback: pre-reboot public PIBD-off run reached headers 3 321 636
+  and a 369 360 896 B temporary archive; resumed run PID 3680 is active at
+  DOWNLOADING_TXHASHSET. Full transfer/restart **BLOCKED/PARTIAL**, no PASS.
 
 ### Build-18 — B1/B2 hardening candidate (historical)
 

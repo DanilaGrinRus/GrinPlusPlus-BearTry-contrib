@@ -5,26 +5,32 @@ legacy txhashset download completed at the time of this report; no PASS claim.
 
 ## What was run
 
-- Binary: build-30 `GrinNode 0EF111EF…` (source includes the IsCoinbase fix).
-- Fresh isolated profile `C:\DHW\.tmp\task2-legacy-public`.
-- Public Floonet seeds only; P2P listen 13614, outbound peer port 13414, REST
-  127.0.0.1:25650; no loopback allowlist; no fixture; no wallet.
-- Config explicitly `PIBD_ENABLED=false`, `PIHD_MODE=off`, archive serving
-  disabled.
-- Run stopped deliberately? No — the long run is left running as requested; current
-  observation: headers **3,321,636**, network tip ~3,321,443, status
-  `DOWNLOADING_TXHASHSET`, 4 public peers; no txhashset file yet. The process is
-  `C:\DHW\.tmp\build-30\GrinNode.exe`, PID 30012, profile
-  `C:\DHW\.tmp\task2-legacy-public`; logs `cpp-profile\LOGS\Node.log`.
+- Binary: build-33 `GrinNode 6E2303BA…` (current production fixes; the earlier
+  build-30 run is historical evidence).
+- Isolated profile `C:\DHW\.tmp\task2-legacy-public`; public Floonet seeds only;
+  P2P listen 13614, outbound peer port 13414, REST 127.0.0.1:25650; no loopback
+  allowlist; no fixture; no wallet; `PIBD_ENABLED=false`, `PIHD_MODE=off`,
+  archive serving disabled.
+- **Pre-reboot run:** headers reached **3,321,636** (network ~3,321,443); a
+  `txhashset_*.zip` reached **369,360,896 B** before the machine rebooted. The
+  buffered Node.log still showed the early `download still not started` flood;
+  the file growth proves a transfer had begun, but no activation was observed.
+- **Post-reboot resume:** PID **3680** is left running on the same profile with
+  logs `run3-stdout.log`, `run3-stderr.log`, `cpp-profile\LOGS\Node.log`; headers
+  3,321,656, status `DOWNLOADING_TXHASHSET`, 4 public peers. The resumed temp zip
+  was recreated at 0 B, then peer rotation occurred (80.228.193.72 →
+  66.154.127.84; peer disconnected) — no completed transfer at report time.
+- A separate earlier fresh run stopped at headers 27,648; that value belongs to
+  the earlier bounded run, not to the pre-reboot 3.32M run.
 
 ## Why it did not reach the legacy path
 
 The public header sync is far from the tip. The previous public legacy attempt
 started the txhashset download only after headers; its legacy transfer was
 observed at ~0.46 MB/s and abandoned at ~501 MB. At that rate, the ~3.1 GB
-archive alone is several hours, before extraction/validation/body sync. This run
-was stopped to respect the bounded test budget; it is **not** evidence that
-legacy works end-to-end.
+archive alone is several hours, before extraction/validation/body sync. The long
+run is **not** being stopped for this report; no PASS is claimed until the whole
+path completes.
 
 ## What remains unverified
 

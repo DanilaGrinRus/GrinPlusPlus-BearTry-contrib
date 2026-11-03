@@ -40,12 +40,17 @@ HF3 rejection. This is a test configuration, not a production-consensus change.
   reorg branch blocks 31b/32b accepted;
 - phase 3: `TestServer::OpenExisting()` after the reorg **fails closed**:
   `NRD recent-kernel index rebuild is incomplete` / `kernel MMR has 34 leaves but
-  the tip header claims 32`. Chain/MMR state is inconsistent after the bodyless
-  reorg. This is the current blocker, not a timeout.
+  the tip header claims 32`.
+- Post-failure state inspection (build-33 isolated profile):
+  `candidate.chain=992 B` and `confirmed.chain=992 B` (31 entries each),
+  `chain.checkpoint` = sequence 1, MmrLeaves 31, CandidateEntries 31,
+  ConfirmedEntries 31, while the bodyless TxHashSet kernel MMR contains 34
+  leaves. The chain checkpoint therefore does not cover/repair the TxHashSet:
+  after the reorg the TxHashSet was not rewound/persisted to the selected
+  block-30 tip. This is the current state-reconciliation blocker, not a timeout.
 - A first attempt hung earlier because the chain-store writer was held while
   re-reading the store in `BlockChainImpl`; that deadlock was fixed by scoping the
-  writer to its commit. The remaining failure is a separate state-reconciliation
-  defect.
+  writer to its commit. The remaining failure is separate from the deadlock.
 
 The test is hidden (`[.]`) as a reproducer so the default suite does not hang or
 leave a RocksDB LOCK on a failing run; the full bodyless scenario is **not** a
@@ -66,6 +71,8 @@ equivalent coverage.
 
 ## Remaining work
 
-Reconcile the bodyless TxHashSet/chain state after reorg so the NRD index rebuild
-can complete (and remove the hidden tag only when the complete scenario passes).
-Until then: **bodyless FAIL/BLOCKED; do not claim closure.**
+Reconcile the bodyless TxHashSet/chain state after reorg: on the reorg/restart
+path the TxHashSet kernel MMR must be rewound to the selected tip and persisted
+with the chain checkpoint, or the reorg must fail closed **before** accepting a
+branch whose bodies are unavailable. Remove the hidden tag only when the complete
+scenario passes. Until then: **bodyless FAIL/BLOCKED; do not claim closure.**
