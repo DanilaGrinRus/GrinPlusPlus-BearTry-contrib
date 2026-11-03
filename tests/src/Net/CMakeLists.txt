@@ -9,6 +9,7 @@ list_append_parent(
     "Test_TxHashSetLimits.cpp"
     "Test_SeederPolicy.cpp"
     "Test_ApiAccess.cpp"
+    "Test_RpcAuth.cpp"
     "Tor/Test_TorAddressParser.cpp"
     "Tor/Test_TorConnection.cpp"
 )

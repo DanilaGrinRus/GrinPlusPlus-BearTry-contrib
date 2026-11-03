@@ -1,0 +1,2 @@
+HTTP 200
+{"id":21,"jsonrpc":"2.0","result":{"Ok":{"chain":"floonet","connections":4,"protocol_version":1000,"sync_info":{"current_height":0,"highest_height":3321049},"sync_status":"header_sync","tip":{"height":0,"last_block_pushed":"edc758c1370d43e1d733f70f58cf187c3be8242830429b1676b89fd91ccf2dab","prev_block_to_last":"0000000000000000000000000000000000000000000000000000000000000000","total_difficulty":100000},"user_agent":"Grin++ 1.2.9"}}}

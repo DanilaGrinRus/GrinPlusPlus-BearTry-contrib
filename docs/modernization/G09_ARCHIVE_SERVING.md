@@ -1,5 +1,7 @@
 # G-09 archive serving: snapshot/capability contract, gap analysis and DRAFT review
 
+> **Единый действующий план и критерии Testnet/Mainnet:** [REMAINING.md](REMAINING.md). Ниже сохранены технические детали и датированные исторические статусы; при расхождении сверяйте текущий план с первичными доказательствами.
+
 > **Текущий статус (2026-11-03):** это техническое досье, а не текущая доска.
 > Актуальный срез: [THREE_LINE_STATUS.md](THREE_LINE_STATUS.md); матрица рисков:
 > [GAP_MATRIX.md](GAP_MATRIX.md). Build-07 (`Tests C8C386BE…`,

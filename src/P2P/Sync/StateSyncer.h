@@ -37,6 +37,11 @@ public:
 		const fs::path& archivePath,
 		const BlockHeaderPtr& pHeader,
 		std::string* pError = nullptr);
+	static bool FlushedMatchesConfirmed(
+		const BlockHeaderPtr& pFlushed,
+		const BlockHeaderPtr& pConfirmedTip,
+		std::string* pReason = nullptr);
+	static bool IsRecoveryMarkerPathWritable(const fs::path& markerPath);
 
 	enum class EPibdResult
 	{
@@ -63,7 +68,7 @@ private:
 	// Fail-closed preflight before any snapshot/rewind: every block from the
 	// target state through the confirmed flushed tip must have a body record and
 	// every input commitment must be present in the canonical SPENT_OUTPUTS map.
-	bool PreflightArchiveRewind(const BlockHeaderPtr& pTarget, std::string* pError = nullptr) const;
+	bool PreflightArchiveRewind(const BlockHeaderPtr& pTarget, std::string* pError = nullptr);
 	// If a previous activation left pibd_state.complete but no archive (e.g. the
 	// snapshot failed), retry once on startup.
 	void TryRecoverArchive();

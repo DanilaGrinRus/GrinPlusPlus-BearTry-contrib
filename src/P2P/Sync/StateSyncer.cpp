@@ -52,6 +52,15 @@ namespace
 		fs::remove(RecoveryFailedMarker(), error);
 	}
 
+
+	// A recovery attempt that cannot persist its bound marker would retry on every
+	// restart forever. Probe the marker location before attempting an expensive
+	// snapshot/rewind; refuse the attempt if the bound cannot be recorded.
+	bool IsRecoveryMarkerWritable()
+	{
+		return StateSyncer::IsRecoveryMarkerPathWritable(RecoveryFailedMarker());
+	}
+
 	void RecordRecoveryFailure(const Hash& horizonHash, const std::string& error)
 	{
 		try {
@@ -468,6 +477,13 @@ void StateSyncer::TryRecoverArchive()
 			return;
 		}
 
+		if (!IsRecoveryMarkerWritable()) {
+			LOG_WARNING(
+				"TxHashSet archive recovery skipped: failure marker is not writable, "
+				"so the retry bound cannot be persisted.");
+			return;
+		}
+
 		LOG_INFO_F("Recovering the missing TxHashSet archive at height {}.", pHeader->GetHeight());
 		std::string error;
 		if (!ArchivePibdState(horizonHash, &error)) {
@@ -482,7 +498,57 @@ void StateSyncer::TryRecoverArchive()
 	}
 }
 
-bool StateSyncer::PreflightArchiveRewind(const BlockHeaderPtr& pTarget, std::string* pError) const
+bool StateSyncer::FlushedMatchesConfirmed(
+	const BlockHeaderPtr& pFlushed,
+	const BlockHeaderPtr& pConfirmedTip,
+	std::string* pReason)
+{
+	if (pFlushed == nullptr || pConfirmedTip == nullptr) {
+		if (pReason != nullptr) *pReason = "flushed/confirmed header is missing";
+		return false;
+	}
+
+	if (pConfirmedTip->GetHash() != pFlushed->GetHash() ||
+		pConfirmedTip->GetHeight() != pFlushed->GetHeight()) {
+		if (pReason != nullptr) *pReason = "flushed TxHashSet is not the confirmed tip";
+		return false;
+	}
+
+	return true;
+}
+
+bool StateSyncer::IsRecoveryMarkerPathWritable(const fs::path& markerPath)
+{
+	std::error_code error;
+	fs::create_directories(markerPath.parent_path(), error);
+	if (error) {
+		return false;
+	}
+
+	// If the marker already exists (file or directory), opening it in append
+	// mode proves writability without overwriting the diagnostic content.
+	if (fs::exists(markerPath, error)) {
+		if (error) {
+			return false;
+		}
+		std::ofstream existing(markerPath, std::ios::app);
+		return existing.good();
+	}
+
+	// Nonexistent marker: probe a sibling name in the same parent directory.
+	const fs::path probe = markerPath.parent_path() /
+		(markerPath.filename().string() + ".write_probe");
+	{
+		std::ofstream out(probe, std::ios::trunc);
+		if (!out.good()) {
+			return false;
+		}
+	}
+	fs::remove(probe, error);
+	return true;
+}
+
+bool StateSyncer::PreflightArchiveRewind(const BlockHeaderPtr& pTarget, std::string* pError)
 {
 	std::string localError;
 	std::string& error = pError != nullptr ? *pError : localError;
@@ -492,10 +558,29 @@ bool StateSyncer::PreflightArchiveRewind(const BlockHeaderPtr& pTarget, std::str
 		return false;
 	}
 
-	const BlockHeaderPtr pFlushed =
-		m_pBlockChain->GetTipBlockHeader(EChainType::CONFIRMED);
+	// The snapshot/Rewind starts from the TxHashSet flushed header, not from the
+	// confirmed chain tip. Require the two views to be identical before using
+	// confirmed headers to validate a rewind range.
+	const std::shared_ptr<ITxHashSet> pTxHashSet = m_pBlockChain->GetTxHashSet();
+	if (pTxHashSet == nullptr) {
+		error = "archive preflight: live TxHashSet is missing";
+		return false;
+	}
+
+	const BlockHeaderPtr pFlushed = pTxHashSet->GetFlushedBlockHeader();
 	if (pFlushed == nullptr) {
-		error = "archive preflight: confirmed flushed tip header is missing";
+		error = "archive preflight: TxHashSet flushed header is missing";
+		return false;
+	}
+
+	const BlockHeaderPtr pConfirmedTip =
+		m_pBlockChain->GetTipBlockHeader(EChainType::CONFIRMED);
+	if (pConfirmedTip == nullptr) {
+		error = "archive preflight: confirmed tip header is missing";
+		return false;
+	}
+
+	if (!FlushedMatchesConfirmed(pFlushed, pConfirmedTip, &error)) {
 		return false;
 	}
 

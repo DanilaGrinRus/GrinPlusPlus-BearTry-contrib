@@ -1,0 +1,92 @@
+{
+  "schema": "gpp-line3-layerA-public-floonet-preauth/v1",
+  "captured_utc": "2026-11-03T07:20:00Z",
+  "captured_local": "2026-11-03T14:20:00+07:00",
+  "status": "BUILD16_A3_LIVE_PASS / PUBLIC_SYNC_IN_PROGRESS",
+  "candidate": {
+    "build": "build-15",
+    "role": "source-bound fail-closed/D2 candidate; not replacement for build-13 7B live binding",
+    "head": "921bcfd6f9965307b14973451d3175c82beef712",
+    "build_source_head": "75a09d63bb625197367c38a28baf28880bcbc358",
+    "tests_sha256": "920F000F38958DA545ED3BC57DB796A0062CB5EF6E304E7DB354DAD065E6227D",
+    "grin_node_sha256": "A7D28BCC2F4A1B8FC5D57083E0F5F43F75A81BDF1771C946BE041A4CADA7246C",
+    "build_log_sha256": "5C70A1FBF4801B239785988675E28F76D1F1748B859BE77E6B8CB63D458DAB1C",
+    "freeze_sha256": "E59B65FF1BC07B4D4CC132276F5794DE80342DE5CF0B49F4DE5B110B590C328C",
+    "freeze_files": 1005,
+    "freeze_aggregate": "D6A664399ACFFC67BB721D2690FE69ECD0C3DC74BACCBD8C5462D4D572F3DD25",
+    "freeze_match": "1005/1005, 0 missing",
+    "dirty": "21 modified docs + 1 untracked evidence; no dirty source/test"
+  },
+  "build_flags": {
+    "project_cxx": "/W4 /WX",
+    "main_targets": "GrinNode/Tests Level4 + TreatWarningAsError",
+    "exceptions": "/EHsc (Sync), not /EHa",
+    "c_deps": "/W3"
+  },
+  "defaults": {
+    "api": {
+      "public": "no secret",
+      "private_admin": "require .api_secret; ADMIN loopback",
+      "rest_port": "3413 Mainnet / 13413 non-Mainnet default; config override",
+      "api_disable_flag": "not found"
+    },
+    "pibd": {
+      "enabled_default": true,
+      "archive_serving_default": false,
+      "archive_serving_opt_in": "GRINPP_PIBD_ARCHIVE_SERVING=1",
+      "mainnet_archive_serving": "refused"
+    },
+    "pihd": {
+      "default": "OFF",
+      "client_only": "client/full map to CLIENT, no server implementation"
+    }
+  },
+  "public_sync_restart_checklist": [
+    "candidate SHA/PE/freeze/config hash; public Floonet identity; no Mainnet data",
+    "public outbound/inbound peers and diversity; not loopback-only",
+    "sync to network tip: height/hash/difficulty; PIBD enabled/archive state; PIHD OFF",
+    "public API reachable; private/admin fail closed without secret; DACL/loopback",
+    "validated archives only; no partial/staging final; recovery marker/regeneration",
+    "restart same profile: persistent tip/hash, no genesis re-download, no stale marker loop",
+    "resource/disk bounded; clean process/port; no source/build changes",
+    "reconcile line1 evidence hashes/report; classify PASS/FAIL/NOT VERIFIED"
+  ],
+  "constraints": {
+    "line1_profile_ports_touched": false,
+    "source_edit_by_line3": false,
+    "build_by_line3": false,
+    "commit": false,
+    "mainnet": false
+  },
+  "blockers": [
+    "public sync full/body/restart persistence pending",
+    "crash/publication/resource matrix not run"
+  ],
+  "evidence": {
+    "preaudit_md": "evidence/line3/layerA-public-floonet-preauth-20261103.md",
+    "build15_freeze": "evidence/line3/build-15-freeze-snapshot-final.json",
+    "build15_normal": "evidence/line3/normal-binary-build15-audit-20261103.md"
+  },
+  "a3_security": {
+    "status": "BUILD16_LIVE_PASS_A3_CLOSED",
+    "finding": "owner get_status/get_peers/get_connected_peers returned 200 without secret on build15; get_config PRIVATE/update_config ADMIN still gated",
+    "remote_exposed": false,
+    "bind": "127.0.0.1 via EServerType::LOCAL",
+    "static_fix": "GetAccessLevel PRIVATE added to all three owner read handlers; Test_OwnerHandlerAccess included in CMake",
+    "artifacts": "no build16 binary/log/freeze; line1 still build15; runtime pending",
+    "evidence": "evidence/line3/layerA-A3-owner-auth-audit-20261103.md",
+    "tests": [
+      "tests/src/API/Test_OwnerHandlerAccess.cpp (owner levels)",
+      "tests/src/Net/Test_RpcAuth.cpp (RPC auth gate)"
+    ],
+    "build16": {
+      "tests": "1592F3DF041116AC3C891E5AEEB894B6144C9AB1713893C3B265DDA1C8E44CB6",
+      "grin_node": "7E3AA29E1160244A28DDDFE3A2CCF68BD2A943A97D610B55845561453280CA18",
+      "full": "262/261/1 bodyless-only",
+      "owner_access": "PASS 1/6",
+      "rpc_auth": "PASS 1/8",
+      "live": "NOT VERIFIED - line1 still build15 at 15:08:48"
+    },
+    "live": "PASS - PID33856, bind 127.0.0.1:25450, owner no/wrong -32001, valid OK, public foreign 200, headers >2.5M"
+  }
+}

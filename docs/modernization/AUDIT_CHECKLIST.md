@@ -1,5 +1,7 @@
 # AUDIT_CHECKLIST — handover checklist
 
+> **Единый действующий план и критерии Testnet/Mainnet:** [REMAINING.md](REMAINING.md). Ниже сохранены технические детали и датированные исторические статусы; при расхождении сверяйте текущий план с первичными доказательствами.
+
 Status: **final** — G-51 closed by owner acceptance (01.11.2026); independent reviewer not assigned. Items are checked only with evidence.
 until every line is PASS or explicitly accepted as a limitation.
 

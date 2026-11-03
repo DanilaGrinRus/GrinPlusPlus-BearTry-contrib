@@ -1,0 +1,22 @@
+{
+  "schema": "gpp-line3-layerA-A3-live/v1",
+  "captured_utc": "2026-11-03T08:16:00Z",
+  "captured_local": "2026-11-03T15:16:00+07:00",
+  "status": "PASS_A3_LIVE / PUBLIC_SYNC_IN_PROGRESS",
+  "process": {"pid":33856,"name":"GrinNode-7E3AA29E1160.exe","path":"C:\\DHW\\.tmp\\line1-build-16\\GrinNode-7E3AA29E1160.exe","start":"2026-11-03T15:12:12+07:00","sha256":"7E3AA29E1160244A28DDDFE3A2CCF68BD2A943A97D610B55845561453280CA18"},
+  "bind": {"address":"127.0.0.1","port":25450,"state":"LISTENING","wildcard":false,"loopback_only":true},
+  "config": {"PIBD_ENABLED":false,"PIHD_MODE":"off","archive_serving":"DISABLED (default)","rest_api_port":25450},
+  "independent_probes": {
+    "get_status":{"none":"-32001 Unauthorized","wrong":"-32001 Unauthorized","valid":"OK"},
+    "get_peers":{"none":"-32001 Unauthorized","wrong":"-32001 Unauthorized","valid":"OK"},
+    "get_connected_peers":{"none":"-32001 Unauthorized","wrong":"-32001 Unauthorized","valid":"OK"},
+    "get_config":{"none":"-32001 Unauthorized","valid":"OK"},
+    "update_config":{"none":"-32001 Unauthorized","wrong":"-32001 Unauthorized","valid":"not called - no mutation"},
+    "foreign_get_tip_noauth":"OK 200","foreign_get_version_noauth":"OK 200"
+  },
+  "line1_evidence_match": true,
+  "restart_resume": {"pre_header":2503680,"post_header":2542976,"independent_samples":[2613120,2639232,2664832,2691456,2704768],"network_height":3321049,"sync":"SYNCING_HEADERS","chain_height":0,"genesis":false},
+  "classification": {"build15_a3":"CONFIRMED_FAIL","build16_a3_live":"PASS","public_foreign":"UNCHANGED","public_sync":"IN_PROGRESS","full_sync":false},
+  "constraints": {"source_edit_by_line3":false,"build_by_line3":false,"line1_profile_modified":false,"line1_ports_modified":false,"token_logged":false},
+  "evidence": {"independent_probes":"evidence/line3/layerA-A3-live-20261103/independent-probes.txt","probes_sha256":"C1230924A33E9D75323436B14877CE2C71F1BACD2C56222C6D30E7A7DC5E9CD1","samples":"evidence/line3/layerA-public-sync-20261103/independent-sync-samples.jsonl","samples_sha256":"851E79C4499F22A9227BAC57014FE8DF4BCDA8F6E39D4936666B971A09D442C9","line1_dir":"evidence/line3/layerA-A3-live-20261103"}
+}

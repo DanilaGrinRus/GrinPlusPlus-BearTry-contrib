@@ -1,0 +1,2 @@
+HTTP 200
+{"id":25,"jsonrpc":"2.0","result":{"Ok":{"height":0,"last_block_pushed":"edc758c1370d43e1d733f70f58cf187c3be8242830429b1676b89fd91ccf2dab","prev_block_to_last":"0000000000000000000000000000000000000000000000000000000000000000","total_difficulty":100000}}}

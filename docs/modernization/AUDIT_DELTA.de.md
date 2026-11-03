@@ -1,5 +1,7 @@
 # AUDIT_DELTA (DE) — Grin++ 1.2.9 → Kompatibilität mit Grin v5.5.2
 
+> **Einziger aktueller Testnet/Mainnet-Bereitschaftsplan:** [REMAINING.md](REMAINING.md). Karten und Stände sind datiert; ältere Listen „offen“ sind historisch und kein zweiter aktueller Aufgabenplan.
+
 ## Aktualisierung — 03.11.2026, 13:30 (UTC+07)
 
 Umfang: Grin++ 1.2.9 und Rust Grin v5.5.2. HEAD bei der Prüfung war `75a09d6`; der parallel geänderte Arbeitsbaum ist nicht mit den geprüften Binärdateien gleichzusetzen. Dieser datierte Stand ersetzt widersprechende ältere Angaben unten; auch die operative Übersicht ist mit Primärnachweisen abzugleichen.
@@ -457,7 +459,7 @@ stehen in der Nachweiskarte, nicht als Karten.
   ```
 - Nachweis: E45/E46 (Diagnose), E48 (Archiv-Persistenz-Code; live pending).
 - Risiko, Rücknahme: nur Logging; Rücknahme entfernt die Log-Zeilen.
-## Bekannte offene Punkte (keine Karten)
+## Historische offene Punkte jenes Stands (nicht aktuell)
 
 - **G-52 (OPEN)**: historischer `TxHashSet`-Snapshot/Serving scheitert an einer Lücke der Spent-Positionen (`Rewind: Spent output not found … block 3 316 349`, null Einträge für einen Input). Legacy-Serving und G-41 bleiben NOT VERIFIED; Optionen in `TEST_RESULTS.md` E46 und `REMAINING.md`.
 - **G-41 (OPEN)**: Live-Legacy-`txhashset.zip`-Fallback nicht abgeschlossen (Peers drosseln den Handshake; Serverseite durch G-52 blockiert). Der Client fordert das Archiv jetzt auf der auf 720 gerundeten Höhe an.
@@ -531,7 +533,7 @@ CI-Gate. Artefakte: `GrinNode E16A014E…`, `Tests CC6472B1…`; Suite **194 / 2
   (get_kernel-Positionen), N-07 (get_outputs-Fehler).
 - Fault-Injection für N-01/N-02/N-05 und Lasttests sind NOT VERIFIED.
 
-### Offen
+### Historisch offen in jenem Stand
 
 - **G-09 live**: Rust-PIBD-Client abschließen, Peer/H/Antwortzahl festhalten.
 - G-23 Fault-Injection/vollständiger PMMR-Node-Sweep.
@@ -539,7 +541,7 @@ CI-Gate. Artefakte: `GrinNode E16A014E…`, `Tests CC6472B1…`; Suite **194 / 2
 - G-07 persistenter Index/vollständiger Block-/Reorg-Test.
 - G-24 Hosted-CI; G-49 Rangeproof-Beschleunigung ist zurückgestellt.
 
-## Vollständiger verbleibender Projektplan — Stand 03.11.2026, 13:30 (UTC+07)
+## Historischer Projektplan — Stand 03.11.2026, 13:30 (UTC+07)
 
 Diese datierte Liste ersetzt das historische „Offen“ oben; frühere Einträge bleiben
 als Nachweishistorie erhalten. Arbeiten laufen parallel: vor Ausführung und

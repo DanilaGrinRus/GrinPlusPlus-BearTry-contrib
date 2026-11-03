@@ -1,0 +1,13 @@
+{
+  "schema": "gpp-line3-layerB-index/v1",
+  "captured_utc": "2026-11-03T07:50:00Z",
+  "status": "STATIC_EVIDENCE_ONLY / NO LIVE PROFILE / NO SOURCE BUILD",
+  "head": "921bcfd6f9965307b14973451d3175c82beef712",
+  "items": {
+    "negative_wire": {"path":"evidence/line3/layerB1-negative-wire-20261103.md","status":"STATIC INVENTORY; 16 negative cases mapped; gaps identified; no tests added"},
+    "resource_concurrency": {"path":"evidence/line3/layerB1-resource-concurrency-20261103.md","status":"STATIC MATRIX; limits/locks/tests/gaps; no stress run"},
+    "crash_publication": {"path":"evidence/line3/layerB2-crash-publication-20261103.md","status":"PARTIAL EVIDENCE; crash during prepare/retry success; publication atomicity NOT VERIFIED; PUB matrix not run"},
+    "db_fault": {"path":"evidence/line3/layerB4-db-fault-matrix-20261103.md","status":"STATIC MATRIX; DB fault injection NOT VERIFIED"}
+  },
+  "constraints":{"live_profile":false,"ports":false,"source_edit":false,"build":false,"commit":false}
+}

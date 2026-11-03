@@ -1,0 +1,18 @@
+method=get_status auth=none ERR code=-32001 message=Unauthorized: valid API secret required
+method=get_status auth=wrong ERR code=-32001 message=Unauthorized: valid API secret required
+method=get_status auth=valid OK result_keys=Ok
+method=get_status auth=valid OK result_keys=Ok
+method=get_peers auth=none ERR code=-32001 message=Unauthorized: valid API secret required
+method=get_peers auth=wrong ERR code=-32001 message=Unauthorized: valid API secret required
+method=get_peers auth=valid OK result_keys=Ok
+method=get_peers auth=valid OK result_keys=Ok
+method=get_connected_peers auth=none ERR code=-32001 message=Unauthorized: valid API secret required
+method=get_connected_peers auth=wrong ERR code=-32001 message=Unauthorized: valid API secret required
+method=get_connected_peers auth=valid OK result_keys=Ok
+method=get_connected_peers auth=valid OK result_keys=Ok
+method=get_config auth=none ERR code=-32001 message=Unauthorized: valid API secret required
+method=get_config auth=valid OK result_keys=allowed_peers,blocked_peers,max_peers,min_confirmations,min_peers,preferred_peers,reuse_address
+method=update_config auth=none ERR code=-32001 message=Unauthorized: valid API secret required
+method=update_config auth=wrong ERR code=-32001 message=Unauthorized: valid API secret required
+method=get_tip auth=none OK result_keys=Ok
+method=get_version auth=none OK result_keys=Ok

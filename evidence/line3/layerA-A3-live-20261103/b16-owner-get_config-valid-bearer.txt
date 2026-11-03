@@ -1,0 +1,2 @@
+HTTP 200
+{"id":24,"jsonrpc":"2.0","result":{"allowed_peers":null,"blocked_peers":null,"max_peers":4,"min_confirmations":10,"min_peers":1,"preferred_peers":["195.201.2.51","185.177.219.185","80.228.193.72","66.154.127.84","96.44.159.174","103.7.54.154"],"reuse_address":true}}

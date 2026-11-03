@@ -1,0 +1,95 @@
+{
+  "schema": "gpp-line3-layerA-A3-owner-auth/v3",
+  "captured_utc": "2026-11-03T08:00:00Z",
+  "captured_local": "2026-11-03T15:00:00+07:00",
+  "status": "BUILD15_A3_FAIL / BUILD16_STATIC_AND_OWNER_TESTS_PASS / BUILD16_LIVE_API_PASS_A3_CLOSED",
+  "build15": {
+    "tests_sha256": "920F000F38958DA545ED3BC57DB796A0062CB5EF6E304E7DB354DAD065E6227D",
+    "grin_node_sha256": "A7D28BCC2F4A1B8FC5D57083E0F5F43F75A81BDF1771C946BE041A4CADA7246C",
+    "get_status_no_secret": "HTTP 200 full status JSON",
+    "get_config_no_secret": "Unauthorized: valid API secret required",
+    "update_config_no_secret": "Unauthorized: valid API secret required",
+    "remote_exposed": false,
+    "bind": "NodeRestServer.cpp:32 EServerType::LOCAL -> Server.cpp:11 127.0.0.1"
+  },
+  "cause": "GetStatusOwnerHandler/GetPeersOwnerHandler/GetConnectedPeersOwnerHandler inherited RPCMethod default PUBLIC",
+  "build16_static_fix": {
+    "status": "PRESENT_UNCOMMITTED",
+    "files": [
+      {
+        "path": "src/API/Node/Handlers/GetStatusOwnerHandler.h",
+        "line": 63,
+        "level": "PRIVATE"
+      },
+      {
+        "path": "src/API/Node/Handlers/GetPeersOwnerHandler.h",
+        "line": 52,
+        "level": "PRIVATE"
+      },
+      {
+        "path": "src/API/Node/Handlers/GetConnectedPeersOwnerHandler.h",
+        "line": 34,
+        "level": "PRIVATE"
+      }
+    ],
+    "test": {
+      "path": "tests/src/API/Test_OwnerHandlerAccess.cpp",
+      "sha256": "F258176D2C08D205DA42BC518834965CFCBAC778FC26CB320A531FC2D0DA518C",
+      "cmake_included": true,
+      "cmake": "tests/src/API/CMakeLists.txt",
+      "integration": {
+        "path": "tests/src/Net/Test_RpcAuth.cpp",
+        "sha256": "6CDE53991C3B032CCD292A18CC5735BF79C17848B432FA38827B3069CFAAA288",
+        "cmake": "tests/src/Net/CMakeLists.txt",
+        "covers": "no-token/wrong-token rejected, valid token accepted, public probe accepted"
+      }
+    },
+    "unchanged": {
+      "get_config": "PRIVATE",
+      "update_config": "ADMIN",
+      "foreign_public": "PUBLIC"
+    },
+    "inspection": "PASS (owner handlers PRIVATE; direct owner level test; RPC auth gate integration test; CMake included)"
+  },
+  "runtime": {
+    "build16_binary": true,
+    "tests_sha256": "1592F3DF041116AC3C891E5AEEB894B6144C9AB1713893C3B265DDA1C8E44CB6",
+    "grin_node_sha256": "7E3AA29E1160244A28DDDFE3A2CCF68BD2A943A97D610B55845561453280CA18",
+    "owner_access_test": "PASS 1/6",
+    "rpc_auth_test": "PASS 1/8",
+    "full": "262/261/1 bodyless-only",
+    "live_api": "PASS at 15:13-15:15: PID33856 build16 7E3AA29E, bind 127.0.0.1:25450; owner no/wrong -32001, valid OK; get_config PRIVATE; update_config ADMIN noauth/wrong; foreign public 200"
+  },
+  "required": [
+    "build16 source freeze + SHA/log",
+    "run OwnerHandlerAccess + full normal",
+    "API smoke: no/bad secret Unauthorized for three; valid secret 200; config levels unchanged; foreign public 200; no secret leak",
+    "restart line1 on build16 and recapture A3 evidence",
+    "ASan/provenance audit"
+  ],
+  "classification": {
+    "build15_a3": "CONFIRMED_FAIL",
+    "build16_static": "PASS_INSPECTION",
+    "build16_owner_tests": "PASS",
+    "build16_live_api": "PASS",
+    "a3_closed": true
+  },
+  "constraints": {
+    "source_edit_by_line3": false,
+    "build_by_line3": false,
+    "live_profile_access": false,
+    "line1_ports_touched": false,
+    "commit": false
+  },
+  "evidence": {
+    "dir": "evidence/line3/layerA-A3-20261103",
+    "get_status_sha256": "4FB396AC3A7DB1A650F2019D77ABB521867AAF1B2058810A9ED48E5DF79841BF",
+    "get_config_sha256": "EDE91B8C67071DD4D6E82B38E0B8A3AB580A09CDFE2D98F732258421FB0242A7",
+    "update_config_sha256": "A060AFC3303D0D59430D2FF88999DA903AC09BA06E3FB657DD5A58B4B58AB959"
+  },
+  "live_evidence": {
+    "probes": "evidence/line3/layerA-A3-live-20261103/independent-probes.txt",
+    "md": "evidence/line3/layerA-A3-live-20261103.md",
+    "json": "evidence/line3/layerA-A3-live-20261103.json"
+  }
+}

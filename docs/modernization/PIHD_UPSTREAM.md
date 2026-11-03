@@ -1,5 +1,7 @@
 # PIHD_UPSTREAM — как PIHD устроен в ветке `staging`
 
+> **Единый действующий план и критерии Testnet/Mainnet:** [REMAINING.md](REMAINING.md). Ниже сохранены технические детали и датированные исторические статусы; при расхождении сверяйте текущий план с первичными доказательствами.
+
 Статус: справка по внешнему коду, **не план и не задача**. Источник:
 `github.com/mimblewimble/grin`, ветка `staging` (HEAD `83ff9af`, 15.10.2026),
 PR #3879 «add PIHD header segment protocol» и #3882 «Implement PIHD header sync»

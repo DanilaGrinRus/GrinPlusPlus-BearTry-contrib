@@ -1,5 +1,7 @@
 # AUDIT_COMMENTS — code comment review
 
+> **Единый действующий план и критерии Testnet/Mainnet:** [REMAINING.md](REMAINING.md). Ниже сохранены технические детали и датированные исторические статусы; при расхождении сверяйте текущий план с первичными доказательствами.
+
 Status: **automated scan + priority manual review complete; repo-wide line-by-line
 review is not claimed.** Completed 01.11.2026 as part of `AUDIT_PACKAGE.md` §4
 and `GAP_MATRIX` G-51. Scope: the 112 source/test files changed since `5f511e6`.

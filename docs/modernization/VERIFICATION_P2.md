@@ -1,5 +1,7 @@
 # Verification P2 — API state snapshot and unspent pagination
 
+> **Единый действующий план и критерии Testnet/Mainnet:** [REMAINING.md](REMAINING.md). Ниже сохранены технические детали и датированные исторические статусы; при расхождении сверяйте текущий план с первичными доказательствами.
+
 ## Implemented
 
 - `IBlockChain::ApiStateSnapshot` with a monotonic mutation sequence.

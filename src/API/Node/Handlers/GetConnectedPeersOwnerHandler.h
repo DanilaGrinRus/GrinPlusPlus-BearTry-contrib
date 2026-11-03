@@ -31,6 +31,8 @@ public:
 		return request.BuildResult(result);
 	}
 
+	ApiAccess::Level GetAccessLevel() const noexcept final { return ApiAccess::Level::PRIVATE; }
+
 	bool ContainsSecrets() const noexcept final { return false; }
 
 private:

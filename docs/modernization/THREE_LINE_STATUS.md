@@ -6,8 +6,9 @@ live binding остаётся за **build-13** (`Tests 001DF4BC…`, `GrinNode 
 Привязка: [build-13 live audit](../../evidence/line3/build13-7b-full-audit-20261103.md),
 [build-15 normal audit](../../evidence/line3/normal-binary-build15-audit-20261103.md).
 
-Единственный оперативный источник статуса — этот файл. Технические досье линий
-содержат детали и историю; исторические срезы не считать текущими без сверки.
+Единый план и критерии готовности — [REMAINING.md](REMAINING.md). Эта доска
+сохраняет оперативные результаты линий; технические досье и прошлые срезы
+нужно сверять с датированными первичными свидетельствами.
 
 ## Артефакты
 
@@ -67,8 +68,8 @@ advert 2/15, Nrd 30/428, KernelIndex 3/48, paired NRD 11/11/0.
 | L1-05 full PIBD/no_sync | **PASS on build-13** | clean headers/state → H=3315600 → PIBD 10,203,442 → rangeproofs 2,943,034 → kernels 3,351,542 → body sync → no_sync 3318655/2945348e…; fixture/loopback caveats |
 | L1-06 restart | PASS (scenario) | persisted profile: awaiting_peers → no_sync same tip/hash; 0 PIBD re-downloads |
 | L1-06b reorg/horizon/negative/resources | BLOCKED/NOT VERIFIED | no +720 source; negative wire/resource not executed |
-| L1-09 old-archive recovery | **FAIL / root cause NOT VERIFIED** | H=3313440 recovery fails at block 3317930: 1 input / log says 0 spent positions, but canonical DB has a 1-entry record (hash 30c524…, leaf 6856589); discrepancy unresolved; ранее проверенная отдача H=3315600 сохраняет PASS только для 7B; [ARCHIVE_RECOVERY_2026-11-03.md](ARCHIVE_RECOVERY_2026-11-03.md) |
-| L1-10 atomic archive publication | OPEN для build-10 / текущий fix NOT VERIFIED | в проверенном срезе direct final-path copy, нет fsync/atomic rename, readiness по exists; новые изменения не считать проверенным исправлением |
+| L1-09 old-archive recovery | PASS на build-13 в сценарии на копии | H3313440 восстановлен, H3315600 свежий snapshot PASS; Release decode и граница rewind исправлены. Crash staging — PASS одного сценария по отчёту линии 1; полная матрица не подтверждена. [Архивный отчёт](ARCHIVE_RECOVERY_2026-11-03.md) |
+| L1-10 atomic archive publication | PARTIAL | Build-13 staged/validated publication и один staging-kill сценарий PASS по отчёту линии 1; build-15 ArchivePublication normal unit PASS. Crash/resource матрица и независимая сверка границ — NOT VERIFIED. [План](REMAINING.md) |
 | L1-07 Output Commitment | NOT VERIFIED | 0 occurrences in 7B/restart; static mechanism, controlled repro BLOCKED |
 | L1-08 ordinary live G-09 | PASS only for 7B scenario | [G09_ORDINARY_LIVE_PASS_2026-11-03.md](G09_ORDINARY_LIVE_PASS_2026-11-03.md); not full G-09/Mainnet |
 
@@ -90,12 +91,14 @@ advert 2/15, Nrd 30/428, KernelIndex 3/48, paired NRD 11/11/0.
 | ID | Статус | Доказательство |
 |---|---|---|
 | Isolation/fast-fail | PASS | isolated HOME/TMP; profile unchanged; 0xC0000409 root cause NOT VERIFIED |
-| ASan | PASS subset (build-10) | source `776B0DB3…` (1292 files), TestsMini `497353EC…`; Nrd 21/365, archive 8/187, Segment 16/68, P2P 7/61, teardown PASS, 0 reports; rocksdb/DB gap |
+| ASan | PASS subset (build-15) | source `BBEFC6FC…`, TestsMini `9D9AA171…`; Nrd 21/365, Segment 16/68, P2P 7/61, teardown PASS, 0 reports; F11/F13/D2, archive и RocksDB/DB в этом ASan subset не покрыты. [Audit](../../evidence/line3/build15-asan-refresh-20261103.md) |
 | Fuzz | PASS smoke | bounded fuzz; coverage-guided fuzzing absent |
 | CI | PARTIAL | pipeline PASS_WITH_UNCOVERED; hosted deployment NOT VERIFIED |
 | TestMain UAF | FIXED (test) | production Global lifetime hazard NOT VERIFIED |
 
-## G-09 verdict
+## Исторический вердикт G-09 build-09/10
+
+Актуальная сводка и ограничения build-13/15 — в начале доски и [REMAINING.md](REMAINING.md).
 
 - **Build-09 ordinary scenario: 7B PASS + restart PASS.**
   Rust с чистыми headers/state → H=3315600 → PIBD 10 203 442 → validation →
@@ -107,12 +110,13 @@ advert 2/15, Nrd 30/428, KernelIndex 3/48, paired NRD 11/11/0.
   persisted-state restart **PASS** при том же tip и без новых PIBD-запросов;
   отдельный полный PIBD с build-10 **NOT VERIFIED**.
 
-## Единый перечень оставшихся задач из GAP_MATRIX
+## Исторический перечень задач — заменён единым планом REMAINING.md
 
-Сверка 03.11.2026. Ниже — текущие цели, без повторения 53 исторических
+Исторический срез: актуальный перечень и приоритеты — [REMAINING.md](REMAINING.md).
+Ниже сохранены прежние цели, без повторения 53 исторических
 карточек и без пересчёта старых результатов. Детали и прежние оценки сохранены
-в [GAP_MATRIX](GAP_MATRIX.md); при конфликте текущий статус — этот журнал и
-привязанные свидетельства. Обозначение DONE в старой матрице само по себе не
+в [GAP_MATRIX](GAP_MATRIX.md); текущий план — [REMAINING.md](REMAINING.md),
+а при расхождении статусов проверяйте датированные первичные свидетельства. Обозначение DONE в старой матрице само по себе не
 доказывает Mainnet-ready.
 
 | ID | Текущая цель и границы | Приоритет для цели Mainnet |
@@ -638,7 +642,9 @@ Grin++ UI — отдельный Electron/React-проект
 методы API продолжают работать; пасхалка не влияет на консенсус, синхронизацию
 или P2P и реализуется только после основных работ API.
 
-## Следующие ворота
+## Исторические следующие ворота — заменены планом REMAINING.md
+
+Актуальные ворота testnet/Mainnet и оставшиеся задачи: [REMAINING.md](REMAINING.md).
 
 Уже выполнено для build-10: full suite **FAIL 254/253/1** с зафиксированным
 исключением, профильные normal-тесты PASS, ASan subset PASS, persisted-state

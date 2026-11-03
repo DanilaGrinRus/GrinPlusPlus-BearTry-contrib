@@ -1,0 +1,2 @@
+HTTP 200
+{"id":26,"jsonrpc":"2.0","result":{"Ok":{"block_header_version":5,"node_version":"Grin++ 1.2.9"}}}

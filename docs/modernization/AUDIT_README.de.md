@@ -2,7 +2,7 @@
 
 ## Aktueller Verweis — 03.11.2026
 
-Der Paketstatus belegt keine Mainnet-Bereitschaft. Aktualisierter Stand und Grenzen: `AUDIT_DELTA.de.md`; operative Übersicht und Nachweise: `THREE_LINE_STATUS.md`. G-09: Szenario 7B PASS, vollständiges G-09 und öffentliches PIBD NOT VERIFIED; Wiederherstellung des alten Archivs FAIL, Grundursache NOT VERIFIED. Build-10 Gesamtsuite 254/253/1; Bodyless-NRD und Kill-Recovery NOT VERIFIED. Die operative Übersicht ist mit Primärnachweisen abzugleichen.
+Einziger Aufgabenplan und Bereitschaftskriterien: [REMAINING.md](REMAINING.md); operative Ergebnisse und Nachweise: [THREE_LINE_STATUS.md](THREE_LINE_STATUS.md). Testnet und Mainnet werden getrennt bewertet. `AUDIT_DELTA.de.md` enthält datierte Stände und ersetzt nicht den aktuellen Plan.
 
 ## Historisches Paket vom 01.11.2026
 

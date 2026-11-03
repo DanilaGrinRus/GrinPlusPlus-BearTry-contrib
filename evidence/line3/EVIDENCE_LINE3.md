@@ -1084,3 +1084,53 @@ binding; build-15 is fail-closed/D2 hardening, not a replacement live claim.
   `build15-asan-refresh-20261103.json` (`CD8E00E7…`),
   `evidence/line3/b15-*-01/`, `b15-asan-*-01/`,
   `full-asan-20261103-133739/`.
+
+## 34. Layer A public Floonet — provenance/defaults pre-audit (2026-11-03)
+
+Line1/task-13 public Floonet is starting; read-only pre-audit only. No build/
+source edit; line1 profile/ports untouched. Build-15 is source-bound but is not
+a replacement for build-13's 7B live binding.
+
+- HEAD `921bcfd` docs-only after build source `75a09d63`; build15 freeze
+  `E59B65FF…` matches current source **1005/1005** (0 mismatch); dirty set is
+  **21 docs + 1 untracked evidence**, no source/test dirt.
+- Build15 Tests `920F000F…`, GrinNode `A7D28BCC…`, build log `5C70A1FB…`.
+- C++ project flags `/W4 /WX`; GrinNode/Tests Level4 + TreatWarningAsError;
+  exceptions `/EHsc` (Sync), not `/EHa`; C deps `/W3`.
+- Defaults: API PUBLIC unauthenticated, PRIVATE/ADMIN require `.api_secret`
+  (ADMIN loopback); REST default 3413 Mainnet/13413 else; PIBD enabled true,
+  archive serving default false + opt-in env, Mainnet opt-in refused; PIHD
+  default OFF, client-only.
+- Public sync/restart checklist prepared: public peers/diversity, actual tip/
+  difficulty, API exposure gates, PIBD/PIHD states, validated archives/no
+  partial, restart persistence/no genesis re-download, resource/process clean,
+  line1 evidence hash reconciliation. Evidence pending.
+
+## 35. Layer A A3 + Layer B evidence (2026-11-03)
+
+- A3 build15 confirmed: owner `get_status` HTTP 200 without secret;
+  `get_config`/`update_config` still Unauthorized; API LOCAL 127.0.0.1 only.
+  Build16 static fix present (uncommitted): PRIVATE overrides in
+  `GetStatusOwnerHandler`, `GetPeersOwnerHandler`,
+  `GetConnectedPeersOwnerHandler`; `Test_OwnerHandlerAccess.cpp` + CMake;
+  `Test_RpcAuth.cpp` (generic private/public gate) + CMake. Static inspection
+  PASS; **build16 runtime NOT VERIFIED** (no build16 binary/log/freeze; latest
+  Tests is build15 `920F000F…`; line1 still build15). A3 not closed.
+- A3 evidence: `layerA-A3-owner-auth-audit-20261103.md` / `.json`;
+  `layerA-A3-20261103/api-owner-*-noauth.txt`; updated
+  `layerA-public-floonet-preauth-20261103.md` / `.json`.
+- L-B1 negative wire static inventory: `layerB1-negative-wire-20261103.md`
+  (16 cases, parsers/tests/gaps + fixtures).
+- L-B1 resource/concurrency matrix: `layerB1-resource-concurrency-20261103.md`
+  (limits/locks/tests/gaps; no stress run).
+- L-B2 crash-publication audit: `layerB2-crash-publication-20261103.md` /
+  evidence dir (prepare-crash + retry success; rename/fsync atomicity and
+  PUB matrix NOT VERIFIED).
+- L-B4 DB fault static matrix: `layerB4-db-fault-matrix-20261103.md`.
+- Index: `layerB-index-20261103.json`. No live/profile/source/build edits by
+  line3; line1 ports untouched.
+
+- Build15 known exceptions: bodyless-only normal; ASan F13/archive link
+  boundary. Build14 invalid historical.
+- Evidence: `layerA-public-floonet-preauth-20261103.md` / `.json`;
+  `build-15-freeze-snapshot-final.json`; `normal-binary-build15-audit-20261103.md`.

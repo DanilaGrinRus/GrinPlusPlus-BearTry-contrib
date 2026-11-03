@@ -1,5 +1,7 @@
 # AUDIT_DELTA (EN) — Grin++ 1.2.9 → Grin v5.5.2 compatibility
 
+> **Single current Testnet/Mainnet readiness plan:** [REMAINING.md](REMAINING.md). Cards and snapshots are dated; older “open/remaining” lists are historical, not competing current task lists.
+
 ## Update — 2026-11-03, 13:30 (UTC+07)
 
 Scope: Grin++ 1.2.9 and Rust Grin v5.5.2. HEAD at review was `75a09d6`; the concurrently changing working tree is not equivalent to the tested binaries. This dated snapshot supersedes conflicting material below; cross-check the operational board against primary evidence too.
@@ -452,7 +454,7 @@ documentation-only commits are tracked in the evidence map, not as cards.
   +                pHeader->GetHeight());
   ```
 - Evidence: E45/E46 (diagnosis), E48 (archive persistence code; live pending).
-- Risk, rollback: archive files consume disk; only horizon activations create them; rollback removes the archive directory and the save/serve hooks.## Known open items (not cards)
+- Risk, rollback: archive files consume disk; only horizon activations create them; rollback removes the archive directory and the save/serve hooks.## Historical open items for that snapshot (not current)
 
 - **G-52 (OPEN)**: historical `TxHashSet` snapshot/serving fails on a spent-position
   history gap (`Rewind: Spent output not found … block 3 316 349`, zero records for
@@ -533,7 +535,7 @@ Artifacts: `GrinNode E16A014E…`, `Tests CC6472B1…`; suite **194 / 2227 PASS*
   (get_kernel positions) and N-07 (get_outputs errors).
 - Fault injection for N-01/N-02/N-05 and load tests are NOT VERIFIED.
 
-### Remaining
+### Historically remaining in that snapshot
 
 - **G-09 live**: complete the Rust PIBD client and record peer/H/response count.
 - G-23 fault injection/full PMMR node sweep.
@@ -541,7 +543,7 @@ Artifacts: `GrinNode E16A014E…`, `Tests CC6472B1…`; suite **194 / 2227 PASS*
 - G-07 persisted index/full block/reorg.
 - G-24 hosted CI; G-49 rangeproof speed-up is deferred.
 
-## Complete remaining project plan — snapshot 2026-11-03, 13:30 (UTC+07)
+## Historical project plan — snapshot 2026-11-03, 13:30 (UTC+07)
 
 This dated list supersedes the historical “Remaining” above; earlier records are
 retained as evidence history. Work is parallel, so recheck current sources, SHA
