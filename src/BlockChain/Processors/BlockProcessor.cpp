@@ -113,7 +113,20 @@ EBlockChainStatus BlockProcessor::ProcessBlockInternal(const FullBlock& block)
 					"Refusing bodyless reorg: body for confirmed block {} at height {} is unavailable; "
 					"txhashset rewind cannot be proven without mutating state.",
 					hash, height);
-				return EBlockChainStatus::UNKNOWN_ERROR;
+				return EBlockChainStatus::LOCAL_REWIND_DATA_MISSING;
+			}
+
+			const auto spentPositions = pBlockDB->GetSpentPositions(hash);
+			for (const TransactionInput& input : pBody->GetInputs())
+			{
+				if (spentPositions.find(input.GetCommitment()) == spentPositions.cend())
+				{
+					LOG_WARNING_F(
+						"Refusing reorg: spent position for commitment {} in confirmed block {} "
+						"at height {} is missing; local rewind data is incomplete.",
+						input.GetCommitment(), hash, height);
+					return EBlockChainStatus::LOCAL_REWIND_DATA_MISSING;
+				}
 			}
 		}
 	}

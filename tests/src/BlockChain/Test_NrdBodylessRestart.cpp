@@ -188,7 +188,7 @@ TEST_CASE("Bodyless NRD refuses reorg safely and restarts on the original tip")
 		REQUIRE(block30bCandidate->GetPreviousHash() == pTip29->GetHash());
 		REQUIRE(block30bCandidate->GetHash() != tip30Hash);
 
-		REQUIRE(pChain->AddBlock(*block30bCandidate) == EBlockChainStatus::UNKNOWN_ERROR);
+		REQUIRE(pChain->AddBlock(*block30bCandidate) == EBlockChainStatus::LOCAL_REWIND_DATA_MISSING);
 		REQUIRE(pChain->GetHeight(EChainType::CONFIRMED) == 30);
 		REQUIRE(pChain->GetTipBlockHeader(EChainType::CONFIRMED)->GetHash() == tip30Hash);
 		REQUIRE(RequireCompleteNrdIndex(pChain)->GetRecentNrdEntries(nrdExcess).size() == 1);

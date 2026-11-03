@@ -10,13 +10,13 @@ PIHD, UI и тестов остаются в своих разделах, но �
 приёмочной сводкой. При расхождении статуса сверять более свежие первичные
 свидетельства и обновлять этот список; не переписывать прошлые результаты.
 
-**Срез / не переносить на другую сборку:** build-43 `Tests 2E84B662…`,
-`GrinNode 9E1242B1…` — source-bound кандидат с исправлениями
-`TransactionKernel::IsCoinbase`, chain-store writer и reorg-preflight.
-Bodyless **fail-closed PASS**: bodyless-state с отсутствующими телами отклоняет
-reorg до мутации, сохраняет tip/NRD-index и переживает restart; full bodyless
-reorg **не поддерживается и не заявляется**. Full suite **273/273, 4355
-assertions** (bodyless-тест видим, не скрыт).
+**Срез / не переносить на другую сборку:** build-45 `Tests B0F4CE1E…`,
+`GrinNode 4F9859C2…` — source-bound кандидат с исправлениями
+`TransactionKernel::IsCoinbase`, chain-store writer, reorg-preflight и typed
+`LOCAL_REWIND_DATA_MISSING`. Bodyless **fail-closed PASS**: bodyless-state с
+отсутствующими телами отклоняет reorg до мутации, сохраняет tip/NRD-index и
+переживает restart; full bodyless reorg **не поддерживается и не заявляется**.
+Full suite **274/274, 4360 assertions** (bodyless-тест видим, не скрыт).
 Layer A public-Floonet PASS — build-16 `GrinNode 7E3AA29E…`, `Tests 1592F3DF…`:
 FULLY_SYNCED 3 321 243, restart catch-up 3 321 250, 0 state re-download/PIBD
 requests, A3 PASS; public PIBD serving **NOT VERIFIED** (disabled). Public legacy
@@ -56,7 +56,7 @@ Full local PIBD 7B — PASS на build-13. Recovery H3313440/H3315600 и staging
   reorg preflight now refuses before mutation if confirmed bodies are missing.
   Real TestServer/BlockDB/OpenExisting path is exercised: safe `UNKNOWN_ERROR`,
   unchanged tip/NRD-index, and a clean restart. Full bodyless **reorg is not
-  supported/claimed**. Full suite **273/273, 4355 assertions**; test visible.
+  supported/claimed**. Full suite **274/274, 4360 assertions**; test visible.
   Peak validation RSS ~9.7 GB, post-sync ~2.8 GB; practical ≥12 GB free RAM.
   Public legacy fallback **BLOCKED/PARTIAL**: pre-reboot run reached headers
   3 321 636 and a 369 MB temporary archive; resumed long run remains active.
@@ -78,10 +78,11 @@ Full local PIBD 7B — PASS на build-13. Recovery H3313440/H3315600 и staging
   final archive observed.
 - [ ] **B3. NRD / криптография:** D2 txpool unit PASS; **IsCoinbase exact-match bug
   fixed** (NRD was treated as coinbase; build-30 regression PASS); chain-store
-  writer deadlock fixed; bodyless **safe-refusal variant PASS** on build-43
-  (real TestServer/BlockDB/OpenExisting, no state mutation, restart consistent;
-  test visible, full 273/273). Full bodyless **reorg remains unsupported/not
-  claimed** — [bodyless evidence](../../evidence/line3/bodyless-nrd-20261103.md).
+  writer deadlock fixed; bodyless **safe-refusal variant PASS** on build-45
+  (real TestServer/BlockDB/OpenExisting, typed `LOCAL_REWIND_DATA_MISSING`, no
+  state mutation, restart consistent; test visible, full 274/274). Full bodyless
+  **reorg remains unsupported/not claimed** —
+  [bodyless evidence](../../evidence/line3/bodyless-nrd-20261103.md).
   Real bodyless PIBD state and kill/recovery remain NOT VERIFIED.
 - [ ] **B4. БД и устойчивость:** G-23 corrupted HeaderMMR/partial PMMR fault
   injection NOT VERIFIED; disk-full/power-loss NOT VERIFIED; Output Commitment

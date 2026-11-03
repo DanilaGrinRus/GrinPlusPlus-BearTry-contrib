@@ -7,12 +7,15 @@ mutation and restarts consistently on the original tip.
 
 ## Final build
 
-- Build-43 **Tests `2E84B662538CF28A83FECDBD60215BED071E1ABAFE4060B77E955C4B0DD123F4`**,
-  GrinNode `9E1242B1CA871E6A12E540EAF1F094F2108A2D940BD4CA588FBFCBD89A1F2149`.
+- Build-45 **Tests `B0F4CE1E64A599B050C40F49CD564141A3DFAD21D560BE92BA03FE5948E6B3E3`**,
+  GrinNode `4F9859C2480ABA572BC5C41EDEA21EB7188BF360FC6F5C3C0CBF7A43262A4160`.
 - Normal `/W4 /WX` build PASS; bodyless targeted test **PASS 41 assertions**;
-  full suite **273/273, 4,355 assertions** on the same Tests binary.
+  full suite **274/274, 4,360 assertions** on the same Tests binary.
 - Test is visible (no `[.]`); it asserts safe refusal plus post-restart
   tip/NRD-index consistency.
+- `EBlockChainStatus::LOCAL_REWIND_DATA_MISSING` is the typed result for missing
+  body/spent-position data; BlockPipe logs it and does not ban the peer. A
+  BlockPipe fault-injection test confirms no ban.
 
 ## Final resolution
 
@@ -76,13 +79,17 @@ unsupported and is not claimed.
 
 ## Evidence
 
-- Build-43 Tests `2E84B662…` / GrinNode `9E1242B1…`; bodyless targeted **PASS
-  (41 assertions)**, full **273/273, 4355 assertions**.
-- `evidence/line3/bodyless-failclosed-b43` — PASS run/manifest.
+- Build-45 Tests `B0F4CE1E…` / GrinNode `4F9859C2…`; bodyless targeted **PASS
+  (41 assertions)**, full **274/274, 4360 assertions**.
+- `evidence/line3/bodyless-failclosed-b45` — PASS run/manifest.
 - `tests/src/BlockChain/Test_NrdBodylessRestart.cpp` — visible test: prebuilt
-  conflicting block, bodyless state, `UNKNOWN_ERROR`, state unchanged, restart.
-- `src/BlockChain/Processors/BlockProcessor.cpp` — preflight refuses reorg when
-  confirmed bodies above fork are missing/empty, before mutation.
+  conflicting block, bodyless state, typed `LOCAL_REWIND_DATA_MISSING`, state
+  unchanged, restart.
+- `tests/src/P2P/Test_BlockPipeBan.cpp` — typed status does not ban the peer;
+  INVALID/exception still do.
+- `src/BlockChain/Processors/BlockProcessor.cpp` — preflight checks body and
+  spent-position completeness before mutation.
+- `src/P2P/Pipeline/BlockPipe.cpp` — local-missing status logged, no ban.
 - `src/BlockChain/BlockChainImpl.cpp` — writer-scope deadlock fix.
 - Historical failing attempts: `bodyless-final-b33`, `bodyless-assert-b32`.
 - `src/BlockChain/...` changes are production paths; only the NRD pre-HF3 test
@@ -95,3 +102,16 @@ refuses the alternative branch and keeps the original tip/index. Recovery is to
 restore/obtain the missing bodies or resync from peers; the node does not
 partially mutate state. This is accepted as the fail-closed variant, not as a
 full reorg PASS.
+
+- The P2P test is an **in-process BlockPipe fault-injection test**, not a live
+  two-node network run. Full live P2P ban/recovery behavior is **NOT VERIFIED**.
+- Automatic resync after `LOCAL_REWIND_DATA_MISSING` is **NOT implemented/tested**.
+  The current operator path is manual: stop the node, preserve the profile/logs,
+  restore the missing bodies or a validated snapshot, then restart/resync on an
+  isolated profile. `ChainResyncer::ResyncChain` was not run on a live/user
+  profile.
+- Missing spent-position preflight is implemented and unit-tested at the
+  BlockChain predicate level; a live P2P reorg with one missing spent record was
+  not run.
+- Real HF3/PIBD snapshot and kill/recovery for this path remain **NOT VERIFIED**;
+  the test uses the explicit AUTOMATED_TESTING NRD seam only.

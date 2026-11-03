@@ -143,6 +143,23 @@ TEST_CASE("BlockPipe does not ban a peer for locally-unverifiable UNKNOWN_ERROR"
 	REQUIRE(pPeer->GetBanReason() == EBanReason::None);
 }
 
+TEST_CASE("BlockPipe does not ban a peer when local rewind data is missing")
+{
+	const FullBlock block = MakeCraftedNrdBlock();
+	auto pBlockChain = std::make_shared<FakeBlockChain>();
+	pBlockChain->NextStatus = static_cast<int>(EBlockChainStatus::LOCAL_REWIND_DATA_MISSING);
+
+	auto pBlockPipe = BlockPipe::Create(Global::GetConfig(), pBlockChain);
+	const PeerPtr pPeer = MakeLoopbackPeer();
+
+	REQUIRE(pBlockPipe->AddBlockToProcess(pPeer, block));
+	REQUIRE(WaitFor([&] { return pBlockChain->AddCalls.load() == 1 && !pBlockPipe->IsProcessingBlock(block.GetHash()); }));
+
+	REQUIRE(pBlockChain->AddCalls.load() == 1);
+	REQUIRE_FALSE(pPeer->IsBanned());
+	REQUIRE(pPeer->GetBanReason() == EBanReason::None);
+}
+
 TEST_CASE("BlockPipe still bans a peer for an INVALID block")
 {
 	const FullBlock block = MakeCraftedNrdBlock();
