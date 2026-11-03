@@ -10,6 +10,7 @@
 #include <Crypto/Models/RangeProof.h>
 #include <Crypto/Models/Signature.h>
 #include <P2P/PIBD/PibdArchiveServer.h>
+#include <P2P/ArchivePublication.h>
 #include <P2P/PIBD/PibdParams.h>
 #include <P2P/PIBD/PibdSegmentService.h>
 #include <P2P/PIBD/PibdSession.h>
@@ -798,4 +799,72 @@ TEST_CASE("PibdArchiveServer::ServingOptInParsing")
 
 	// A hard default wins without consulting the process environment.
 	REQUIRE(PibdArchiveServer::ResolveServingOptIn(true));
+}
+
+// G-09 task-10: persistent archives must be validated as complete containers
+// and published atomically. A partial staging file or a partial final file is
+// never considered ready, and publication replaces the final path only after the
+// staged zip is complete. Root validation against the exact header remains in
+// PibdArchiveServer::LoadAndValidate (see ArchiveZipExtractsAndValidates and
+// RegistryGatingAndExactHash for the wrong-height/hash gate).
+TEST_CASE("P2P::ArchivePublicationValidatedAtomicPublish")
+{
+	const fs::path root = fs::temp_directory_path() / "g09-archive-publication-test";
+	std::error_code error;
+	fs::remove_all(root, error);
+	fs::create_directories(root, error);
+	REQUIRE_FALSE(error);
+
+	const fs::path stateDir = root / "state";
+	WriteTestState(stateDir);
+	const fs::path validZip = BuildArchiveZip(stateDir, root / "build", true);
+	REQUIRE(ArchivePublication::IsReadyArchive(validZip));
+
+	const fs::path finalPath = root / "archive" / "TxHashSet.0.zip";
+	fs::create_directories(finalPath.parent_path(), error);
+	REQUIRE_FALSE(error);
+	const fs::path staged = ArchivePublication::StagingPath(finalPath);
+
+	// Interrupted copy: a truncated staging file is not publishable, leaves no
+	// final archive, and the staging file is cleaned up on failure.
+	fs::copy_file(validZip, staged, fs::copy_options::overwrite_existing, error);
+	REQUIRE_FALSE(error);
+	fs::resize_file(staged, 4096);
+	std::string publishError;
+	REQUIRE_FALSE(ArchivePublication::PublishStaged(staged, finalPath, &publishError));
+	REQUIRE_FALSE(publishError.empty());
+	REQUIRE_FALSE(fs::exists(finalPath));
+
+	// Complete staged file publishes atomically and is readable by the legacy
+	// zip reader.
+	fs::copy_file(validZip, staged, fs::copy_options::overwrite_existing, error);
+	REQUIRE_FALSE(error);
+	REQUIRE(ArchivePublication::PublishStaged(staged, finalPath, &publishError));
+	REQUIRE(ArchivePublication::IsReadyArchive(finalPath));
+
+	// Existing partial final file: readiness rejects it and a subsequent publish
+	// atomically replaces it instead of trusting it.
+	fs::resize_file(finalPath, 1024);
+	REQUIRE_FALSE(ArchivePublication::IsReadyArchive(finalPath));
+	fs::copy_file(validZip, staged, fs::copy_options::overwrite_existing, error);
+	REQUIRE_FALSE(error);
+	REQUIRE(ArchivePublication::PublishStaged(staged, finalPath, &publishError));
+	REQUIRE(ArchivePublication::IsReadyArchive(finalPath));
+
+	const std::shared_ptr<ZipFile> pZip = ZipFile::Load(finalPath);
+	REQUIRE(pZip != nullptr);
+	const std::vector<std::string> entries = pZip->ListFiles();
+	REQUIRE(ArchivePublication::HasEntryPrefix(entries, "output/pmmr_leaf.bin."));
+	REQUIRE(ArchivePublication::HasEntryPrefix(entries, "rangeproof/pmmr_leaf.bin."));
+
+	// Missing archive content (no kernel hash) is rejected rather than published.
+	const fs::path brokenZip = BuildArchiveZip(stateDir, root / "build-broken", false);
+	REQUIRE_FALSE(ArchivePublication::IsReadyArchive(brokenZip));
+
+	// Bounded recovery: only the same target hash is skipped after a failure.
+	REQUIRE(ArchivePublication::SameRecoveryTarget("abc123\n", "abc123"));
+	REQUIRE_FALSE(ArchivePublication::SameRecoveryTarget("abc123\n", "def456"));
+	REQUIRE_FALSE(ArchivePublication::SameRecoveryTarget("", "abc123"));
+
+	fs::remove_all(root, error);
 }

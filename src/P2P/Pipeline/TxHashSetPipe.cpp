@@ -1,5 +1,6 @@
 #include "TxHashSetPipe.h"
 #include <P2P/TxHashSetArchive.h>
+#include "../ArchivePublication.h"
 #include <P2P/Pipeline/TxHashSetLimits.h>
 #include "../Connection.h"
 #include "../ConnectionManager.h"
@@ -208,11 +209,10 @@ void TxHashSetPipe::Thread_SendTxHashSet(
 	fs::path zipFilePath;
 	bool temporaryArchive = false;
 
-	std::error_code archiveError;
 	const fs::path archivedPath = TxHashSetArchive::Path(
 		Global::GetConfig().GetTxHashSetPath(),
 		pHeader);
-	if (fs::exists(archivedPath, archiveError)) {
+	if (ArchivePublication::IsReadyArchive(archivedPath)) {
 		// A state activated at this archive horizon was saved for serving; no
 		// historical rewind is needed (G-52).
 		zipFilePath = archivedPath;

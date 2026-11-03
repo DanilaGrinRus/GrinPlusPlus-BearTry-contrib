@@ -49,6 +49,8 @@ advert 2/15, Nrd 30/428, KernelIndex 3/48, paired NRD 11/11/0.
 | L1-05 full PIBD/no_sync | PASS (scenario) | 7B: headers from zero → H=3315600 → PIBD 10,203,442 → validation → body sync → no_sync 3318655/2945348e…; fixture/loopback caveats |
 | L1-06 restart | PASS (scenario) | persisted profile: awaiting_peers → no_sync same tip/hash; 0 PIBD re-downloads |
 | L1-06b reorg/horizon/negative/resources | BLOCKED/NOT VERIFIED | no +720 source; negative wire/resource not executed |
+| L1-09 old-archive recovery | **FAIL / root cause NOT VERIFIED** | H=3313440 recovery fails at block 3317930: 1 input / log says 0 spent positions, but canonical DB has a 1-entry record (hash 30c524…, leaf 6856589); discrepancy unresolved; H=3315600 serving unaffected; [ARCHIVE_RECOVERY_2026-11-03.md](ARCHIVE_RECOVERY_2026-11-03.md) |
+| L1-10 atomic archive publication | OPEN | direct final-path copy, no fsync/atomic rename; readiness via exists; fix in progress |
 | L1-07 Output Commitment | NOT VERIFIED | 0 occurrences in 7B/restart; static mechanism, controlled repro BLOCKED |
 | L1-08 ordinary live G-09 | PASS only for 7B scenario | [G09_ORDINARY_LIVE_PASS_2026-11-03.md](G09_ORDINARY_LIVE_PASS_2026-11-03.md); not full G-09/Mainnet |
 

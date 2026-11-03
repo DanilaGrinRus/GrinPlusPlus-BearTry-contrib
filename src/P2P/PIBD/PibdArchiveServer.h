@@ -5,6 +5,7 @@
 #include "../../PMMR/RangeProofPMMR.h"
 #include "../../PMMR/TxHashSetImpl.h"
 #include "../../PMMR/Zip/TxHashSetZip.h"
+#include "../ArchivePublication.h"
 #include "PibdParams.h"
 
 #include <BlockChain/BlockChain.h>
@@ -728,10 +729,33 @@ private:
 		std::error_code error;
 		const fs::path archivePath = TxHashSetArchive::Path(
 			Global::GetConfig().GetTxHashSetPath(), *pHorizon);
-		if (!fs::is_regular_file(archivePath, error) || error) {
+		const auto bytes = fs::file_size(archivePath, error);
+		const auto mtime = fs::last_write_time(archivePath, error);
+		if (error) {
 			m_registry.SetAbsent();
 			return;
 		}
+
+		const std::string archiveSignature =
+			archivePath.string() + "|" + std::to_string(bytes) + "|" +
+			std::to_string(mtime.time_since_epoch().count());
+
+		// Readiness validates the container; a partial/truncated archive is never
+		// extracted or advertised. Cache the invalid signature so the worker does
+		// not re-open a broken zip every interval.
+		std::string archiveError;
+		if (!ArchivePublication::IsReadyArchive(archivePath, &archiveError)) {
+			if (archiveSignature != m_invalidArchiveSignature) {
+				m_invalidArchiveSignature = archiveSignature;
+				LOG_WARNING_F(
+					"PIBD archive: ignoring unready archive {}: {}",
+					archivePath.filename().string(),
+					archiveError);
+			}
+			m_registry.SetAbsent();
+			return;
+		}
+		m_invalidArchiveSignature.clear();
 
 		m_registry.BeginPreparation();
 		LOG_INFO_F(
@@ -934,6 +958,9 @@ private:
 
 	std::mutex m_garbageMutex;
 	std::deque<fs::path> m_garbage;
+
+	// Worker-only cache: avoids reopening the same invalid archive every interval.
+	std::string m_invalidArchiveSignature;
 
 	inline static std::mutex s_instanceMutex;
 	inline static std::shared_ptr<PibdArchiveServer> s_instance;

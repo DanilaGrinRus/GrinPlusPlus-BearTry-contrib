@@ -1,0 +1,8 @@
+BUILD-10 PERSISTED-STATE RESTART EVIDENCE - 2026-11-03T01:59:51.6833216Z
+binaries: GrinNode 60D7F7A6B3FFCC702B260E80036B7143A06DB9B036AD3DF3754B3C7B9438CB23; Tests C17C3BC04BE04C501DB425E3617A71E61985E9257EF41D879E130E28F8B621A4
+fixture: g09-live-02 trimmed candidate==body==3318655; archive H=3315600; Rust persisted header/state from 7B+restart
+final=NO_SYNC
+cpp_new_PIBD_request_count=0
+rust_new_PIBD_markers=0
+criterion: no_sync at 3318655/2945348e... with no PIBD re-download; C++ inbound=1; no crash/wrong H
+cpp log: cpp-new.log; rust log: rust-new.log; status: restart-status.jsonl

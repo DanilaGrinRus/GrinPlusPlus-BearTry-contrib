@@ -1,0 +1,8 @@
+BUILD-10 RESTART FINAL EVIDENCE - 2026-11-03T02:00:02.2913591Z
+binaries: GrinNode 60D7F7A6B3FFCC702B260E80036B7143A06DB9B036AD3DF3754B3C7B9438CB23 (7,809,024 B; PE 0x6AE93E33); Tests C17C3BC04BE04C501DB425E3617A71E61985E9257EF41D879E130E28F8B621A4 (9,410,560 B; PE 0x6AE93F14); preserved C:\DHW\.tmp\line1-build-10\
+fixture: g09-live-02 trimmed candidate==body==3318655; archive H=3315600; Rust persisted state (7B PASS)
+result: Rust no_sync at 08:59:29 tip=3318655 hash=2945348e... conn=1; C++ FULLY_SYNCED inbound=1; no PIBD re-download (cpp segment requests 0, rust PIBD markers 0); no crash/wrong H
+kernel index: published (1 line(s): generation 1, 3354613 kernels) - build-10 improvement vs build-09 fail-closed
+separate archive warning persists: ArchivePibdState Failed to archive activated TxHashSet: Rewind: Spent output not found for Commitment{0989ac92...} (count=1); restart no_sync unaffected
+classification: build-10 persisted-state restart PASS; not a new full PIBD; no source edits/commit
+evidence: build10-restart.txt, build10-restart-status.jsonl, build10-cpp-new.log, build10-rust-new.log

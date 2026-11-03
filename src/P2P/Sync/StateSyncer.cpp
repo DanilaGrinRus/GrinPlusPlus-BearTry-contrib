@@ -1,16 +1,69 @@
 #include "StateSyncer.h"
+#include "../ArchivePublication.h"
 #include "../Messages/TxHashSetRequestMessage.h"
+#include "../PIBD/PibdArchiveServer.h"
 #include "../PIBD/PibdSync.h"
 #include <P2P/TxHashSetArchive.h>
+#include <PMMR/Zip/TxHashSetZip.h>
+#include <atomic>
 #include <fstream>
 
+#include <Common/Util/FileUtil.h>
+#include <Common/Util/HexUtil.h>
 #include <Consensus.h>
 #include <Common/Logger.h>
+#include <Core/File/FileRemover.h>
+#include <Core/File/FileSync.h>
 #include <Core/Global.h>
 #include <P2P/Capabilities.h>
 #include <P2P/ConnectedPeer.h>
 #include <P2P/Peer.h>
 #include <P2P/SyncStatus.h>
+
+namespace
+{
+	fs::path RecoveryFailedMarker()
+	{
+		return Global::GetConfig().GetTxHashSetPath() / "pibd_state.recovery_failed";
+	}
+
+	bool IsRecoveryBlocked(const Hash& horizonHash)
+	{
+		try {
+			std::vector<uint8_t> bytes;
+			if (!FileUtil::ReadFile(RecoveryFailedMarker(), bytes)) {
+				return false;
+			}
+
+			const std::string content(bytes.begin(), bytes.end());
+			return ArchivePublication::SameRecoveryTarget(
+				content,
+				HexUtil::ConvertToHex(horizonHash.GetData()));
+		}
+		catch (...) {
+			return false;
+		}
+	}
+
+	void ClearRecoveryBlocked()
+	{
+		std::error_code error;
+		fs::remove(RecoveryFailedMarker(), error);
+	}
+
+	void RecordRecoveryFailure(const Hash& horizonHash, const std::string& error)
+	{
+		try {
+			FileUtil::WriteTextToFile(
+				RecoveryFailedMarker(),
+				HexUtil::ConvertToHex(horizonHash.GetData()) + "\n" + error + "\n");
+			FileSync::Flush(RecoveryFailedMarker());
+		}
+		catch (...) {
+			// The failure marker is diagnostic only; never mask the original failure.
+		}
+	}
+}
 
 bool StateSyncer::SyncState(SyncStatus& syncStatus)
 {
@@ -294,7 +347,13 @@ StateSyncer::EPibdResult StateSyncer::TryPibd(SyncStatus& syncStatus)
 
 	if (chainStatus == EBlockChainStatus::SUCCESS) {
 		LOG_INFO("PIBD state sync completed and validated.");
-		ArchivePibdState(m_pibdHorizonHash);
+		std::string archiveError;
+		if (!ArchivePibdState(m_pibdHorizonHash, &archiveError)) {
+			RecordRecoveryFailure(m_pibdHorizonHash, archiveError);
+			LOG_WARNING_F(
+				"Archiving the activated TxHashSet failed (bounded; no retry for this target): {}",
+				archiveError);
+		}
 		syncStatus.SetPibdPeer("");
 		syncStatus.SetPibdProgress(0, 0);
 		syncStatus.SetPibdStarted(0);
@@ -340,63 +399,114 @@ void StateSyncer::TryRecoverArchive()
 
 		const fs::path archivePath = TxHashSetArchive::Path(
 			Global::GetConfig().GetTxHashSetPath(), pHeader);
-		if (fs::exists(archivePath)) {
+		if (ArchivePublication::IsReadyArchive(archivePath)) {
+			ClearRecoveryBlocked();
+			return;
+		}
+
+		// Fail-closed and bounded: a persisted failure marker is only honored for
+		// the same target hash. A different activation/horizon gets one fresh try.
+		if (IsRecoveryBlocked(horizonHash)) {
+			LOG_DEBUG("TxHashSet archive recovery for this target already failed; skipping rewind retry.");
 			return;
 		}
 
 		LOG_INFO_F("Recovering the missing TxHashSet archive at height {}.", pHeader->GetHeight());
-		ArchivePibdState(horizonHash);
+		std::string error;
+		if (!ArchivePibdState(horizonHash, &error)) {
+			RecordRecoveryFailure(horizonHash, error);
+			LOG_WARNING_F(
+				"TxHashSet archive recovery failed (bounded; no retry for this target): {}",
+				error);
+		}
 	}
 	catch (std::exception& e) {
 		LOG_WARNING_F("TxHashSet archive recovery failed: {}", e.what());
 	}
 }
 
-void StateSyncer::ArchivePibdState(const Hash& horizonHash)
+bool StateSyncer::ArchivePibdState(const Hash& horizonHash, std::string* pError)
 {
+	std::string localError;
+	std::string& error = pError != nullptr ? *pError : localError;
+	fs::path staged;
 	try {
 		const BlockHeaderPtr pHeader = m_pBlockChain->GetBlockHeaderByHash(horizonHash);
 		if (pHeader == nullptr) {
-			return;
+			error = "archive header is missing";
+			return false;
 		}
 
 		const fs::path archivePath = TxHashSetArchive::Path(
 			Global::GetConfig().GetTxHashSetPath(),
 			pHeader);
-		std::error_code ec;
-		if (fs::exists(archivePath, ec)) {
-			return;
+		// Readiness must validate the archive, not merely check existence. Root
+		// validation still happens in PibdArchiveServer before it is advertised.
+		if (ArchivePublication::IsReadyArchive(archivePath)) {
+			ClearRecoveryBlocked();
+			return true;
 		}
 
 		const fs::path zipPath = m_pBlockChain->SnapshotTxHashSet(pHeader);
 		if (zipPath.empty()) {
-			LOG_WARNING("PIBD activation produced an empty archive snapshot.");
-			return;
+			error = "PIBD activation produced an empty archive snapshot";
+			return false;
+		}
+		FileRemover zipRemover(zipPath);
+
+		if (!ArchivePublication::StageSnapshot(zipPath, archivePath, &error)) {
+			return false;
+		}
+		staged = ArchivePublication::StagingPath(archivePath);
+
+		// Validate MMR sizes + roots against the target header before publishing.
+		// This extracts to a private temp directory; it never touches the live
+		// txhashset or the confirmed chain.
+		static std::atomic<uint64_t> s_validationId{ 0 };
+		const fs::path validationRoot = fs::temp_directory_path() /
+			("g09-archive-validate-" + pHeader->ShortHash() + "-" +
+				std::to_string(s_validationId.fetch_add(1)));
+		FileRemover validationRemover(validationRoot);
+		TxHashSetZip archiveZip(Global::GetConfig());
+		if (!archiveZip.Extract(staged, *pHeader, validationRoot)) {
+			error = "archive extraction failed before publication";
+			std::error_code removeError;
+			fs::remove(staged, removeError);
+			return false;
 		}
 
-		fs::create_directories(archivePath.parent_path(), ec);
-		fs::copy_file(zipPath, archivePath, fs::copy_options::overwrite_existing, ec);
-		std::error_code removeError;
-		fs::remove(zipPath, removeError);
-
-		if (ec) {
-			LOG_WARNING_F(
-				"Failed to persist the TxHashSet archive for height {}: {}",
-				pHeader->GetHeight(),
-				ec.message());
-		} else {
-			LOG_INFO_F(
-				"Archived TxHashSet at height {} for serving ({})",
-				pHeader->GetHeight(),
-				archivePath.string());
+		std::string validationError;
+		if (PibdArchiveServer::LoadAndValidate(validationRoot, pHeader, &validationError) == nullptr) {
+			error = validationError.empty() ? "archive validation failed before publication" : validationError;
+			std::error_code removeError;
+			fs::remove(staged, removeError);
+			return false;
 		}
+
+		if (!ArchivePublication::PublishStaged(staged, archivePath, &error)) {
+			return false;
+		}
+
+		ClearRecoveryBlocked();
+		LOG_INFO_F(
+			"Archived TxHashSet at height {} for serving ({})",
+			pHeader->GetHeight(),
+			archivePath.string());
+		return true;
 	}
 	catch (std::exception& e) {
-		LOG_WARNING_F("Failed to archive the activated TxHashSet: {}", e.what());
+		error = e.what();
 	}
 	catch (...) {
-		LOG_WARNING("Failed to archive the activated TxHashSet: unknown error");
+		error = "unknown error";
 	}
+
+	if (!staged.empty()) {
+		std::error_code removeError;
+		fs::remove(staged, removeError);
+	}
+	LOG_WARNING_F("Failed to archive the activated TxHashSet: {}", error);
+	return false;
 }
 
 void StateSyncer::DisablePibd()

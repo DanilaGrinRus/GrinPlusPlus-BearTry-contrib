@@ -738,4 +738,34 @@ and `line1-build-10`.
   `asan-build10-refresh-20261103.md`, `build10-asan-refresh-20261103.json`,
   `evidence/line3/b10-*-02/`, `evidence/line3/b10-asan-*`.
 
+## 22. Task-10/11 archive recovery — independent audit (2026-11-03)
+
+Read-only audit; original `g09-live-02` not modified; no build/commit. Existing
+7B PASS remains valid.
+
+- **Recovery FAIL confirmed (three processes):** target H=3313440, snapshot
+  flushed 3318655; block 3317930; commitment
+  `0989ac92c748aaf654f06fb9023746d3d34358b051dd2ac952bec39fecc6288967`;
+  1 input / **0 spent positions**. Occurrences: 08:26:28, 08:45:10 (build-09
+  restart), 08:59:42 (build-10 restart). Existing H=3315600 archive serving and
+  7B body/no_sync are unaffected.
+- **Empty record, not missing:** `BlockDBImpl::GetSpentPositions` throws when a
+  record is absent; the log's `0 spent position(s)` means the `SPENT_OUTPUTS`
+  record exists with an empty vector. `TxHashSetImpl::Rewind` then fails each
+  input lookup. Root cause of the empty record remains task-11/line2.
+- **Atomic publication OPEN:** `StateSyncer::ArchivePibdState` copies the
+  snapshot zip directly to the final archive path with `fs::copy_file`
+  (no fsync/atomic rename); its error path does not remove a partial final
+  file, and readiness is `fs::exists` with no zip/roots validation. Task-10
+  requirement is not met.
+- **Original hashes:** archive H=3315600 `13F9781E…`; marker
+  `B671C82A…` = hash `84d7ac67…` / height `3313440`; configs `355B15F7…` /
+  `AEE5E753…`; archive dir also contains untouched `.staging-3615bb625917`.
+- **Evidence:** `task10-11-archive-recovery-independent-audit-20261103.md`,
+  `task10-11-archive-recovery-manifest-20261103.json`,
+  `evidence/line3/task10-11-archive-recovery-20261103/`; failure logs
+  `77518AEA…` (final), `0AC62411…` (build-09 restart), `CFB19A60…`
+  (build-10 restart).
+
+
 

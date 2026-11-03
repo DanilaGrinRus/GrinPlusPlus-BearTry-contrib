@@ -49,8 +49,10 @@ private:
 	void DisablePibd();
 	void SendPibdRequests(const std::chrono::steady_clock::time_point now);
 	// Saves a snapshot of the newly activated state at the archive horizon so it
-	// can be served later without a historical rewind (G-52).
-	void ArchivePibdState(const Hash& horizonHash);
+	// can be served later without a historical rewind (G-52). Validation and
+	// atomic publication happen before the archive becomes visible; returns false
+	// with pError on failure.
+	bool ArchivePibdState(const Hash& horizonHash, std::string* pError = nullptr);
 	// If a previous activation left pibd_state.complete but no archive (e.g. the
 	// snapshot failed), retry once on startup.
 	void TryRecoverArchive();

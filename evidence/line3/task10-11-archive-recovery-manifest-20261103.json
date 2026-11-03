@@ -1,0 +1,95 @@
+{
+  "schema": "gpp-line3-task10-11-archive-recovery-audit/v1",
+  "captured_utc": "2026-11-03T02:29:00Z",
+  "captured_local": "2026-11-03T09:29:00+07:00",
+  "tasks": ["task-10-archive-recovery", "task-11-spent-positions"],
+  "status": "FAIL_CONFIRMED / REGEN_NOT_VERIFIED / ATOMICITY_OPEN",
+  "original_fixture": {
+    "root": "C:\\DHW\\.tmp\\g09-live-02",
+    "modified_by_audit": false,
+    "archive_zip": "C:\\DHW\\.tmp\\g09-live-02\\cpp-profile\\NODE\\TXHASHSET\\archive\\TxHashSet.3315600.3615bb625917.zip",
+    "archive_sha256": "13F9781E207F787F5F58367F9C98947D4A645D660E1CA23186AD55D9D064C530",
+    "archive_bytes": 3118746579,
+    "archive_horizon": 3315600,
+    "marker": "C:\\DHW\\.tmp\\g09-live-02\\cpp-profile\\NODE\\TXHASHSET\\pibd_state.complete",
+    "marker_sha256": "B671C82AFD2ACAE07738344141ECB8A7AC84235C25387E1A0AAAEC237B90D40B",
+    "marker_lines": ["84d7ac6763566ac67eaa8393688320c79a644321124d7ba94a1300f56af9ccea", "3313440"],
+    "marker_horizon": 3313440,
+    "config_cpp": {"path": "C:\\DHW\\.tmp\\g09-live-02\\servers\\server_config.json", "sha256": "355B15F769C182CFAE00096146AF441A60F50732F38D27C521C56A9495307C7C", "bytes": 466},
+    "config_rust": {"path": "C:\\DHW\\.tmp\\g09-live-02\\rust\\grin.toml", "sha256": "AEE5E75375B23902A2B4DE0BCA3B372CB599BEC8FEAC4DB0F7C375079F2B8B2B", "bytes": 8563},
+    "log_cpp_current": {"path": "C:\\DHW\\.tmp\\g09-live-02\\cpp-profile\\LOGS\\Node.log", "sha256": "07678EF075143AEAC498854AF8DCBF1EAF3C9DF9C8F13BF63B1BAC8046212BE8"},
+    "log_rust_current": {"path": "C:\\DHW\\.tmp\\g09-live-02\\rust\\grin.log", "sha256": "C21A28592FA82527075DF0805E15E011D872BB16226100D676E6366260AA8555"},
+    "archive_dir_observed": ["TxHashSet.3315600.3615bb625917.zip", ".staging-3615bb625917 (directory; not touched)"]
+  },
+  "failure_instances": [
+    {
+      "evidence": "evidence/line3/g09-live-02-7b-success-20261103/cpp-7B-final-Node.log",
+      "sha256": "77518AEA4AB6CC50AE91F73FAFF4A5D6D2AB7486C70C87BD4D0110CFA208C99D",
+      "time_local": "2026-11-03T08:26:28.315+07:00",
+      "target_height": 3313440,
+      "flushed_height": 3318655,
+      "block_height": 3317930,
+      "block_short_hash": "30c524b8424f",
+      "commitment": "0989ac92c748aaf654f06fb9023746d3d34358b051dd2ac952bec39fecc6288967",
+      "input_count": 1,
+      "spent_position_count": 0,
+      "message": "Spent output not found ... in block 3317930 (1 input(s), 0 spent position(s), target height 3313440)"
+    },
+    {
+      "evidence": "evidence/line3/g09-live-02-7b-success-20261103/restart/7B-restart-cpp-new.log",
+      "sha256": "0AC6241121FF35BECD29632540B326B7467CAD720E6B5476BF46E23AFBA11086",
+      "time_local": "2026-11-03T08:45:10.317+07:00",
+      "target_height": 3313440,
+      "flushed_height": 3318655,
+      "block_height": 3317930,
+      "commitment": "0989ac92c748aaf654f06fb9023746d3d34358b051dd2ac952bec39fecc6288967",
+      "input_count": 1,
+      "spent_position_count": 0
+    },
+    {
+      "evidence": "evidence/line3/task10-11-archive-recovery-20261103/build10-cpp-new.log",
+      "sha256": "CFB19A60078E846637A8736C83EC2459770B4F3D146DBF8D6893495A4A6A6961",
+      "time_local": "2026-11-03T08:59:42.955+07:00",
+      "target_height": 3313440,
+      "flushed_height": 3318655,
+      "block_height": 3317930,
+      "commitment": "0989ac92c748aaf654f06fb9023746d3d34358b051dd2ac952bec39fecc6288967",
+      "input_count": 1,
+      "spent_position_count": 0,
+      "note": "build-10 persisted restart also logs the same archive warning once; restart no_sync unaffected"
+    }
+  ],
+  "preserved_build10_evidence": [
+    {"name": "evidence/line3/task10-11-archive-recovery-20261103/build10-restart-final.txt", "sha256": "405DB2EBF04536CE7ABBC07B5DD6B220D93987F247B4C9409F1A1620B9614C0E", "bytes": 1115},
+    {"name": "evidence/line3/task10-11-archive-recovery-20261103/build10-cpp-new.log", "sha256": "CFB19A60078E846637A8736C83EC2459770B4F3D146DBF8D6893495A4A6A6961", "bytes": 4480},
+    {"name": "evidence/line3/task10-11-archive-recovery-20261103/build10-restart-status.jsonl", "sha256": "602FBC37DA24C552B9F28FE3FB45D5C5FCBEEB48336EAB0E1C82EB5FDE9854C4", "bytes": 477},
+    {"name": "evidence/line3/task10-11-archive-recovery-20261103/build10-restart.txt", "sha256": "71BE0A3F869FD0597358CE08890565C6EBC48D0B75552A39F418DF2A3FD0DF4C", "bytes": 597},
+    {"name": "evidence/line3/task10-11-archive-recovery-20261103/build10-rust-new.log", "sha256": "25601BCCABEB096B2B2D58841F6E0EC4DEB3D62FDF294136CFBE24ED1B235FC8", "bytes": 5558}
+  ],
+  "source_audit": {
+    "git_head_at_audit": "fa91e9219272aa8988c6ca27404554424a8341d9",
+    "build10_freeze_snapshot": "evidence/line3/build-10-freeze-snapshot-final.json",
+    "build10_freeze_snapshot_sha256": "0E51D63287AF8F96B3094A9F24B120C2F663736CAA1E9B4DF5E8C2B6EB6CCA5E",
+    "files": [
+      {"path": "src/P2P/Sync/StateSyncer.cpp", "sha256": "31AF0EE8A16E9D9ED8DFBD95087495E2353BE57BA88E72A12BF48E1C50393479", "bytes": 14519, "lines": "316-353 TryRecoverArchive; 355-400 ArchivePibdState"},
+      {"path": "src/PMMR/TxHashSetImpl.cpp", "sha256": "617AD908C0EB611BCF3A7DB5DD129BED24D7F7C830EBA9DE415FCB3F03966655", "bytes": 26563, "lines": "157-188 ApplyBlock writes spent positions; 665-717 Rewind checks spent map"},
+      {"path": "src/PMMR/TxHashSetManager.cpp", "sha256": "F2C81C8A9C641CE2CD66EF47757750046B264D462359100FE90C5CBD4170DA05", "bytes": 5788, "lines": "98-192 SaveSnapshot temp zip"},
+      {"path": "src/Database/BlockDBImpl.cpp", "sha256": "8B4460B740B84AE7076B9615D52E2200C43E876873F5516B9D0F981BAFC6975B", "bytes": 16628, "lines": "280-286 AddSpentPositions; 288-300 GetSpentPositions missing-vs-empty"}
+    ]
+  },
+  "findings": {
+    "recovery_fail": "CONFIRMED (three independent C++ processes, H=3313440, block 3317930, commitment 0989ac92..., 1 input/0 spent positions)",
+    "missing_vs_empty": "CONFIRMED empty SPENT_OUTPUTS record: GetSpentPositions throws on absent record; log reports 0 spent positions, so record exists with empty vector",
+    "root_cause_empty_record": "NOT PROVEN in this audit; task-11 line2 owns DB record-level proof",
+    "existing_archive_3315600": "UNAFFECTED; archive zip exists and 7B PIBD/body/no_sync PASS remains valid",
+    "next_horizon_regeneration": "NOT VERIFIED / observed recovery FAIL",
+    "atomic_publication": "OPEN: ArchivePibdState copies snapshot zip directly to final path with fs::copy_file (no fsync/atomic rename); error path does not remove partial final archive; readiness uses fs::exists; no zip/roots validation before ready",
+    "original_fixture_modified": false
+  },
+  "non_claims": [
+    "no controlled copy recovery experiment by line3",
+    "no direct RocksDB SPENT_OUTPUTS record-byte inspection",
+    "no next-horizon success / reorg / negative / resource / Mainnet readiness PASS",
+    "no build or commit"
+  ]
+}

@@ -8,6 +8,7 @@
 - [GAP_MATRIX.md](GAP_MATRIX.md) — расхождения с Rust, риски и G-пункты. Исторические разделы не считать текущими без сверки со свежим срезом.
 - [G09_ARCHIVE_SERVING.md](G09_ARCHIVE_SERVING.md) — техническая история и доказательства линии 1. Начальные разделы описывают ранний review; сверяйте с позднейшими результатами и SHA.
 - [G09_ORDINARY_LIVE_PASS_2026-11-03.md](G09_ORDINARY_LIVE_PASS_2026-11-03.md) — scenario-scoped PASS: ordinary Rust 5.5.2 через PIBD/activation/body sync на build-09, с ограничениями и evidence.
+- [ARCHIVE_RECOVERY_2026-11-03.md](ARCHIVE_RECOVERY_2026-11-03.md) — FAIL восстановления старого архива H=3313440, пустые spent positions и atomic publication risk; H=3315600 PASS не отозван.
 - [NRD_DIFFERENTIAL.md](NRD_DIFFERENTIAL.md) — результаты и ограничения NRD, rebuild и Rust differential линии 2.
 - [CI_REPRO.md](CI_REPRO.md), [SANITIZERS.md](SANITIZERS.md), [FAULT_INJECTION.md](FAULT_INJECTION.md) — воспроизводимость, sanitizers и покрытие отказов линии 3.
 
