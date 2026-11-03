@@ -21,11 +21,13 @@ preserved copies in `C:\DHW\.tmp\line1-build-10\`. Build console
 
 Build-10 source freeze snapshot:
 `evidence/line3/build-10-freeze-snapshot-final.json`
-(SHA `E84E31657CED042E7963AAF3FFF401FD95C6D4DC36D203DD5A8B53A3BD4488BE`,
+(SHA `0E51D63287AF8F96B3094A9F24B120C2F663736CAA1E9B4DF5E8C2B6EB6CCA5E`,
 1002 compiled-root files, aggregate
 `F1E47615D024E566CFF6EB2E908326364529813CF85111F7280B41EC6ADD869C`,
-repo HEAD `ee843f059b573159c79b0be14fff84440741d989`). Only docs changed after
-the build; no compiled-root source file changed after build start.
+repo HEAD `77b397032bb48317c6b944582ae9722dec5e85da`; snapshot was first
+captured at `ee843f05`, then HEAD advanced to `77b3970` with identical
+compiled-root contents). Only docs changed after the build; no compiled-root
+source file changed after build start.
 
 ## 2. Normal audit results
 
@@ -64,25 +66,28 @@ Each run used `-TestArgs @('<filter>') -FailOnNoTests -KeepBinary`; all retained
 the tested source SHA `C17C3BC0…`, had zero test-less runs, and left the real
 user profile unchanged. Manifests are in `evidence/line3/<run-id>/manifest.json`.
 
-## 3. ASan status — NOT RUN (STALE)
+## 3. ASan refresh — PASS (subset), copied tree
 
-Existing ASan binding remains build-09:
+Authorized refresh from frozen build-10 sources in the copied tree
+(`C:\DHW\.tmp\asan-line3\gpp-tree`; no shared build):
 
-- source manifest `CF78C188A3F69F242F326B5DEFDA3DFD1D4A1E3A11591DAB8A9CDBF98DB68D85`
-- TestsMini `12C3D16C21E80F86BC3C736BE5046872454D1A6D7FA26B018D782E89D153778B`
-- build-09 git_head `cb510302f5bebc0d64c5d6a1c0571046a63593ef`
-
-The copied ASan tree is **stale** against build-10 sources: `ci-pipeline`
-comparison reports **mismatch=13** (changed/missing task-9 source, test and
-CMake files), including
-`GetKernelHandler.h`, `BlockDb.h`, `BlockDBImpl.*`, `TestServer.h`, task-9 test
-files/CMakeLists. Therefore:
-
-- build-10 ASan refresh: **NOT RUN (STALE, mismatch=13)**.
-- No rebuild was performed under the instruction **No build/commit**; a rebuild
-  requires explicit ASan build authorization.
-- Do not bind build-09 ASan `CF78C188…`/`12C3D16C…` to build-10. No ASan claim
-  is made for build-10.
+- source manifest `776B0DB3356FE953930E91B464F9BD6C5C8D8B30CACA9D53EED22AB785A37E7F`
+  (1292 files), build BUILD_PASS (98.649 s), build manifest
+  `full-asan-20261103-090921`; ASan copied tree matches all 1002 build-10
+  freeze entries (**0 mismatch / 0 missing**).
+- TestsMini `497353ECC81E3F88E414773F29FE0618C59707DB45FD9643418A89CA4758007B`.
+- PASS: Nrd* 21/365, archive 8/187, Segment 16/68, P2P+advert 7/61; teardown
+  regression PASS (zero tests, exit 0, no ASan, runtime DLL copied);
+  **0 ASan reports**.
+- ASan-BLOCKED normal-only: `Test_NrdPreCommit`, `Test_NrdFalseBan`,
+  `Test_NrdBatchSafety`, `Test_KernelIndex`, BlockPipe, bodyless, kill;
+  Database/ChainState/rocksdb and sysroot C libs uninstrumented.
+- Evidence: `asan-build10-refresh-20261103.md`,
+  `build10-asan-refresh-20261103.json`,
+  `evidence/line3/full-asan-20261103-090921/`, `b10-asan-*`.
+- Note: optional `tests_mini_prefix` target was not built because
+  `TestMain_legacy_static.cpp` is absent in the build-10 tree; teardown uses
+  TestsMini, so the required teardown check is PASS.
 
 ## 4. Classification and caveats
 
@@ -92,7 +97,8 @@ files/CMakeLists. Therefore:
 - Bodyless-NRD/kill-recovery remain NOT VERIFIED; bodyless is a known test-only
   exception, not a production regression.
 - `mg_start` failures are environment/port-collision only; clean rerun had zero.
-- ASan/fuzz not refreshed; no ASan PASS claim for build-10.
+- ASan refresh PASS covers only the subset above; no full Tests.exe ASan, no
+  fuzz/coverage, no hosted-CI claim.
 - Build-10 remains the final normal candidate; no build/commit performed by
   line3.
 
@@ -104,4 +110,10 @@ files/CMakeLists. Therefore:
 - `evidence/line3/b10-full-01/` — INVALID port-collision run (not counted)
 - `evidence/line3/build-10-freeze-snapshot-final.json` — source freeze/binary
   binding
+- `evidence/line3/asan-build10-refresh-20261103.md` — ASan refresh report
+- `evidence/line3/build10-asan-refresh-20261103.json` + `... /build10-asan-refresh-20261103/`
+  — ASan manifest/copy
+- `evidence/line3/full-asan-20261103-090921/` — full ASan build manifest/logs
+- `evidence/line3/b10-asan-nrd-01/`, `b10-asan-archive-01/`,
+  `b10-asan-segment-01/`, `b10-asan-p2p-01/`, `b10-asan-teardown-01/`
 - `evidence/line3/normal-binary-build10-audit-20261103.md` — this document

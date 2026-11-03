@@ -70,7 +70,7 @@ advert 2/15, Nrd 30/428, KernelIndex 3/48, paired NRD 11/11/0.
 | ID | Статус | Доказательство |
 |---|---|---|
 | Isolation/fast-fail | PASS | isolated HOME/TMP; profile unchanged; 0xC0000409 root cause NOT VERIFIED |
-| ASan | PASS subset (build-09) | source manifest `CF78C188…`, TestsMini `12C3D16C…`; 0 reports; rocksdb/DB gap |
+| ASan | PASS subset (build-10) | source `776B0DB3…` (1292 files), TestsMini `497353EC…`; Nrd 21/365, archive 8/187, Segment 16/68, P2P 7/61, teardown PASS, 0 reports; rocksdb/DB gap |
 | Fuzz | PASS smoke | bounded fuzz; coverage-guided fuzzing absent |
 | CI | PARTIAL | pipeline PASS_WITH_UNCOVERED; hosted deployment NOT VERIFIED |
 | TestMain UAF | FIXED (test) | production Global lifetime hazard NOT VERIFIED |

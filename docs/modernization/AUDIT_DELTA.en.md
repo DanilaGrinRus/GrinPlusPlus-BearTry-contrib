@@ -3,7 +3,7 @@
 
 - C++ added: **+22,619 lines**; deleted **−625**; 191 tracked + 22 new;
 - diff/new C++ text volume: **≈ +927.8 KiB**;
-- final `GrinNode.exe`: **7,805,440 B = 7,622.5 KiB = 7.44 MiB**;
+- final `GrinNode.exe`: **7,809,024 B = 7,622.5 KiB = 7.44 MiB**;
 - **exe growth vs 1.2.9: NOT MEASURED** — no original binary is preserved; 7.7 MB is the final size, not a delta;
 - artifacts: `GrinNode 60D7F7A6…`, `Tests C17C3BC0…`; suite **254 cases / 253 passed / 1 test-only fail**, production 0 fails (explicit exception; see THREE_LINE_STATUS).
 - **G-09 fixed-H (experimental, 2026-11-03): historical PASS.** Build-09 `0A3B7D66…`/`F90EEF38…`: ordinary 7B full PIBD/activation/body sync/no_sync **PASS**, restart **PASS**. Build-10 `C17C3BC0…`/`60D7F7A6…`: clean full 254/253/1 (bodyless test-only), final-binary persisted restart **PASS**, kernel index published. Full G-09 still **NOT VERIFIED**: reorg/horizon BLOCKED, negative/resources NOT VERIFIED, Output Commitment not reproduced, C++ fixture-based/loopback. Ordinary Rust 5.5.2 reached `no_sync` at H=3,318,655 / hash `2945348e…`, with the same C++ tip, 1 inbound / 0 outbound; PIBD 10,203,442/10,203,442, roots/rangeproof/kernel validation/body sync completed. The previous restarts were caused by `missing left sibling` at output segment 1648 and fixed by sending available leaves in `SegmentGenerator`. Limits: headers preseeded, reorg/restart/negative/mainnet not covered.

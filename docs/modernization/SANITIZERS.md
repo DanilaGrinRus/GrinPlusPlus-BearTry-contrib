@@ -166,11 +166,15 @@ KernelIndex — normal-only (rocksdb). Pipeline `ci-0a3-01` overall **FAIL** hon
 **Build-10 final candidate (2026-11-03):** Tests
 `C17C3BC0…` + GrinNode `60D7F7A6…`; clean serialized full **254 cases /
 253 passed / 1 failed** (bodyless-only), all pre-registered filters PASS.
-ASan refresh **NOT RUN (STALE, mismatch=13)**: existing ASan tree remains
-build-09 `CF78C188…`/TestsMini `12C3D16C…`; no rebuild under No build/commit and
-no ASan claim for build-10. Details:
+ASan refresh **PASS (subset)**: source manifest `776B0DB3…` (1292 files),
+full ASan BUILD_PASS 98.6 s, TestsMini `497353EC…`; Nrd* 21/365, archive 8/187,
+Segment 16/68, P2P+advert 7/61, teardown PASS, **0 ASan reports**;
+ASan-BLOCKED normal-only PreCommit/FalseBan/BatchSafety/KernelIndex/BlockPipe/
+bodyless/kill; rocksdb and sysroot C libs uninstrumented. Optional
+`tests_mini_prefix` not built (missing legacy source). Details:
 `evidence/line3/normal-binary-build10-audit-20261103.md`,
-`evidence/line3/build10-asan-stale-20261103.json`.
+`evidence/line3/asan-build10-refresh-20261103.md`,
+`evidence/line3/build10-asan-refresh-20261103.json`.
 
 **Находка ASan — исправлено в тестовом runtime (Lead-approved option b):**
 исходный `tests/src/TestMain.cpp` (`static TestRuntime`) давал exit-time

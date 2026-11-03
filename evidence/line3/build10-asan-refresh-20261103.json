@@ -1,0 +1,55 @@
+{
+  "schema": "gpp-line3-build10-asan-refresh/v1",
+  "captured_utc": "2026-11-03T02:15:00Z",
+  "captured_local": "2026-11-03T09:15:00+07:00",
+  "status": "PASS_SUBSET",
+  "source": {
+    "tree": "C:\\DHW\\.tmp\\asan-line3\\gpp-tree",
+    "source_manifest_sha256": "776B0DB3356FE953930E91B464F9BD6C5C8D8B30CACA9D53EED22AB785A37E7F",
+    "source_files": 1292,
+    "git_head": "77b397032bb48317c6b944582ae9722dec5e85da",
+    "build10_freeze_snapshot": "evidence/line3/build-10-freeze-snapshot-final.json",
+    "build10_freeze_snapshot_sha256": "0E51D63287AF8F96B3094A9F24B120C2F663736CAA1E9B4DF5E8C2B6EB6CCA5E",
+    "build10_freeze_entries": 1002,
+    "build10_freeze_aggregate_sha256": "F1E47615D024E566CFF6EB2E908326364529813CF85111F7280B41EC6ADD869C",
+    "freeze_match": "0 mismatch, 0 missing"
+  },
+  "full_asan_build": {
+    "run_id": "full-asan-20261103-090921",
+    "result": "BUILD_PASS",
+    "manifest": "evidence/line3/full-asan-20261103-090921/build_manifest.json",
+    "manifest_sha256": "88ADE17A7FBAA2542E9BB93A72B18C14E3F5D0CCE0D9045EA1A28694590BEA24",
+    "targets": ["Common", "Core", "Crypto", "PMMR"],
+    "wall_sec": 98.649,
+    "asan_runtime_sha256": "3AA742521E8CBD23252F0545AA51D5A15624A3E4430FBE2F81567AFAEB3FC59B"
+  },
+  "tests_mini": {
+    "path": "C:\\DHW\\.tmp\\asan-line3\\fuzz-linked\\TestsMini.exe",
+    "sha256": "497353ECC81E3F88E414773F29FE0618C59707DB45FD9643418A89CA4758007B",
+    "bytes": 8343552,
+    "pe_timestamp": "0x6AE942E7",
+    "linked_manifest": "C:\\DHW\\.tmp\\asan-line3\\fuzz-linked\\build_manifest.json",
+    "linked_manifest_sha256": "96353019A62E2158E558CDE189A635DF70162DE726615D65A130EEE47BB38382",
+    "linked_targets": {
+      "p2p_responses": "898C56CCC451A7262D27338BB7912FF229AEC17CE9CDBAECF9E4C19A38830688",
+      "segment_validate": "F8D880B74FCD3C66C35071327C4EF4A7BAF9B55EEBA784895C81B8AF5B1514B6",
+      "diag_lifetime": "72B96DA29648D8A1ECE9ED5BE4C387B2C318F56F681BC8EBAEA7BAE72298A078"
+    },
+    "tests_mini_prefix": "NOT BUILT: missing tests/src/TestMain_legacy_static.cpp; optional target not used by teardown"
+  },
+  "runs": {
+    "nrd": {"filter": "Nrd*", "result": "PASS", "cases": 21, "assertions": 365, "run_id": "b10-asan-nrd-01"},
+    "archive": {"filter": "PibdArchiveServer::*", "result": "PASS", "cases": 8, "assertions": 187, "run_id": "b10-asan-archive-01"},
+    "segment": {"filter": "Segment*", "result": "PASS", "cases": 16, "assertions": 68, "run_id": "b10-asan-segment-01"},
+    "p2p_advert": {"filter": "Capabilities::*,MessageTypes::*,GrinVersion::*,P2P::AdvertisedTip*", "result": "PASS", "cases": 7, "assertions": 61, "run_id": "b10-asan-p2p-01"},
+    "teardown": {"result": "PASS", "run_id": "b10-asan-teardown-01", "zero_tests_ran": true, "exit_code": 0, "asan_report": false, "runtime_dll_copied": true}
+  },
+  "asan_reports": 0,
+  "boundaries": {
+    "asan_blocked_normal_only": ["Test_NrdPreCommit", "Test_NrdFalseBan", "Test_NrdBatchSafety", "Test_KernelIndex", "BlockPipe", "bodyless-restart", "kill-recovery"],
+    "not_instrumented": ["Database/ChainState/rocksdb", "sysroot C libraries (zlib, minizip, libsodium, secp256k1-zkp, roaring)"],
+    "no_claim": ["full Tests.exe under ASan", "fuzz/coverage", "hosted CI"]
+  },
+  "code_changes": false,
+  "commit": false
+}

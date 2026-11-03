@@ -700,7 +700,7 @@ on the fixture.
   `A18EA2C2…`, cpp log `77518AEA…`, rust log `B904A7A7…`, post-validation
   `C0054CAB…`). Nodes were stopped after evidence capture; line3 did not restart.
 
-## 21. FINAL build-10 normal audit — bodyless-only exception; ASan STALE (2026-11-03)
+## 21. FINAL build-10 normal audit — bodyless-only exception; ASan refresh PASS (2026-11-03)
 
 Final candidate identity: Tests
 `C17C3BC04BE04C501DB425E3617A71E61985E9257EF41D879E130E28F8B621A4`
@@ -724,13 +724,18 @@ and `line1-build-10`.
   failures = 0; bound as final normal candidate **with explicit exception**,
   not fully green. Bodyless-NRD/kill recovery remain NOT VERIFIED.
 - **Source freeze:** `evidence/line3/build-10-freeze-snapshot-final.json`
-  (`E84E3165…`, 1002 files, aggregate `F1E47615…`, HEAD `ee843f05…`); only docs
-  changed after build.
-- **ASan:** current ASan tree remains build-09
-  `CF78C188…`/TestsMini `12C3D16C…`; comparison vs build-10 sources gives
-  **mismatch=13**; ASan refresh **NOT RUN (STALE)** under No build/commit. No
-  ASan claim for build-10; prior build-09 ASan PASS is historical.
+  (`0E51D632…`, 1002 files, aggregate `F1E47615…`, HEAD `77b3970…`); only docs
+  changed after build; ASan copied tree matches all 1002 entries (0 mismatch).
+- **ASan refresh PASS:** source manifest `776B0DB3…` (1292 files), build
+  `full-asan-20261103-090921` BUILD_PASS 98.6 s; TestsMini `497353EC…`.
+  Nrd* 21/365, archive 8/187, Segment 16/68, P2P+advert 7/61, teardown PASS
+  (zero tests), **0 ASan reports**. ASan-BLOCKED normal-only:
+  PreCommit/FalseBan/BatchSafety/KernelIndex/BlockPipe/bodyless/kill; rocksdb/
+  Database/ChainState and sysroot C libs uninstrumented. Optional
+  `tests_mini_prefix` NOT BUILT (missing `TestMain_legacy_static.cpp`); teardown
+  uses TestsMini and PASSes.
 - **Evidence:** `normal-binary-build10-audit-20261103.md`,
-  `build10-asan-stale-20261103.json`, `evidence/line3/b10-*-02/` run manifests.
+  `asan-build10-refresh-20261103.md`, `build10-asan-refresh-20261103.json`,
+  `evidence/line3/b10-*-02/`, `evidence/line3/b10-asan-*`.
 
 

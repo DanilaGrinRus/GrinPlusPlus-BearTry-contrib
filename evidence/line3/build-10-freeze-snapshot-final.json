@@ -3,7 +3,7 @@
   "captured_utc": "2026-11-03T02:07:00Z",
   "captured_local": "2026-11-03T09:07:00+07:00",
   "repo": "C:\\DHW\\Gplus\\src\\grinplusplus",
-  "git_head": "ee843f059b573159c79b0be14fff84440741d989",
+  "git_head": "77b397032bb48317c6b944582ae9722dec5e85da",
   "source_roots": [
     "CMakeLists.txt",
     "cmake",
@@ -5040,5 +5040,5 @@
       "pe_timestamp": "0x6AE93E33"
     }
   },
-  "note": "Current source has task-9 changes; only docs were modified after the build finished. No compiled-root source file changed after build start; post-build docs-only drift is not part of this freeze aggregate. ASan tree mismatch=13 vs this source."
+  "note": "HEAD advanced ee843f05 -> 77b3970 (build-10 API/index commit); compiled-root contents are identical: ASan copied tree matches all 1002 snapshot entries (0 mismatch/missing). Only docs changed after the build; post-build docs-only drift is not part of this aggregate."
 }
