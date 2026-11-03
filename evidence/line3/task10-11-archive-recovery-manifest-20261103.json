@@ -157,7 +157,8 @@
     "build13": "Tests 001DF4BC.../GrinNode F39BDFE5...; normal 257/256/1 bodyless-only (4219/4218); ASan subset PASS; boundary regression 1/8 PASS",
     "h3313440_recovery": "OBSERVED PASS: archive TxHashSet.3313440.84d7ac676356.zip 3,116,449,317 B SHA 7FB23058...; 17 entries/required/leaf; LoadAndValidate before atomic publish; tip/roots unchanged; no failure signals",
     "h3315600": "OBSERVED PASS: new snapshot 3,118,756,420 B SHA DA23A1C7...; old 13F9781E... preserved; archived/serving ready across 3317930",
-    "line1_formal": "PENDING; independent observed evidence recorded"
+    "line1_formal": "PENDING; independent observed evidence recorded",
+    "build14_failclosed_pending": "P1 confirmed read-only: R1 Rewind null previous header (TxHashSetImpl:719); R2 confirmed-tip vs TxHashSet flushed invariant; R3 container-only readiness early-return suppresses regeneration; R4 marker write failure permits restart retries. Build14 fixes/tests scheduled after build13 live; no source changes."
   },
   "non_claims": [
     "no controlled copy recovery experiment by line3",
@@ -200,5 +201,29 @@
     "md": "evidence/line3/task10-11-build13-recovery-audit-20261103.md",
     "json": "evidence/line3/task10-11-build13-recovery-20261103.json",
     "node_log_sha256": "D099D3798F592FD7BCAA50E035DF31EF09AB91523880E87C370BAB1B6E8211F8"
+  },
+  "build14_preaudit": {
+    "md": "evidence/line3/build14-failclosed-preauth-20261103.md",
+    "json": "evidence/line3/build14-failclosed-preauth-20261103.json",
+    "line2_audit_sha256": "EB4DB197A7F96E63E88C7E4B1102D7F156636D850671A42CC4B26927F62B13FE"
+  },
+  "build13_full_7b": {
+    "status": "PASS",
+    "evidence": "evidence/line3/build13-7b-full-20261103",
+    "audit": "evidence/line3/build13-7b-full-audit-20261103.md",
+    "counts": {
+      "pibd_leaves": 10203442,
+      "range_proofs": 2943034,
+      "kernels": 3351542
+    },
+    "tip": "3318655/2945348e",
+    "caveat": "test/floonet; errors are env/cosmetic; crash/resource not run"
+  },
+  "build15_audit": {
+    "status": "normal bodyless-only; F11/F13/D2 PASS; ASan partial pass; source-bound",
+    "tests": "920F000F...",
+    "grin_node": "A7D28BCC...",
+    "normal": "260/259/1 (4267/4266)",
+    "asan": "partial: Nrd/Segment/P2P; F13/archive link-blocked"
   }
 }

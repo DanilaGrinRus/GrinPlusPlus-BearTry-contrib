@@ -716,7 +716,17 @@ void TxHashSet::Rewind(std::shared_ptr<IBlockDB> pBlockDB, const BlockHeader& he
 			leavesToAdd.push_back(iter->second.GetLeafIndex().Get());
 		}
 
-		m_pBlockHeader = pBlockDB->GetBlockHeader(m_pBlockHeader->GetPreviousHash());
+		const Hash previousHash = m_pBlockHeader->GetPreviousHash();
+		const BlockHeaderPtr pPreviousBlockHeader = pBlockDB->GetBlockHeader(previousHash);
+		if (pPreviousBlockHeader == nullptr) {
+			LOG_ERROR_F(
+				"Cannot rewind TxHashSet: previous header {} for block {} is missing",
+				previousHash, m_pBlockHeader->GetHash());
+			throw TXHASHSET_EXCEPTION_F(
+				"Missing previous header {} while rewinding block {}",
+				previousHash, m_pBlockHeader->GetHash());
+		}
+		m_pBlockHeader = pPreviousBlockHeader;
 	}
 
 	m_pKernelMMR->Rewind(header.GetNumKernels());

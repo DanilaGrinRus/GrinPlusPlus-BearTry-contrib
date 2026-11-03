@@ -6,12 +6,29 @@
 #include <Core/Models/Transaction.h>
 #include <Core/Models/ShortId.h>
 #include <Crypto/Models/Hash.h>
+#include <Core/Enums/Environment.h>
 #include <shared_mutex>
 #include <set>
 
 class TransactionPool : public ITransactionPool
 {
 public:
+	// D2 Rust grin 5.5.2 pool/src/transaction_pool.rs verify_kernel_variants:
+	// NRD is rejected when the network feature is off, then when the head header
+	// version is below HF3/v4. Pure seam for tests; AddTransaction wires it to
+	// Global::GetEnv() and the last confirmed header version.
+	enum class ENrdPolicyResult
+	{
+		OK,
+		NRD_NOT_ENABLED,
+		NRD_PRE_HF3
+	};
+
+	static ENrdPolicyResult CheckNrdPolicy(
+		const std::vector<TransactionKernel>& kernels,
+		const uint16_t headerVersion,
+		const Environment environment);
+
 	TransactionPool(const Config& config)
 		: m_config(config), m_memPool(), m_stemPool() { }
     virtual ~TransactionPool() = default;

@@ -1,0 +1,33 @@
+{
+  "block_sync": {
+    "bans_fraud_height": 0,
+    "bans_invalid_data": 0,
+    "reassignments": 0,
+    "requests": 0,
+    "timeouts": 0
+  },
+  "chain": {
+    "hash": "2945348ef765160a160008cfd7c2b41aa44ed3cea77d6bcfe2083acf0fc4bbf1",
+    "height": 3318655,
+    "previous_hash": "66d4e7a0bdaea80ecd8d3d2b21f4f09117b3d239cd47e3dabeb2cf7eea604425",
+    "total_difficulty": 1207035333622
+  },
+  "db_last_repair": 0,
+  "db_repaired": 0,
+  "header_height": 3318655,
+  "network": {
+    "height": 3318655,
+    "num_inbound": 1,
+    "num_outbound": 1,
+    "total_difficulty": 1207035333622
+  },
+  "protocol_version": 1000,
+  "state": {
+    "download_size": 0,
+    "downloaded": 0,
+    "processing_status": 0
+  },
+  "sync_status": "FULLY_SYNCED",
+  "user_agent": "Grin++ 1.2.9",
+  "waiting_reason": "waiting for peers: 0 active connection(s), 1 required"
+}

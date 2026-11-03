@@ -1,34 +1,38 @@
 # Gplus: статус трёх линий (оперативная доска)
 
-Дата сверки: 2026-11-03. **Build-13** (`Tests 001DF4BC…B3A8`,
-`GrinNode F39BDFE5…1201`) — текущий кандидат; build-10 historical. Привязка:
-[normal build-13](../../evidence/line3/normal-binary-build13-audit-20261103.md),
-[recovery build-13](../../evidence/line3/task10-11-build13-recovery-audit-20261103.md).
+Дата сверки: 2026-11-03. **Build-15** (`Tests 920F000F…6227D`,
+`GrinNode A7D28BCC…7246C`) — source-bound fail-closed/D2 candidate. Full 7B
+live binding остаётся за **build-13** (`Tests 001DF4BC…`, `GrinNode F39BDFE5…`).
+Привязка: [build-13 live audit](../../evidence/line3/build13-7b-full-audit-20261103.md),
+[build-15 normal audit](../../evidence/line3/normal-binary-build15-audit-20261103.md).
 
 Единственный оперативный источник статуса — этот файл. Технические досье линий
 содержат детали и историю; исторические срезы не считать текущими без сверки.
 
 ## Артефакты
 
-### Build-13 — текущий кандидат
+### Build-15 — current source-bound hardening candidate
 
-- Tests `001DF4BC31F194DCDDE83FE736B06EB6FD942666F2BEFF62FF1FB5F1BB8DB3A8`,
-  9 465 856 B; preserved `C:\DHW\.tmp\build-13\Tests.exe`.
-- GrinNode `F39BDFE5A8DAB22BE969406874EDCEFD023770BE1A1BA6330D7506B2C2571201`,
-  7 846 912 B; preserved `C:\DHW\.tmp\build-13\GrinNode.exe`.
-- Clean full: **257 cases / 256 passed / 1 failed**; единственный fail —
-  test-only bodyless; production/agreed suites 0 fails.
-- PASS: archive 8/187, Nrd 30/428, KernelIndex 5/74, handler 2/49, schema 2/26,
-  duplicate-range 1/10, ArchivePublication 1/83, boundary 1/8, preflight 1/4,
-  SpentOutputs 1/6, advert 2/15.
-- ASan source `BFBF2186…`, TestsMini `ECDD6D5E…`; subset PASS, 0 reports.
-- Recovery H=3313440 **PASS** (`3,116,449,317 B`, SHA `7FB23058…`);
-  fresh H=3315600 **PASS** (`3,118,756,420 B`, SHA `DA23A1C7…`); no partial,
-  tip/roots unchanged, no marker loop.
-- Final persisted restart **PASS**: no_sync 3318655/`2945348e…`, 0 PIBD
-  re-downloads, 0 SPENT_DIAG/preflight/Rewind.
-- Open: crash-interrupted publication, automatic horizon loop, bodyless/kill,
-  full G-09/Mainnet.
+- Tests `920F000F38958DA545ED3BC57DB796A0062CB5EF6E304E7DB354DAD065E6227D`,
+  9 495 552 B.
+- GrinNode `A7D28BCC2F4A1B8FC5D57083E0F5F43F75A81BDF1771C946BE041A4CADA7246C`,
+  7 850 496 B.
+- Full: **260 / 259 passed / 1 failed** — только test-only bodyless.
+- PASS: F11 Rewind fail-closed 1/2, F13 archive readiness 1/38, D2 txpool 1/8,
+  PibdArchiveServer 9/225, ArchivePublication 1/83, SpentOutputs 1/6,
+  preflight 1/4, boundary 1/8, Nrd 30/428, KernelIndex 5/74, остальные группы.
+- ASan: source `BBEFC6FC…`, TestsMini partial PASS, 0 reports; F13/archive
+  ASan link-blocked (NORMAL-only), не full ASan claim.
+- Build-15 full 7B не прогонялся; final persisted restart **PASS**: no_sync 3318655/2945348e…, 0 PIBD re-downloads, 0 recovery/preflight/Rewind, marker absent.
+
+### Build-13 — full 7B live binding
+
+- Tests `001DF4BC…`, GrinNode `F39BDFE5…`; clean full 7B: PIBD 10 203 442,
+  rangeproofs 2 943 034, kernels 3 351 542, no_sync 3318655 / `2945348e…`.
+- H=3313440 recovery PASS; H=3315600 fresh snapshot PASS; crash-interrupted
+  publication PASS; tip/roots unchanged.
+- Open: automatic horizon loop, negative/resource, full Mainnet.
+
 
 ### Build-10 — historical candidate with exception
 
@@ -60,7 +64,7 @@ advert 2/15, Nrd 30/428, KernelIndex 3/48, paired NRD 11/11/0.
 | L1-02 opt-in/archive server | PARTIAL | build-09 compiled; default-off; archive H=3315600; capabilities dynamic |
 | L1-03 advertised tip | PASS (code/unit) | atomic snapshot + Pong header-head fix; advert 2/15 PASS; restart peer-wait root cause evidenced |
 | L1-04 wrong-H refusal | PASS (bounded) | build-09: Rust H=3317040 vs C++ archive H=3315600; exact-hash refusals, no segments/wrong data/crash; fallback NOT VERIFIED |
-| L1-05 full PIBD/no_sync | PASS (scenario) | 7B: headers from zero → H=3315600 → PIBD 10,203,442 → validation → body sync → no_sync 3318655/2945348e…; fixture/loopback caveats |
+| L1-05 full PIBD/no_sync | **PASS on build-13** | clean headers/state → H=3315600 → PIBD 10,203,442 → rangeproofs 2,943,034 → kernels 3,351,542 → body sync → no_sync 3318655/2945348e…; fixture/loopback caveats |
 | L1-06 restart | PASS (scenario) | persisted profile: awaiting_peers → no_sync same tip/hash; 0 PIBD re-downloads |
 | L1-06b reorg/horizon/negative/resources | BLOCKED/NOT VERIFIED | no +720 source; negative wire/resource not executed |
 | L1-09 old-archive recovery | **FAIL / root cause NOT VERIFIED** | H=3313440 recovery fails at block 3317930: 1 input / log says 0 spent positions, but canonical DB has a 1-entry record (hash 30c524…, leaf 6856589); discrepancy unresolved; ранее проверенная отдача H=3315600 сохраняет PASS только для 7B; [ARCHIVE_RECOVERY_2026-11-03.md](ARCHIVE_RECOVERY_2026-11-03.md) |
@@ -77,7 +81,7 @@ advert 2/15, Nrd 30/428, KernelIndex 3/48, paired NRD 11/11/0.
 | False-ban classification | PASS (fault-injected) | BlockPipe* 3/16; live organic peer-ban NOT VERIFIED |
 | Real bodyless NRD state | NOT VERIFIED | short-chain HF3 header-version constraint; no production hook |
 | Rebuild interruption/kill | NOT VERIFIED | child kill works; test-side restore fragile |
-| D2 mainnet NRD | PARTIAL | block path wired; txpool/index policy OPEN |
+| D2 mainnet NRD | PASS (unit) build-15 | block gate + txpool policy implemented; D2 tests 1/8 PASS; index policy remains fail-closed/open documentation |
 | API `get_kernel` direct scan | FIXED в build-10, проверено профильными тестами | ранее dangling pointer на block-local optional; время жизни исправлено; GetKernelHandler 2/49 PASS, включая direct-scan; live API/reorg и полная ASan-проверка DB не подтверждены. [Task-9 review](../../evidence/line3/task9-delta-review-20261103.md); [build-10 audit](../../evidence/line3/normal-binary-build10-audit-20261103.md) |
 | Kernel-index duplicate excess | FIXED в build-10, тесты и публикация индекса PASS в пределах сценариев | ранее ключ по excess затирал повторы: 3,354,613 leaves / 3,354,326 unique; schema v2 хранит позиции, профильные schema/duplicate-range тесты PASS; индекс опубликован при restart. Live API/reorg и ASan для RocksDB остаются NOT VERIFIED. [Task-9 review](../../evidence/line3/task9-delta-review-20261103.md); [build-10 audit](../../evidence/line3/normal-binary-build10-audit-20261103.md) |
 
@@ -113,11 +117,11 @@ advert 2/15, Nrd 30/428, KernelIndex 3/48, paired NRD 11/11/0.
 
 | ID | Текущая цель и границы | Приоритет для цели Mainnet |
 |---|---|---|
-| G-09 | PARTIAL: 7B и persisted restart прошли в своих пределах; archive recovery FAIL/root cause NOT VERIFIED, безопасная публикация, reorg/horizon, negative wire, ресурсы и публичный PIBD остаются открытыми. Подробнее L1. | P0 |
+| G-09 | PARTIAL: clean build-13 7B PASS, build-15 persisted restart PASS; archive recovery H3313440/H3315600 + crash PUB PASS, SpentOutputs root cause fixed; reorg/horizon BLOCKED, negative wire/resource и публичный PIBD NOT VERIFIED. Подробнее L1. | P0 |
 | G-07 | PARTIAL: NRD differential и synthetic tests покрывают ограниченные случаи; D2 txpool/index policy, bodyless/reorg/kill-recovery остаются открытыми. Подробнее L2. | P0 для включённых правил / проверок |
 | G-23 | PARTIAL: MMR structural/rebuild и hash/root revalidation документированы; fault-injection и restart после сбоев остаются открытыми. | P0/P1 по риску целостности |
 | G-24 | PARTIAL: локальная сборка/gate существуют; чистый checkout с закреплёнными зависимостями и hosted CI требуют подтверждения. | P1 |
-| G-53 | PARTIAL: методы и профильные исправления build-10 есть; проверить live `/v2`, пагинацию, reorg, auth и взаимодействие wallet/UI в согласованном объёме. | P1 для пользовательских сценариев |
+| G-53 | PARTIAL: методы и профильные исправления build-10 есть; проверить live `/v2`, пагинацию, reorg, auth и взаимодействие wallet/UI. Отдельный план слоя Flint messenger/Tor/Slatepack — ниже; реализация NOT VERIFIED. | P1 для пользовательских сценариев; расширение по отдельной приёмке |
 | G-27 / G-44 | PARTIAL / experimental: пользователь хочет клиентский PIHD с переключением и fallback; G-44 — исторический план каркаса той же работы; в план добавлена серверная отдача header-сегментов для честного capability. Подробности ниже. | P2 расширение; безопасный fallback важен, если включено |
 | G-49 | OPEN: производительность rangeproof; сначала baseline и оценка практической пользы, затем только безопасные измеримые изменения. [Аудиторский план](PERF_RANGEPROOF.md#аудиторский-комментарий-и-план-выполнения-g-49--03112026). | P2 |
 | G-45 | OPEN: изолированный Mainnet dry-run после обязательных проверок и отдельного решения о запуске. | Финальный гейт |
@@ -461,6 +465,109 @@ RocksDB/DB под ASan и причина исторического `0xC0000409`
 параллельная очередь, сложный cache и новые расширения необязательны без
 измеренной потребности. Оценка — несколько рабочих дней как ориентир, зависит
 от snapshot API и живого staging-стенда; не обещание срока.
+
+## G-53 / UI — отдельный слой Flint: Tor-мессенджер и Slatepack
+
+**Цель владельца:** при доработке интерфейса текущего Grin++ выделить отдельный
+слой обмена сообщениями и автоматизированного приёма Slatepack по образцу Flint.
+Сохранить C++ Grin++ как целевой backend ноды/кошелька; не заменять его скрыто
+другим кошельком и не смешивать пользовательские профили. Статус — **PLANNED**:
+реализация, совместимость и live-приёмка Grin++ UI + этот слой **NOT VERIFIED**.
+Разработка UI не должна блокировать проверку основной ноды на Floonet.
+
+**Отправная точка:** desktop Flint — Rust/Slint (изучен статически при
+локальном HEAD `092859b`; ссылки ниже закреплены на доступном GitHub `20efa26`,
+исходники этих компонентов не менялись в следующем локальном docs-коммите);
+Grin++ UI — отдельный Electron/React-проект
+`C:/DHW/Gplus/GrinPlusPlusUI`. Код и UX Flint служат эталоном поведения, а не
+готовым drop-in компонентом для React/C++. Доказательства Flint не являются
+приёмкой Grin++. Кодовые точки: [контракт Flint](https://github.com/DanilaGrinRus/Flint/blob/20efa26a953f83a36ec0fe248e390d0031d01a95/docs/contracts/MESSENGER.md),
+[обработчик авто-Slatepack](https://github.com/DanilaGrinRus/Flint/blob/20efa26a953f83a36ec0fe248e390d0031d01a95/crates/slint-ui/src/messenger_handlers.rs),
+[runtime мессенджера](https://github.com/DanilaGrinRus/Flint/blob/20efa26a953f83a36ec0fe248e390d0031d01a95/crates/runtime/src/messenger.rs),
+`src/API/Wallet/{Owner,Foreign}` в C++ и `GrinPlusPlusUI/src`.
+
+### Граница и варианты реализации
+
+1. Сначала инвентаризировать текущие Grin++ wallet owner/foreign API, Tor
+   listener, Slatepack состояния, сессии и имеющийся UI; показать фактические
+   отличия от Flint на одном тестовом цикле. Node `/v2/owner` и wallet owner API
+   — разные интерфейсы: не подменять один другим. Зафиксировать версии, форматы,
+   модель ключей и доступность операций без экспорта seed.
+2. Сравнить варианты: отдельный локальный сервис/библиотека Flint с узким
+   адаптером к C++ wallet; порт необходимых компонент в C++; другие варианты
+   только при практической пользе. До выбора проверить API и жизненный цикл,
+   тестируемость, лицензии/распространение зависимостей и границу доверия.
+   Flint — GPL-3.0-only, старый UI указывает MIT; совместимость конкретной схемы
+   связывания и условия поставки проверить отдельно, не объявлять заранее.
+   Прямой перенос Slint-виджетов в React невозможен; UX реализуется в существующем UI.
+3. Идентичность и Tor ключи не экспортировать из кошелька в renderer/JS и не
+   передавать seed в сетевой сервис. Если выбранный дизайн требует новый доступ
+   к ключевому материалу или второй кошелёк, сначала описать владение, угрозы,
+   совместимость адресов и восстановление; не использовать два backend с одним
+   data root одновременно. Доступ UI — только через ограниченный локальный API/IPC
+   с аутентификацией и проверкой доступа. Не выставлять wallet owner наружу.
+4. Протокол Flint messenger envelope — отдельный прикладной протокол. Не заявлять
+   совместимость чата со всеми Grin-кошельками только из-за общего Slatepack или
+   onion-адреса. Поддержку конкретных peer/relay версий проверить отдельно.
+
+### Этапы и поведение
+
+1. **Интеграционный контракт.** Разделить UI, messenger service и C++ wallet:
+   identity/session, контакты, inbox/outbox, состояние Tor и статусы операций;
+   определить локальные методы и ошибки, ownership, ограничение размеров,
+   сериализацию версий и запрет секретов в renderer, логах и IPC. Проверить
+   реакцию на lock/unlock, смену профиля, смену сети/адреса, остановку wallet и
+   restart. Режим testnet и изолированные каталоги — для всей разработки/приёмки.
+2. **Tor и сообщения.** Статус bootstrap/onion, start/stop, контакты,
+   зашифрованный обмен и отдельные состояния queued/delivered/failed. Direct
+   onion требует онлайн-получателя; offline relay — отдельный выбранный транспорт.
+   Не обещать анонимность метаданных или forward secrecy, если их нет. Повтор
+   доставки использует устойчивый ID, не создаёт новую денежную операцию; ACK и
+   подтверждение в блокчейне — разные события. Ограничить payload, TTL и нагрузку.
+3. **Slatepack и UI.** Сначала ручной S1→S2→finalize→post с показом суммы,
+   комиссии, адреса и результата. Затем opt-in автообработка входящего S1 только
+   для сохранённых контактов при разблокированном корректном профиле; отправить
+   подготовленный ответ выбранным транспортом. Состояние UI честно различает
+   ответ в очереди, доставку, отправку транзакции и chain confirmation.
+   Автофинализацию исходящей отправки не включать: подтверждение пользователя и
+   привязка к исходной сумме/адресу/комиссии обязательны; изменение этого правила
+   требует отдельного решения. Исходящий S2 без подтверждения → needs_review.
+4. **Восстановление.** Зафиксировать inbox/outbox, устойчивые переходы,
+   идемпотентность и контекст операции. Ошибки записи processing/reply/done не
+   игнорировать; повтор одного сообщения или потеря ACK не создаёт второй
+   денежный эффект. На этапе анализа проверить обнаруженные во Flint гипотезы:
+   повтор `failed/needs_review`, ошибку сохранения флага автообработки, смену
+   профиля/lock посреди фоновой операции. Они не являются подтверждёнными багами
+   Grin++ и не должны автоматически переноситься как требования переписать Flint.
+5. **План выпуска.** Сначала локальная совместимость и безопасная ручная
+   операция, затем messenger + opt-in приём; фича может быть выключена без
+   нарушения обычного кошелька. До подтверждения — experimental/testnet. Не
+   менять версии ноды и не снимать `/W4 /WX` ради интеграции.
+
+### Проверка и критерии готовности слоя
+
+- Unit/контракт: корректные адреса и сеть, шифрование/подписи и границы payload,
+  права IPC, изоляция профилей, отсутствие секретов в логах и JS, переключатели
+  default-off и ошибки сохранения настроек.
+- Транзакции: известный/неизвестный контакт, S1 и S2, изменение суммы/адреса,
+  явное подтверждение исходящей операции, отказ устаревшей/неполной сессии;
+  queued не считается confirmed.
+- Восстановление: повтор доставки с тем же ID, ACK-loss, restart между durable
+  переходами и ответом, ошибки записи, смена профиля/lock во время обработки;
+  нет второго приёма/подписи/ответа, состояние можно объяснить пользователю.
+- Live на **изолированном Floonet**: два независимых тестовых профиля, запуск
+  Tor/onion, текст + входящий Slatepack, ответ, finalize/post и реальное chain
+  confirmation, рестарт и offline recipient/relay. Зафиксировать версии, SHA,
+  транспорт и источники доказательств без seed/паролей/содержимого Slatepack.
+  Unit, mock и старые Flint PASS не подменяют этот цикл.
+- Реальное Electron UI: вручную открыть окно, проверить переключатель,
+  обработку ошибок, lock/unlock и результаты обоих кошельков. До отдельного
+  Mainnet решения — никаких реальных средств. Статусы по каждому слою писать
+  PASS / FAIL / NOT VERIFIED; не обещать поддержку платформ без их проверки.
+
+**Стоп-условие:** принять минимальный полезный и проверенный слой, не добавляя
+новые транспорты/функции только из-за их наличия во Flint. Пасхалка x13 остаётся
+последним отдельным этапом API после основной функциональности и доступа.
 
 ## G-53 — заключительный этап API: пасхалка «выход x13»
 

@@ -11,6 +11,7 @@
 #include <Crypto/Models/Signature.h>
 #include <P2P/PIBD/PibdArchiveServer.h>
 #include <P2P/ArchivePublication.h>
+#include <P2P/Sync/StateSyncer.h>
 #include <P2P/PIBD/PibdParams.h>
 #include <P2P/PIBD/PibdSegmentService.h>
 #include <P2P/PIBD/PibdSession.h>
@@ -443,7 +444,8 @@ namespace
 	fs::path BuildArchiveZip(
 		const fs::path& sourceStateDir,
 		const fs::path& workDir,
-		const bool includeKernelHash)
+		const bool includeKernelHash,
+		const std::string& headerShortHash = {})
 	{
 		std::error_code error;
 		const fs::path zipRoot = workDir / "ziproot";
@@ -456,7 +458,9 @@ namespace
 			REQUIRE(fs::exists(zipRoot / tree));
 		}
 
-		const std::string shortHash = Global::GetGenesisHeader()->ShortHash();
+		const std::string shortHash = headerShortHash.empty()
+			? Global::GetGenesisHeader()->ShortHash()
+			: headerShortHash;
 		for (const std::string& tree : { std::string("output"), std::string("rangeproof") })
 		{
 			MaterializeLegacyLeaf(zipRoot / tree);
@@ -865,6 +869,31 @@ TEST_CASE("P2P::ArchivePublicationValidatedAtomicPublish")
 	REQUIRE(ArchivePublication::SameRecoveryTarget("abc123\n", "abc123"));
 	REQUIRE_FALSE(ArchivePublication::SameRecoveryTarget("abc123\n", "def456"));
 	REQUIRE_FALSE(ArchivePublication::SameRecoveryTarget("", "abc123"));
+
+	fs::remove_all(root, error);
+}
+// F13: container-valid archive with a header that does not match its roots must
+// not be accepted as ready/suppress regeneration.
+TEST_CASE("PibdArchiveServer::ExistingArchiveHeaderRootsValidated")
+{
+	const fs::path root = fs::temp_directory_path() / "g09-readiness-wrong-root";
+	std::error_code error;
+	fs::remove_all(root, error);
+	fs::create_directories(root, error);
+	REQUIRE_FALSE(error);
+
+	const fs::path stateDir = root / "state";
+	const PibdSnapshot snapshot = WriteTestState(stateDir);
+	const BlockHeaderPtr pGoodHeader = MakeArchiveHeader(snapshot);
+	const fs::path zipPath = BuildArchiveZip(stateDir, root / "build", true, pGoodHeader->ShortHash());
+
+	std::string validationError;
+	REQUIRE(StateSyncer::ValidateExistingArchiveForHeader(zipPath, pGoodHeader, &validationError));
+	REQUIRE(validationError.empty());
+
+	const BlockHeaderPtr pWrongHeader = Global::GetGenesisHeader();
+	REQUIRE_FALSE(StateSyncer::ValidateExistingArchiveForHeader(zipPath, pWrongHeader, &validationError));
+	REQUIRE_FALSE(validationError.empty());
 
 	fs::remove_all(root, error);
 }

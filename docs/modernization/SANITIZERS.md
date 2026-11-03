@@ -219,11 +219,21 @@ ArchivePublication 1/83, teardown PASS, **0 ASan reports**. SpentOutputs/
 boundary tests not in TestsMini; normal Release PASS. Recovery H3313440
 observed PASS (archive 3,116,449,317 B SHA `7FB23058…`, LoadAndValidate before
 publish) and H3315600 snapshot/serving observed (3,118,756,420 B SHA
-`DA23A1C7…`); line1 formal report pending. Details:
+`DA23A1C7…`); line1 formal report received/pass. Details:
 `normal-binary-build13-audit-20261103.md`,
 `asan-build13-refresh-20261103.md`,
 `build13-asan-refresh-20261103.json`,
 `task10-11-build13-recovery-audit-20261103.md`.
+
+**Build-13 full 7B live (2026-11-03): PASS** — test/floonet, final live
+binding. Tip 3318655/`2945348e…`; C++ `FULLY_SYNCED`, Rust `no_sync`; roots
+pre==post. PIBD leaves 10,203,442 @H3315600, range 2,943,034, kernels
+3,351,542; duration ≈1h58m59s; H3315600 archive 3,118,756,420 B SHA `DA23A1C7…`.
+Non-blocking: admin DACL refusal, initial loopback connect failure, stale C++
+`waiting_reason`, Rust 50,056 WARN/0 ERROR. Crash/publication/resource matrix
+prepared, **NOT RUN**; not Mainnet/full G-09. Evidence:
+`build13-7b-full-audit-20261103.md`, `build13-7b-full-20261103/`
+(hash manifest `6CAE425C…`).
 
 **Находка ASan — исправлено в тестовом runtime (Lead-approved option b):**
 исходный `tests/src/TestMain.cpp` (`static TestRuntime`) давал exit-time

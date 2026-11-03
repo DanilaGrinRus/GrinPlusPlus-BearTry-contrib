@@ -1,0 +1,63 @@
+{
+  "schema": "gpp-line3-build14-failclosed-preauth/v1",
+  "captured_utc": "2026-11-03T05:35:00Z",
+  "captured_local": "2026-11-03T12:35:00+07:00",
+  "status": "READ_ONLY / P1_CONFIRMED / BUILD13_LIVE_IN_PROGRESS / BUILD14_PATCH_AUDIT_PENDING",
+  "source_binding": {
+    "TxHashSetImpl.cpp": "617AD908C0EB611BCF3A7DB5DD129BED24D7F7C830EBA9DE415FCB3F03966655",
+    "StateSyncer.cpp": "FDC5B4BB411ABFB3AC6FBCE8D2B038F09064D40DA205394EE5816A7BEA2613FE",
+    "ArchivePublication.h": "F1E437371E28B80B101B85ECD7FC19A58856CDDA4B3EE52F990B9B06D4A7401A",
+    "TxHashSetManager.cpp": "F2C81C8A9C641CE2CD66EF47757750046B264D462359100FE90C5CBD4170DA05",
+    "line2_audit": "tools/audit/nrd/evidence/rewind-preflight-fail-closed-audit-20261103.md",
+    "line2_audit_sha256": "EB4DB197A7F96E63E88C7E4B1102D7F156636D850671A42CC4B26927F62B13FE"
+  },
+  "p1_findings": {
+    "R1_rewind_null_previous_header": {
+      "file": "src/PMMR/TxHashSetImpl.cpp",
+      "lines": "668 loop condition; 719 assignment without null check",
+      "direct_caller": "src/BlockChain/Processors/BlockProcessor.cpp:253 HandleReorg -> Rewind in uncommitted batch",
+      "impact": "missing/corrupt previous header -> null dereference/process crash instead of typed fail-closed; rollback not reached",
+      "build14_acceptance": "F11 missing previous header -> TXHASHSET_EXCEPTION, no null deref, batch rollback tip/root unchanged"
+    },
+    "R2_flushed_height_vs_confirmed_tip": {
+      "preflight": "StateSyncer.cpp:439-447 uses GetTipBlockHeader(EChainType::CONFIRMED)",
+      "rewind": "TxHashSetManager.cpp:113-135 uses m_pTxHashSet->GetFlushedBlockHeader() as snapshot start",
+      "impact": "no checked equality; if flushed lags confirmed tip, preflight range differs from Rewind; target above actual flushed can walk incorrectly",
+      "build14_acceptance": "F12 mismatch rejected before snapshot/publish or preflight uses actual flushed header; no archive publish"
+    },
+    "R3_container_only_readiness": {
+      "readiness": "ArchivePublication.h:68-113 checks zip/entries/leaf prefixes only; no roots/MMR sizes",
+      "early_returns": ["StateSyncer.cpp:403-405 TryRecoverArchive", "StateSyncer.cpp:508-510 ArchivePibdState"],
+      "impact": "container-valid wrong-root archive suppresses regeneration; serving validation later rejects but recovery does not retry",
+      "build14_acceptance": "F13 wrong-root/container-valid archive not ready; validate target roots/MMR sizes or regenerate/fail closed"
+    },
+    "R4_marker_write_failure": {
+      "file": "src/P2P/Sync/StateSyncer.cpp:55-66 RecordRecoveryFailure",
+      "behavior": "WriteTextToFile + FileSync::Flush inside catch-all; marker write/durability failure swallowed",
+      "impact": "disk-full/ACL leaves no pibd_state.recovery_failed; each restart attempts same recovery once per process; no bounded-across-restart guarantee",
+      "build14_acceptance": "F14 unwritable/disk-full marker bounded/logged/surfaced; no unbounded restart retry; original failure not masked"
+    },
+    "R5_R6": "P2/P3 matrix gaps and empty-input missing spent record; preserve fail-closed/actionable errors"
+  },
+  "build14_patch_audit": {
+    "required_tests": ["F11 missing previous header", "F12 flushed/confirmed mismatch", "F13 wrong-root container-valid archive", "F14 unwritable/disk-full marker", "F16 same-target restart marker", "F17 publish/rename/fsync failure"],
+    "normal": ["full", "SpentOutputs*", "exact preflight", "boundary", "P2P::ArchivePublication*", "PibdArchiveServer::*", "Nrd*", "KernelIndex*", "GetKernel*, schema, duplicate-range, advert"],
+    "asan": "build14 source freeze; subset incl. new non-DB tests where linkable; teardown; 0 reports",
+    "recovery": "copy-only H3313440/H3315600; target roots/archive hashes; no partial publish; tip/roots unchanged on failure",
+    "crash_resource": "PUB-01..PUB-10 and RES-01..RES-08 from build13-7b-live-audit-plan-20261103.md",
+    "freeze": "build14 binary SHA/bytes/PE + source freeze before PASS"
+  },
+  "candidate_status": {
+    "build-13": "final candidate",
+    "build-09": "historical",
+    "build-12": "historical",
+    "build-10": "final only for its snapshot"
+  },
+  "interference": {
+    "build13_full_7b_live": "IN PROGRESS; no build/tests/port3421/source edits until ends",
+    "original_g09_live_02_modified": false,
+    "source_edit_by_line3": false,
+    "build": false,
+    "commit": false
+  }
+}

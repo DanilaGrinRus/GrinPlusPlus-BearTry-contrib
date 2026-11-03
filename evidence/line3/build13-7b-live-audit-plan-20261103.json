@@ -1,0 +1,79 @@
+{
+  "schema": "gpp-line3-build13-7b-live-audit-plan/v1",
+  "captured_utc": "2026-11-03T04:00:00Z",
+  "captured_local": "2026-11-03T11:00:00+07:00",
+  "status": "FULL_7B_LIVE_PASS / FINAL_BINDING / CRASH_RESOURCE_NOT_RUN",
+  "candidate": {
+    "build": "build-13",
+    "role": "final candidate",
+    "tests_sha256": "001DF4BC31F194DCDDE83FE736B06EB6FD942666F2BEFF62FF1FB5F1BB8DB3A8",
+    "grin_node_sha256": "F39BDFE5A8DAB22BE969406874EDCEFD023770BE1A1BA6330D7506B2C2571201",
+    "build_log_sha256": "8C54DD1759AE3D4E22B7EC29B6AF1A1F5FB81125727613B6739D1A32B70F2FF7",
+    "freeze_sha256": "4FC8DCE123D7DFD138B1AA9BB10EB7F9CC3683B4A76E35279DC7E868A261FAA3",
+    "normal": "257/256/1 bodyless-only; filters PASS; boundary 1/8 PASS",
+    "asan": "subset PASS, 0 reports",
+    "recovery_observed": "H3313440 archive 3,116,449,317 B SHA 7FB23058...; H3315600 snapshot 3,118,756,420 B SHA DA23A1C7..."
+  },
+  "historical": {
+    "build-09": "historical",
+    "build-10": "final only for its snapshot",
+    "build-11": "historical, contains SpentOutputs bug",
+    "build-12": "historical after build-13"
+  },
+  "non_interference": [
+    "no build/tests while line1 live runs",
+    "no port 3421 usage",
+    "no source/test/config edits",
+    "no modification of C:\\DHW\\.tmp\\g09-live-02",
+    "no commit"
+  ],
+  "full_7b_audit": [
+    "re-verify Tests/GrinNode SHA/bytes/PE and source freeze",
+    "hash line1 logs/status/roots/archive/config evidence",
+    "fixed-H scenario: target hash/height, flushed tip, PIBD serving, body/no_sync/restart",
+    "verify archive validation/advertisement, no partial/staging served",
+    "classify PASS/FAIL/NOT VERIFIED; no missing evidence as PASS"
+  ],
+  "publication_cases": [
+    "PUB-01 kill after staged zip",
+    "PUB-02 kill during extract/LoadAndValidate",
+    "PUB-03 kill after validation before PublishStaged",
+    "PUB-04 kill during rename/publish",
+    "PUB-05 truncated/corrupt final zip",
+    "PUB-06 missing required zip entry/leaf suffix",
+    "PUB-07 wrong roots/height zip",
+    "PUB-08 stale staging/validation dirs",
+    "PUB-09 existing valid final idempotent",
+    "PUB-10 same-target failure restart bounded/no loop"
+  ],
+  "resource_cases": [
+    "RES-01 ENOSPC during staged copy/extract",
+    "RES-02 disk full during rename/fsync",
+    "RES-03 large/zip64 boundary ~3.1 GB",
+    "RES-04 CPU/memory during validation",
+    "RES-05 concurrent serving + recovery",
+    "RES-06 file lock/read-only archive dir",
+    "RES-07 cleanup/restart after crash",
+    "RES-08 repeated recovery/restart bounded"
+  ],
+  "acceptance": "No invalid/partial archive final served; failed recovery preserves tip/roots; atomic rename; bounded cleanup/restart; all cases on copies only",
+  "current_blockers": [
+    "line1 full 7B live in progress",
+    "crash/publication/resource tests not run",
+    "line1 formal H3313440/H3315600 report pending",
+    "full G-09/Mainnet NOT VERIFIED"
+  ],
+  "build": false,
+  "source_edit": false,
+  "commit": false,
+  "full_7b_result": {
+    "status": "PASS",
+    "tests": "001DF4BC...",
+    "grin_node": "F39BDFE5...",
+    "tip": "3318655/2945348e",
+    "pibd_leaves": 10203442,
+    "range_proofs": 2943034,
+    "kernels": 3351542,
+    "audit": "build13-7b-full-audit-20261103.md"
+  }
+}

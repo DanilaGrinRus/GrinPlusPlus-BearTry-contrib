@@ -1,0 +1,1 @@
+clean headers from genesis: h0=39264 h1=109984 seconds=60.0879492 rate=1176.94148230308/s remaining=3208671 projected_hours=0.757299758230868

@@ -1,0 +1,55 @@
+{
+  "schema": "gpp-line3-build13-7b-full-audit/v1",
+  "captured_utc": "2026-11-03T06:03:00Z",
+  "captured_local": "2026-11-03T13:03:00+07:00",
+  "status": "PASS / BUILD13_FINAL_LIVE_BINDING / TEST-FLOONET",
+  "candidate": {
+    "tests_sha256": "001DF4BC31F194DCDDE83FE736B06EB6FD942666F2BEFF62FF1FB5F1BB8DB3A8",
+    "grin_node_sha256": "F39BDFE5A8DAB22BE969406874EDCEFD023770BE1A1BA6330D7506B2C2571201",
+    "build_log_sha256": "8C54DD1759AE3D4E22B7EC29B6AF1A1F5FB81125727613B6739D1A32B70F2FF7",
+    "freeze_sha256": "4FC8DCE123D7DFD138B1AA9BB10EB7F9CC3683B4A76E35279DC7E868A261FAA3"
+  },
+  "counts": {
+    "pibd_leaves_completed": 10203442,
+    "pibd_leaves_required": 10203442,
+    "pibd_completed_height": 3315600,
+    "range_proofs_total": 2943034,
+    "kernels_total": 3351542,
+    "kernel_signatures_verified": 3351542,
+    "kernel_pmmr_size": 6703071,
+    "tip_height": 3318655,
+    "tip_hash": "2945348ef765160a160008cfd7c2b41aa44ed3cea77d6bcfe2083acf0fc4bbf1",
+    "total_difficulty": 1207035333622
+  },
+  "status": {
+    "cpp_sync_status": "FULLY_SYNCED",
+    "cpp_network_height": 3318655,
+    "cpp_connections": "1 inbound / 1 outbound",
+    "rust_sync_status": "no_sync",
+    "rust_connections": 1,
+    "roots": {"kernel":"17d1cc11e3f913533865a1cd9d71785c758f44945bda42849e5ff89823f7d1dd","output":"8a9be5f8f3b16ca4b19a84e5d931e0307e77bdd8ac91c515a6439a0c4cd48d25","range_proof":"971c4ebdb3776d4c48dcc4ae6d866f4919435500aa71cd5564092a9bb27ceae1"},
+    "roots_pre_equals_post": true,
+    "duration": {"cpp_start":"2026-11-03T11:03:22.103+07:00","final_status":"2026-11-03T13:02:21+07:00","approx":"1h58m59s","status_sample_span":"1h57m09s"},
+    "pibd_archive_serving": {"height":3315600,"zip_bytes":3118756420,"zip_sha256":"DA23A1C721BE96BA215A70022B3C26DC262E3122E5BE41CDBDA560631F0E78F5","note":"hash from pre-cleanup copy evidence; live profile was cleaned after run"}
+  },
+  "discrepancies": [
+    {"severity":"env/non-blocking","what":"C++ private/admin API refused: secret file owner/DACL not owner-only","impact":"test harness setup; no chain/sync impact"},
+    {"severity":"transient","what":"C++ failed to connect 127.0.0.1 at startup","impact":"later 1 connection; full sync completed"},
+    {"severity":"cosmetic","what":"C++ waiting_reason says 0 active connections/1 required while sync_status=FULLY_SYNCED and network has 1/1","impact":"stale status text; no binding impact"},
+    {"severity":"noise","what":"Rust WARN=50056 (mostly loopback no-suitable-outbound-peer/header-sync); ERROR=0, panic=0","impact":"expected testnet topology; no product failure"},
+    {"severity":"label","what":"10,203,442 is PIBD completed leaves at H3315600, not total outputs/archive bytes; 2,943,034 is range proofs/UTXO context; 3,351,542 kernels","impact":"counts match Lead report when exact labels are used"}
+  ],
+  "scope": {"network":"test/floonet","mainnet":false,"full_g09":false,"source_edit_by_line3":false,"build_by_line3":false,"commit":false},
+  "crash_publication_resource": {"plan":"build13-7b-live-audit-plan-20261103.md","cases":"PUB-01..PUB-10; RES-01..RES-08","status":"NOT RUN / checklist prepared; task12-crash-evidence initial scaffold only"},
+  "evidence": {
+    "dir":"evidence/line3/build13-7b-full-20261103",
+    "files":35,"bytes":21645390,
+    "cpp_log_sha256":"B10388E52BBB1EF4665EE22ED396932896AB9D76211A51A047078231051C74FF",
+    "rust_log_sha256":"6098543511778855578B8C4057995559EE644F982F8A969D879A76942917256B",
+    "final_status_sha256":"84525B85BC8E06D5CBE313D3B281A6838DA6F6E18A6688B8A3650500139E14E9",
+    "cpp_status_sha256":"247AED786CB45FAAC43319F7B571F38A149E580352838B15E6EF02123E9B0589",
+    "cpp_roots_sha256":"027F9D4525549937AD15436CE172FC526D110E811C6CAB819F8CFF75D29ADA4D",
+    "status_jsonl_sha256":"3E417A2AA0566BE29B7A6382585934EF2D85FBB4FD4BFFB342B4230009CE681E",
+    "status_cont_jsonl_sha256":"6D6B9B5C8C1EC7E1614C7536D30C063C62FAF4CDCB35C6AA38683C669AC53114"
+  }
+}

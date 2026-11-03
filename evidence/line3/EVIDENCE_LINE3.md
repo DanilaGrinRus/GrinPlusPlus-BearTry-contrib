@@ -929,3 +929,158 @@ Build-13 is the next final candidate; build-12 historical.
   `task10-11-build13-recovery-audit-20261103.md`,
   `task10-11-build13-recovery-20261103.json`,
   `build13-h3313440-node.log` (`D099D379…`), `b13-*-01/`, `b13-asan-*-01/`.
+
+## 28. Build-13 full 7B live — audit/crash/resource plan (2026-11-03)
+
+Build-13 is **final candidate**; build-09/build-12 are historical; build-10 is
+final only for its snapshot. Line1 full 7B live is in progress; no build/tests/
+source edits until it ends.
+
+- Plan: `build13-7b-live-audit-plan-20261103.md`, JSON
+  `build13-7b-live-audit-plan-20261103.json`.
+- Artifact: Tests `001DF4BC…`, GrinNode `F39BDFE5…`, freeze `4FC8DCE1…`.
+- Post-live independent audit: artifact/freeze hashes, line1 evidence hashes,
+  fixed-H scenario/7B archive serving, tip/roots/no_sync/restart, no hidden
+  port/mg_start/partial archive; classify PASS/FAIL/NOT VERIFIED.
+- Publication matrix: PUB-01..PUB-10 (kill at staged/validation/rename,
+  truncate/corrupt/wrong-root/height archives, missing entries, stale staging,
+  valid-final idempotence, bounded same-target failure restart).
+- Resource matrix: RES-01..RES-08 (ENOSPC, disk full at rename/fsync, ~3.1 GB
+  zip64 boundary, CPU/memory, concurrent serving/recovery, file locks,
+  crash/restart cleanup, repeated recovery).
+- All cases on copies only; original `g09-live-02` untouched; no source edits.
+- No full G-09/Mainnet claim; line1 formal H3313440/H3315600 report pending.
+
+## 29. Fail-closed P1 audit / build-14 pre-audit (2026-11-03)
+
+Read-only; build-13 full 7B live in progress; no source edit/build/tests. Build-13
+is final candidate; build-09/build-12 historical; build-10 snapshot-only.
+
+Independently confirmed line2 P1 risks (source hashes:
+`TxHashSetImpl 617AD908…`, `StateSyncer FDC5B4BB…`,
+`ArchivePublication F1E43737…`, `TxHashSetManager F2C81C8A…`):
+
+- **R1:** `TxHashSetImpl.cpp:719` assigns `GetBlockHeader(previous)` without
+  null check; loop line 668 dereferences it; direct reorg caller
+  `BlockProcessor.cpp:253`. Expected typed exception + rollback, no crash (F11).
+- **R2:** preflight uses `GetTipBlockHeader(CONFIRMED)` (`StateSyncer:439-447`)
+  while SaveSnapshot uses `GetFlushedBlockHeader()` (`TxHashSetManager:113-135`);
+  no equality invariant. Mismatch must reject before snapshot/copy (F12).
+- **R3:** `IsReadyArchive` (`ArchivePublication:68-113`) is container-only;
+  `TryRecoverArchive:403-405`/`ArchivePibdState:508-510` early-return as ready.
+  Wrong-root archive can suppress regeneration; validate target roots/MMR sizes
+  or regenerate/fail closed (F13).
+- **R4:** `RecordRecoveryFailure:55-66` swallows marker write/flush failures;
+  disk-full/ACL leaves no same-target marker, so each restart retries once.
+  Must bound/log/surface; no unbounded restart retries (F14).
+- R5/R6: empty-input missing SPENT_OUTPUTS and matrix gaps; preserve fail-closed,
+  actionable errors.
+
+Build-14 patch audit after live + Lead order: exact patch hashes/freeze; F11–F17;
+normal full/filters + ASan; copy-only H3313440/H3315600; PUB-01..10/RES-01..08.
+No build/source edits until build-13 live ends.
+
+## 30. Build-13 full 7B live — PASS / final binding (2026-11-03)
+
+Independent read-only audit of line1 full 7B evidence: **PASS** for the
+test/floonet scenario; build-13 final live binding. No build/source edits by
+line3.
+
+- Artifacts: Tests `001DF4BC…`, GrinNode `F39BDFE5…`; freeze `4FC8DCE1…`.
+- Final: no_sync tip **3318655 / 2945348e…**, total difficulty
+  `1207035333622`; C++ `FULLY_SYNCED`, network height 3318655; roots pre==post
+  (kernel `17d1cc11…`, output `8a9be5f8…`, rangeproof `971c4ebd…`).
+- Counts: PIBD leaves **10,203,442 / 10,203,442** at H=3315600
+  (`TxHashsetPibd`); range proofs **2,943,034**; kernels **3,351,542**
+  (3,351,542 signatures verified, pmmr size 6,703,071).
+- Duration: C++ start 11:03:22 → final status 13:02:21 ≈ **1h58m59s**;
+  status sample span 1h57m09s.
+- PIBD archive serving H=3315600, 3,118,756,420 B SHA `DA23A1C7…`.
+- Discrepancies (non-blocking): C++ admin API DACL refusal + initial
+  loopback connect failure (harness/transient); stale C++ `waiting_reason`
+  while `FULLY_SYNCED`; Rust 50,056 WARN (mostly loopback peer warnings),
+  **0 ERROR/panic**. No count mismatch.
+- Evidence copied: `build13-7b-full-20261103/` (35 files, 21,645,390 B);
+  audit `build13-7b-full-audit-20261103.md` / `.json`; full file-hash manifest
+  `build13-7b-full-20261103/evidence-hashes.json`.
+- Crash/publication/resource matrix prepared but **NOT RUN**; `task12-crash-evidence`
+  is an initial scaffold only. Test/floonet, not Mainnet; no full G-09 claim.
+
+
+- Evidence: `build14-failclosed-preauth-20261103.md`, JSON
+  `build14-failclosed-preauth-20261103.json`; line2 audit
+  `tools/audit/nrd/evidence/rewind-preflight-fail-closed-audit-20261103.md`
+  SHA `EB4DB197…`.
+
+## 31. Build-14 independent audit plan — R1/D2/R3/F13 (2026-11-03)
+
+Build-14 compile/test is in progress (Lead); **pre-audit only**, no build/tests/
+source edits by line3. Build-13 remains final live binding; build-14 is
+fail-closed hardening + D2, not a replacement live claim.
+
+- Plan: `build14-independent-audit-plan-20261103.md` / `.json`.
+- Patches: R1 `TxHashSetImpl.cpp 84FA42B1…` (typed throw on missing previous
+  header); R3 `StateSyncer.cpp 9C57E30F…` (`ValidateExistingArchiveForHeader`
+  + exact-header readiness at both recovery call sites); D2
+  `TransactionPoolImpl.{h,cpp} E9EBBB9A…/DB1671E8…` (`CheckNrdPolicy` +
+  `AddTransaction` wiring); tests F11 `Test_RewindFailClosed.cpp 4842D093…`,
+  D2 `Test_TxPoolNrdPolicy.cpp 5760E9F1…`, F13 in
+  `Test_PibdServing.cpp D471EC3A…`.
+- Gates: F11 missing previous header -> `TxHashSetException`/rollback, no null
+  deref; F13 wrong-root container-valid archive not ready and both
+  TryRecoverArchive/ArchivePibdState regenerate/fail closed; D2 Rust order
+  disabled > pre-HF3 > OK, mixed NRD reject, AddTransaction wiring; full/
+  filters/ASan plus copy-only H3313440/H3315600 regression. Build SHA/freeze
+  pending.
+- Crash/publication/resource PUB-01..10/RES-01..08 remain prepared, NOT RUN.
+
+## 32. Build-14 audit — FAIL / stale source binding (2026-11-03)
+
+Build-14 normal audit **FAILED**; artifact is **not source-bound**. Build-13
+final live binding remains unchanged.
+
+- Tests `50359F14…` (9,494,528 B), GrinNode `A7D28BCC…`; build log
+  `build-console-build14-fix-20261103-131251.log` `40A45B4A…` BUILD OK.
+- Full **260 cases / 258 passed / 2 failed; 4264 assertions / 4262 passed**:
+  known bodyless + **F13 good-header validation false**.
+- F11 PASS (1/2), D2 PASS (1/8), other groups PASS. F13 exact FAIL (1/0);
+  `PibdArchiveServer::*` 8/9.
+- Root cause: `Test_PibdServing.cpp` current mtime **13:24:59**, hash
+  `351083D5…`; Tests.exe **13:22:33**, object **13:21:38**. Zip leaf
+  `.edc758c1370d`, Extract searched `.000000000000`: binary contains the old
+  test path without `headerShortHash`; F13 failure is stale test object, but
+  the artifact is not auditable.
+- ASan **NOT RUN** on stale artifact. Required: freeze source, rebuild, new
+  SHA/log, re-run full/F11/F13/D2 + ASan, then copy-only recovery.
+- Evidence: `build14-audit-result-20261103.md` / `.json`,
+  `b14-full-01/`, `b14-f13-01/`, `b14-pibdarchive-01/`,
+  `build-14-freeze-snapshot-final.json` (marked INVALID).
+
+## 33. Build-15 audit — normal bodyless-only, F13/F11/D2 PASS, ASan partial (2026-11-03)
+
+Build-15 is **source-bound** (test source 13:24:59 → obj 13:33:18 → Tests.exe
+13:34:19); build-14 invalid stays historical. Build-13 remains final live
+binding; build-15 is fail-closed/D2 hardening, not a replacement live claim.
+
+- Tests `920F000F38958DA545ED3BC57DB796A0062CB5EF6E304E7DB354DAD065E6227D`
+  (9,495,552 B); GrinNode `A7D28BCC…`; build log
+  `build-console-f13fix-20261103-132502.log` `5C70A1FB…` BUILD OK; freeze
+  `build-15-freeze-snapshot-final.json` `E59B65FF…`.
+- Normal full **260/259/1** bodyless-only; assertions **4267/4266**. F11 PASS
+  1/2, F13 PASS 1/38, D2 PASS 1/8, PibdArchiveServer 9/225, archive 8/187,
+  ArchivePublication 1/83, SpentOutputs 1/6, preflight 1/4, boundary 1/8,
+  GetKernel 2/49, schema 2/26, duplicate 1/10, Nrd 30/428, KernelIndex 5/74,
+  advert 2/15.
+- ASan full build `full-asan-20261103-133739` PASS 102.7 s; source manifest
+  `BBEFC6FC…` (1295); freeze match 1005/1005. TestsMini
+  `9D9AA171…` from temp harness with `Test_PibdServing` omitted (F13
+  `StateSyncer::ValidateExistingArchiveForHeader` not in TestsMini link set,
+  LNK2019). PASS: Nrd 21/365, Segment 16/68, P2P 7/61, teardown, **0 reports**.
+  F13/archive ASan **NOT COVERED**; normal Release F13/archive PASS.
+- No live promotion; no full G-09/Mainnet. PUB/RES matrix remains prepared, not
+  run. Original untouched; no source edit/commit by line3.
+- Evidence: `normal-binary-build15-audit-20261103.md` (`AAA49E61…`),
+  `build15-asan-refresh-20261103.md` (`04F13D42…`),
+  `build15-asan-refresh-20261103.json` (`CD8E00E7…`),
+  `evidence/line3/b15-*-01/`, `b15-asan-*-01/`,
+  `full-asan-20261103-133739/`.

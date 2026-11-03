@@ -1,8 +1,18 @@
 # Archive recovery and spent-position failure (2026-11-03)
 
-Status: **root cause FIXED and recovery PASS on build-13** for H=3313440 and
-fresh H=3315600 snapshot; crash-interrupted publication and automatic horizon
-cycling remain NOT VERIFIED. Existing archive serving and 7B live PASS remain valid.
+Status: **root cause FIXED; H=3313440 recovery PASS; H=3315600 snapshot PASS;
+crash-interrupted publication PASS on build-13**. Automatic horizon cycling and
+Mainnet remain NOT VERIFIED. Existing archive serving and 7B live PASS remain valid.
+
+## Crash-interrupted publication (build-13)
+
+- Old H=3315600 archive preserved (`DA23A1C7…`, 3,118,756,420 B).
+- C++ killed during staging before atomic rename: final archive **absent**, only
+  `.staging` 3,118,756,420 B; failure marker absent; no partial visible.
+- Restart retried once and published final archive **3,118,756,420 B**
+  SHA `FD3BF99C…E6ADF6B`, 17 entries; 0 staging files; no loop.
+- Tip `3318655/2945348e…` and roots unchanged; old archive preserved.
+- Evidence: `C:\DHW\.tmp\task12-crash-evidence`.
 
 ## Final build-13 result
 
@@ -19,8 +29,8 @@ cycling remain NOT VERIFIED. Existing archive serving and 7B live PASS remain va
   crosses block 3317930, 17 entries; old archive `13F9781E…` preserved.
 - Build-13 normal: 257 cases / 256 passed / 1 known test-only bodyless fail;
   ASan subset PASS, 0 reports.
-- Still open: crash-interrupted publication, automatic horizon regeneration
-  loop/live behavior, full G-09/Mainnet.
+- Still open: automatic horizon regeneration loop/live behavior, negative/resource
+  tests, full G-09/Mainnet.
 
 
 ## Observed failure

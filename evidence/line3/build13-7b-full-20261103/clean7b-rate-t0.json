@@ -1,0 +1,17 @@
+{
+  "chain": "test",
+  "connections": 1,
+  "protocol_version": 1000,
+  "sync_info": {
+    "current_height": 39264,
+    "highest_height": 3318655
+  },
+  "sync_status": "header_sync",
+  "tip": {
+    "height": 0,
+    "last_block_pushed": "edc758c1370d43e1d733f70f58cf187c3be8242830429b1676b89fd91ccf2dab",
+    "prev_block_to_last": "0000000000000000000000000000000000000000000000000000000000000000",
+    "total_difficulty": 100000
+  },
+  "user_agent": "MW/Grin 5.5.2.dbaff34"
+}

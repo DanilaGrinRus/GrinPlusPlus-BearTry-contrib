@@ -31,6 +31,13 @@ public:
 
 	bool SyncState(SyncStatus& syncStatus);
 
+	// Testable readiness wrapper: container-valid archive must also validate the
+	// exact target header roots/sizes before it can suppress regeneration.
+	static bool ValidateExistingArchiveForHeader(
+		const fs::path& archivePath,
+		const BlockHeaderPtr& pHeader,
+		std::string* pError = nullptr);
+
 	enum class EPibdResult
 	{
 		NotAttempted,   // fall back to txhashset.zip

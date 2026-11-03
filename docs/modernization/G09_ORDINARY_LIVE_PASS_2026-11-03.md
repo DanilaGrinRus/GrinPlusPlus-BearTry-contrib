@@ -77,3 +77,22 @@ refusals, served no segment/wrong data, no crash; fallback NOT VERIFIED (bounded
 - This PASS does not certify public-network PIBD, Mainnet, or final build-10
   binary; build-10 API/index changes are outside the P2P path and require their
   own restart evidence.
+## Build-13 clean full 7B from zero — PASS
+
+Final build-13 (Tests `001DF4BC…B3A8`, GrinNode `F39BDFE5…1201`) was run with a
+fully clean Rust `chain_data` (tip 0/genesis), C++ archive H=3315600
+(`3,118,756,420 B`, SHA `DA23A1C7…78F5`), loopback.
+
+- headers from zero: measured 1,176.94 headers/s;
+- selected required_height **3315600**;
+- PIBD **10,203,442 / 10,203,442** leaves, completed_to_height 3315600;
+- rangeproofs **2,943,034**, kernels **3,351,542**, setup/save;
+- body sync **3315600 → 3318655**;
+- final Rust **`no_sync`**, tip **3318655**, hash
+  `2945348ef765160a160008cfd7c2b41aa44ed3cea77d6bcfe2083acf0fc4bbf1`, conn=1;
+- C++ `FULLY_SYNCED`, inbound=1/outbound=1, archive ready H=3315600;
+- total ~1 h 58 min; 5,062 PIBD segment requests.
+- Evidence: `C:\DHW\.tmp\task12-build13-7b\evidence` (rust/cpp logs, status JSONL,
+  roots/status hashes); nodes stopped.
+- Caveats unchanged: fixture-based C++/loopback, no public peers; crash/resource,
+  reorg/horizon, negative tests still separate.

@@ -1,0 +1,15 @@
+{
+  "schema": "gpp-line3-build15-asan-refresh/v1",
+  "captured_utc": "2026-11-03T06:45:00Z",
+  "captured_local": "2026-11-03T13:45:00+07:00",
+  "status": "PARTIAL_PASS / F13_ARCHIVE_ASAN_LINK_BLOCKED",
+  "source": {"source_manifest_sha256":"BBEFC6FC8130D9A272628A9DF96D4E8B26C2A41FC3498682BB919DA8EF3C071A","source_files":1295,"git_head":"75a09d63bb625197367c38a28baf28880bcbc358","build15_freeze":"evidence/line3/build-15-freeze-snapshot-final.json","freeze_entries":1005,"freeze_match":"0 mismatch, 0 missing"},
+  "full_asan_build": {"run_id":"full-asan-20261103-133739","result":"BUILD_PASS","wall_sec":102.7,"manifest_sha256":"5830F4B21620FD4D15D22785D825EAF5AE861E1AC25D3C04BFE273815CF6DAE3"},
+  "tests_mini": {"sha256":"9D9AA171475CC6B5C713C80F4F4A839931A2039DB54E4857329C65B0B6C81418","pe_timestamp":"0x6AE9821C","linked_manifest":"evidence/line3/build15-asan-refresh-20261103/linked-build-manifest-nopibd.json","linked_manifest_sha256":"B21DBB3095B8248957FD548A40A7E543949E80D8E732D1753052C8297DA835C4","test_pibd_serving":"OMITTED from temp harness; F13 uses StateSyncer::ValidateExistingArchiveForHeader not in TestsMini link set (LNK2019)"},
+  "runs": {"nrd":{"filter":"Nrd*","result":"PASS","cases":21,"assertions":365},"segment":{"filter":"Segment*","result":"PASS","cases":16,"assertions":68},"p2p":{"filter":"Capabilities::*,MessageTypes::*,GrinVersion::*,P2P::AdvertisedTip*","result":"PASS","cases":7,"assertions":61},"teardown":{"result":"PASS","zero_tests_ran":true,"asan_report":false}},
+  "asan_reports": 0,
+  "not_covered": ["F13/archive ASan: TestsMini link boundary", "F11/D2: not in TestsMini", "ASan-blocked normal-only PreCommit/FalseBan/BatchSafety/KernelIndex/BlockPipe/bodyless/kill", "rocksdb/sysroot"],
+  "build": true,
+  "build_scope": "ASan copied tree/temp harness only; no source edit/commit; normal build was Lead's",
+  "commit": false
+}

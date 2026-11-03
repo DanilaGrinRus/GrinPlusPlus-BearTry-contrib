@@ -1,5 +1,18 @@
 # AUDIT_DELTA (DE) — Grin++ 1.2.9 → Kompatibilität mit Grin v5.5.2
 
+## Aktualisierung — 03.11.2026, 13:30 (UTC+07)
+
+Umfang: Grin++ 1.2.9 und Rust Grin v5.5.2. HEAD bei der Prüfung war `75a09d6`; der parallel geänderte Arbeitsbaum ist nicht mit den geprüften Binärdateien gleichzusetzen. Dieser datierte Stand ersetzt widersprechende ältere Angaben unten; auch die operative Übersicht ist mit Primärnachweisen abzugleichen.
+
+- **G-09: PARTIAL.** Build-13 `GrinNode` SHA-256 `F39BDFE5A8DAB22BE969406874EDCEFD023770BE1A1BA6330D7506B2C2571201`, `Tests` `001DF4BC31F194DCDDE83FE736B06EB6FD942666F2BEFF62FF1FB5F1BB8DB3A8`. Im lokalen Floonet-Szenario 7B bezog eine gewöhnliche Rust-Node mit leeren Headers/State PIBD von C++ bei H=3.315.600 (10.203.442/10.203.442), validierte und aktivierte den State, synchronisierte Blockdaten und erreichte `no_sync` bei H=3.318.655 / `2945348e…`; Roots stimmten überein. PASS gilt für dieses Fixture/Loopback-Szenario, nicht für das öffentliche Netz oder vollständiges G-09. [Unabhängiger Live-Audit](../../evidence/line3/build13-7b-full-audit-20261103.md).
+- **Build-13 Archive:** Release-Fehler beim Dekodieren der Spent-Positionen und Zielgrenze der Rewind-Vorprüfung wurden korrigiert. Wiederherstellung bei H=3.313.440 und frischer H=3.315.600-Snapshot/Serving-Bereitschaft sind in den dokumentierten Szenarien auf Kopien PASS. Crash-Unterbrechung der Veröffentlichung und automatischer Horizontwechsel bleiben NOT VERIFIED. [Recovery-Audit](../../evidence/line3/task10-11-build13-recovery-audit-20261103.md).
+- **Build-13 Tests:** Gesamtsuite **257/256/1 — FAIL insgesamt**; einziger Fehler `Test_NrdBodylessRestart`; Bodyless-NRD und Kill-Recovery bleiben NOT VERIFIED. Gezielte Tests bestanden; ASan ist nur für eine Teilmenge PASS, RocksDB/DB sind im genannten Lauf nicht abgedeckt. [Normal-Audit](../../evidence/line3/normal-binary-build13-audit-20261103.md), [ASan-Audit](../../evidence/line3/asan-build13-refresh-20261103.md).
+- **Build-14 nicht freigeben:** der Audit verzeichnet **FAIL / INVALID SOURCE BINDING**, 260/258/2; die F13-Testquelle wurde nach der Kompilierung geändert. Der F13-FAIL betrifft ein veraltetes Artefakt und belegt keinen Fehler der aktuellen Korrektur; das Artefakt prüft auch nicht diese Quelle. Neuer Build aus eingefrorenem Stand und erneuter Audit erforderlich; Build-14 ASan wurde in diesem Audit nicht ausgeführt. [Audit-Ergebnis](../../evidence/line3/build14-audit-result-20261103.md).
+- **Offen:** Reorg/Horizontwechsel ohne Quelle BLOCKED; negative Proof/Root/ID-Wire-Tests, Ressourcenlimits und öffentliches PIBD NOT VERIFIED. Fail-closed-Risiken bei Rewind, Flushed/Confirmed-Konsistenz, Root-Prüfung vorhandener Archive und Schreiben des Fehlermarkers erfordern eigene Korrekturabnahme; ein erneuter Versuch pro Prozessstart ist keine Schleife innerhalb eines Prozesses. D2 NRD, Bodyless und Kill-Recovery nicht aufgrund des ungebundenen Builds schliessen.
+- PIHD ist experimental/off; Header-Segment-Client/Server und lokale Steuerung sind geplant, live NOT VERIFIED. G-49 ist ein Performanceplan, kein nachgewiesener Geschwindigkeitsgewinn. Vollständiges G-09 und Mainnet-Bereitschaft **NOT VERIFIED**.
+
+## Frühere Zusammenfassung — historisch, oben ersetzt
+
 ## Aktualisierung — 03.11.2026
 
 Umfang: Grin++ 1.2.9 und Kompatibilität mit Rust Grin v5.5.2. Zum Prüfzeitpunkt war HEAD `6dbf8a7`; parallele Änderungen im Arbeitsbaum sind den folgenden Binärdateien nicht zugeordnet. Operativer Stand und Nachweise: `THREE_LINE_STATUS.md`, `G09_ORDINARY_LIVE_PASS_2026-11-03.md` und `ARCHIVE_RECOVERY_2026-11-03.md`. Bei Widersprüchen sind die älteren Aussagen unten historisch; auch die operative Übersicht ist mit ihren Primärnachweisen abzugleichen.
@@ -18,10 +31,10 @@ Datumsangaben, Hashes, Zähler, Status und Verweise auf einen „aktuellen“ St
 
 - C++ hinzugefügt: **+22.619 Zeilen**; entfernt **−625**; 191 getrackte + 22 neue;
 - Diff-/neuer C++-Textumfang: **≈ +927.8 KiB**;
-- endgültige `GrinNode.exe`: **7.846.912 B = 7.622,5 KiB = 7,44 MiB**;
+- endgültige `GrinNode.exe`: **7.850.496 B = 7.622,5 KiB = 7,44 MiB**;
 - **Exe-Zuwachs gegenüber 1.2.9: NOT MEASURED** — kein Originalbinär vorhanden; 7,7 MB ist die Endgröße, kein Delta;
-- Artefakte: `GrinNode F39BDFE5…`, `Tests 001DF4BC…`; Suite **257 Fälle / 256 bestanden / 1 test-only Fehler**, Produktion 0 Fehler (explizite Ausnahme; siehe THREE_LINE_STATUS).
-- **G-09 fixed-H (experimentell, 03.11.2026): historischer PASS.** Build-09 `0A3B7D66…`/`F90EEF38…`: ordinary 7B PIBD/Activation/Body-Sync/no_sync **PASS**, Restart **PASS**. Build-13 `001DF4BC…`/`F39BDFE5…`: Full 257/256/1 (bodyless test-only), finaler Restart **PASS**, H=3313440 Recovery **PASS**, H=3315600 Snapshot **PASS**, SpentOutputs-Release-Decode-Bug behoben. Full G-09 weiterhin **NOT VERIFIED**: Reorg/Horizont BLOCKED, Negative/Resources NOT VERIFIED, Output Commitment nicht reproduziert, C++ fixture/loopback. Normale Rust-5.5.2-Node erreichte `no_sync` bei H=3.318.655 / Hash `2945348e…`, mit gleichem C++-Tip, 1 Inbound / 0 Outbound; PIBD 10.203.442/10.203.442, Roots/Rangeproof/Kernel-Validierung/Body-Sync abgeschlossen. Ursache der früheren Restarts war `missing left sibling` bei Output-Segment 1648; behoben durch Senden verfügbarer Leaves in `SegmentGenerator`. Grenzen: Headers preseeded, Reorg/Restart/Negativ/Mainnet nicht abgedeckt.
+- Artefakte: `GrinNode A7D28BCC…`, `Tests 920F000F…`; Suite **260 Fälle / 259 bestanden / 1 test-only Fehler**, Produktion 0 Fehler (explizite Ausnahme; siehe THREE_LINE_STATUS).
+- **G-09 fixed-H (experimentell, 03.11.2026): historischer PASS.** Build-09 `0A3B7D66…`/`F90EEF38…`: ordinary 7B PIBD/Activation/Body-Sync/no_sync **PASS**, Restart **PASS**. Build-13 `001DF4BC…`/`F39BDFE5…`: Full 7B PASS (PIBD 10.203.442, no_sync 3318655/2945348e); Recovery H=3313440, Snapshot H=3315600, Crash-Publication PASS. Build-15 `920F000F…`/`A7D28BCC…`: Full 260/259/1 (bodyless test-only), F11/F13/D2/Archive PASS, Restart PASS; F13 ASan link-blocked. Full G-09 weiterhin **NOT VERIFIED**: Reorg/Horizont BLOCKED, Negative/Resources NOT VERIFIED, Output Commitment nicht reproduziert, C++ fixture/loopback. Normale Rust-5.5.2-Node erreichte `no_sync` bei H=3.318.655 / Hash `2945348e…`, mit gleichem C++-Tip, 1 Inbound / 0 Outbound; PIBD 10.203.442/10.203.442, Roots/Rangeproof/Kernel-Validierung/Body-Sync abgeschlossen. Ursache der früheren Restarts war `missing left sibling` bei Output-Segment 1648; behoben durch Senden verfügbarer Leaves in `SegmentGenerator`. Grenzen: Headers preseeded, Reorg/Restart/Negativ/Mainnet nicht abgedeckt.
 - **PIBD/PIHD-Guard:** Height-Cap 13, Overflow-Prüfung `idx*capacity`, PIHD-Antwort an Connection/Peer gebunden, Fallback ohne Chain-Height-Fortschritt; PIHD ist experimentell, `PIHD_HIST` wird nicht beworben, Snapshot/Cache/Rate-Limit bleiben offen.
 
 Basis: Grin++ 1.2.9 (`5f511e6`). Delta aktualisiert: 02.11.2026, HEAD `361e94d` (G-09/G-23/G-53/G-07/G-24).
@@ -525,3 +538,83 @@ CI-Gate. Artefakte: `GrinNode E16A014E…`, `Tests CC6472B1…`; Suite **194 / 2
 - G-53 Live-`/v2`/Reorg/Pagination.
 - G-07 persistenter Index/vollständiger Block-/Reorg-Test.
 - G-24 Hosted-CI; G-49 Rangeproof-Beschleunigung ist zurückgestellt.
+
+## Vollständiger verbleibender Projektplan — Stand 03.11.2026, 13:30 (UTC+07)
+
+Diese datierte Liste ersetzt das historische „Offen“ oben; frühere Einträge bleiben
+als Nachweishistorie erhalten. Arbeiten laufen parallel: vor Ausführung und
+Abnahme aktuelle Quellen, SHA und Ergebnisse prüfen. Details stehen in
+`THREE_LINE_STATUS.md` und verlinkten Nachweisen; veraltete Übersichtseinträge
+mit Primärberichten abgleichen. **Ein Szenario-PASS bedeutet nicht Mainnet-ready.**
+
+1. **Nächster Build / Fail-closed — P0/P1.** Build-14-Audit FAIL / INVALID
+   SOURCE BINDING: Quellen einfrieren, neu bauen und SHA binden; Gesamtsuite,
+   F11/F13/D2 und ASan-Teilmenge wiederholen. Fehlenden Previous-Header und
+   Rollback, Confirmed/Flushed-Konsistenz, Roots vorhandener Archive und
+   Fehlermarker-Schreibfehler separat abnehmen. Ein Versuch pro Neustart ist
+   keine Endlosschleife innerhalb eines Prozesses. Recovery H=3313440/H=3315600
+   auf Kopien wiederholen, Tip/Roots erhalten und fehlerhafte Publikation
+   verhindern. Der aktuelle F13-FAIL stammt aus einem veralteten Artefakt und
+   beweist keinen Fehler der aktuellen Quelle; die Korrektur ist ebenfalls nicht
+   nachgewiesen.
+2. **G-09 / Floonet — P0.** Build-13 7B mit leeren Headers/State und Loopback
+   PASS bis `no_sync`; beide Archiv-Recovery-Szenarien PASS auf Kopien. Keine
+   alten Erfolge nur für einen Zähler wiederholen: Crash-Unterbrechung der neuen
+   Veröffentlichung, negative Proof/Root/Segment-ID-Wire-Tests, Ressourcen/
+   paralleles Serving, echten Reorg/Horizontwechsel bei verfügbarer Quelle,
+   öffentliches Floonet-PIBD und Restart/Catch-up prüfen. `Output Commitment not
+   found` bleibt NOT VERIFIED; bei Reproduktion untersuchen. Timeout/Heartbeat
+   nur bei belegtem Bedarf ändern; früherer 60-Sekunden-Abbruch heilte sich
+   selbst. Kein vollständiges G-09- oder Public-Network-PASS behaupten.
+3. **G-07 / NRD und Kryptografie — P0/P1.** D2-Txpool/Index-Policy mit Rust
+   abschliessen und neuen source-bound Build testen; echtes Bodyless-NRD/Reorg,
+   Kill/Recovery, Indexstabilität und gezielte Rust-Differentialfälle bleiben.
+   ASan/Fuzz decken Teilmengen ab; RocksDB/DB fehlen in der verifizierten
+   Teilmenge. Risikoreiche Parsing/Proof-Flächen priorisieren. Historischer
+   `0xC0000409` in `Tests.exe`: Ursache NOT VERIFIED; ohne Wiederholung/neue
+   Daten keine separate Endlossuche.
+4. **G-23 / Speicher und Recovery — P0/P1.** Notwendige Fault-Injection bei
+   Schreiben/Start und Rollback prüfen; historischen Hard-Kill/Restart nicht nur
+   der Form halber wiederholen. Neue atomare Veröffentlichung/Recovery separat
+   auf isolierten Kopien prüfen; Fehler dürfen bestätigten State nicht beschädigen
+   oder ein partielles Archiv als bereit ausliefern.
+5. **G-53 / API und UI — P1.** Live-Node/Wallet-API, `/v2`, Owner/Foreign-Auth,
+   Grenzen, Pagination und Reorg prüfen. Electron/React-UI anpassen; isoliertes
+   Floonet: zwei Profile, manueller Slatepack S1/S2, ausdrückliche Sendebestätigung,
+   Finalize/Post, Chain-Bestätigung und Restart. Separater Flint-inspirierter
+   Layer: Tor/Messenger, Kontakte, durable Inbox/Outbox und Opt-in-Empfang von
+   gespeicherten Kontakten; zuerst sichere C++-Wallet-Integration sowie Lizenz,
+   Schlüssel und IPC-Grenzen prüfen. Zustellung ist keine Chain-Bestätigung;
+   ausgehendes Senden verlangt ausdrückliche Benutzerbestätigung. Historischer
+   Flint-PASS/Mock ist keine Grin++-UI-Abnahme.
+6. **G-27/G-44 / PIHD — experimentelle Erweiterung.** Client und Header-Segment-
+   Serving, ehrliche Capability und sicheres Legacy-Fallback vervollständigen;
+   standardmässig off. Authentifiziertes lokales Owner-API für Runtime Enable/
+   Disable mit Readiness, bestehenden Handshakes und sicherem Wechsel ohne
+   Neustart vorsehen. Gegen fixiertes Rust staging beide Richtungen, Reorg, leere
+   Antwort und keine falschen Bans prüfen. Für Rust 5.5.2 nicht erforderlich;
+   Live-PIHD NOT VERIFIED.
+7. **G-24 / CI und Release-Build.** Commit, Dirty-State, Toolchain, Abhängigkeiten
+   und SHA fixieren; sauberer Checkout-Build mit `/W4 /WX`, lokales Gate und
+   Hosted-CI sowie nötige Sanitizer/Fuzz-Checks. Pro Ebene PASS/FAIL/NOT VERIFIED
+   und akzeptierte Ausnahmen dokumentieren; Testprofile, Ports, Daten und
+   Artefakte paralleler Arbeiten isolieren.
+8. **G-49 / Performance — P2.** Baseline, CPU/RSS und Zeit auf fixiertem State
+   messen; nur nützliche, sichere und messbar bessere Änderungen mit gleichen
+   Validierungsergebnissen annehmen. Parallelismus/Resume/Asm sind keine
+   Kompatibilitätsbedingung und sollen die Node nicht unnötig verzögern.
+9. **API x13 — letzter API-Schritt.** Verstecktes Read-only-Easter-Egg ohne
+   öffentlichen Katalogeintrag, aber in Code/Tests und mit normaler Autorisierung:
+   grüner Hintergrund, schwarzes M, gelbes W, vereinbarte Namen/Texte, echte Peers
+   und vier Sync-Phasen; unbekannte Werte N/A. Fehlender eingebauter Marker →
+   rote Klammer; dieser prüft nur den Marker, nicht SHA/Herkunft des Builds. Bei
+   nicht erreichbarer API kann nur der aufrufende Client dies anzeigen. Kein
+   Einfluss auf P2P/Konsens; keine Geheimnisse in Antwort oder Dokumentation.
+10. **G-45 / Mainnet — separates finales Gate.** Nach ausreichendem Floonet und
+    Schliessen wesentlicher Risiken isolierten Dry-run ohne Wallet/echte Mittel
+    ausführen, Tip/State mit Rust, Restart und Stabilität vergleichen; Entscheidung
+    zum breiten Release und bekannte Einschränkungen separat dokumentieren.
+
+Stoppen, sobald Nachweise dem praktischen Risiko und Ziel genügen; den Plan nicht
+endlos um unwahrscheinliche Fehler erweitern. Easter-Egg und Performance blockieren
+Node-Tests nicht; gemeinsame Builds/Daten von Live-Tests isolieren.

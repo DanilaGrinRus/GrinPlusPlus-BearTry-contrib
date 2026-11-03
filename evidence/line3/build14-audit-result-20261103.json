@@ -1,0 +1,44 @@
+{
+  "schema": "gpp-line3-build14-audit-result/v1",
+  "captured_utc": "2026-11-03T06:30:00Z",
+  "captured_local": "2026-11-03T13:30:00+07:00",
+  "status": "FAIL / INVALID_SOURCE_BINDING / REBUILD REQUIRED",
+  "binding": {
+    "build13_final_live": "UNCHANGED; build-13 remains final live binding",
+    "build14_role": "fail-closed hardening + D2; NOT a replacement live claim",
+    "build14_tests_sha256": "50359F14F82958BF5891D57CF67A132F137F9A2C64189286648B708D7F667ADC",
+    "build14_grin_node_sha256": "A7D28BCC2F4A1B8FC5D57083E0F5F43F75A81BDF1771C946BE041A4CADA7246C",
+    "build_log": "build-console-build14-fix-20261103-131251.log",
+    "build_log_sha256": "40A45B4AC85D01ABA5742386FD9410998D76D9AF20CAFEFFD89D3B3E54EAE1AC"
+  },
+  "normal_audit": {
+    "full": {"cases":260,"passed":258,"failed":2,"assertions":4264,"assertions_passed":4262,"failures":["Test_NrdBodylessRestart.cpp(103) known test-only bodyless","Test_PibdServing.cpp F13 good-header validation false"]},
+    "F11_rewind": {"result":"PASS","cases":1,"assertions":2},
+    "D2_txpool": {"result":"PASS","cases":1,"assertions":8},
+    "F13_exact": {"result":"FAIL","cases":1,"passed":0,"assertions":35,"assertions_passed":34},
+    "PibdArchiveServer_filter": {"result":"FAIL","cases":9,"passed":8,"failed":1,"assertions":222,"assertions_passed":221},
+    "pass_groups": {"SpentOutputs":"1/6","exact_preflight":"1/4","boundary":"1/8","ArchivePublication":"1/83","GetKernel":"2/49","schema_v2":"2/26","duplicate":"1/10","Nrd":"30/428","KernelIndex":"5/74","advert":"2/15"}
+  },
+  "root_cause": {
+    "finding": "Build14 Tests.exe is stale relative to current source; F13 test object compiled before current Test_PibdServing.cpp edit",
+    "source": {"path":"tests/src/PMMR/Test_PibdServing.cpp","sha256":"351083D5DADCF757FC389CEC881310EDED2618C627E24F139A6D72D9ECFE88F5","mtime":"2026-11-03T13:24:59+07:00"},
+    "binary": {"path":"bin/Release/Release/Tests.exe","sha256":"50359F14...","mtime":"2026-11-03T13:22:33+07:00"},
+    "object": {"path":"grinpp-build/tests/Tests.dir/Release/Test_PibdServing.obj","mtime":"2026-11-03T13:21:38+07:00"},
+    "failure_log": "zip leaf output/pmmr_leaf.bin.edc758c1370d; TxHashSetZip::Extract searched output/pmmr_leaf.bin.000000000000; binary contains pre-headerShortHash test path",
+    "conclusion": "F13 failure is not valid evidence against current source/fix, but build14 artifact is not source-bound and cannot be audited/promoted"
+  },
+  "actions": [
+    "Do not run ASan/full live on this stale artifact",
+    "Rebuild after source freeze; capture new SHA/build log",
+    "Re-run full/F11/F13/D2 + ASan on new artifact; then copy-only H3313440/H3315600",
+    "Keep build13 final live binding"
+  ],
+  "asan": {"run":false,"reason":"normal artifact not source-bound; F13 gate failed"},
+  "constraints": {"source_edit_by_line3":false,"build_by_line3":false,"commit":false,"original_g09_live_02_modified":false},
+  "evidence": {
+    "full_manifest":"evidence/line3/b14-full-01/manifest.json","full_manifest_sha256":"2493D3B5CBCE18457C9631361283C1F61E06F1AEA4C3C5026E892DBE22CA661E",
+    "f13_manifest":"evidence/line3/b14-f13-01/manifest.json","f13_manifest_sha256":"A0E4C03A62E0325ADDF58F58B6906F1A1952DBCC948A14D561058C55A27D126D",
+    "f13_stdout":"evidence/line3/b14-f13-01/out/instance-1.stdout.log",
+    "f13_node_log":"C:\\DHW\\.tmp\\line3-iso\\b14-f13-01\\home\\.GrinPP\\AUTOMATED_TESTING\\LOGS\\Node.log"
+  }
+}

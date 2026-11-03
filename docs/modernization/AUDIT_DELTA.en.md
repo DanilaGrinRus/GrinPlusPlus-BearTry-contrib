@@ -1,5 +1,18 @@
 # AUDIT_DELTA (EN) — Grin++ 1.2.9 → Grin v5.5.2 compatibility
 
+## Update — 2026-11-03, 13:30 (UTC+07)
+
+Scope: Grin++ 1.2.9 and Rust Grin v5.5.2. HEAD at review was `75a09d6`; the concurrently changing working tree is not equivalent to the tested binaries. This dated snapshot supersedes conflicting material below; cross-check the operational board against primary evidence too.
+
+- **G-09: PARTIAL.** Build-13 `GrinNode` SHA-256 `F39BDFE5A8DAB22BE969406874EDCEFD023770BE1A1BA6330D7506B2C2571201`, `Tests` `001DF4BC31F194DCDDE83FE736B06EB6FD942666F2BEFF62FF1FB5F1BB8DB3A8`. In local Floonet scenario 7B an ordinary Rust node with clean headers/state obtained PIBD from C++ at H=3,315,600 (10,203,442/10,203,442), validated and activated state, completed body sync and reached `no_sync` at H=3,318,655 / `2945348e…`; roots matched. PASS is limited to this fixture/loopback scenario, not public network or full G-09. [Independent live audit](../../evidence/line3/build13-7b-full-audit-20261103.md).
+- **Build-13 archives:** the Release spent-position decoding error and rewind-preflight target boundary were fixed. Recovery at H=3,313,440 and fresh H=3,315,600 snapshot/serving readiness are PASS on copies in the recorded scenarios. Crash-interrupted publication and automatic horizon change remain NOT VERIFIED. [Recovery audit](../../evidence/line3/task10-11-build13-recovery-audit-20261103.md).
+- **Build-13 tests:** full suite **257/256/1 — FAIL overall**; the sole failure is `Test_NrdBodylessRestart`; bodyless NRD and kill-recovery remain NOT VERIFIED. Targeted checks passed; ASan is PASS for a subset only and the cited run does not cover RocksDB/DB. [Normal audit](../../evidence/line3/normal-binary-build13-audit-20261103.md), [ASan audit](../../evidence/line3/asan-build13-refresh-20261103.md).
+- **Do not promote build-14:** the audit records **FAIL / INVALID SOURCE BINDING**, 260/258/2; the F13 test source changed after compilation. The F13 FAIL pertains to a stale artifact and does not establish a defect in the current fix; the artifact also does not verify that source. Rebuild from a frozen snapshot and re-audit; this audit did not run build-14 ASan. [Audit result](../../evidence/line3/build14-audit-result-20261103.md).
+- **Open:** reorg/horizon change BLOCKED without a source; negative proof/root/ID wire tests, resource limits and public PIBD NOT VERIFIED. Fail-closed risks involving rewind, flushed/confirmed consistency, existing archive root validation and failure-marker writes require separate fix acceptance; one retry per new process is not an in-process loop. Do not close D2 NRD, bodyless or kill-recovery based on the unbound build.
+- PIHD is experimental/off; header-segment client/server and local controls are planned, live NOT VERIFIED. G-49 is a performance plan, not a demonstrated speedup. Full G-09 and Mainnet readiness **NOT VERIFIED**.
+
+## Previous summary — historical, superseded above
+
 ## Update — 2026-11-03
 
 Scope: Grin++ 1.2.9 and compatibility with Rust Grin v5.5.2. HEAD was `6dbf8a7` when reviewed; parallel working-tree changes are not bound to the binaries below. For the operational status and evidence see `THREE_LINE_STATUS.md`, `G09_ORDINARY_LIVE_PASS_2026-11-03.md` and `ARCHIVE_RECOVERY_2026-11-03.md`. Earlier statements below are historical where they conflict with this snapshot; cross-check the operational board against its primary evidence as well.
@@ -18,10 +31,10 @@ Dates, hashes, counts, statuses and references to a “current” state in the p
 
 - C++ added: **+22,619 lines**; deleted **−625**; 191 tracked + 22 new;
 - diff/new C++ text volume: **≈ +927.8 KiB**;
-- final `GrinNode.exe`: **7,846,912 B = 7,622.5 KiB = 7.44 MiB**;
+- final `GrinNode.exe`: **7,850,496 B = 7,622.5 KiB = 7.44 MiB**;
 - **exe growth vs 1.2.9: NOT MEASURED** — no original binary is preserved; 7.7 MB is the final size, not a delta;
-- artifacts: `GrinNode F39BDFE5…`, `Tests 001DF4BC…`; suite **257 cases / 256 passed / 1 test-only fail**, production 0 fails (explicit exception; see THREE_LINE_STATUS).
-- **G-09 fixed-H (experimental, 2026-11-03): historical PASS.** Build-09 `0A3B7D66…`/`F90EEF38…`: ordinary 7B full PIBD/activation/body sync/no_sync **PASS**, restart **PASS**. Build-13 `001DF4BC…`/`F39BDFE5…`: clean full 257/256/1 (bodyless test-only), final persisted restart **PASS**, H=3313440 recovery **PASS**, H=3315600 fresh snapshot **PASS**, SpentOutputs Release decode bug fixed. Full G-09 still **NOT VERIFIED**: reorg/horizon BLOCKED, negative/resources NOT VERIFIED, Output Commitment not reproduced, C++ fixture-based/loopback. Ordinary Rust 5.5.2 reached `no_sync` at H=3,318,655 / hash `2945348e…`, with the same C++ tip, 1 inbound / 0 outbound; PIBD 10,203,442/10,203,442, roots/rangeproof/kernel validation/body sync completed. The previous restarts were caused by `missing left sibling` at output segment 1648 and fixed by sending available leaves in `SegmentGenerator`. Limits: headers preseeded, reorg/restart/negative/mainnet not covered.
+- artifacts: `GrinNode A7D28BCC…`, `Tests 920F000F…`; suite **260 cases / 259 passed / 1 test-only fail**, production 0 fails (explicit exception; see THREE_LINE_STATUS).
+- **G-09 fixed-H (experimental, 2026-11-03): historical PASS.** Build-09 `0A3B7D66…`/`F90EEF38…`: ordinary 7B full PIBD/activation/body sync/no_sync **PASS**, restart **PASS**. Build-13 `001DF4BC…`/`F39BDFE5…`: clean full 7B PASS (PIBD 10,203,442, no_sync 3318655/2945348e); H=3313440 recovery, H=3315600 snapshot, crash publication PASS. Build-15 `920F000F…`/`A7D28BCC…`: full 260/259/1 (bodyless test-only), F11/F13/D2/archive PASS, persisted restart PASS; F13 ASan link-blocked. Full G-09 still **NOT VERIFIED**: reorg/horizon BLOCKED, negative/resources NOT VERIFIED, Output Commitment not reproduced, C++ fixture-based/loopback. Ordinary Rust 5.5.2 reached `no_sync` at H=3,318,655 / hash `2945348e…`, with the same C++ tip, 1 inbound / 0 outbound; PIBD 10,203,442/10,203,442, roots/rangeproof/kernel validation/body sync completed. The previous restarts were caused by `missing left sibling` at output segment 1648 and fixed by sending available leaves in `SegmentGenerator`. Limits: headers preseeded, reorg/restart/negative/mainnet not covered.
 - **PIBD/PIHD guard:** height cap 13, `idx*capacity` overflow check, PIHD response bound to connection/peer, fallback on no chain-height progress; PIBD responses use one `ApiStateSnapshot` with sequence retry, bitmap/root cached by output root, 500 requests/min per connection. PIHD is experimental, `PIHD_HIST` is not advertised; concurrent apply/reorg snapshot test remains open.
 
 Baseline: Grin++ 1.2.9 (`5f511e6`). Delta updated: 2026-11-02, HEAD `361e94d` (G-09/G-23/G-53/G-07/G-24).
@@ -527,3 +540,76 @@ Artifacts: `GrinNode E16A014E…`, `Tests CC6472B1…`; suite **194 / 2227 PASS*
 - G-53 live `/v2`/reorg/pagination.
 - G-07 persisted index/full block/reorg.
 - G-24 hosted CI; G-49 rangeproof speed-up is deferred.
+
+## Complete remaining project plan — snapshot 2026-11-03, 13:30 (UTC+07)
+
+This dated list supersedes the historical “Remaining” above; earlier records are
+retained as evidence history. Work is parallel, so recheck current sources, SHA
+and results before execution and acceptance. Detailed scenarios are in
+`THREE_LINE_STATUS.md` and linked evidence; cross-check stale board entries with
+primary reports. **A scenario PASS does not mean Mainnet-ready.**
+
+1. **Next build / fail-closed — P0/P1.** Build-14 audit FAIL / INVALID SOURCE
+   BINDING: freeze source, rebuild and bind SHA; rerun full and F11/F13/D2 plus
+   ASan subset. Accept missing previous-header handling and rollback, confirmed/
+   flushed consistency, existing-archive roots and failure-marker write handling
+   separately. One retry per restart is not an in-process infinite loop. Repeat
+   H=3313440/H=3315600 recovery on copies; preserve tip/roots and reject invalid
+   publication. Current F13 FAIL is from a stale artifact, not proof against the
+   present source; the fix is not proven either.
+2. **G-09 / Floonet — P0.** Build-13 clean-header/state 7B loopback PASS to
+   `no_sync`; both archive recovery scenarios PASS on copies. Do not repeat old
+   successes merely for a count: verify crash-interrupted publication, negative
+   proof/root/segment-ID wire tests, resources/concurrent serving, real reorg and
+   horizon change when a source exists, public Floonet PIBD and restart/catch-up.
+   `Output Commitment not found` remains NOT VERIFIED; investigate if reproduced.
+   Change timeout/heartbeat only on evidence; the earlier 60-second disconnect
+   self-healed. No full G-09 or public-network PASS claim yet.
+3. **G-07 / NRD and crypto — P0/P1.** Complete D2 txpool/index policy against
+   Rust and test a fresh source-bound build; real bodyless NRD/reorg, kill/
+   recovery, index resilience and targeted Rust differential scenarios remain.
+   ASan/fuzz cover subsets; RocksDB/DB is outside the verified subset. Prioritize
+   high-risk parsing/proof surfaces. Historical `0xC0000409` in `Tests.exe` has
+   NOT VERIFIED cause; do not pursue independently without recurrence/new data.
+4. **G-23 / storage and recovery — P0/P1.** Check necessary write/startup fault
+   injection and rollback; do not repeat the historical hard-kill/restart merely
+   for form. Test new atomic publication/recovery separately on isolated copies;
+   failure must preserve confirmed state and never serve a partial archive.
+5. **G-53 / API and UI — P1.** Verify live node/wallet API, `/v2`, owner/foreign
+   auth, boundaries, pagination and reorg. Adapt the Electron/React UI; isolated
+   Floonet: two profiles, manual Slatepack S1/S2, explicit send confirmation,
+   finalize/post, chain confirmation and restart. Separate Flint-inspired layer:
+   Tor/messenger, contacts, durable inbox/outbox and opt-in receipt from saved
+   contacts; first choose a safe C++ wallet integration and check licensing,
+   keys and IPC boundaries. Delivery is not chain confirmation; outgoing sends
+   require explicit user confirmation. Historical Flint PASS/mock is not a Grin++
+   UI acceptance.
+6. **G-27/G-44 / PIHD — experimental extension.** Complete client and header
+   segment serving, honest capability and safe legacy fallback; default off.
+   Provide authenticated local owner API runtime enable/disable with readiness,
+   handshake-state handling and safe switching without restart. Verify both
+   directions against pinned Rust staging, reorg, empty responses and no false
+   bans. PIHD is not required for Rust 5.5.2 compatibility; live PIHD NOT VERIFIED.
+7. **G-24 / CI and release build.** Pin commit, dirty state, toolchain,
+   dependencies and SHA; build from clean checkout with `/W4 /WX`, verify local
+   gate and hosted CI, and run appropriate sanitizer/fuzz checks. Record PASS/
+   FAIL/NOT VERIFIED and accepted exceptions per layer; isolate test profiles,
+   ports, data and artifacts from parallel work.
+8. **G-49 / performance — P2.** Measure baseline, CPU/RSS and time on a pinned
+   state; accept only useful, safe and measurably better changes with equivalent
+   validation results. Parallelism/resume/asm are not compatibility requirements
+   or reasons to delay the node without need.
+9. **API x13 — last API stage.** Hidden read-only easter egg omitted from the
+   public catalog but covered by code/tests and ordinary authorization: green
+   background, black M, yellow W, agreed names/text, actual peers and four sync
+   stages; unavailable values are N/A. Missing built-in marker → red parenthesis;
+   it checks only the marker, not SHA/origin of the entire build. An unavailable
+   API can be indicated only by the caller. No P2P/consensus effect or secrets.
+10. **G-45 / Mainnet — separate final gate.** After sufficient Floonet evidence
+    and material-risk closure, perform an isolated dry run without wallet or real
+    funds, compare tip/state with Rust, restart and resilience; record the broad
+    release decision and known limitations separately.
+
+Stop when evidence is sufficient for practical risk and the goal is met; do not
+grow the plan indefinitely for improbable defects. The easter egg and performance
+work do not block node testing; isolate shared builds/data from live tests.

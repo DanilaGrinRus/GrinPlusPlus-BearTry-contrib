@@ -1,0 +1,13 @@
+{
+  "chain": "test",
+  "connections": 1,
+  "protocol_version": 1000,
+  "sync_status": "no_sync",
+  "tip": {
+    "height": 3318655,
+    "last_block_pushed": "2945348ef765160a160008cfd7c2b41aa44ed3cea77d6bcfe2083acf0fc4bbf1",
+    "prev_block_to_last": "66d4e7a0bdaea80ecd8d3d2b21f4f09117b3d239cd47e3dabeb2cf7eea604425",
+    "total_difficulty": 1207035333622
+  },
+  "user_agent": "MW/Grin 5.5.2.dbaff34"
+}

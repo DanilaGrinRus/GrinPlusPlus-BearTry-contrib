@@ -1,0 +1,178 @@
+{
+  "schema": "gpp-line3-linked-asan-v1",
+  "created_utc": "2026-11-03T06:41:04.9117246Z",
+  "repo": "C:\\DHW\\Gplus\\src\\grinplusplus",
+  "git_head": "75a09d63bb625197367c38a28baf28880bcbc358",
+  "git_status": [
+    " M docs/modernization/AUDIT_DELTA.de.md",
+    " M docs/modernization/AUDIT_DELTA.en.md",
+    " M docs/modernization/AUDIT_DELTA.ru.md",
+    " M docs/modernization/CI_REPRO.md",
+    " M docs/modernization/G09_ORDINARY_LIVE_PASS_2026-11-03.md",
+    " M docs/modernization/GAP_MATRIX.md",
+    " M docs/modernization/SANITIZERS.md",
+    " M docs/modernization/THREE_LINE_STATUS.md",
+    " M evidence/line3/EVIDENCE_LINE3.md",
+    " M evidence/line3/task10-11-archive-recovery-manifest-20261103.json",
+    " M src/P2P/Sync/StateSyncer.cpp",
+    " M src/P2P/Sync/StateSyncer.h",
+    " M src/PMMR/TxHashSetImpl.cpp",
+    " M src/TxPool/TransactionPoolImpl.cpp",
+    " M src/TxPool/TransactionPoolImpl.h",
+    " M tests/src/PMMR/CMakeLists.txt",
+    " M tests/src/PMMR/Test_PibdServing.cpp",
+    "?? evidence/line3/b14-advert-01/",
+    "?? evidence/line3/b14-archivepub-01/",
+    "?? evidence/line3/b14-boundary-01/",
+    "?? evidence/line3/b14-d2-01/",
+    "?? evidence/line3/b14-dup-01/",
+    "?? evidence/line3/b14-f13-01/",
+    "?? evidence/line3/b14-full-01/",
+    "?? evidence/line3/b14-getkernel-01/",
+    "?? evidence/line3/b14-kernidx-01/",
+    "?? evidence/line3/b14-nrd-01/",
+    "?? evidence/line3/b14-pibdarchive-01/",
+    "?? evidence/line3/b14-preflight-01/",
+    "?? evidence/line3/b14-rewindf11-01/",
+    "?? evidence/line3/b14-schema-01/",
+    "?? evidence/line3/b14-spent-01/",
+    "?? evidence/line3/b15-advert-01/",
+    "?? evidence/line3/b15-archivepub-01/",
+    "?? evidence/line3/b15-boundary-01/",
+    "?? evidence/line3/b15-d2-01/",
+    "?? evidence/line3/b15-dup-01/",
+    "?? evidence/line3/b15-f13-01/",
+    "?? evidence/line3/b15-full-01/",
+    "?? evidence/line3/b15-getkernel-01/",
+    "?? evidence/line3/b15-kernidx-01/",
+    "?? evidence/line3/b15-nrd-01/",
+    "?? evidence/line3/b15-pibdarchive-01/",
+    "?? evidence/line3/b15-preflight-01/",
+    "?? evidence/line3/b15-rewindf11-01/",
+    "?? evidence/line3/b15-schema-01/",
+    "?? evidence/line3/b15-spent-01/",
+    "?? evidence/line3/build-14-freeze-snapshot-final.json",
+    "?? evidence/line3/build-15-freeze-snapshot-final.json",
+    "?? evidence/line3/build13-7b-full-20261103/",
+    "?? evidence/line3/build13-7b-full-audit-20261103.json",
+    "?? evidence/line3/build13-7b-full-audit-20261103.md",
+    "?? evidence/line3/build13-7b-live-audit-plan-20261103.json",
+    "?? evidence/line3/build13-7b-live-audit-plan-20261103.md",
+    "?? evidence/line3/build14-audit-result-20261103.json",
+    "?? evidence/line3/build14-audit-result-20261103.md",
+    "?? evidence/line3/build14-failclosed-preauth-20261103.json",
+    "?? evidence/line3/build14-failclosed-preauth-20261103.md",
+    "?? evidence/line3/build14-independent-audit-plan-20261103.json",
+    "?? evidence/line3/build14-independent-audit-plan-20261103.md",
+    "?? evidence/line3/full-asan-20261103-133739/",
+    "?? tests/src/PMMR/Test_RewindFailClosed.cpp",
+    "?? tests/src/PMMR/Test_TxPoolNrdPolicy.cpp",
+    "?? tools/audit/nrd/evidence/backlog-bodyless-kill-d2-design-20261103.md",
+    "?? tools/audit/nrd/evidence/build14-patches/",
+    "?? tools/audit/nrd/evidence/isolated/b14-archivepub-20261103-132315/",
+    "?? tools/audit/nrd/evidence/isolated/b14-f13-20261103-132315/",
+    "?? tools/audit/nrd/evidence/isolated/b14-full-20261103-132315/",
+    "?? tools/audit/nrd/evidence/isolated/b14-pibdarchive-20261103-132315/",
+    "?? tools/audit/nrd/evidence/isolated/b14-preflight-20261103-132315/",
+    "?? tools/audit/nrd/evidence/isolated/b14-rewind-20261103-132315/",
+    "?? tools/audit/nrd/evidence/isolated/b14-txpool-20261103-132315/",
+    "?? tools/audit/nrd/evidence/isolated/b15-archivepub-20261103-133445/",
+    "?? tools/audit/nrd/evidence/isolated/b15-f13-20261103-133445/",
+    "?? tools/audit/nrd/evidence/isolated/b15-full-20261103-133445/",
+    "?? tools/audit/nrd/evidence/isolated/b15-pibdarchive-20261103-133445/",
+    "?? tools/audit/nrd/evidence/isolated/b15-preflight-20261103-133445/",
+    "?? tools/audit/nrd/evidence/isolated/b15-rewind-20261103-133445/",
+    "?? tools/audit/nrd/evidence/isolated/b15-txpool-20261103-133445/",
+    "?? tools/audit/nrd/evidence/kernel-index-legacy-cleanup-audit-20261103.md",
+    "?? tools/audit/nrd/evidence/rewind-preflight-fail-closed-audit-20261103.md"
+  ],
+  "copied_tree": "C:\\DHW\\.tmp\\asan-line3\\gpp-tree",
+  "lib_dir": "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\bin\\Release\\Release",
+  "profile": "/W4 /WX /O1 /Zi /MT /EHsc /std:c++17 /fsanitize=address, linked against full-project ASan libs",
+  "asan_runtime": {
+    "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\clang_rt.asan_dynamic-x86_64.dll",
+    "sha256": "3AA742521E8CBD23252F0545AA51D5A15624A3E4430FBE2F81567AFAEB3FC59B"
+  },
+  "libraries": [
+    {
+      "name": "bitcoin.lib",
+      "sha256": "A7E7DEA470831610C565C37C438A86C84B4D3ADE8675A1E824E555DFA2503AC9",
+      "bytes": 738220
+    },
+    {
+      "name": "chachapoly.lib",
+      "sha256": "EF844AD3F35E10797C9584771E5EA7B4AADB4D53970D82CA343CD78CFBD68C66",
+      "bytes": 159688
+    },
+    {
+      "name": "Common.lib",
+      "sha256": "0B3107933604AF7AD7D45ED86603BD145FEDD72A8252B862751A7834F3983557",
+      "bytes": 12156750
+    },
+    {
+      "name": "Core.lib",
+      "sha256": "32EBAB8F65C36F141662499229253E4A000DB5AC1F87252B5BDDBE9C085B48C2",
+      "bytes": 40492250
+    },
+    {
+      "name": "Crypto.lib",
+      "sha256": "79C7D42538E01441115E685AFB111A5E08E3C1A3E6FD4FCC774FD0FE1DB23669",
+      "bytes": 23862200
+    },
+    {
+      "name": "jsoncpp.lib",
+      "sha256": "F7BCB7FA51AADC8D440DAABCE40A80632BF314825F72EA9BC98423C2654D5223",
+      "bytes": 2915210
+    },
+    {
+      "name": "Net.lib",
+      "sha256": "3D245486388531D1998C2CB3647167E2409E7C93EAF33C5169B609C55F6D8C5C",
+      "bytes": 11428590
+    },
+    {
+      "name": "PMMR.lib",
+      "sha256": "6392570B73D5C98FC1EB2B1113223067869B5A408A89FCD636F971400FF6BC2D",
+      "bytes": 34235802
+    },
+    {
+      "name": "rfc6234.lib",
+      "sha256": "82B4D4F92FE658AEC702E1A1CA7B61E3689DE8F14F70B6561E9FDACBAD5B04C4",
+      "bytes": 165252
+    },
+    {
+      "name": "scrypt.lib",
+      "sha256": "1FB224C0AD14442FF0C73321741D5C5E0B62AEC919EA396F1A20E18BEF338FF1",
+      "bytes": 77216
+    },
+    {
+      "name": "sha3.lib",
+      "sha256": "6D05FA8E1B0BF02205D5C494B72B99F4E225D1FCCAEB69429697DA3722DE1906",
+      "bytes": 132546
+    },
+    {
+      "name": "Tor.lib",
+      "sha256": "04AAE8A02AB75D7C26CDE0D4E3C29BE142095C1F835B19E252ED6F9E478CCFC8",
+      "bytes": 20117344
+    }
+  ],
+  "targets": {
+    "tests_mini": {
+      "exe": "C:\\DHW\\.tmp\\asan-line3\\fuzz-linked\\TestsMini.exe",
+      "log": "C:\\DHW\\.tmp\\asan-line3\\fuzz-linked\\logs\\build_tests_mini.log",
+      "exit_code": 0,
+      "sources": [
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\TestMain.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_NrdDifferential.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_NrdIndexRebuild.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_NrdRules.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_NrdPolicy.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\PMMR\\Test_Segment.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\tests\\src\\Net\\Test_P2PCompat.cpp",
+        "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\src\\BlockChain\\Validators\\BlockValidator.cpp",
+        "C:\\DHW\\Gplus\\src\\grinplusplus\\tests\\fuzz\\stub_chain_getbyheight.cpp"
+      ],
+      "binary_sha256": "9D9AA171475CC6B5C713C80F4F4A839931A2039DB54E4857329C65B0B6C81418",
+      "bytes": 7311360
+    }
+  }
+}
