@@ -28,8 +28,10 @@ live binding. Сводный план — [REMAINING.md](REMAINING.md); Layer A 
   re-download/PIBD requests.
 - A3: owner reads PRIVATE, get_config PRIVATE, update_config ADMIN, foreign public,
   API loopback-only; PIBD serving/PIHD off and not advertised.
-- A4: public PIBD serving NOT VERIFIED; bodyless/ASan exceptions documented;
-  peak validation RSS ~9.7 GB.
+- A4: independent second public node PASS (6 real Rust peers, restart resume
+  367,616→529,408, non-loopback API refused); ASan F13/archive PASS with 0 reports;
+  public PIBD serving NOT VERIFIED/disabled; bodyless test-only accepted;
+  peak validation RSS ~9.7 GB, post-sync ~2.8 GB.
 
 
 ### Build-13 — full 7B live binding

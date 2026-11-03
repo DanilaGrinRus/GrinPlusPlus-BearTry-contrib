@@ -39,15 +39,34 @@ REST 127.0.0.1:25450, no loopback allowlist, no fixture, no wallet.
 - **Public PIBD serving: NOT VERIFIED.** The ordinary PIBD *client* path was used;
   this is not proof of public serving.
 
-## A4 — exceptions and limits
+## A4 — exceptions and limits (closed with explicit exclusions)
 
-- Known test-only bodyless failure remains; it does not affect this node run.
-- ASan F13/archive path is normal-only due TestsMini link boundary; no full ASan claim.
-- Public validation peak RSS observed around **9.7 GB** during state validation;
-  after sync RSS fell to ~2.8 GB. This is a resource observation, not a proven leak;
-  resource limits/concurrency for serving remain unmeasured.
-- Public sync time was long; legacy txhashset fallback was too slow, PIBD client
-  completed. The fallback path itself remains PARTIAL for public use.
+- **Independent second public node — PASS:** separate profile `task14-a4-retry`,
+  P2P 13514 → public 13414, REST 25550; 6 distinct real Rust peers, caps 95/223,
+  UAs 5.4.0/5.5.1-alpha/5.5.1/5.5.2, 0 banned; restart resumed at 367,616 (not 0)
+  and progressed to 529,408; owner no/wrong token → -32001, valid Bearer → OK,
+  foreign get_tip/get_version → 200; non-loopback 192.168.1.33:25550 refused.
+- **ASan F13/archive — PASS:** ASan TestsMini link set extended with StateSyncer
+  dependencies (ASan-only script), source manifest `C1C321E9…`, TestsMini
+  `C608090B…`; F13 1/38 and PibdArchiveServer 9/225 under ASan, teardown PASS,
+  **0 ASan reports**. Normal `/W4 /WX` build unchanged.
+- **Public PIBD serving — NOT VERIFIED, safely disabled:** serving remains default
+  off, no PIBD/PIHD bits advertised; public serving was not exercised. This is an
+  explicit exclusion and must not be described as a tested public service.
+- **Bodyless test-only failure — accepted exception:** the original test asks for
+  header v4 + NRD at height 30 under `AUTOMATED_TESTING`, while consensus returns
+  header v1 there; it is structurally invalid without a test-consensus seam. The
+  existing synthetic replacement was not applied because it would drop real
+  BlockDB/OpenExisting/reorg/restart coverage. Full suite remains **271/270/1**,
+  only this test-only failure; no production failure is claimed fixed.
+- **RSS/resource observation:** peak RSS ~**9.7 GB** during public state validation,
+  falling to ~2.8 GB after sync; no leak claim either way. A practical minimum for
+  this validation profile is ≥12 GB free RAM; archive-serving resource limits are
+  not measured.
+- **Legacy public fallback — PARTIAL:** public legacy txhashset was ~0.46 MB/s and
+  was abandoned at ~501 MB; ordinary PIBD client completed. Legacy fallback remains
+  supported in controlled/fixture runs but was not proven end-to-end on public
+  Floonet.
 - No wallet/UI were used; no mainnet, no real funds, no secrets logged.
 
 ## Evidence

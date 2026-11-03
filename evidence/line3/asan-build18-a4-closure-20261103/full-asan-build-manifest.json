@@ -1,0 +1,110 @@
+{
+  "schema": "gpp-line3-full-asan-build/v1",
+  "run_id": "full-asan-20261103-211031",
+  "created_utc": "2026-11-03T14:10:31.4640053Z",
+  "repo": "C:\\DHW\\Gplus\\src\\grinplusplus",
+  "git_head": "83e7575392bc0ee726b67375236b3ed03ebd4dfd",
+  "git_status": [
+    " M tools/fuzz/build_linked_targets.ps1",
+    "?? tools/audit/nrd/evidence/a4-bodyless-patch-coverage-20261103.md"
+  ],
+  "copied_tree": "C:\\DHW\\.tmp\\asan-line3\\gpp-tree",
+  "source_manifest": "C:\\DHW\\.tmp\\asan-line3\\gpp-build\\source_tree_manifest.txt",
+  "source_manifest_sha256": "C1C321E9E43D9886F1EE792425D103613DB225CFD90F64D496B721E64B727EF6",
+  "build_dir": "C:\\DHW\\.tmp\\asan-line3\\gpp-build",
+  "sysroot": "C:\\DHW\\Gplus\\.toolchain\\sysroot",
+  "toolchain": "MSVC 14.44.35207 (VS 2022 BuildTools 17.14), Windows SDK 10.0.26100",
+  "asan_runtime": {
+    "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\clang_rt.asan_dynamic-x86_64.dll",
+    "sha256": "3AA742521E8CBD23252F0545AA51D5A15624A3E4430FBE2F81567AFAEB3FC59B"
+  },
+  "configure": {
+    "command": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin\\cmake.exe -S C:\\DHW\\.tmp\\asan-line3\\gpp-tree -B C:\\DHW\\.tmp\\asan-line3\\gpp-build -G Visual Studio 17 2022 -A x64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=C:\\DHW\\Gplus\\.toolchain\\sysroot -DGRINPP_TESTS=ON -DGRINPP_TOOLS=OFF -DCMAKE_CXX_FLAGS=/DWIN32 /D_WINDOWS /W3 /GR /EHsc /fsanitize=address /Zi -DCMAKE_C_FLAGS=/DWIN32 /D_WINDOWS /W3 /fsanitize=address /Zi -DCMAKE_EXE_LINKER_FLAGS=/DEBUG -DCMAKE_SHARED_LINKER_FLAGS=/DEBUG -DCMAKE_STATIC_LINKER_FLAGS=/DEBUG",
+    "log": "C:\\DHW\\.tmp\\asan-line3\\gpp-build\\full-asan-20261103-211031.configure.log",
+    "exit_code": 0
+  },
+  "build": {
+    "command": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\MSBuild\\Current\\Bin\\MSBuild.exe C:\\DHW\\.tmp\\asan-line3\\gpp-build\\GRIN_PLUS_PLUS.sln /t:Common;Core;Crypto;PMMR /p:Configuration=Release /p:Platform=x64 /p:TrackFileAccess=false /p:UseSharedCompilation=false /nr:false /v:m /nologo /flp:LogFile=C:\\DHW\\.tmp\\asan-line3\\gpp-build\\full-asan-20261103-211031.build.log;Verbosity=normal",
+    "targets": [
+      "Common",
+      "Core",
+      "Crypto",
+      "PMMR"
+    ],
+    "log": "C:\\DHW\\.tmp\\asan-line3\\gpp-build\\full-asan-20261103-211031.build.log",
+    "stdout_log": "C:\\DHW\\.tmp\\asan-line3\\gpp-build\\full-asan-20261103-211031.msbuild.stdout.log",
+    "exit_code": 0,
+    "wall_sec": 94.178,
+    "output_dir": "C:\\DHW\\.tmp\\asan-line3\\gpp-tree\\bin\\Release\\Release",
+    "libraries": [
+      {
+        "name": "bitcoin.lib",
+        "bytes": 738220,
+        "sha256": "AA5B85366A74D855893F573B47BB5A80EDDE07BB46173F47A2ED19281B58A129"
+      },
+      {
+        "name": "chachapoly.lib",
+        "bytes": 159688,
+        "sha256": "F17B20297040EE1334E54F06EA29928152E21B8194D371B4721D0358CB09CD64"
+      },
+      {
+        "name": "Common.lib",
+        "bytes": 12156750,
+        "sha256": "E5C629E5325CF169A041BA2E8D43D7B52D050077B5421BD2A3112C31BDE7520D"
+      },
+      {
+        "name": "Core.lib",
+        "bytes": 40492250,
+        "sha256": "FEC07D0BA363FF06A5BB2342D2AF512D3A9EB49B217D8686A0773C564829FCF8"
+      },
+      {
+        "name": "Crypto.lib",
+        "bytes": 23862200,
+        "sha256": "E7FA81ED63418E9A262D06BECEC0B44DE1488496A3FE499882503CF7341709DF"
+      },
+      {
+        "name": "jsoncpp.lib",
+        "bytes": 2915210,
+        "sha256": "3E9339D4EBBC25CD38E8BAACDE9DA508AFFD70C7796E27200D14539FD66E38EB"
+      },
+      {
+        "name": "Net.lib",
+        "bytes": 11428590,
+        "sha256": "070295D2FCEB24F62F51C4F5719D1186FE7713ADE972DFDA643AB85EB16914A6"
+      },
+      {
+        "name": "PMMR.lib",
+        "bytes": 34235802,
+        "sha256": "27AF46BAE795AD5A2586B76FC1C5432A3D43B7307FE3B7B7808E9284D3894F9E"
+      },
+      {
+        "name": "rfc6234.lib",
+        "bytes": 165252,
+        "sha256": "15B12BFEA1974EF8FDF19C8A1A39E961129C9B7E7CF2DA0233C0E9D6B894BB3C"
+      },
+      {
+        "name": "scrypt.lib",
+        "bytes": 77216,
+        "sha256": "BF29B29409320EF3D265BB8F6DE20EEBBE1AACBCB3F6EAE7B2F6BE3648550E1B"
+      },
+      {
+        "name": "sha3.lib",
+        "bytes": 132546,
+        "sha256": "3C6362FDC6E0FCCB8EF5B713FE1CE0EDEDDDB0EBE4AC97C84FC2572F233B8791"
+      },
+      {
+        "name": "Tor.lib",
+        "bytes": 20117344,
+        "sha256": "FE0F900EFB9A52589A630FB085D4531D957B247A5D8577E926539DD07D572BE9"
+      }
+    ]
+  },
+  "notes": [
+    "Project CMakeLists forces /W4 /WX and static CRT /MT; the ASan profile only adds /fsanitize=address /Zi and /DEBUG.",
+    "/Zi is mandatory: without debug info MSVC raises C5072 and /WX fails the build.",
+    "All project TUs in this build are ASan-instrumented, so MSVC STL annotate_string/annotate_vector pragmas match (LNK2038 resolved).",
+    "Uninstrumented: sysroot C libraries (zlib, minizip, libsodium, secp256k1-zkp, roaring) and system CRT/Windows DLLs.",
+    "Targets avoid Database so the non-ASan rocksdb.lib C++ library is not linked."
+  ],
+  "result": "BUILD_PASS"
+}

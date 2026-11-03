@@ -42,9 +42,14 @@ test-only failure), B1 negative/resource и R2/R4/owner-auth PASS.
 - [x] **A3. Безопасные границы:** REST только 127.0.0.1; owner reads PRIVATE,
   get_config PRIVATE, update_config ADMIN; foreign public; PIBD serving/PIHD OFF,
   PIBD/PIHD bits не рекламируются. Публичный PIBD serving — **NOT VERIFIED**.
-- [x] **A4. Исключения:** bodyless test-only; ASan F13/archive normal-only;
-  публичный PIBD serving исключён; peak RSS ~9.7 GB во время validation
-  (наблюдение, не доказательство утечки); legacy fallback public partial.
+- [x] **A4. Исключения:** независимая вторая public-нода PASS (6 real Rust peers,
+  restart resume 367 616 → 529 408, API auth); ASan F13/archive PASS 0 reports
+  (ASan-only extended link set). Public PIBD serving NOT VERIFIED, safely disabled.
+  Bodyless test-only failure remains accepted: original test is structurally
+  invalid (v4 NRD at height 30); synthetic patch not applied to avoid losing real
+  BlockDB/restart coverage. Full 271/270/1, only that test. Peak validation RSS
+  ~9.7 GB, post-sync ~2.8 GB; practical ≥12 GB free RAM. Legacy public fallback
+  PARTIAL (PIBD client completed; legacy abandoned at ~501 MB).
 
 ### Ворота B — готовность к Mainnet
 
@@ -67,7 +72,7 @@ test-only failure), B1 negative/resource и R2/R4/owner-auth PASS.
   hosted CI/эквивалент и Mainnet dry-run NOT VERIFIED; public Floonet A2 PASS.
 - [ ] **B6. Кошелёк/UI:** отдельная приёмка; не входит в текущий A/B результат.
 
-### Полнота пользовательского продукта — после базовых ворот / параллельно
+### Полнота пользовательского продукта — после ворот A и B по указанию владельца
 
 - [ ] **P1. UI + слой Flint:** адаптировать Electron/React UI к C++ wallet API;
   отдельный Tor/messenger слой с контактами, устойчивой inbox/outbox и opt-in
@@ -81,9 +86,17 @@ test-only failure), B1 negative/resource и R2/R4/owner-auth PASS.
   установленных соединений, fallback, reorg, пустой ответ и Rust staging live в
   обоих направлениях. Это желаемая часть полного продукта, но выключенный PIHD
   не блокирует ограниченный тест ноды или совместимость с Rust 5.5.2.
-- [ ] **P3. G-49:** замер baseline на идентичном состоянии; ускорение внедрять
-  только при измеримой практической пользе и равных результатах проверки.
-  Параллелизм, персистентный resume и asm необязательны для ворот ноды.
+- [ ] **P3. G-49 / G-49-1 — подготовка стенда и уведомление:** G-49-1
+  подготавливает методику, критерии и инвентаризацию для сравнения rangeproof
+  validation. До завершения A и B и отдельного указания владельца — только
+  подготовительная работа, без реализации оптимизации, изменений кода или запуска
+  экспериментальных испытаний. После выполнения применимых предварительных PASS
+  и готовности стенда **уведомить владельца, что G-49 готова к тестированию**,
+  с указанием артефактов и ограничений; запуск сравнения и тестового билда —
+  только по отдельному указанию. Тестирование и его итоговый PASS не являются
+  предварительным условием уведомления. Если оптимизированного билда ещё нет,
+  указать это и не представлять его как готовый. [G-49-1 и текст группе](PERF_RANGEPROOF.md#g-49-1--подготовка-стенда-и-уведомление-владельца).
+  Параллелизм, персистентный resume и asm необязательны.
 - [ ] **P4. x13 — последний этап API:** скрытая read-only пасхалка с обычной
   авторизацией, зелёным фоном, чёрной M/жёлтой W, именами и надписями по плану,
   реальными peers и прогрессом четырёх стадий (нет данных → N/A). Встроенная

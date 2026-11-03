@@ -114,6 +114,26 @@ $targets = [ordered]@{
             # lease.use_count) is expected to pass; mmap/minizip-based cases may be
             # link/runtime limited.
             (Join-Path $Tree 'tests\src\PMMR\Test_PibdServing.cpp'),
+            # A4 closure: F13/archive readiness test needs StateSyncer.cpp in
+            # this ASan-only TestsMini link set. Normal /W4 /WX build unaffected.
+            (Join-Path $Tree 'src\P2P\Sync\StateSyncer.cpp'),
+            # StateSyncer's connection surface; ASan-only link deps.
+            (Join-Path $Tree 'src\P2P\ConnectionManager.cpp'),
+            (Join-Path $Tree 'src\P2P\Connection.cpp'),
+            (Join-Path $Tree 'src\P2P\Sync\Syncer.cpp'),
+            (Join-Path $Tree 'src\P2P\Sync\BlockSyncer.cpp'),
+            (Join-Path $Tree 'src\P2P\Sync\HeaderSyncer.cpp'),
+            (Join-Path $Tree 'src\P2P\Pipeline\BlockPipe.cpp'),
+            (Join-Path $Tree 'src\P2P\Pipeline\TransactionPipe.cpp'),
+            (Join-Path $Tree 'src\P2P\Pipeline\TxHashSetPipe.cpp'),
+            (Join-Path $Tree 'src\P2P\Seed\Seeder.cpp'),
+            (Join-Path $Tree 'src\P2P\Seed\PeerManager.cpp'),
+            (Join-Path $Tree 'src\P2P\Seed\HandShake.cpp'),
+            (Join-Path $Tree 'src\P2P\Seed\DNSSeeder.cpp'),
+            (Join-Path $Tree 'src\P2P\P2PServerImpl.cpp'),
+            (Join-Path $Tree 'src\P2P\BlockLocator.cpp'),
+            (Join-Path $Tree 'src\P2P\MessageProcessor.cpp'),
+            (Join-Path $Tree 'src\P2P\Dandelion.cpp'),
             (Join-Path $Tree 'tests\src\Net\Test_P2PCompat.cpp'),
             (Join-Path $Tree 'src\BlockChain\Validators\BlockValidator.cpp'),
             (Join-Path $Repo 'tests\fuzz\stub_chain_getbyheight.cpp')
