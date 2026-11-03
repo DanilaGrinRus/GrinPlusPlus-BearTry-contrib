@@ -3,17 +3,29 @@
 Дата сверки: 2026-11-04. **Layer A PASS на build-16**
 (`GrinNode 7E3AA29E…`, `Tests 1592F3DF…`): public Floonet `FULLY_SYNCED`,
 restart resumed without state re-download, owner API protected; public PIBD
-serving DISABLED/NOT VERIFIED. **Build-34** (`Tests DFB15F48…`,
-`GrinNode 6E2303BA…`) — source-bound кандидат с исправлениями `IsCoinbase` и
-chain-store writer: default full **272/272**, но bodyless hidden reproducer
-**FAIL/BLOCKED** на post-reorg NRD-index; public legacy fallback
-**BLOCKED/PARTIAL**. Build-13 остаётся full 7B live binding. Сводный план —
-[REMAINING.md](REMAINING.md); Layer A —
-[LAYER_A_FLOONET_2026-11-03.md](LAYER_A_FLOONET_2026-11-03.md).
+serving DISABLED/NOT VERIFIED. **Build-43** (`Tests 2E84B662…`,
+`GrinNode 9E1242B1…`) — source-bound кандидат с `IsCoinbase`, chain-store writer
+и reorg-preflight: **bodyless safe-refusal PASS**, test visible, full
+**273/273, 4355 assertions**; full bodyless reorg не поддерживается/не
+заявляется. Public legacy fallback **BLOCKED/PARTIAL** (PID 3680 active).
+Build-13 остаётся full 7B live binding. Сводный план — [REMAINING.md](REMAINING.md);
+Layer A — [LAYER_A_FLOONET_2026-11-03.md](LAYER_A_FLOONET_2026-11-03.md).
 
 ## Артефакты
 
-### Build-34 — IsCoinbase/deadlock fix / bodyless reproducer
+### Build-43 — bodyless fail-closed acceptance
+
+- Tests `2E84B662538CF28A83FECDBD60215BED071E1ABAFE4060B77E955C4B0DD123F4`,
+  9 581 056 B; GrinNode `9E1242B1CA871E6A12E540EAF1F094F2108A2D940BD4CA588FBFCBD89A1F2149`,
+  7 854 592 B.
+- Bodyless targeted **PASS**, 41 assertions; full **273/273, 4355 assertions**.
+  Reconstructed bodyless state refuses an unsafe reorg with `UNKNOWN_ERROR`
+  before mutation; tip/NRD index survive restart. Full bodyless reorg is **not**
+  supported/claimed. Test is visible, not hidden.
+- Public legacy fallback: pre-reboot 369 360 896 B temporary archive reached;
+  resumed PID 3680 active at DOWNLOADING_TXHASHSET; no complete/activation PASS.
+
+### Build-34 — historical bodyless blocker
 
 - Tests `DFB15F48BA833DA338DF1F993E382028C5DED1F1610725C569C2651D30C54236`,
   9 584 128 B; GrinNode `6E2303BAD0176093B64BC5E790C09079B0EC37DD4D68CDDDDF66E2A1107BF998`,
@@ -47,10 +59,11 @@ chain-store writer: default full **272/272**, но bodyless hidden reproducer
   API loopback-only; PIBD serving/PIHD off and not advertised.
 - A4: independent second public node PASS (6 real Rust peers, restart resume
   367,616→529,408, non-loopback API refused); ASan F13/archive PASS with 0 reports;
-  public PIBD serving NOT VERIFIED/disabled; **bodyless IsCoinbase and writer
-  deadlock fixed, full reorg/restart still FAIL/BLOCKED at post-reorg NRD-index**
-  (hidden reproducer); public legacy fallback long run in progress, full
-  end-to-end not yet verified; peak validation RSS ~9.7 GB, post-sync ~2.8 GB.
+  public PIBD serving NOT VERIFIED/disabled; **bodyless safe-refusal PASS**:
+  IsCoinbase/writer fixes, reorg preflight refuses before mutation, restart keeps
+  tip/NRD index; full bodyless reorg not supported/claimed. Public legacy fallback
+  long run in progress, full end-to-end not yet verified; peak validation RSS
+  ~9.7 GB, post-sync ~2.8 GB.
 
 
 ### Build-13 — full 7B live binding

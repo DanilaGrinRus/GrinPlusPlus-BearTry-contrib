@@ -10,13 +10,13 @@ PIHD, UI и тестов остаются в своих разделах, но �
 приёмочной сводкой. При расхождении статуса сверять более свежие первичные
 свидетельства и обновлять этот список; не переписывать прошлые результаты.
 
-**Срез / не переносить на другую сборку:** build-34 `Tests DFB15F48…`,
-`GrinNode 6E2303BA…` — source-bound кандидат с исправлением
-`TransactionKernel::IsCoinbase` (NRD больше не считается coinbase) и scope
-fix для chain-store writer. Default full suite **272/272**, но bodyless-тест
-скрыт (`[.]`) как reproducer: полный bodyless reorg+restart **FAIL/BLOCKED**
-после reorg на phase-3 OpenExisting (`kernel MMR 34 leaves vs tip header 32`;
-NRD-index rebuild refusing to start). Это **не** bodyless PASS.
+**Срез / не переносить на другую сборку:** build-43 `Tests 2E84B662…`,
+`GrinNode 9E1242B1…` — source-bound кандидат с исправлениями
+`TransactionKernel::IsCoinbase`, chain-store writer и reorg-preflight.
+Bodyless **fail-closed PASS**: bodyless-state с отсутствующими телами отклоняет
+reorg до мутации, сохраняет tip/NRD-index и переживает restart; full bodyless
+reorg **не поддерживается и не заявляется**. Full suite **273/273, 4355
+assertions** (bodyless-тест видим, не скрыт).
 Layer A public-Floonet PASS — build-16 `GrinNode 7E3AA29E…`, `Tests 1592F3DF…`:
 FULLY_SYNCED 3 321 243, restart catch-up 3 321 250, 0 state re-download/PIBD
 requests, A3 PASS; public PIBD serving **NOT VERIFIED** (disabled). Public legacy
@@ -51,16 +51,16 @@ Full local PIBD 7B — PASS на build-13. Recovery H3313440/H3315600 и staging
 - [x] **A4. Исключения:** независимая вторая public-нода PASS (6 real Rust peers,
   restart resume 367 616 → 529 408, API auth); ASan F13/archive PASS 0 reports
   (ASan-only extended link set). Public PIBD serving NOT VERIFIED, safely disabled.
-  Bodyless full scenario **FAIL/BLOCKED**: `TransactionKernel::IsCoinbase` fixed
-  (NRD no longer counted as coinbase; test added), real TestServer/BlockDB/OpenExisting
-  path reaches reorg and then **fails closed** in phase-3 NRD-index rebuild
-  (`kernel MMR 34 vs tip header 32`); test hidden as reproducer, not PASS.
-  Default full **272/272** excludes it. Peak validation RSS
-  ~9.7 GB, post-sync ~2.8 GB; practical ≥12 GB free RAM. Public legacy fallback
-  **BLOCKED/PARTIAL**: pre-reboot run reached headers 3 321 636 and a 369 MB
-  temporary archive; resumed long run remains active. Bodyless deadlock was
-  fixed; remaining failure is the post-reorg NRD-index/MMR reconciliation, not a
-  timeout.
+  Bodyless **fail-closed PASS**: `TransactionKernel::IsCoinbase` fixed (NRD no
+  longer counted as coinbase; test added), chain-store writer deadlock fixed, and
+  reorg preflight now refuses before mutation if confirmed bodies are missing.
+  Real TestServer/BlockDB/OpenExisting path is exercised: safe `UNKNOWN_ERROR`,
+  unchanged tip/NRD-index, and a clean restart. Full bodyless **reorg is not
+  supported/claimed**. Full suite **273/273, 4355 assertions**; test visible.
+  Peak validation RSS ~9.7 GB, post-sync ~2.8 GB; practical ≥12 GB free RAM.
+  Public legacy fallback **BLOCKED/PARTIAL**: pre-reboot run reached headers
+  3 321 636 and a 369 MB temporary archive; resumed long run remains active.
+  Remaining limitation is bodyless full-reorg support, not a timeout.
 
 ### Ворота B — готовность к Mainnet
 
@@ -78,11 +78,11 @@ Full local PIBD 7B — PASS на build-13. Recovery H3313440/H3315600 и staging
   final archive observed.
 - [ ] **B3. NRD / криптография:** D2 txpool unit PASS; **IsCoinbase exact-match bug
   fixed** (NRD was treated as coinbase; build-30 regression PASS); chain-store
-  writer deadlock fixed. Full bodyless TestServer/BlockDB/OpenExisting/reorg/restart
-  **FAIL/BLOCKED:** phase-3 NRD-index rebuild fails closed (`kernel MMR 34 vs tip
-  header 32`); hidden reproducer only, not PASS —
-  [bodyless evidence](../../evidence/line3/bodyless-nrd-20261103.md). Real bodyless
-  PIBD state and kill/recovery remain NOT VERIFIED.
+  writer deadlock fixed; bodyless **safe-refusal variant PASS** on build-43
+  (real TestServer/BlockDB/OpenExisting, no state mutation, restart consistent;
+  test visible, full 273/273). Full bodyless **reorg remains unsupported/not
+  claimed** — [bodyless evidence](../../evidence/line3/bodyless-nrd-20261103.md).
+  Real bodyless PIBD state and kill/recovery remain NOT VERIFIED.
 - [ ] **B4. БД и устойчивость:** G-23 corrupted HeaderMMR/partial PMMR fault
   injection NOT VERIFIED; disk-full/power-loss NOT VERIFIED; Output Commitment
   not reproduced; historical 0xC0000409 NOT VERIFIED.

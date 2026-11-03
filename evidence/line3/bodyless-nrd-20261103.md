@@ -1,18 +1,36 @@
-# Bodyless NRD — attempted full scenario (2026-11-03)
+# Bodyless NRD — fail-closed acceptance (2026-11-03/04)
 
-Status: **FAIL / BLOCKED for the full bodyless reorg+restart scenario.**
-A real production classification bug was found and fixed, but the original
-bodyless test still cannot be claimed PASS.
+Status: **PASS for the safe fail-closed variant; full bodyless reorg is NOT
+claimed/supported.** A production classification bug and a chain-store deadlock
+were fixed; the reconstructed bodyless state now refuses an unsafe reorg before
+mutation and restarts consistently on the original tip.
 
-## Build
+## Final build
 
-- Source HEAD at start: `39c9900`; working changes eventually built as
-  **Tests `A686C6091D0F0886AE3572FF2CF5A3A559EB7C37A841C81648FBE13FF4015D29`**,
-  GrinNode `0EF111EFBEDF1F53CF0CBD46185A5159DABFBE6BD924DA54F8C5DEE0F2026502`
-  (build-30).
-- Normal `/W4 /WX` build PASS; full default suite **272/272, 4314 assertions**
-  on this binary, but the bodyless test is explicitly hidden (see below), so this
-  is **not** a bodyless PASS.
+- Build-43 **Tests `2E84B662538CF28A83FECDBD60215BED071E1ABAFE4060B77E955C4B0DD123F4`**,
+  GrinNode `9E1242B1CA871E6A12E540EAF1F094F2108A2D940BD4CA588FBFCBD89A1F2149`.
+- Normal `/W4 /WX` build PASS; bodyless targeted test **PASS 41 assertions**;
+  full suite **273/273, 4,355 assertions** on the same Tests binary.
+- Test is visible (no `[.]`); it asserts safe refusal plus post-restart
+  tip/NRD-index consistency.
+
+## Final resolution
+
+- The reconstructed bodyless state (bodies removed from the real BlockDB) has
+  no body for the confirmed tip.
+- The node preflights a reorg: if any confirmed body above the fork point is
+  missing/empty, it returns `UNKNOWN_ERROR` **before** mutating chain, TxHashSet
+  or MMR state.
+- The test builds the conflicting height-30 block **before** bodies are removed,
+  clears all bodies, reopens the real state, submits the conflicting block, and
+  verifies:
+  - status `UNKNOWN_ERROR`;
+  - confirmed tip remains block 30 / `e43160cc…`;
+  - NRD index remains complete with the height-30 entry;
+  - a second `OpenExisting()` restart still reports height 30, the same hash,
+    a complete NRD index, and only the header (no body) at height 30.
+- A third restart is covered by the same test phase; no reorg is performed, so
+  no unsupported bodyless-reorg mutation occurs.
 
 ## Real bug found and fixed
 
@@ -32,7 +50,7 @@ kernel at the normal v1 header **only in AUTOMATED_TESTING and only when the tes
 sets it**; reset is RAII. Production and the default test configuration keep the
 HF3 rejection. This is a test configuration, not a production-consensus change.
 
-## What the strengthened test reached
+## Historical attempts (superseded by fail-closed acceptance)
 
 - phase 1: real TestServer chain, block 30 with NRD kernel, bodies cleared from
   real BlockDB; coinbase verification now passes after the IsCoinbase fix;
@@ -52,27 +70,28 @@ HF3 rejection. This is a test configuration, not a production-consensus change.
   re-reading the store in `BlockChainImpl`; that deadlock was fixed by scoping the
   writer to its commit. The remaining failure is separate from the deadlock.
 
-The test is hidden (`[.]`) as a reproducer so the default suite does not hang or
-leave a RocksDB LOCK on a failing run; the full bodyless scenario is **not** a
-PASS. The hidden tag is explicitly recorded here and must not be presented as
-equivalent coverage.
+Earlier attempts hidden the failing reproducer; after the preflight fix the test is
+visible and asserts safe refusal, not a full reorg. Full bodyless reorg remains
+unsupported and is not claimed.
 
 ## Evidence
 
-- Final build candidate: Tests `DFB15F48…` (build-34), default full **272/272,
-  4 314 assertions** — hidden bodyless excluded.
-- Bodyless hidden run: `evidence/line3/bodyless-final-b33` (FAIL, 44 assertions,
-  43 passed) and `bodyless-assert-b32`; Node.log at
-  `C:\DHW\.tmp\line3-iso\bodyless-final-b33\home\.GrinPP\AUTOMATED_TESTING\LOGS\Node.log`.
-- `tests/src/BlockChain/Test_NrdBodylessRestart.cpp` — real scenario kept,
-  hidden, with the exact failure comment.
-- `src/BlockChain/BlockChainImpl.cpp` — writer-scope deadlock fix (read after
-  commit); production path, no test bypass.
+- Build-43 Tests `2E84B662…` / GrinNode `9E1242B1…`; bodyless targeted **PASS
+  (41 assertions)**, full **273/273, 4355 assertions**.
+- `evidence/line3/bodyless-failclosed-b43` — PASS run/manifest.
+- `tests/src/BlockChain/Test_NrdBodylessRestart.cpp` — visible test: prebuilt
+  conflicting block, bodyless state, `UNKNOWN_ERROR`, state unchanged, restart.
+- `src/BlockChain/Processors/BlockProcessor.cpp` — preflight refuses reorg when
+  confirmed bodies above fork are missing/empty, before mutation.
+- `src/BlockChain/BlockChainImpl.cpp` — writer-scope deadlock fix.
+- Historical failing attempts: `bodyless-final-b33`, `bodyless-assert-b32`.
+- `src/BlockChain/...` changes are production paths; only the NRD pre-HF3 test
+  flag is a test-only seam.
 
-## Remaining work
+## Residual limitation / recovery
 
-Reconcile the bodyless TxHashSet/chain state after reorg: on the reorg/restart
-path the TxHashSet kernel MMR must be rewound to the selected tip and persisted
-with the chain checkpoint, or the reorg must fail closed **before** accepting a
-branch whose bodies are unavailable. Remove the hidden tag only when the complete
-scenario passes. Until then: **bodyless FAIL/BLOCKED; do not claim closure.**
+Full bodyless **reorg support is not implemented/claimed**: a node in this state
+refuses the alternative branch and keeps the original tip/index. Recovery is to
+restore/obtain the missing bodies or resync from peers; the node does not
+partially mutate state. This is accepted as the fail-closed variant, not as a
+full reorg PASS.

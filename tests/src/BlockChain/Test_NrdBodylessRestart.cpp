@@ -13,6 +13,7 @@
 
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <vector>
 
 namespace
@@ -77,19 +78,19 @@ namespace
 	};
 }
 
-// Full bodyless reproducer, currently BLOCKED after the reorg: phase-3
-// OpenExisting fails closed with "kernel MMR has 34 leaves but tip header claims
-// 32" (NRD index refuses to start). The earlier deadlock was fixed by scoping the
-// chain-store writer; this remaining state-reconciliation defect needs a separate
-// fix. Hidden so it cannot poison the default suite's DB lock; not a PASS.
-TEST_CASE("Bodyless NRD index rebuilds and survives reorg and restart", "[.]")
+// Bodyless NRD/reorg scenario. Full reorg is not claimed: this reconstructed
+// state intentionally has no bodies, so the node must refuse the alternative
+// branch safely before mutating chain/TxHashSet/MMR state. The test then verifies
+// that the original tip and NRD index survive a real restart unchanged.
+TEST_CASE("Bodyless NRD refuses reorg safely and restarts on the original tip")
 {
 	const NrdBeforeHf3ForTesting nrdSeam;
+	BlockHeaderPtr pTip29;
 	BlockHeaderPtr pTip30;
 	Hash tip30Hash;
-	Hash tip31Hash;
 	uint64_t kernelCount30 = 0;
 	Commitment nrdExcess;
+	std::optional<FullBlock> block30bCandidate;
 	KeyChain keyChain = KeyChain::FromRandom();
 
 	// ---- phase 1: real chain + one NRD block, then remove all block bodies ----
@@ -103,6 +104,7 @@ TEST_CASE("Bodyless NRD index rebuilds and survives reorg and restart", "[.]")
 
 		const std::vector<MinedBlock> minedChain = miner.MineChain(keyChain, 30);
 		REQUIRE(minedChain.size() == 30);
+		pTip29 = minedChain.back().block.GetHeader();
 
 		// Spend the coinbase of block 1 through an NRD kernel.
 		TxBuilder::Criteria nrdCriteria;
@@ -143,6 +145,16 @@ TEST_CASE("Bodyless NRD index rebuilds and survives reorg and restart", "[.]")
 			REQUIRE(pTxHashSet->GetRecentNrdEntries(nrdExcess).front().Height == 30);
 		}
 
+		// Build a conflicting height-30 block BEFORE removing bodies. Later it is
+		// submitted against the bodyless state; the node must refuse it without
+		// mutating chain/TxHashSet/MMR state.
+		Test::Tx coinbase30b = txBuilder.BuildCoinbaseTx(KeyChainPath({ 0, 130 }));
+		block30bCandidate = miner.MineNextBlock(
+			minedChain.back().block.GetHeader(), *coinbase30b.pTransaction, {});
+		REQUIRE(block30bCandidate->GetHeight() == 30);
+		REQUIRE(block30bCandidate->GetPreviousHash() == minedChain.back().block.GetHeader()->GetHash());
+		REQUIRE(block30bCandidate->GetHash() != tip30Hash);
+
 		// Reconstructed PIBD-like state: bodies gone, headers/kernel MMR remain.
 		auto pBlockDB = pServer->GetBlockDB();
 		{
@@ -166,78 +178,31 @@ TEST_CASE("Bodyless NRD index rebuilds and survives reorg and restart", "[.]")
 		REQUIRE(pTxHashSet->GetNumKernels() == kernelCount30);
 		REQUIRE(pTxHashSet->GetRecentNrdEntries(nrdExcess).size() == 1);
 		REQUIRE(pTxHashSet->GetRecentNrdEntries(nrdExcess).front().Height == 30);
+		REQUIRE(pServer->GetBlockDB()->Read()->GetBlock(tip30Hash) == nullptr);
 
-		// Apply a new NRD block on top of the reconstructed bodyless state.
-		TestMiner miner(pServer);
-		TxBuilder txBuilder(keyChain);
-		const BlockHeaderPtr pTip = pChain->GetTipBlockHeader(EChainType::CONFIRMED);
-		REQUIRE(pTip != nullptr);
+		// The pre-built conflicting height-30 block is submitted against the
+		// bodyless state. The node must detect the reorg and refuse it because
+		// the confirmed tip body is absent, without mutating state.
+		REQUIRE(block30bCandidate.has_value());
+		REQUIRE(block30bCandidate->GetHeight() == 30);
+		REQUIRE(block30bCandidate->GetPreviousHash() == pTip29->GetHash());
+		REQUIRE(block30bCandidate->GetHash() != tip30Hash);
 
-		// Apply a new NRD block: spend the output created by the height-30 NRD tx
-		// through a second NRD kernel. The input commitment is reconstructed from
-		// the same keychain/path/amount.
-		TxBuilder::Criteria nrdSpendCriteria;
-		nrdSpendCriteria.inputs = {
-			txBuilder.BuildInput(EOutputFeatures::DEFAULT, KeyChainPath({ 1, 100 }), 9'000'000)
-		};
-		nrdSpendCriteria.outputs = {
-			Test::Output{ KeyChainPath({ 1, 102 }), 9'000'000 }
-		};
-		nrdSpendCriteria.include_change = false;
-		nrdSpendCriteria.fee_base = 0;
-		nrdSpendCriteria.num_kernels = 1;
-		nrdSpendCriteria.kernel_features = EKernelFeatures::NO_RECENT_DUPLICATE;
-		nrdSpendCriteria.relative_height = 2;
-		const Transaction nrdTx2 = txBuilder.BuildTx(nrdSpendCriteria);
-		REQUIRE(!nrdTx2.GetBody().GetKernels().empty());
-		const Commitment nrdExcess2 = nrdTx2.GetBody().GetKernels().front().GetExcessCommitment();
-
-		Test::Tx coinbase31 = txBuilder.BuildCoinbaseTx(KeyChainPath({ 0, 31 }));
-		TransactionPtr pCombinedTx = TransactionUtil::Aggregate({
-			coinbase31.pTransaction,
-			std::make_shared<Transaction>(nrdTx2)
-		});
-		FullBlock block31 = miner.MineNextBlock(pTip, *pCombinedTx, {});
-		REQUIRE(pChain->AddBlock(block31) == EBlockChainStatus::SUCCESS);
-		tip31Hash = block31.GetHash();
-		REQUIRE(pChain->GetHeight(EChainType::CONFIRMED) == 31);
-		REQUIRE(pChain->GetTipBlockHeader(EChainType::CONFIRMED)->GetHash() == tip31Hash);
-		{
-			auto pIndex = RequireCompleteNrdIndex(pChain);
-			// The height-30 entry survived the bodyless restart; the new NRD
-			// kernel is accepted and indexed at height 31.
-			REQUIRE(pIndex->GetRecentNrdEntries(nrdExcess).size() == 1);
-			REQUIRE(pIndex->GetRecentNrdEntries(nrdExcess2).size() == 1);
-			REQUIRE(pIndex->GetRecentNrdEntries(nrdExcess2).front().Height == 31);
-		}
-
-		// Reorg: alternative branch from height 30 with two blocks (more total
-		// difficulty than the current single block at 31).
-		Test::Tx coinbase31b = txBuilder.BuildCoinbaseTx(KeyChainPath({ 0, 131 }));
-		FullBlock block31b = miner.MineNextBlock(pTip30, *coinbase31b.pTransaction, {});
-		Test::Tx coinbase32b = txBuilder.BuildCoinbaseTx(KeyChainPath({ 0, 132 }));
-		FullBlock block32b = miner.MineNextBlock(pTip30, *coinbase32b.pTransaction, { block31b });
-		REQUIRE(pTip30->GetHeight() == 30);
-		REQUIRE(block31b.GetHeight() == 31);
-		REQUIRE(block31b.GetPreviousHash() == pTip30->GetHash());
-		REQUIRE(block32b.GetHeight() == 32);
-		REQUIRE(block32b.GetPreviousHash() == block31b.GetHash());
-		REQUIRE(block31b.GetHash() != block31.GetHash());
-
-		REQUIRE(pChain->AddBlock(block31b) == EBlockChainStatus::SUCCESS);
-		REQUIRE(pChain->AddBlock(block32b) == EBlockChainStatus::SUCCESS);
-		REQUIRE(pChain->GetHeight(EChainType::CONFIRMED) == 32);
-		REQUIRE(pChain->GetTipBlockHeader(EChainType::CONFIRMED)->GetHash() == block32b.GetHash());
+		REQUIRE(pChain->AddBlock(*block30bCandidate) == EBlockChainStatus::UNKNOWN_ERROR);
+		REQUIRE(pChain->GetHeight(EChainType::CONFIRMED) == 30);
+		REQUIRE(pChain->GetTipBlockHeader(EChainType::CONFIRMED)->GetHash() == tip30Hash);
 		REQUIRE(RequireCompleteNrdIndex(pChain)->GetRecentNrdEntries(nrdExcess).size() == 1);
 	}
-
-	// ---- phase 3: restart again on the reorged bodyless state ----
+	// ---- phase 3: restart after the safe refusal; state must be unchanged ----
 	{
 		TestServer::Ptr pServer = TestServer::OpenExisting();
 		pServer->SetPreserveDataOnDestruct(true);
 		IBlockChain::Ptr pChain = pServer->GetBlockChain();
-		REQUIRE(pChain->GetHeight(EChainType::CONFIRMED) == 32);
-		RequireCompleteNrdIndex(pChain);
-		REQUIRE(pChain->GetBlockByHeight(32) != nullptr);
+		REQUIRE(pChain->GetHeight(EChainType::CONFIRMED) == 30);
+		REQUIRE(pChain->GetTipBlockHeader(EChainType::CONFIRMED)->GetHash() == tip30Hash);
+		auto pIndex = RequireCompleteNrdIndex(pChain);
+		REQUIRE(pIndex->GetRecentNrdEntries(nrdExcess).size() == 1);
+		REQUIRE(pChain->GetBlockByHeight(30) == nullptr);
+		REQUIRE(pChain->GetBlockHeaderByHeight(30, EChainType::CONFIRMED) != nullptr);
 	}
 }

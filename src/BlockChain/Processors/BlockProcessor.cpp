@@ -93,6 +93,31 @@ EBlockChainStatus BlockProcessor::ProcessBlockInternal(const FullBlock& block)
 		return EBlockChainStatus::ORPHANED;
 	}
 
+	// A reorg needs the bodies of the blocks above the fork point to rewind the
+	// TxHashSet safely. A bodyless/PIBD-like state can legitimately lack them; do
+	// not accept the alternative branch and discover an unrecoverable MMR/tip
+	// mismatch only on the next restart. Refuse before any state mutation.
+	if (info.status == EBlockStatus::REORG)
+	{
+		const auto pBlockDB = pBatch->GetBlockDB();
+		const uint64_t forkHeight = info.reorgBlocks.front()->GetHeight() - 1;
+		for (uint64_t height = pConfirmedChain->GetHeight(); height > forkHeight; height--)
+		{
+			const Hash& hash = pConfirmedChain->GetHash(height);
+			const auto pBody = pBlockDB->GetBlock(hash);
+			const bool hasBody = pBody != nullptr &&
+				(!pBody->GetInputs().empty() || !pBody->GetOutputs().empty() || !pBody->GetKernels().empty());
+			if (!hasBody)
+			{
+				LOG_WARNING_F(
+					"Refusing bodyless reorg: body for confirmed block {} at height {} is unavailable; "
+					"txhashset rewind cannot be proven without mutating state.",
+					hash, height);
+				return EBlockChainStatus::UNKNOWN_ERROR;
+			}
+		}
+	}
+
 	try
 	{
 		if (info.status == EBlockStatus::REORG) {
