@@ -10,7 +10,7 @@ Status: **experimental opt-in prototype accepted for further review; NOT merged 
   `KernelMMR.h` (`F93744E63EB3636FCF735413796662F85E750A6CEC8C9454AE0900BE68D65254`), copied read-only from shared.
 - Shared tree never built or modified. No `GrinNode.exe` was started. Live processes were stopped by Lead; this work never touched
   `legacy-local-01`, ports 25831/25836/25837/25850 or the live profile.
-- State fixture: copy of `C:\DHW\.tmp\task2-legacy-public\cpp-profile` (not live). Archive:
+- State fixture: copy of `C:\DHW\Gplus\work\runs\task2-legacy-public\cpp-profile` (not live). Archive:
   `fixtures\txhashset_3315600.zip`, 3,067,445,011 bytes, SHA256 `D73EBD1811A40AFC876D4AA5B006D2D2E11B1BE5EDD0E102E8DF7D7FB2036C6C`.
   Header `3615bb625917582f7d028fe4ff738d82cb939b71ac768e885519b8798544ec9f`, height 3315600,
   kernels=3,351,542, outputs=3,425,950, unspent rangeproofs=2,943,034 (last batch = 34 proofs).

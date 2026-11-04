@@ -10,7 +10,7 @@ original `g09-live-02` untouched.
   GrinNode `F39BDFE5A8DAB22BE969406874EDCEFD023770BE1A1BA6330D7506B2C2571201`.
 - Freeze `build-13-freeze-snapshot-final.json` SHA `4FC8DCE1…` after audit
   results; source boundary fix `FDC5B4BB…` / ArchivePublication `F1E43737…`.
-- Copy profile: `C:\DHW\.tmp\task10-build11-live` (original untouched).
+- Copy profile: `C:\DHW\Gplus\work\runs\task10-build11-live` (original untouched).
 
 ## H=3313440
 

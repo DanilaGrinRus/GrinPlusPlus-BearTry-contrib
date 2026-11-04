@@ -1111,7 +1111,7 @@ pinned with `DATA_PATH`; `HOMEDRIVE/HOMEPATH/HOME/TMP/APPDATA` under
 
 ### 8.9 Isolated live attempt 2026-11-03 (fixture-based; PARTIAL — L1 BLOCKED)
 
-Run root: `C:\DHW\.tmp\g09-live-01` (isolated HOME/TMP/APPDATA; C++ `DATA_PATH`
+Run root: `C:\DHW\Gplus\work\runs\g09-live-01` (isolated HOME/TMP/APPDATA; C++ `DATA_PATH`
 pinned). Binaries: GrinNode `5CA47DA9589889E3CB7E44A715DD43BA8D592687634678EC708FFF7C86A21266`
 (preserved `C:\DHW\.tmp\line1-build-05\GrinNode-5CA47DA95898.exe`), Tests
 `8F10BFD67047DD25FAB3C201C29FA125096EF4DD7E8EFFFE33B61627CF1D73D6`, Rust
@@ -1281,7 +1281,7 @@ was validated live: with the old untrimmed fixture Rust now moved from
   ConfirmedEntries 3,318,656).
 - Trim feasibility: **FEASIBLE via the documented checkpoint truncation
   contract** (not a raw trim):
-  1. copy `NODE` unchanged to a new run root (`C:\DHW\.tmp\g09-live-02`, copy
+  1. copy `NODE` unchanged to a new run root (`C:\DHW\Gplus\work\runs\g09-live-02`, copy
      running),
   2. truncate `CHAIN\candidate.chain` to 3,318,656 × 32 B = 106,196,992 B,
   3. rewrite `CHAIN\chain.checkpoint` with `Sequence` unchanged,
@@ -1292,7 +1292,7 @@ was validated live: with the old untrimmed fixture Rust now moved from
      entries 3,318,656 and truncates the MMR to the candidate under that
      checkpoint contract, then writes a fresh checkpoint.
   No fabricated blocks: every retained hash is from the valid fixture.
-  **Execution result:** copy `C:\DHW\.tmp\g09-live-02` (134 files, 11.09 GB);
+  **Execution result:** copy `C:\DHW\Gplus\work\runs\g09-live-02` (134 files, 11.09 GB);
   candidate.chain truncated to 106,196,992 B; checkpoint rewritten
   (`Sequence 1758`, `MmrLeaves/CandidateEntries/ConfirmedEntries = 3,318,656`,
   checksum `16658916402016309643`); header_mmr.bin left at 212,480,064 B so the
@@ -1312,7 +1312,7 @@ was validated live: with the old untrimmed fixture Rust now moved from
 ### 8.12 Task-7C wrong-H safe refusal (build-09)
 
 Runtime: build-09 `GrinNode F90EEF38…`. Fixture: untrimmed profile
-`C:\DHW\.tmp\g09-live-01` (confirmed body 3318655, candidate header 3320005,
+`C:\DHW\Gplus\work\runs\g09-live-01` (confirmed body 3318655, candidate header 3320005,
 archive ready H=3315600). Rust restarted on the persisted header chain (header
 head 3320005, body tip 0). With the Pong fix the sync state moved from
 `awaiting_peers` to `txhashsetpibd_download` and selected **H=3317040**
@@ -1331,7 +1331,7 @@ PASS is claimed. Evidence: `C:\DHW\.tmp\task7-C3\7C-refusal.txt`, `cpp-Node.log`
 
 ### 8.13 Task-7B full PIBD + restart (build-09) — PASS
 
-Trimmed fixture `C:\DHW\.tmp\g09-live-02` (candidate == body == 3318655;
+Trimmed fixture `C:\DHW\Gplus\work\runs\g09-live-02` (candidate == body == 3318655;
 archive H=3315600, SHA-256 `13F9781E…C530`; Rust headers from zero). Build-09
 `GrinNode F90EEF38…`.
 
@@ -1535,7 +1535,7 @@ Line 1 opt-in build + isolated live attempt (fixture-based, PARTIAL/BLOCKED at L
   Tests SHA-256: 8F10BFD67047DD25FAB3C201C29FA125096EF4DD7E8EFFFE33B61627CF1D73D6
     full suite 236 cases / 3952 assertions PASS; archive subset 8 cases/187 assertions
     ServingOptInParsing 19 assertions PASS (sequential fresh isolated profile)
-  run root: C:\DHW\.tmp\g09-live-01 (isolated HOME/TMP/APPDATA; DATA_PATH pinned)
+  run root: C:\DHW\Gplus\work\runs\g09-live-01 (isolated HOME/TMP/APPDATA; DATA_PATH pinned)
   fixture: copy of work\g09-cpp-live-real NODE; source manifest sha256
     45EA449CF80C3A25AA5E97CBC362EA25CA0053C2627A2BDC92A44316E284390E
     archive sha256 13F9781E207F787F5F58367F9C98947D4A645D660E1CA23186AD55D9D064C530
@@ -1550,7 +1550,7 @@ Line 1 opt-in build + isolated live attempt (fixture-based, PARTIAL/BLOCKED at L
     status remains HeaderSync. Real C++ advertised-tip defect.
   L2 PIBD activation/no_sync: NOT VERIFIED (0 PIBD segment requests); L3 restart
     NOT EXECUTED; L4 horizon/reorg BLOCKED (no +720 source); L5 wire-negative NOT EXECUTED
-  artifacts: C:\DHW\.tmp\g09-live-01\evidence\{L0-preflight.txt,L1-stall-diagnosis.txt,
+  artifacts: C:\DHW\Gplus\work\runs\g09-live-01\evidence\ (L0-preflight.txt, L1-stall-diagnosis.txt,
     rust-grin*.log,cpp-Node*.log,cpp-server_config.json,rust-grin.toml}
   RSS before stop: Rust 235.6 MB, C++ 3433.5 MB; run root 17.7 GB; PIDs 20708/31692 stopped
   harness note: two concurrent Tests.exe on one isolated profile -> 0xC0000409

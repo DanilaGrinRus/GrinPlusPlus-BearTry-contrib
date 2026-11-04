@@ -27,7 +27,7 @@ B1/B2 results; do not combine them into an A2 pass.
 
 ## Evidence
 
-- `C:\DHW\.tmp\task13-public-floonet\evidence\pibd-*.json`,
+- `C:\DHW\Gplus\work\runs\task13-public-floonet\evidence\ (pibd-*.json)`,
   `public-pibd-sync.jsonl` (read-only copies/hashes pending final)
 - `layerA-public-sync-20261103.md`,
   `layerA-A3-live-20261103.md`,

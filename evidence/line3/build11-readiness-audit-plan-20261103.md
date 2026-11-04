@@ -76,7 +76,7 @@ Build-11 identity: Tests
 
 At 2026-11-03T09:36:34+07:00 a build-11 started without a Lead order:
 
-- `C:\DHW\.tmp\build-11\build-console.log`; pwsh PID 22136
+- `C:\DHW\.tmp\build-11\build-console.log` (removed in the 2026-11-04 temp cleanup; result `build OK` is recorded in this document and evidence, raw log no longer available); pwsh PID 22136
   (`tools/build/build.ps1 -Target 'GrinNode;Tests'`), MSBuild PID 6372;
   cl PID 31648 was observed compiling earlier but is no longer present.
 - The console stopped updating at 09:37:52; only the log exists (no binaries)
@@ -144,8 +144,8 @@ At 2026-11-03T09:36:34+07:00 a build-11 started without a Lead order:
 
 ## 8. Evidence pointers
 
-- [`normal-binary-build10-audit-20261103.md`](<evidence/line3/normal-binary-build10-audit-20261103.md>)
-- [`task10-11-archive-recovery-independent-audit-20261103.md`](<evidence/line3/task10-11-archive-recovery-independent-audit-20261103.md>)
-- [`task10-11-archive-recovery-manifest-20261103.json`](<evidence/line3/task10-11-archive-recovery-manifest-20261103.json>)
-- [`task11-spent-positions-fresh-copy-audit-20261103.json`](<evidence/line3/task11-spent-positions-fresh-copy-audit-20261103.json>)
-- [`build-10-freeze-snapshot-final.json`](<evidence/line3/build-10-freeze-snapshot-final.json>)
+- [`normal-binary-build10-audit-20261103.md`](<normal-binary-build10-audit-20261103.md>)
+- [`task10-11-archive-recovery-independent-audit-20261103.md`](<task10-11-archive-recovery-independent-audit-20261103.md>)
+- [`task10-11-archive-recovery-manifest-20261103.json`](<task10-11-archive-recovery-manifest-20261103.json>)
+- [`task11-spent-positions-fresh-copy-audit-20261103.json`](<task11-spent-positions-fresh-copy-audit-20261103.json>)
+- [`build-10-freeze-snapshot-final.json`](<build-10-freeze-snapshot-final.json>)

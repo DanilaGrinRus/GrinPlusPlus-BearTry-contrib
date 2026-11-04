@@ -26,7 +26,7 @@ historical; build-12 historical; build-10 final only for its snapshot.
 - Do NOT edit source, test source, build scripts, config, or the live copy.
 - Read-only access to line1 logs/evidence is allowed after files are stable;
   never copy/truncate a live Node.log without a read-share-safe method.
-- Original `C:\DHW\.tmp\g09-live-02` must remain untouched; line1 uses a copy.
+- Original `C:\DHW\Gplus\work\runs\g09-live-02` must remain untouched; line1 uses a copy.
 - No commit.
 
 ## 2. Independent full 7B live audit (after live ends)

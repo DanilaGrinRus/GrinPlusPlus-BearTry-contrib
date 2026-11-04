@@ -92,7 +92,7 @@ fully clean Rust `chain_data` (tip 0/genesis), C++ archive H=3315600
   `2945348ef765160a160008cfd7c2b41aa44ed3cea77d6bcfe2083acf0fc4bbf1`, conn=1;
 - C++ `FULLY_SYNCED`, inbound=1/outbound=1, archive ready H=3315600;
 - total ~1 h 58 min; 5,062 PIBD segment requests.
-- Evidence: `C:\DHW\.tmp\task12-build13-7b\evidence` (rust/cpp logs, status JSONL,
+- Evidence: `C:\DHW\Gplus\work\runs\task12-build13-7b\evidence` (rust/cpp logs, status JSONL,
   roots/status hashes); nodes stopped.
 - Caveats unchanged: fixture-based C++/loopback, no public peers; crash/resource,
   reorg/horizon, negative tests still separate.

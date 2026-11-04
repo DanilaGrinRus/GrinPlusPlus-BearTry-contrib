@@ -41,7 +41,7 @@ exclusive port 3421, per-run HOME/TMP; record every source SHA.
 
 ## 3. Recovery acceptance (copy only; original untouched)
 
-Use a fresh copy of `C:\DHW\.tmp\g09-live-02`; never modify the original.
+Use a fresh copy of `C:\DHW\Gplus\work\runs\g09-live-02`; never modify the original.
 
 ### H=3313440 (missing archive, flushed 3318655)
 

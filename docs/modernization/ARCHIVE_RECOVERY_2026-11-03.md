@@ -12,7 +12,7 @@ Mainnet remain NOT VERIFIED. Existing archive serving and 7B live PASS remain va
 - Restart retried once and published final archive **3,118,756,420 B**
   SHA `FD3BF99C…E6ADF6B`, 17 entries; 0 staging files; no loop.
 - Tip `3318655/2945348e…` and roots unchanged; old archive preserved.
-- Evidence: `C:\DHW\.tmp\task12-crash-evidence`.
+- Evidence: `C:\DHW\Gplus\work\runs\task12-crash-evidence`.
 
 ## Final build-13 result
 

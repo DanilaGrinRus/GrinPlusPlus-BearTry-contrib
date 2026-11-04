@@ -51,4 +51,4 @@ BlockPipe/bodyless/kill; rocksdb/sysroot uninstrumented.
 - `evidence/line3/b12-asan-nrd-01/`, `b12-asan-archive-01/`,
   `b12-asan-segment-01/`, `b12-asan-p2p-01/`,
   `b12-asan-p2p-archive-01/`, `b12-asan-teardown-01/`
-- [`normal-binary-build12-audit-20261103.md`](<evidence/line3/normal-binary-build12-audit-20261103.md>)
+- [`normal-binary-build12-audit-20261103.md`](<normal-binary-build12-audit-20261103.md>)

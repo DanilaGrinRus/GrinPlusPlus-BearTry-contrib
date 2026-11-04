@@ -7,7 +7,7 @@ legacy txhashset download completed at the time of this report; no PASS claim.
 
 - Binary: build-33 `GrinNode 6E2303BA…` (current production fixes; the earlier
   build-30 run is historical evidence).
-- Isolated profile `C:\DHW\.tmp\task2-legacy-public`; public Floonet seeds only;
+- Isolated profile `C:\DHW\Gplus\work\runs\task2-legacy-public`; public Floonet seeds only;
   P2P listen 13614, outbound peer port 13414, REST 127.0.0.1:25650; no loopback
   allowlist; no fixture; no wallet; `PIBD_ENABLED=false`, `PIHD_MODE=off`,
   archive serving disabled.
@@ -52,8 +52,8 @@ tip/hash. Until then: **legacy public fallback NOT VERIFIED.**
 
 ## Evidence
 
-- `C:\DHW\.tmp\task2-legacy-public\servers.json`
-- `C:\DHW\.tmp\task2-legacy-public\stdout.log`, `stderr.log`
-- `C:\DHW\.tmp\task2-legacy-public\cpp-profile\LOGS\Node.log`
+- `C:\DHW\Gplus\work\runs\task2-legacy-public\servers.json`
+- `C:\DHW\Gplus\work\runs\task2-legacy-public\stdout.log`, `stderr.log`
+- `C:\DHW\Gplus\work\runs\task2-legacy-public\cpp-profile\LOGS\Node.log`
 - Final sample before stop: header 27,648, chain 0, `SYNCING_HEADERS`, 4 peers.
 - Prior partial public legacy evidence: Layer A report, ~501 MB at ~0.46 MB/s.

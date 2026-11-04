@@ -58,4 +58,4 @@ ASan report occurrences across stdout/stderr: **0**.
 - `evidence/line3/b11-asan-nrd-01/`, `b11-asan-archive-01/`,
   `b11-asan-segment-01/`, `b11-asan-p2p-01/`,
   `b11-asan-p2p-archive-01/`, `b11-asan-teardown-01/`
-- [`normal-binary-build11-audit-20261103.md`](<evidence/line3/normal-binary-build11-audit-20261103.md>)
+- [`normal-binary-build11-audit-20261103.md`](<normal-binary-build11-audit-20261103.md>)

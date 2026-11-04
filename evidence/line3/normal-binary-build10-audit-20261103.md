@@ -24,7 +24,7 @@ isolated runner, quoted `-TestArgs`, `-FailOnNoTests` on filtered runs,
 
 Preserved paths: `C:\DHW\.tmp\build-10\Tests.exe` / `GrinNode.exe`; line1
 preserved copies in `C:\DHW\.tmp\line1-build-10\`. Build console
-(`C:\DHW\.tmp\build-10\build-console.log`) ends with `build OK`.
+(`C:\DHW\.tmp\build-10\build-console.log`, removed in the 2026-11-04 temp cleanup; the recorded result is `build OK`) ends with `build OK`.
 
 Build-10 source freeze snapshot:
 `evidence/line3/build-10-freeze-snapshot-final.json`

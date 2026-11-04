@@ -11,7 +11,7 @@ the A3 owner-auth hardening candidate.
 | Tests.exe | `1592F3DF041116AC3C891E5AEEB894B6144C9AB1713893C3B265DDA1C8E44CB6` | 9,542,656 B | `0x6AE9948F` |
 | GrinNode.exe | `7E3AA29E1160244A28DDDFE3A2CCF68BD2A943A97D610B55845561453280CA18` | 7,850,496 B | — |
 
-- Build log `C:\DHW\.tmp\build-16\build-console-20261103-145117.log`
+- Build log `C:\DHW\.tmp\build-16\build-console-20261103-145117.log` (removed in the 2026-11-04 temp cleanup; the SHA/result remains below)
   `95E621F0…` BUILD OK; object/source timestamps show handlers/tests compiled
   after A3 patch (OwnerHandlerAccess obj 14:56:46, RpcAuth obj 14:58:11;
   Tests 15:00:15; GrinNode 15:00:45).

@@ -40,7 +40,7 @@ Hoist the resolved object to function scope, e.g.
 
 ## B. Kernel index rebuild mismatch on g09-live-01 fixture (CONFIRMED LOG; MECHANISM CONFIRMED BY CODE)
 
-Log: `C:\DHW\.tmp\g09-live-01\cpp-profile\LOGS\Node.log`
+Log: `C:\DHW\Gplus\work\runs\g09-live-01\cpp-profile\LOGS\Node.log`
 (full sha256 `29184C03BE47CAE03962F5509FE2EF3890E9A1EC649C675AC652EA5C52AF213B`;
 slice preserved at `evidence/line3/g09-kernel-index-log-20261103.txt`).
 
@@ -143,7 +143,7 @@ weakening the check globally), not code change.
 ## E. Task-9 draft regression harness (pattern-level failing-before)
 
 Lead approved a draft harness outside the compiled tree:
-`C:\DHW\.tmp\task9-api-harness` (README, `Test_GetKernelHandlerLifetime.cpp`
+`C:\DHW\Gplus\evidence\task9-api-harness-20261103` (README, `Test_GetKernelHandlerLifetime.cpp`
 skeleton for the real handler, `repro_lifetime_pattern.cpp`,
 `build_pattern_repro.ps1`). No CMake/default-suite changes; tree untouched.
 
@@ -175,5 +175,5 @@ buggy=16045690984833335030 fixed=12
 ## Evidence / constraints
 
 - Log slice: `evidence/line3/g09-kernel-index-log-20261103.txt`
-- Fixture: `C:\DHW\.tmp\g09-live-01\cpp-profile` (NODE/CHAIN, TXHASHSET)
+- Fixture: `C:\DHW\Gplus\work\runs\g09-live-01\cpp-profile` (NODE/CHAIN, TXHASHSET)
 - No files in fixture modified; no build/commit; no real-handler ASan run yet.

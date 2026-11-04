@@ -58,7 +58,7 @@ reports `0 mapped spent position(s)` and recovery fails closed.
 
 ## 2. Live build-11 proof
 
-Evidence source: `C:\DHW\.tmp\task10-build11-live\cpp-profile\LOGS\Node.log`
+Evidence source: `C:\DHW\Gplus\work\runs\task10-build11-live\cpp-profile\LOGS\Node.log`
 (active while captured; snippet copied to `spent-diag-context.txt`).
 
 Line 23840 (`GetSpentPositions` diagnostic, `GRINPP_SPENT_DIAG=1`):

@@ -74,7 +74,7 @@ REST 127.0.0.1:25450, no loopback allowlist, no fixture, no wallet.
 
 ## Evidence
 
-- `C:\DHW\.tmp\task13-public-floonet\evidence`: pre/post status, diagnostics,
+- `C:\DHW\Gplus\work\runs\task13-public-floonet\evidence`: pre/post status, diagnostics,
   restart window, peers, API probes.
 - `evidence/line3/layerA-A3-live-20261103.md`, `layerA-public-sync-20261103.md`,
   `layerA-A2-public-pibd-validation-20261103.md`.

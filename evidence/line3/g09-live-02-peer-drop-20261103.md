@@ -12,7 +12,7 @@ that Rust reconnects after validation completes.
 
 ## Run
 
-- root: `C:\DHW\.tmp\g09-live-02`
+- root: `C:\DHW\Gplus\work\runs\g09-live-02`
 - C++: PID 4724, `GrinNode-F90EEF389D1B.exe --floonet --no-wallet --headless
   --config-path ...\servers\server_config.json`; REST 25430, P2P listen 25536,
   preferred/allowed peer 127.0.0.1.
@@ -96,9 +96,9 @@ Recorded as a hypothesis, not a confirmed Rust defect.
 
 ```powershell
 netstat -ano | findstr "25536 25537"
-Select-String C:\DHW\.tmp\g09-live-02\cpp-profile\LOGS\Node.log `
+Select-String C:\DHW\Gplus\work\runs\g09-live-02\cpp-profile\LOGS\Node.log `
   -Pattern 'has not received a message|Shake message not received'
-Select-String C:\DHW\.tmp\g09-live-02\rust\grin.log `
+Select-String C:\DHW\Gplus\work\runs\g09-live-02\rust\grin.log `
   -Pattern 'accept: handshaking|Adding newly connected peer|TxHashsetRangeProofsValidation'
 ```
 

@@ -4,7 +4,7 @@ Status: **FAIL confirmed for the observed recovery attempt**; automatic
 next-horizon regeneration **NOT VERIFIED**; atomic publication **OPEN**.
 Existing 7B PASS and H=3315600 archive serving remain valid. This audit is
 evidence/hash + static review only; no build, no commit, and the original
-`C:\DHW\.tmp\g09-live-02` fixture was not modified.
+`C:\DHW\Gplus\work\runs\g09-live-02` fixture was not modified.
 
 ## 0. Post-audit root cause (build-11 diagnostics)
 
@@ -86,7 +86,7 @@ vector**, which is the task-11 invariant violation. **This inference was
 retracted after independent DB audit.**
 
 Line2's preserved-DB audit and line3's fresh copy of
-`C:\DHW\.tmp\line2-nrd-spent-audit\copy\NODE` both show:
+`C:\DHW\Gplus\work\runs\line2-nrd-spent-audit\copy\NODE` both show:
 
 - canonical chain hash at H=3317930:
   `30c524b8424f91e1b2b154112f19d77d4c0db6887d6a1cdc96ef2055e022bfcb`;
@@ -225,7 +225,7 @@ Select-String -Path .\evidence\line3\g09-live-02-7b-success-20261103\cpp-7B-fina
   -Pattern 'TryRecoverArchive|SaveSnapshot|Spent output not found|ArchivePibdState'
 Select-String -Path .\evidence\line3\g09-live-02-7b-success-20261103\restart\7B-restart-cpp-new.log `
   -Pattern 'TryRecoverArchive|SaveSnapshot|Spent output not found|ArchivePibdState'
-Get-FileHash C:\DHW\.tmp\g09-live-02\cpp-profile\NODE\TXHASHSET\archive\TxHashSet.3315600.3615bb625917.zip
+Get-FileHash C:\DHW\Gplus\work\runs\g09-live-02\cpp-profile\NODE\TXHASHSET\archive\TxHashSet.3315600.3615bb625917.zip
 ```
 
 ## 7. Build-11 update (2026-11-03)

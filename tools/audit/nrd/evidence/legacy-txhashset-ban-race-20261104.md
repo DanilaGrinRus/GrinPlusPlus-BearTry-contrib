@@ -7,7 +7,7 @@ No build, no commit, no interruption of the live process or line1 profile.
 ## Live run
 
 - PID 3680, `C:\DHW\.tmp\build-33\GrinNode.exe`, started 01:05:14.
-- `--floonet --no-wallet --headless --config-path C:\DHW\.tmp\task2-legacy-public\servers.json`
+- `--floonet --no-wallet --headless --config-path C:\DHW\Gplus\work\runs\task2-legacy-public\servers.json`
 - PIBD disabled; legacy txhashset path; REST loopback `127.0.0.1:25650`.
 - At 03:53: `txhashset_download`, tip height 0, 2 healthy peers (66.154.127.84 at
   3,321,739 caps 223; 195.201.2.51 at 3,321,814 caps 95).

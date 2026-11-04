@@ -7,7 +7,7 @@
 
 - Rust: обычный `grin 5.5.2`, бинарник
   `C:\Users\nurli\AppData\Local\Temp\grin55-target\release\grin.exe`.
-- Rust state: копия `C:\DHW\.tmp\task12-build13-7b\rust\chain_data` →
+- Rust state: копия `C:\DHW\Gplus\work\runs\task12-build13-7b\rust\chain_data` →
   `C:\DHW\.tmp\legacy-local-01\rust\chain_data` (5.78 GB).
 - Rust config: копия, loopback P2P 25837, API 25831, `peers_allow =
   ["127.0.0.1:25836"]`, публичные seeds не используются.
