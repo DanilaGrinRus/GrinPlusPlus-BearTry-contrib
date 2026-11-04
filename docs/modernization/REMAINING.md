@@ -28,6 +28,10 @@ restart без повторной полной загрузки state. Скач�
 G-49 experimental opt-in: 4w range proofs 3.65× на срезе 300k, full-state 4w
 validate 713 s; **не включено по умолчанию**, нужен review/интеграция
 ([отчёт](G49_RANGEPROOF_PARALLEL_2026-11-04.md)).
+API status schema: legacy `/v1/status` + Rust `rust`/`tip`/`connections`/
+`chain_type`/`sync_status_rust`, owner `get_status` — тот же builder; build-60 и
+live-проверка **NOT VERIFIED**
+([контракт](API_STATUS_SCHEMA_2026-11-04.md)).
 Layer A public-Floonet PASS — build-16 `GrinNode 7E3AA29E…`, `Tests 1592F3DF…`:
 FULLY_SYNCED 3 321 243, restart catch-up 3 321 250, 0 state re-download/PIBD
 requests, A3 PASS; public PIBD serving **NOT VERIFIED** (disabled). Public legacy
@@ -133,24 +137,15 @@ Full local PIBD 7B — PASS на build-13. Recovery H3313440/H3315600 и staging
   установленных соединений, fallback, reorg, пустой ответ и Rust staging live в
   обоих направлениях. Это желаемая часть полного продукта, но выключенный PIHD
   не блокирует ограниченный тест ноды или совместимость с Rust 5.5.2.
-- [ ] **P3. G-49 / G-49-1 — подготовка стенда и уведомление:** G-49-1
-  подготавливает методику, критерии и инвентаризацию для сравнения rangeproof
-  validation. До завершения A и B и отдельного указания владельца — только
-  подготовительная работа, без реализации оптимизации, изменений кода или запуска
-  экспериментальных испытаний. После выполнения применимых предварительных PASS
-  и готовности стенда **уведомить владельца, что G-49 готова к тестированию**,
-  с указанием артефактов и ограничений; запуск сравнения и тестового билда —
-  только по отдельному указанию. Тестирование и его итоговый PASS не являются
-  предварительным условием уведомления. Если оптимизированного билда ещё нет,
-  указать это и не представлять его как готовый. [G-49-1 и текст группе](PERF_RANGEPROOF.md#g-49-1--подготовка-стенда-и-уведомление-владельца).
-  Параллелизм, персистентный resume и asm необязательны.
-- [ ] **P4. x13 — последний этап API:** скрытая read-only пасхалка с обычной
-  авторизацией, зелёным фоном, чёрной M/жёлтой W, именами и надписями по плану,
-  реальными peers и прогрессом четырёх стадий (нет данных → N/A). Встроенная
-  метка отсутствует/не проверена → красная `(`; это не проверка SHA/подлинности.
-  Исходники и тесты остаются, публичный каталог не перечисляет метод. Не влияет
-  на кошелёк, синхронизацию или консенсус. Это желаемая часть полного продукта,
-  но она не блокирует отдельный тестовый релиз ноды.
+- [ ] **P3. G-49 — experimental opt-in delivered, not merged:** 2026-11-04
+  измерен isolated baseline и 2/4-worker prototype: 300k slice 3.65× (4w),
+  full-state 4w PASS (2 943 034/2 943 034 proofs, range 389.29 s, activation
+  55.96 s), память не выросла. Default остаётся sequential; код не merged.
+  Остаются independent review, TSan/ASan-эквивалент, full-state negative
+  activation, повторные прогоны и live Floonet. Asm/5x52 — отдельное решение.
+  [G-49 report](G49_RANGEPROOF_PARALLEL_2026-11-04.md).
+- [x] **P4. x13 / пасхалка — отменено владельцем:** «пасхалку не добавлять».
+  Не является remaining item; скрытый API-метод и UI-индикатор не реализуются.
 
 **Общее правило остановки:** не искать бесконечно маловероятные ошибки. После
 достаточных для конкретного режима проверок зафиксировать PASS/FAIL/NOT VERIFIED,
@@ -220,7 +215,7 @@ Full local PIBD 7B — PASS на build-13. Recovery H3313440/H3315600 и staging
 |---|---|
 | PLANNED | **G-44** спящий каркас PIHD (2–3 дня, без сети) |
 | PLANNED | **G-45** mainnet dry-run (финальный гейт) |
-| PLANNED | **G-49** ускорение валидации rangeproofs (31 мин → ~6–7) |
+| EXPERIMENTAL / NOT VERIFIED | **G-49** parallel rangeproof verification: 4w slice 3.65×, full-state 4w PASS; not merged, default sequential, review/TSan/live Floonet pending |
 | OPEN | **G-07** NRD (recent kernel index; E64/E65) |
 | N/A | **G-27** PIHD в v5.5.2 (сообщений нет; бит 0x80 только детектируется) |
 
@@ -242,5 +237,5 @@ Full local PIBD 7B — PASS на build-13. Recovery H3313440/H3315600 и staging
 ## 6. Итог по матрице
 
 **44 закрыто + 4 частично (G-09, G-23, G-24, G-53) + 0 в работе + 1 открыто (G-07)
-+ 3 запланировано (G-44, G-45, G-49) + 0 отложено + 1 N/A (G-27) = 53.**
-Критический путь **G-52 → G-41 закрыт**.
++ 2 запланировано (G-44, G-45) + 1 experimental (G-49, not merged) + 1 N/A
+(G-27) = 53.** Критический путь **G-52 → G-41 закрыт**.
