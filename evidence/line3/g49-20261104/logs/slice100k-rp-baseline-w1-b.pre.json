@@ -1,0 +1,14 @@
+{
+  "tag": "slice100k-rp-baseline-w1-b",
+  "mode": "rangeproofs",
+  "workers": 1,
+  "proof_limit": 100000,
+  "profile": "C:\\DHW\\.tmp\\g49-work\\profiles\\run-slice100k-rp-baseline-w1-b",
+  "config": "C:\\DHW\\.tmp\\g49-work\\profiles\\config-slice100k-rp-baseline-w1-b.json",
+  "exe": "C:\\DHW\\.tmp\\g49-work\\evidence\\bin\\baseline\\g49bench_baseline.exe",
+  "exe_sha256": "4939C9C2B7E828B51ABAD0F6DD966D7A7287E7BD059C398062C38C968B14BCC0",
+  "started": "2026-11-04T07:23:00.8330687+07:00",
+  "free_ram_mb": 31165,
+  "live_grinnode": null,
+  "live_rust": null
+}

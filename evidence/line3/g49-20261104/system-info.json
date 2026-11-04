@@ -1,0 +1,19 @@
+{
+  "timestamp": "2026-11-04T06:38:03.7948543+07:00",
+  "hostname": "DPC1",
+  "os": "Caption                   Version    BuildNumber\r\n-------                   -------    -----------\r\nМайкрософт Windows 11 Pro 10.0.26300 26300",
+  "cpu": "Name                                            NumberOfCores NumberOfLogicalProcessors\r\n----                                            ------------- -------------------------\r\nAMD Ryzen 7 7800X3D 8-Core Processor                        8                        16",
+  "ram_gb": 47.2,
+  "free_ram_mb": 30564,
+  "disk_free_gb": 661.2,
+  "secp_source": "secp256k1-zkp-5b39fbf7f1e16e126404791923511723c4c0876d (from .toolchain/sources/secp256k1-zkp.tar.gz)",
+  "cmake": "3.31 (VS2022 BuildTools)",
+  "msvc": "19.44.35229.0",
+  "flags": "/W4 /WX /O2 /MT /std:c++17",
+  "state_header": "3615bb625917582f7d028fe4ff738d82cb939b71ac768e885519b8798544ec9f",
+  "state_height": 3315600,
+  "state_num_kernels": 3351542,
+  "state_num_outputs": 3425950,
+  "archive_sha256": "D73EBD1811A40AFC876D4AA5B006D2D2E11B1BE5EDD0E102E8DF7D7FB2036C6C",
+  "archive_bytes": 3067445011
+}

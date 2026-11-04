@@ -1,0 +1,965 @@
+diff --git a/src/PMMR/CMakeLists.txt b/src/PMMR/CMakeLists.txt
+index a31c507..8ca7f70 100644
+--- a/src/PMMR/CMakeLists.txt
++++ b/src/PMMR/CMakeLists.txt
+@@ -7,6 +7,7 @@ file(GLOB SOURCE_CODE
+     "KernelMMR.cpp"
+     "OutputPMMR.cpp"
+     "RangeProofPMMR.cpp"
++    "RangeProofBatchVerifier.cpp"
+     "TxHashSetImpl.cpp"
+     "TxHashSetManager.cpp"
+     "TxHashSetValidator.cpp"
+diff --git a/src/PMMR/KernelMMR.cpp b/src/PMMR/KernelMMR.cpp
+index 637822d..97950a7 100644
+--- a/src/PMMR/KernelMMR.cpp
++++ b/src/PMMR/KernelMMR.cpp
+@@ -3,28 +3,102 @@
+ #include "Common/MMRHashUtil.h"
+ 
+ #include <Core/Global.h>
+-#include <Core/Traits/Lockable.h>
++#include <Core/Exceptions/FileException.h>
++#include <Core/Serialization/ByteBuffer.h>
+ #include <Common/Util/StringUtil.h>
+ #include <Common/Logger.h>
+ 
+-KernelMMR::KernelMMR(std::shared_ptr<HashFile> pHashFile, std::shared_ptr<DataFile<KERNEL_SIZE>> pDataFile)
++#include <limits>
++
++KernelMMR::KernelMMR(
++	std::shared_ptr<HashFile> pHashFile,
++	std::shared_ptr<AppendOnlyFile> pDataFile,
++	const bool fixedV1)
+ 	: m_pHashFile(pHashFile),
+-	m_pDataFile(pDataFile)
++	m_pDataFile(pDataFile),
++	m_fixedV1(fixedV1)
++{
++}
++
++std::vector<KernelMMR::KernelEntry> KernelMMR::ParseVariableEntries(
++	const std::shared_ptr<AppendOnlyFile>& pDataFile)
+ {
++	const uint64_t dataSize = pDataFile->GetSize();
++	std::vector<unsigned char> data;
++	if (dataSize > 0)
++	{
++		if (!pDataFile->Read(0, dataSize, data) || data.size() != dataSize)
++		{
++			throw FILE_EXCEPTION("Kernel MMR: failed to read variable-size data");
++		}
++	}
+ 
++	std::vector<KernelEntry> entries;
++	uint64_t offset = 0;
++	while (offset < dataSize)
++	{
++		const uint8_t feature = data[offset];
++		uint16_t size = 0;
++		switch (feature)
++		{
++			case 0: size = 106; break; // Plain (v2 fee fields)
++			case 1: size = 98;  break; // Coinbase
++			case 2: size = 114; break; // HeightLocked
++			case 3: size = 108; break; // NoRecentDuplicate
++			default:
++				throw FILE_EXCEPTION(StringUtil::Format(
++					"Kernel MMR: unknown kernel feature {} at data offset {}", feature, offset));
++		}
++
++		if (offset + size > dataSize)
++		{
++			throw FILE_EXCEPTION(StringUtil::Format(
++				"Kernel MMR: truncated kernel record at data offset {}", offset));
++		}
++
++		entries.push_back({ offset, size });
++		offset += size;
++	}
++
++	return entries;
+ }
+ 
+ std::shared_ptr<KernelMMR> KernelMMR::Load(const fs::path& txHashSetPath)
+ {
+ 	auto pHashFile = HashFile::Load(txHashSetPath / "kernel" / "pmmr_hash.bin");
+-	auto pDataFile = DataFile<KERNEL_SIZE>::Load(txHashSetPath / "kernel" / "pmmr_data.bin");
+-
+-	auto pKernelMMR =  std::make_shared<KernelMMR>(pHashFile, pDataFile);
++	auto pDataFile = std::make_shared<AppendOnlyFile>(txHashSetPath / "kernel" / "pmmr_data.bin");
++	pDataFile->Load();
++
++	const uint64_t dataSize = pDataFile->GetSize();
++	const bool fixedV1 = dataSize == 0 || (dataSize % KERNEL_SIZE) == 0;
++	auto pKernelMMR = std::make_shared<KernelMMR>(pHashFile, pDataFile, fixedV1);
++
++	if (dataSize > 0)
++	{
++		if (fixedV1)
++		{
++			const uint64_t count = dataSize / KERNEL_SIZE;
++			pKernelMMR->m_entries.reserve(count);
++			for (uint64_t i = 0; i < count; i++)
++			{
++				pKernelMMR->m_entries.push_back({ i * KERNEL_SIZE, KERNEL_SIZE });
++			}
++		}
++		else
++		{
++			pKernelMMR->m_entries = ParseVariableEntries(pDataFile);
++			LOG_INFO_F(
++				"Kernel MMR: loaded {} variable-size Rust v2 kernels from {} bytes",
++				pKernelMMR->m_entries.size(), dataSize);
++		}
++	}
+ 
+-	if (pHashFile->GetSize() == 0) {
++	if (pHashFile->GetSize() == 0)
++	{
+ 		pKernelMMR->ApplyKernel(Global::GetGenesisBlock().GetKernels().front());
+ 	}
+ 
++	pKernelMMR->m_committedEntries = pKernelMMR->m_entries.size();
+ 	return pKernelMMR;
+ }
+ 
+@@ -35,13 +109,22 @@ Hash KernelMMR::Root(const uint64_t size) const
+ 
+ std::unique_ptr<TransactionKernel> KernelMMR::GetKernelAt(const LeafIndex& leaf_idx) const
+ {
+-	std::vector<uint8_t> data = m_pDataFile->GetDataAt(leaf_idx.Get());
+-	if (data.size() == KERNEL_SIZE) {
+-		ByteBuffer byteBuffer(std::move(data));
+-		return std::make_unique<TransactionKernel>(TransactionKernel::Deserialize(byteBuffer));
++	if (leaf_idx.Get() >= m_entries.size())
++	{
++		return nullptr;
++	}
++
++	const KernelEntry& entry = m_entries[leaf_idx.Get()];
++	std::vector<unsigned char> data;
++	if (!m_pDataFile->Read(entry.Offset, entry.Size, data) || data.size() != entry.Size)
++	{
++		return nullptr;
+ 	}
+ 
+-	return std::unique_ptr<TransactionKernel>(nullptr);
++	ByteBuffer byteBuffer(
++		std::move(data),
++		m_fixedV1 ? EProtocolVersion::V1 : EProtocolVersion::V2);
++	return std::make_unique<TransactionKernel>(TransactionKernel::Deserialize(byteBuffer));
+ }
+ 
+ std::vector<Hash> KernelMMR::GetLastLeafHashes(const uint64_t numHashes) const
+@@ -51,27 +134,63 @@ std::vector<Hash> KernelMMR::GetLastLeafHashes(const uint64_t numHashes) const
+ 
+ bool KernelMMR::Rewind(const uint64_t num_kernels)
+ {
++	if (num_kernels > m_entries.size())
++	{
++		throw FILE_EXCEPTION(StringUtil::Format(
++			"Kernel MMR: rewind target {} exceeds {} entries", num_kernels, m_entries.size()));
++	}
++
++	const uint64_t endOffset = num_kernels == 0
++		? 0
++		: m_entries[num_kernels - 1].Offset + m_entries[num_kernels - 1].Size;
++
+ 	m_pHashFile->Rewind(LeafIndex::At(num_kernels).GetPosition());
+-	m_pDataFile->Rewind(num_kernels);
++	if (!m_pDataFile->Rewind(endOffset))
++	{
++		throw FILE_EXCEPTION(StringUtil::Format(
++			"Kernel MMR: failed to rewind data to byte {}", endOffset));
++	}
++
++	m_entries.resize(num_kernels);
+ 	return true;
+ }
+ 
+ void KernelMMR::Commit()
+ {
+ 	m_pHashFile->Commit();
+-	m_pDataFile->Commit();
++	if (!m_pDataFile->Flush())
++	{
++		throw FILE_EXCEPTION("Kernel MMR data commit failed");
++	}
++
++	m_committedEntries = m_entries.size();
+ }
+ 
+ void KernelMMR::Rollback() noexcept
+ {
+ 	m_pHashFile->Rollback();
+-	m_pDataFile->Rollback();
++	m_pDataFile->Discard();
++	m_entries.resize(m_committedEntries);
+ }
+ 
+ void KernelMMR::ApplyKernel(const TransactionKernel& kernel)
+ {
+-	std::vector<uint8_t> serialized = kernel.Serialized();
++	// Rust stores variable-size v2 kernel data but deliberately hashes every
++	// kernel with the original v1 serialization ("hash mode" in
++	// KernelFeatures::write). Storage format and MMR leaf hash are therefore
++	// different concerns; mixing them changes the kernel root.
++	const std::vector<uint8_t> serialized = kernel.Serialized(
++		m_fixedV1 ? EProtocolVersion::V1 : EProtocolVersion::V2);
++	const std::vector<uint8_t> hashBytes = kernel.Serialized(EProtocolVersion::V1);
++
++	if (serialized.size() > (std::numeric_limits<uint16_t>::max)())
++	{
++		throw FILE_EXCEPTION("Kernel MMR: kernel serialization exceeds u16 size");
++	}
+ 
+-	m_pDataFile->AddData(serialized);
+-	MMRHashUtil::AddHashes(m_pHashFile, serialized, nullptr);
+-}
+\ No newline at end of file
++	const uint64_t offset = m_pDataFile->GetSize();
++	m_pDataFile->Append(serialized);
++	m_entries.push_back({ offset, (uint16_t)serialized.size() });
++
++	MMRHashUtil::AddHashes(m_pHashFile, hashBytes, nullptr);
++}
+diff --git a/src/PMMR/KernelMMR.h b/src/PMMR/KernelMMR.h
+index 04f45c4..2f023dc 100644
+--- a/src/PMMR/KernelMMR.h
++++ b/src/PMMR/KernelMMR.h
+@@ -3,7 +3,7 @@
+ #include "Common/MMR.h"
+ #include "Common/HashFile.h"
+ 
+-#include <Core/File/DataFile.h>
++#include <Core/File/AppendOnlyFile.h>
+ #include <Core/Models/TransactionKernel.h>
+ #include <Core/Models/FullBlock.h>
+ #include <Core/Traits/Lockable.h>
+@@ -11,13 +11,17 @@
+ #include <PMMR/Common/LeafIndex.h>
+ #include <filesystem.h>
+ #include <cstdint>
++#include <vector>
+ 
+ #define KERNEL_SIZE 114
+ 
+ class KernelMMR : public MMR
+ {
+ public:
+-	KernelMMR(std::shared_ptr<HashFile> pHashFile, std::shared_ptr<DataFile<KERNEL_SIZE>> pDataFile);
++	KernelMMR(
++		std::shared_ptr<HashFile> pHashFile,
++		std::shared_ptr<AppendOnlyFile> pDataFile,
++		const bool fixedV1);
+ 	virtual ~KernelMMR() = default;
+ 
+ 	static std::shared_ptr<KernelMMR> Load(const fs::path & txHashSetPath);
+@@ -27,7 +31,7 @@ public:
+ 
+ 	Hash Root(const uint64_t size) const final;
+ 	uint64_t GetSize() const final { return m_pHashFile->GetSize(); }
+-	uint64_t GetNumKernels() const { return m_pDataFile->GetSize(); }
++	uint64_t GetNumKernels() const { return m_entries.size(); }
+ 
+ 	std::unique_ptr<Hash> GetHashAt(const Index& mmrIndex) const final
+ 	{
+@@ -42,6 +46,18 @@ public:
+ 	void ApplyKernel(const TransactionKernel& kernel);
+ 
+ private:
++	struct KernelEntry
++	{
++		uint64_t Offset;
++		uint16_t Size;
++	};
++
++	static std::vector<KernelEntry> ParseVariableEntries(
++		const std::shared_ptr<AppendOnlyFile>& pDataFile);
++
+ 	mutable std::shared_ptr<HashFile> m_pHashFile;
+-	mutable std::shared_ptr<DataFile<KERNEL_SIZE>> m_pDataFile;
+-};
+\ No newline at end of file
++	mutable std::shared_ptr<AppendOnlyFile> m_pDataFile;
++	bool m_fixedV1;
++	std::vector<KernelEntry> m_entries;
++	size_t m_committedEntries = 0;
++};
+diff --git a/src/PMMR/TxHashSetValidator.cpp b/src/PMMR/TxHashSetValidator.cpp
+index 374e655..12c9b36 100644
+--- a/src/PMMR/TxHashSetValidator.cpp
++++ b/src/PMMR/TxHashSetValidator.cpp
+@@ -1,312 +1,334 @@
+-#include "TxHashSetValidator.h"
+-#include "TxHashSetImpl.h"
+-#include "KernelMMR.h"
+-#include "Common/MMR.h"
+-#include "Common/MMRUtil.h"
++#include "TxHashSetValidator.h"
++#include "TxHashSetImpl.h"
++#include "KernelMMR.h"
++#include "Common/MMR.h"
++#include "Common/MMRUtil.h"
+ #include "Common/MMRHashUtil.h"
+-
+-#include <Consensus.h>
+-#include <Core/Validation/KernelSignatureValidator.h>
+-#include <Core/Validation/KernelSumValidator.h>
+-#include <Common/Util/HexUtil.h>
+-#include <Common/Logger.h>
+-#include <BlockChain/BlockChain.h>
+-#include <thread>
+-
+-std::unique_ptr<BlockSums> TxHashSetValidator::Validate(TxHashSet& txHashSet, const BlockHeader& blockHeader, SyncStatus& syncStatus) const
+-{
+-	std::shared_ptr<const KernelMMR> pKernelMMR = txHashSet.GetKernelMMR();
+-	std::shared_ptr<const OutputPMMR> pOutputPMMR = txHashSet.GetOutputPMMR();
+-	std::shared_ptr<const RangeProofPMMR> pRangeProofPMMR = txHashSet.GetRangeProofPMMR();
+-
+-	// Validate size of each MMR matches blockHeader
+-	if (!ValidateSizes(txHashSet, blockHeader))
+-	{
+-		LOG_ERROR("Invalid MMR size");
+-		return std::unique_ptr<BlockSums>(nullptr);
+-	}
+-
+-	syncStatus.UpdateProcessingStatus(5);
+-
+-	// Validate MMR hashes in parallel
+-	std::vector<std::thread> threads;
+-	std::atomic_bool mmrHashesValidated = true;
+-	threads.emplace_back(std::thread([this, pKernelMMR, &mmrHashesValidated] { if (!this->ValidateMMRHashes(pKernelMMR)) { mmrHashesValidated = false; }}));
+-	threads.emplace_back(std::thread([this, pOutputPMMR, &mmrHashesValidated] { if (!this->ValidateMMRHashes(pOutputPMMR)) { mmrHashesValidated = false; }}));
+-	threads.emplace_back(std::thread([this, pRangeProofPMMR, &mmrHashesValidated] { if (!this->ValidateMMRHashes(pRangeProofPMMR)) { mmrHashesValidated = false; }}));
+-
+-	for (auto& thread : threads)
+-	{
+-		if (thread.joinable())
+-		{
+-			thread.join();
+-		}
+-	}
+-
+-	if (!mmrHashesValidated)
+-	{
+-		LOG_ERROR("Invalid MMR hashes");
+-		return std::unique_ptr<BlockSums>(nullptr);
+-	}
+-
+-	syncStatus.UpdateProcessingStatus(10);
+-
+-	// Validate root for each MMR matches blockHeader
+-	if (!txHashSet.ValidateRoots(blockHeader))
+-	{
+-		LOG_ERROR("Invalid MMR roots");
+-		return std::unique_ptr<BlockSums>(nullptr);
+-	}
+-
+-	syncStatus.UpdateProcessingStatus(15);
+-
+-	// Validate the full kernel history (kernel MMR root for every block header).
+-	LOG_DEBUG("Validating kernel history");
+-	if (!ValidateKernelHistory(*txHashSet.GetKernelMMR(), blockHeader, syncStatus))
+-	{
+-		LOG_ERROR("Invalid kernel history");
+-		return std::unique_ptr<BlockSums>(nullptr);
+-	}
+-
+-	syncStatus.UpdateProcessingStatus(25);
+-
+-	// Validate kernel sums
+-	LOG_DEBUG("Validating kernel sums");
+-	LoggerAPI::Flush();
+-
+-	std::unique_ptr<BlockSums> pBlockSums = nullptr;
+-	try
+-	{
+-		pBlockSums = std::make_unique<BlockSums>(ValidateKernelSums(txHashSet, blockHeader));
+-	}
+-	catch (...)
+-	{
+-		LOG_ERROR("Invalid kernel sums");
+-		return std::unique_ptr<BlockSums>(nullptr);
+-	}
+-
+-	syncStatus.UpdateProcessingStatus(40);
+-
+-	// Validate the rangeproof associated with each unspent output.
+-	LOG_DEBUG("Validating range proofs");
+-	LoggerAPI::Flush();
+-	if (!ValidateRangeProofs(txHashSet, syncStatus))
+-	{
+-		LOG_ERROR("Failed to verify rangeproofs");
+-		return std::unique_ptr<BlockSums>(nullptr);
+-	}
+-
+-	syncStatus.UpdateProcessingStatus(70);
+-
+-	// Validate kernel signatures
+-	LOG_DEBUG("Validating kernel signatures");
+-	LoggerAPI::Flush();
+-	if (!ValidateKernelSignatures(*txHashSet.GetKernelMMR(), syncStatus))
+-	{
+-		LOG_ERROR("Failed to verify kernel signatures");
+-		return std::unique_ptr<BlockSums>(nullptr);
+-	}
+-
+-	LOG_DEBUG("Success");
+-	LoggerAPI::Flush();
+-
+-	syncStatus.UpdateProcessingStatus(100);
+-
+-	return pBlockSums;
+-}
+-
+-bool TxHashSetValidator::ValidateSizes(TxHashSet& txHashSet, const BlockHeader& blockHeader) const
+-{
+-	if (txHashSet.GetKernelMMR()->GetSize() != blockHeader.GetKernelMMRSize())
+-	{
+-		LOG_ERROR_F("Kernel size not matching for header ({})", blockHeader);
+-		return false;
+-	}
+-
+-	if (txHashSet.GetOutputPMMR()->GetSize() != blockHeader.GetOutputMMRSize())
+-	{
+-		LOG_ERROR_F("Output size not matching for header ({})", blockHeader);
+-		return false;
+-	}
+-
+-	if (txHashSet.GetRangeProofPMMR()->GetSize() != blockHeader.GetOutputMMRSize())
+-	{
+-		LOG_ERROR_F("RangeProof size not matching for header ({})", blockHeader);
+-		return false;
+-	}
+-
+-	return true;
+-}
+-
+-// TODO: This probably belongs in MMRHashUtil.
+-bool TxHashSetValidator::ValidateMMRHashes(std::shared_ptr<const MMR> pMMR) const
+-{
+-	try
+-    {
+-        const uint64_t size = pMMR->GetSize();
+-		for (Index mmr_idx = Index::At(0); mmr_idx < size; mmr_idx++) {
+-            if (!mmr_idx.IsLeaf()) {
+-                const std::unique_ptr<Hash> pParentHash = pMMR->GetHashAt(mmr_idx);
+-                if (pParentHash != nullptr) {
+-                    const std::unique_ptr<Hash> pLeftHash = pMMR->GetHashAt(mmr_idx.GetLeftChild());
+-                    const std::unique_ptr<Hash> pRightHash = pMMR->GetHashAt(mmr_idx.GetRightChild());
+-                    if (pLeftHash != nullptr && pRightHash != nullptr) {
+-                        const Hash expectedHash = MMRHashUtil::HashParentWithIndex(*pLeftHash, *pRightHash, mmr_idx.GetPosition());
+-                        if (*pParentHash != expectedHash) {
+-                            LOG_ERROR_F("Invalid parent hash at {}", mmr_idx);
+-                            return false;
+-                        }
+-                    }
+-                }
+-            }
+-        }
+-	}
+-	catch (std::exception& e)
+-	{
+-		LOG_ERROR_F("Exception thrown while validating hashes: {}", e.what());
+-		return false;
+-	}
+-
+-	return true;
+-}
+-
+-bool TxHashSetValidator::ValidateKernelHistory(const KernelMMR& kernelMMR, const BlockHeader& blockHeader, SyncStatus& syncStatus) const
+-{
+-	const uint64_t totalHeight = blockHeader.GetHeight();
+-	for (uint64_t height = 0; height <= totalHeight; height++)
+-	{
+-		auto pHeader = m_blockChain.GetBlockHeaderByHeight(height, EChainType::CANDIDATE);
+-		if (pHeader == nullptr)
+-		{
+-			LOG_ERROR_F("No header found at height ({})", height);
+-			return false;
+-		}
+-		
+-		if (kernelMMR.Root(pHeader->GetKernelMMRSize()) != pHeader->GetKernelRoot())
+-		{
+-			LOG_ERROR_F("Kernel root not matching for header at height ({})", height);
+-			return false;
+-		}
+-
+-		if (height % 1000 == 0)
+-		{
+-			syncStatus.UpdateProcessingStatus((uint8_t)(15 + ((10.0 * height) / totalHeight)));
+-		}
+-	}
+-
+-	return true;
+-}
+-
+-BlockSums TxHashSetValidator::ValidateKernelSums(TxHashSet& txHashSet, const BlockHeader& blockHeader) const
+-{
+-	// Calculate overage
+-	const int64_t overage = 0 - (Consensus::REWARD * (1 + blockHeader.GetHeight()));
+-
+-	// Determine output commitments
+-	std::shared_ptr<const OutputPMMR> pOutputPMMR = txHashSet.GetOutputPMMR();
+-	std::vector<Commitment> outputCommitments;
+-	for (LeafIndex output_idx = LeafIndex::At(0); output_idx < blockHeader.GetNumOutputs(); output_idx++) {
+-		std::unique_ptr<OutputIdentifier> pOutput = pOutputPMMR->GetAt(output_idx);
+-		if (pOutput != nullptr) {
+-			outputCommitments.push_back(pOutput->GetCommitment());
+-		}
+-	}
+-
+-	// Determine kernel excess commitments
+-	std::shared_ptr<const KernelMMR> pKernelMMR = txHashSet.GetKernelMMR();
+-	std::vector<Commitment> excessCommitments;
+-	for (LeafIndex kernel_idx = LeafIndex::At(0); kernel_idx < blockHeader.GetNumKernels(); kernel_idx++) {
+-		std::unique_ptr<TransactionKernel> pKernel = pKernelMMR->GetKernelAt(kernel_idx);
+-		if (pKernel != nullptr) {
+-			excessCommitments.push_back(pKernel->GetExcessCommitment());
+-		}
+-	}
+-
+-	return KernelSumValidator::ValidateKernelSums(
+-		std::vector<Commitment>(),
+-		outputCommitments,
+-		excessCommitments,
+-		overage,
+-		blockHeader.GetOffset(),
+-		std::nullopt
+-	);
+-}
+-
++#include "RangeProofBatchVerifier.h"
++
++#include <Consensus.h>
++#include <Core/Validation/KernelSignatureValidator.h>
++#include <Core/Validation/KernelSumValidator.h>
++#include <Common/Util/HexUtil.h>
++#include <Common/Logger.h>
++#include <BlockChain/BlockChain.h>
++#include <thread>
++#include <chrono>
++#include <cstdlib>
++#include <cstdio>
++#include <algorithm>
++#include <vector>
++
++namespace
++{
++	// G-49 measurement instrumentation. These log lines are consumed only by the
++	// isolated benchmark tool; they do not change validation decisions.
++	long long G49NowMs()
++	{
++		return std::chrono::duration_cast<std::chrono::milliseconds>(
++			std::chrono::steady_clock::now().time_since_epoch()).count();
++	}
++
+
++}
++
++std::unique_ptr<BlockSums> TxHashSetValidator::Validate(TxHashSet& txHashSet, const BlockHeader& blockHeader, SyncStatus& syncStatus) const
++{
++	const long long validateStart = G49NowMs();
++	long long phaseStart = validateStart;
++	LOG_INFO_F(
++		"G49T phase=validate_begin header={} height={} kernel_mmr_size={} output_mmr_size={}",
++		blockHeader.GetHash().ToHex(),
++		blockHeader.GetHeight(),
++		blockHeader.GetKernelMMRSize(),
++		blockHeader.GetOutputMMRSize());
++
++	std::shared_ptr<const KernelMMR> pKernelMMR = txHashSet.GetKernelMMR();
++	std::shared_ptr<const OutputPMMR> pOutputPMMR = txHashSet.GetOutputPMMR();
++	std::shared_ptr<const RangeProofPMMR> pRangeProofPMMR = txHashSet.GetRangeProofPMMR();
++
++	// Validate size of each MMR matches blockHeader
++	if (!ValidateSizes(txHashSet, blockHeader))
++	{
++		LOG_ERROR("Invalid MMR size");
++		return std::unique_ptr<BlockSums>(nullptr);
++	}
++
++	syncStatus.UpdateProcessingStatus(5);
++
++	LOG_INFO_F("G49T phase=sizes ms={}", G49NowMs() - phaseStart);
++	phaseStart = G49NowMs();
++
++	// Validate MMR hashes in parallel
++	std::vector<std::thread> threads;
++	std::atomic_bool mmrHashesValidated = true;
++	threads.emplace_back(std::thread([this, pKernelMMR, &mmrHashesValidated] { if (!this->ValidateMMRHashes(pKernelMMR)) { mmrHashesValidated = false; }}));
++	threads.emplace_back(std::thread([this, pOutputPMMR, &mmrHashesValidated] { if (!this->ValidateMMRHashes(pOutputPMMR)) { mmrHashesValidated = false; }}));
++	threads.emplace_back(std::thread([this, pRangeProofPMMR, &mmrHashesValidated] { if (!this->ValidateMMRHashes(pRangeProofPMMR)) { mmrHashesValidated = false; }}));
++
++	for (auto& thread : threads)
++	{
++		if (thread.joinable())
++		{
++			thread.join();
++		}
++	}
++
++	if (!mmrHashesValidated)
++	{
++		LOG_ERROR("Invalid MMR hashes");
++		return std::unique_ptr<BlockSums>(nullptr);
++	}
++
++	LOG_INFO_F("G49T phase=mmr_hashes ms={}", G49NowMs() - phaseStart);
++	phaseStart = G49NowMs();
++	syncStatus.UpdateProcessingStatus(10);
++
++	// Validate root for each MMR matches blockHeader
++	if (!txHashSet.ValidateRoots(blockHeader))
++	{
++		LOG_ERROR("Invalid MMR roots");
++		return std::unique_ptr<BlockSums>(nullptr);
++	}
++
++	LOG_INFO_F("G49T phase=roots ms={}", G49NowMs() - phaseStart);
++	phaseStart = G49NowMs();
++	syncStatus.UpdateProcessingStatus(15);
++
++	// Validate the full kernel history (kernel MMR root for every block header).
++	LOG_DEBUG("Validating kernel history");
++	if (!ValidateKernelHistory(*txHashSet.GetKernelMMR(), blockHeader, syncStatus))
++	{
++		LOG_ERROR("Invalid kernel history");
++		return std::unique_ptr<BlockSums>(nullptr);
++	}
++
++	LOG_INFO_F("G49T phase=kernel_history ms={} heights={}",
++		G49NowMs() - phaseStart, blockHeader.GetHeight() + 1);
++	phaseStart = G49NowMs();
++	syncStatus.UpdateProcessingStatus(25);
++
++	// Validate kernel sums
++	LOG_DEBUG("Validating kernel sums");
++	LoggerAPI::Flush();
++
++	std::unique_ptr<BlockSums> pBlockSums = nullptr;
++	try
++	{
++		pBlockSums = std::make_unique<BlockSums>(ValidateKernelSums(txHashSet, blockHeader));
++	}
++	catch (...)
++	{
++		LOG_ERROR("Invalid kernel sums");
++		return std::unique_ptr<BlockSums>(nullptr);
++	}
++
++	LOG_INFO_F("G49T phase=kernel_sums ms={} kernels={} outputs={}",
++		G49NowMs() - phaseStart,
++		blockHeader.GetNumKernels(),
++		blockHeader.GetNumOutputs());
++	phaseStart = G49NowMs();
++	syncStatus.UpdateProcessingStatus(40);
++
++	// Validate the rangeproof associated with each unspent output.
++	LOG_DEBUG("Validating range proofs");
++	LoggerAPI::Flush();
++	if (!ValidateRangeProofs(txHashSet, syncStatus))
++	{
++		LOG_ERROR("Failed to verify rangeproofs");
++		return std::unique_ptr<BlockSums>(nullptr);
++	}
++
++	LOG_INFO_F("G49T phase=range_proofs_phase ms={}", G49NowMs() - phaseStart);
++	phaseStart = G49NowMs();
++	syncStatus.UpdateProcessingStatus(70);
++
++	// Validate kernel signatures
++	LOG_DEBUG("Validating kernel signatures");
++	LoggerAPI::Flush();
++	if (!ValidateKernelSignatures(*txHashSet.GetKernelMMR(), syncStatus))
++	{
++		LOG_ERROR("Failed to verify kernel signatures");
++		return std::unique_ptr<BlockSums>(nullptr);
++	}
++
++	LOG_INFO_F("G49T phase=kernel_signatures ms={} kernels={}",
++		G49NowMs() - phaseStart, blockHeader.GetNumKernels());
++	LOG_DEBUG("Success");
++	LoggerAPI::Flush();
++
++	LOG_INFO_F(
++		"G49T roots kernel={} output={} rangeproof={}",
++		blockHeader.GetKernelRoot().ToHex(),
++		blockHeader.GetOutputRoot().ToHex(),
++		blockHeader.GetRangeProofRoot().ToHex());
++	LOG_INFO_F(
++		"G49T sums output={} kernel={}",
++		pBlockSums->GetOutputSum().ToHex(),
++		pBlockSums->GetKernelSum().ToHex());
++	LOG_INFO_F("G49T phase=validate_total ms={}", G49NowMs() - validateStart);
++
++	syncStatus.UpdateProcessingStatus(100);
++
++	return pBlockSums;
++}
++
++bool TxHashSetValidator::ValidateRangeProofsForBenchmark(TxHashSet& txHashSet, SyncStatus& syncStatus) const
++{
++	return ValidateRangeProofs(txHashSet, syncStatus);
++}
++
++bool TxHashSetValidator::ValidateSizes(TxHashSet& txHashSet, const BlockHeader& blockHeader) const
++{
++	if (txHashSet.GetKernelMMR()->GetSize() != blockHeader.GetKernelMMRSize())
++	{
++		LOG_ERROR_F("Kernel size not matching for header ({})", blockHeader);
++		return false;
++	}
++
++	if (txHashSet.GetOutputPMMR()->GetSize() != blockHeader.GetOutputMMRSize())
++	{
++		LOG_ERROR_F("Output size not matching for header ({})", blockHeader);
++		return false;
++	}
++
++	if (txHashSet.GetRangeProofPMMR()->GetSize() != blockHeader.GetOutputMMRSize())
++	{
++		LOG_ERROR_F("RangeProof size not matching for header ({})", blockHeader);
++		return false;
++	}
++
++	return true;
++}
++
++// TODO: This probably belongs in MMRHashUtil.
++bool TxHashSetValidator::ValidateMMRHashes(std::shared_ptr<const MMR> pMMR) const
++{
++	try
++    {
++        const uint64_t size = pMMR->GetSize();
++		for (Index mmr_idx = Index::At(0); mmr_idx < size; mmr_idx++) {
++            if (!mmr_idx.IsLeaf()) {
++                const std::unique_ptr<Hash> pParentHash = pMMR->GetHashAt(mmr_idx);
++                if (pParentHash != nullptr) {
++                    const std::unique_ptr<Hash> pLeftHash = pMMR->GetHashAt(mmr_idx.GetLeftChild());
++                    const std::unique_ptr<Hash> pRightHash = pMMR->GetHashAt(mmr_idx.GetRightChild());
++                    if (pLeftHash != nullptr && pRightHash != nullptr) {
++                        const Hash expectedHash = MMRHashUtil::HashParentWithIndex(*pLeftHash, *pRightHash, mmr_idx.GetPosition());
++                        if (*pParentHash != expectedHash) {
++                            LOG_ERROR_F("Invalid parent hash at {}", mmr_idx);
++                            return false;
++                        }
++                    }
++                }
++            }
++        }
++	}
++	catch (std::exception& e)
++	{
++		LOG_ERROR_F("Exception thrown while validating hashes: {}", e.what());
++		return false;
++	}
++
++	return true;
++}
++
++bool TxHashSetValidator::ValidateKernelHistory(const KernelMMR& kernelMMR, const BlockHeader& blockHeader, SyncStatus& syncStatus) const
++{
++	const uint64_t totalHeight = blockHeader.GetHeight();
++	for (uint64_t height = 0; height <= totalHeight; height++)
++	{
++		auto pHeader = m_blockChain.GetBlockHeaderByHeight(height, EChainType::CANDIDATE);
++		if (pHeader == nullptr)
++		{
++			LOG_ERROR_F("No header found at height ({})", height);
++			return false;
++		}
++		
++		if (kernelMMR.Root(pHeader->GetKernelMMRSize()) != pHeader->GetKernelRoot())
++		{
++			LOG_ERROR_F("Kernel root not matching for header at height ({})", height);
++			return false;
++		}
++
++		if (height % 1000 == 0)
++		{
++			syncStatus.UpdateProcessingStatus((uint8_t)(15 + ((10.0 * height) / totalHeight)));
++		}
++	}
++
++	return true;
++}
++
++BlockSums TxHashSetValidator::ValidateKernelSums(TxHashSet& txHashSet, const BlockHeader& blockHeader) const
++{
++	// Calculate overage
++	const int64_t overage = 0 - (Consensus::REWARD * (1 + blockHeader.GetHeight()));
++
++	// Determine output commitments
++	std::shared_ptr<const OutputPMMR> pOutputPMMR = txHashSet.GetOutputPMMR();
++	std::vector<Commitment> outputCommitments;
++	for (LeafIndex output_idx = LeafIndex::At(0); output_idx < blockHeader.GetNumOutputs(); output_idx++) {
++		std::unique_ptr<OutputIdentifier> pOutput = pOutputPMMR->GetAt(output_idx);
++		if (pOutput != nullptr) {
++			outputCommitments.push_back(pOutput->GetCommitment());
++		}
++	}
++
++	// Determine kernel excess commitments
++	std::shared_ptr<const KernelMMR> pKernelMMR = txHashSet.GetKernelMMR();
++	std::vector<Commitment> excessCommitments;
++	for (LeafIndex kernel_idx = LeafIndex::At(0); kernel_idx < blockHeader.GetNumKernels(); kernel_idx++) {
++		std::unique_ptr<TransactionKernel> pKernel = pKernelMMR->GetKernelAt(kernel_idx);
++		if (pKernel != nullptr) {
++			excessCommitments.push_back(pKernel->GetExcessCommitment());
++		}
++	}
++
++	return KernelSumValidator::ValidateKernelSums(
++		std::vector<Commitment>(),
++		outputCommitments,
++		excessCommitments,
++		overage,
++		blockHeader.GetOffset(),
++		std::nullopt
++	);
++}
++
+ bool TxHashSetValidator::ValidateRangeProofs(TxHashSet& txHashSet, SyncStatus& syncStatus) const
+ {
+-	std::vector<std::pair<Commitment, RangeProof>> rangeProofs;
+-
+-	size_t i = 0;
+-	LOG_INFO("BEGIN");
+-	const uint64_t outputMMRSize = txHashSet.GetOutputPMMR()->GetSize();
+-	for (LeafIndex leaf_idx = LeafIndex::At(0); leaf_idx.GetPosition() < outputMMRSize; leaf_idx++)
+-	{
+-		std::unique_ptr<OutputIdentifier> pOutput = txHashSet.GetOutputPMMR()->GetAt(leaf_idx);
+-		if (pOutput != nullptr)
+-		{
+-			std::unique_ptr<RangeProof> pRangeProof = txHashSet.GetRangeProofPMMR()->GetAt(leaf_idx);
+-			if (pRangeProof == nullptr)
+-			{
+-				LOG_ERROR_F("No rangeproof found at leaf index ({})", leaf_idx);
+-				return false;
+-			}
+-
+-			rangeProofs.emplace_back(std::make_pair(pOutput->GetCommitment(), *pRangeProof));
+-			++i;
+-
+-			if (rangeProofs.size() >= 1000)
+-			{
+-				if (!Crypto::VerifyRangeProofs(rangeProofs))
+-				{
+-					return false;
+-				}
+-
+-				rangeProofs.clear();
+-
+-				syncStatus.UpdateProcessingStatus((uint8_t)(40 + ((30.0 * leaf_idx.GetPosition()) / outputMMRSize)));
+-			}
+-		}
+-	}
+-
+-	if (!rangeProofs.empty())
+-	{
+-		if (!Crypto::VerifyRangeProofs(rangeProofs))
+-		{
+-			return false;
+-		}
+-	}
+-
+-	LOG_INFO_F("SUCCESS ({})", i);
+-	return true;
++	// The reader/worker experiment keeps the production decision identical:
++	// any failed batch returns false, so the caller never activates a partially
++	// verified state. Workers=1 is the exact sequential path.
++	return RangeProofBatchVerifier::Verify(txHashSet, syncStatus);
+ }
+ 
+-bool TxHashSetValidator::ValidateKernelSignatures(const KernelMMR& kernelMMR, SyncStatus& syncStatus) const
+-{
+-	std::vector<TransactionKernel> kernels;
+-
+-	const uint64_t num_kernels = kernelMMR.GetNumKernels();
+-	for (LeafIndex leaf_idx = LeafIndex::At(0); leaf_idx < num_kernels; leaf_idx++) {
+-		std::unique_ptr<TransactionKernel> pKernel = kernelMMR.GetKernelAt(leaf_idx);
+-		if (pKernel == nullptr) {
+-			return false;
+-		}
+-
+-		kernels.push_back(*pKernel);
+-
+-		if (kernels.size() >= 2000) {
+-			if (!KernelSignatureValidator::BatchVerify(kernels)) {
+-				return false;
+-			}
+-
+-			kernels.clear();
+-
+-			syncStatus.UpdateProcessingStatus((uint8_t)(70 + ((30.0 * leaf_idx.Get()) / num_kernels)));
+-		}
+-	}
+-
+-	if (!KernelSignatureValidator::BatchVerify(kernels)) {
+-		return false;
+-	}
+-
+-	return true;
++bool TxHashSetValidator::ValidateKernelSignatures(const KernelMMR& kernelMMR, SyncStatus& syncStatus) const
++{
++	std::vector<TransactionKernel> kernels;
++
++	const uint64_t num_kernels = kernelMMR.GetNumKernels();
++	for (LeafIndex leaf_idx = LeafIndex::At(0); leaf_idx < num_kernels; leaf_idx++) {
++		std::unique_ptr<TransactionKernel> pKernel = kernelMMR.GetKernelAt(leaf_idx);
++		if (pKernel == nullptr) {
++			return false;
++		}
++
++		kernels.push_back(*pKernel);
++
++		if (kernels.size() >= 2000) {
++			if (!KernelSignatureValidator::BatchVerify(kernels)) {
++				return false;
++			}
++
++			kernels.clear();
++
++			syncStatus.UpdateProcessingStatus((uint8_t)(70 + ((30.0 * leaf_idx.Get()) / num_kernels)));
++		}
++	}
++
++	if (!KernelSignatureValidator::BatchVerify(kernels)) {
++		return false;
++	}
++
++	return true;
+ }
+\ No newline at end of file
+diff --git a/src/PMMR/TxHashSetValidator.h b/src/PMMR/TxHashSetValidator.h
+index 46e6865..515ec36 100644
+--- a/src/PMMR/TxHashSetValidator.h
++++ b/src/PMMR/TxHashSetValidator.h
+@@ -24,6 +24,13 @@ public:
+ 		SyncStatus& syncStatus
+ 	) const;
+ 
++	// G-49 experiment-only entry point. The isolated benchmark tool calls the
++	// exact same private rangeproof phase without running the other phases.
++	bool ValidateRangeProofsForBenchmark(
++		TxHashSet& txHashSet,
++		SyncStatus& syncStatus
++	) const;
++
+ private:
+ 	bool ValidateSizes(TxHashSet& txHashSet, const BlockHeader& blockHeader) const;
+ 	bool ValidateMMRHashes(std::shared_ptr<const MMR> pMMR) const;
+diff --git a/tools/CMakeLists.txt b/tools/CMakeLists.txt
+index 9a308e4..792c973 100644
+--- a/tools/CMakeLists.txt
++++ b/tools/CMakeLists.txt
+@@ -1,3 +1,4 @@
+ add_subdirectory(slate_tool)
+ add_subdirectory(tx_verifier)
+-#add_subdirectory(txhashset_tool)
+\ No newline at end of file
++#add_subdirectory(txhashset_tool)
++add_subdirectory(g49bench)

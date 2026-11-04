@@ -1,0 +1,14 @@
+{
+  "tag": "smoke2-crypto-neg",
+  "mode": "crypto-neg",
+  "workers": 1,
+  "proof_limit": 0,
+  "profile": "C:\\DHW\\.tmp\\g49-work\\profiles\\run-smoke2-crypto-neg",
+  "config": "C:\\DHW\\.tmp\\g49-work\\profiles\\config-smoke2-crypto-neg.json",
+  "exe": "C:\\DHW\\.tmp\\g49-work\\grinplusplus\\bin\\Release\\Release\\g49bench.exe",
+  "exe_sha256": "4939C9C2B7E828B51ABAD0F6DD966D7A7287E7BD059C398062C38C968B14BCC0",
+  "started": "2026-11-04T06:35:13.7662461+07:00",
+  "free_ram_mb": 32070,
+  "live_grinnode": null,
+  "live_rust": null
+}

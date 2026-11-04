@@ -1,0 +1,8 @@
+{
+  "tag": "slice100k-rp-baseline-w1-b",
+  "exit_code": 0,
+  "elapsed_s": 125.2,
+  "finished": "2026-11-04T07:25:06.1270546+07:00",
+  "json": "C:\\DHW\\.tmp\\g49-work\\evidence\\json\\slice100k-rp-baseline-w1-b.json",
+  "console": "C:\\DHW\\.tmp\\g49-work\\evidence\\logs\\slice100k-rp-baseline-w1-b.console.txt"
+}

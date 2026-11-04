@@ -1,0 +1,8 @@
+{
+  "tag": "slice300k-reject-w4",
+  "exit_code": 3,
+  "elapsed_s": 105.2,
+  "finished": "2026-11-04T07:15:18.0939405+07:00",
+  "json": "C:\\DHW\\.tmp\\g49-work\\evidence\\json\\slice300k-reject-w4.json",
+  "console": "C:\\DHW\\.tmp\\g49-work\\evidence\\logs\\slice300k-reject-w4.console.txt"
+}

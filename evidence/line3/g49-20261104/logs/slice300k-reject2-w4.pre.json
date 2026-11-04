@@ -1,0 +1,14 @@
+{
+  "tag": "slice300k-reject2-w4",
+  "mode": "rangeproofs",
+  "workers": 4,
+  "proof_limit": 300000,
+  "profile": "C:\\DHW\\.tmp\\g49-work\\profiles\\run-slice300k-reject2-w4",
+  "config": "C:\\DHW\\.tmp\\g49-work\\profiles\\config-slice300k-reject2-w4.json",
+  "exe": "C:\\DHW\\.tmp\\g49-work\\evidence\\bin\\exp\\g49bench_exp.exe",
+  "exe_sha256": "0CCB0ED0690E09458576D4056C27042CC6B59D9136B2229D8BDD7C0D8F241BC8",
+  "started": "2026-11-04T07:16:28.6066998+07:00",
+  "free_ram_mb": 31111,
+  "live_grinnode": null,
+  "live_rust": null
+}

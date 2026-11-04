@@ -1,0 +1,14 @@
+{
+  "tag": "slice300k-rp-exp-w2",
+  "mode": "rangeproofs",
+  "workers": 2,
+  "proof_limit": 300000,
+  "profile": "C:\\DHW\\.tmp\\g49-work\\profiles\\run-slice300k-rp-exp-w2",
+  "config": "C:\\DHW\\.tmp\\g49-work\\profiles\\config-slice300k-rp-exp-w2.json",
+  "exe": "C:\\DHW\\.tmp\\g49-work\\evidence\\bin\\exp\\g49bench_exp.exe",
+  "exe_sha256": "26721EAF4926D10D521E2F97B239F9B7AEE3F4F609BD5E40F8C1CA6BF8EB7595",
+  "started": "2026-11-04T06:53:32.9979932+07:00",
+  "free_ram_mb": 32624,
+  "live_grinnode": null,
+  "live_rust": null
+}
