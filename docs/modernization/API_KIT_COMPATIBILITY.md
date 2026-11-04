@@ -113,5 +113,9 @@ P0 (routes + ApiAccess + protected shutdown) is merged and live-verified.\nP1 co
 - `/v1/status` keeps legacy fields and adds the Rust `Status` object under
   `rust` plus `tip`/`connections`/`chain_type`/`sync_status_rust` aliases.
 - `/v2/owner get_status` uses the same live builder (`NodeStatus::Build`).
-- Unbuilt in the shared tree at the time of writing: executable/unit/live status
-  **NOT VERIFIED** until build-60 and the contract checks are run.
+- Verified on patched build-59 `GrinNode ECB1B55E…`: `/v1/status.rust` and owner
+  `Ok` match on chain/tip/sync/connections/protocol/user_agent; owner accepts
+  Bearer and X-API-Secret, no secret gives expected `-32001`; foreign
+  `get_version`/`get_tip` work. Full suite **280/280, 4403 assertions PASS**.
+  Evidence: `evidence/legacy-build59-20261104/integration-20261104/API_CHECK_20261104.md`.
+- Public Floonet API and fresh single-SHA state cycle remain **NOT VERIFIED**.

@@ -3,17 +3,20 @@
 Дата сверки: 2026-11-04. **Layer A PASS на build-16**
 (`GrinNode 7E3AA29E…`, `Tests 1592F3DF…`): public Floonet `FULLY_SYNCED`,
 restart resumed without state re-download, owner API protected; public PIBD
-serving DISABLED/NOT VERIFIED. **Build-59** (`Tests 78218F3C…`,
-`GrinNode 60D8DFD0…`) — source-bound кандидат с `IsCoinbase`, chain-store writer,
-reorg-preflight, typed `LOCAL_REWIND_DATA_MISSING`, variable-size Rust v2 kernel
-PMMR (storage V2 / MMR hash V1): **bodyless safe-refusal PASS**, full
-**276/276, 4387 assertions**. Локальный legacy loopback с обычным Rust 5.5.2:
-архив H=3 315 600, body sync до H=3 318 655, **FULLY_SYNCED**, restart без
-повторной полной загрузки; download/activation сделаны build-58, единый
-build-59 цикл не повторён. Public legacy fallback **BLOCKED/PARTIAL** (PID 3680
-active). Build-13 остаётся full 7B live binding. G-49 experimental 4w — отдельный
-opt-in, не default ([отчёт](G49_RANGEPROOF_PARALLEL_2026-11-04.md)). Сводный
-план — [REMAINING.md](REMAINING.md); Layer A —
+serving DISABLED/NOT VERIFIED. **Patched build-59** (`Tests BB165941…`,
+`GrinNode ECB1B55E…`, patch SHA `9FFB4569…`) — source-bound кандидат с
+`IsCoinbase`, chain-store writer, reorg-preflight, typed
+`LOCAL_REWIND_DATA_MISSING`, variable-size Rust v2 kernel PMMR и Legacy v2
+TxHashSet fix: full **280/280, 4403 assertions PASS**; focused 13/63 PASS.
+Локальный legacy loopback: архив H=3 315 600, body sync до H=3 318 655,
+**FULLY_SYNCED**, restart без повторной полной загрузки; public legacy
+**BLOCKED/PARTIAL**. Fresh full single-SHA cycle запущен отдельно
+(`fresh-full-20261104b`), результат ожидается. API schema проверено локально:
+`/v1/status.rust` и owner `get_status` совпадают, owner Bearer/X-API-Secret
+работает; public API **NOT VERIFIED**. G-49 experimental 4w — отдельный opt-in,
+не default ([отчёт](G49_RANGEPROOF_PARALLEL_2026-11-04.md)). Сводный план —
+[REMAINING.md](REMAINING.md); API contract —
+[API_STATUS_SCHEMA_2026-11-04.md](API_STATUS_SCHEMA_2026-11-04.md); Layer A —
 [LAYER_A_FLOONET_2026-11-03.md](LAYER_A_FLOONET_2026-11-03.md).
 
 ## Артефакты

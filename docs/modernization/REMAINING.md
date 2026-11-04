@@ -29,8 +29,10 @@ G-49 experimental opt-in: 4w range proofs 3.65× на срезе 300k, full-stat
 validate 713 s; **не включено по умолчанию**, нужен review/интеграция
 ([отчёт](G49_RANGEPROOF_PARALLEL_2026-11-04.md)).
 API status schema: legacy `/v1/status` + Rust `rust`/`tip`/`connections`/
-`chain_type`/`sync_status_rust`, owner `get_status` — тот же builder; build-60 и
-live-проверка **NOT VERIFIED**
+`chain_type`/`sync_status_rust`, owner `get_status` — тот же builder; проверено
+локально на патченном `GrinNode ECB1B55E…`: owner Bearer/X-API-Secret работает,
+без секрета ожидается `-32001`, full suite 280/280. Публичный live API и fresh
+single-SHA state cycle — **NOT VERIFIED**
 ([контракт](API_STATUS_SCHEMA_2026-11-04.md)).
 Layer A public-Floonet PASS — build-16 `GrinNode 7E3AA29E…`, `Tests 1592F3DF…`:
 FULLY_SYNCED 3 321 243, restart catch-up 3 321 250, 0 state re-download/PIBD

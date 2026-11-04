@@ -1,7 +1,11 @@
 # Node status API: Rust-compatible schema (contract)
 
-Дата: 2026-11-04. Статус: **контракт зафиксирован; исполняемая проверка build-60
-ещё не выполнена (код не собран, ждём патчи).**
+Дата: 2026-11-04. Статус: **реализовано и проверено на патченном build-59
+(`GrinNode ECB1B55E…`) локально; публичный live API отдельно NOT VERIFIED.**
+Проверка: `/v1/status.rust`, owner `get_status` с Bearer/X-API-Secret,
+no-auth → ожидаемый `-32001`, foreign `get_version`/`get_tip`; full suite
+**280/280, 4403 assertions PASS**. Evidence:
+`evidence/legacy-build59-20261104/integration-20261104/API_CHECK_20261104.md`.
 
 ## Зачем
 
@@ -108,16 +112,28 @@ setup/range-proof/kernel phases. Имя `txhashset_rangeproofs_validation`
   breaking-решение; в этом контракте не выполняется.
 - `/v1/status` остаётся HTTP JSON без JSON-RPC; owner-ответ — JSON-RPC.
 
-## Проверка (после build-60)
+## Проверка (2026-11-04)
 
-1. Собрать `Tests;GrinNode` с `/W4 /WX`.
-2. Unit/contract-тест: `/v1/status` содержит legacy-поля и `rust`;
-   `rust.chain` — строка, `rust.tip.height` = confirmed tip, `connections` =
-   inbound+outbound; `sync_status` соответствует таблице.
-3. Owner `get_status` возвращает тот же `Ok`-объект при корректном DACL.
-4. Live: C++ build-60 на loopback, `FULLY_SYNCED`, сравнить с Rust
-   `get_status` на одном горизонте; расхождения только документированные
-   (C++ protocol/user_agent/phase granularity).
-5. Restart: статус не становится 0/заглушкой; `rust` не теряет tip.
+Проверено на патченном `GrinNode.exe` SHA-256
+`ECB1B55E31CEFCB03DE517DDC5EB9FFF86203E4981448B9A9D8BB9709DE28B3D`
+(локальный Floonet, header_sync, REST 25950):
 
-До выполнения пунктов 1–5 статус кода: **NOT VERIFIED**, не PASS.
+1. Сборка `Tests;GrinNode` с `/W4 /WX` — PASS; full suite
+   **280/280, 4403 assertions**.
+2. `GET /v1/status` — HTTP 200, legacy-поля сохранены, объект `rust` и алиасы
+   присутствуют; `rust.chain` — строка, `rust.tip` — объект, `connections` =
+   inbound+outbound.
+3. `POST /v2/owner get_status` с `Authorization: Bearer <secret>` и с
+   `X-API-Secret` — HTTP 200, `result.Ok`; без секрета — ожидаемый JSON-RPC
+   `-32001 Unauthorized`.
+4. `POST /v2/foreign get_version` / `get_tip` — HTTP 200.
+5. Сравнение `/v1/status.rust` и owner `Ok` на одном узле: совпали `chain`,
+   `tip.height/hash`, `sync_status`, `connections`, `protocol_version`,
+   `user_agent`; `sync_info.current_height` отличался только из-за активной
+   header-синхронизации между запросами.
+6. Restart на полном активированном профиле: `FULLY_SYNCED`, без повторной
+   загрузки state; `rust`-объект не теряет tip.
+
+Остаток: публичный Floonet API-прогон и fresh single-SHA download→activation
+цикл — **NOT VERIFIED**; DACL-предупреждение скопированного `.api_secret`
+безопасно документировано и не блокирует Bearer/X-API-Secret.

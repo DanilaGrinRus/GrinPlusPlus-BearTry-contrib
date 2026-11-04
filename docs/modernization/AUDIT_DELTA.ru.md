@@ -25,11 +25,14 @@
   остаётся sequential; код не merged; independent review, TSan/ASan, повтор и
   live Floonet **NOT VERIFIED**. Отчёт
   [G49_RANGEPROOF_PARALLEL_2026-11-04.md](G49_RANGEPROOF_PARALLEL_2026-11-04.md).
-- **API status schema (контракт, не собран):** `/v1/status` сохраняет legacy-поля
+- **API status schema (проверено локально):** `/v1/status` сохраняет legacy-поля
   и добавляет точный Rust `Status` под `rust` + `tip`/`connections`/`chain_type`/
   `sync_status_rust`; owner `get_status` использует тот же builder. Пасхалок и
-  зашитых статусов нет. Owner 401 на локальном профиле объясняется DACL
-  скопированного `.api_secret`, а не схемой. Build-60/unit/live **NOT VERIFIED**;
+  зашитых статусов нет. На патченном `GrinNode ECB1B55E…` owner принимает
+  Bearer/X-API-Secret, без секрета ожидается `-32001`; foreign
+  `get_version`/`get_tip` работают; full suite 280/280. Публичный live API —
+  **NOT VERIFIED**; evidence
+  [API_CHECK_20261104.md](../../evidence/legacy-build59-20261104/integration-20261104/API_CHECK_20261104.md),
   контракт — [API_STATUS_SCHEMA_2026-11-04.md](API_STATUS_SCHEMA_2026-11-04.md).
 - **Bodyless/NRD:** build-59 сохраняет fail-closed PASS; full bodyless reorg не
   поддерживается. Тест видим в full suite.

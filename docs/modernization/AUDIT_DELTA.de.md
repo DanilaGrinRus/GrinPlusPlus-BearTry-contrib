@@ -27,13 +27,15 @@ gilt dieser Abschnitt.
   Default bleibt sequenziell; Code ist nicht gemerged; unabhängiges Review,
   TSan/ASan, Wiederholungen und Live-Floonet sind **NOT VERIFIED**. Bericht:
   [G49_RANGEPROOF_PARALLEL_2026-11-04.md](G49_RANGEPROOF_PARALLEL_2026-11-04.md).
-- **API-Status-Schema (Vertrag, nicht gebaut):** `/v1/status` behält Legacy-Felder
-  und ergänzt das exakte Rust-`Status`-Objekt unter `rust` sowie `tip`/
-  `connections`/`chain_type`/`sync_status_rust`; Owner-`get_status` nutzt denselben
-  Builder. Keine Easter Eggs oder fest verdrahteten Statuswerte. Owner-401 im
-  lokalen Profil liegt am DACL der kopierten `.api_secret`, nicht am Schema.
-  Build-60/Unit/Live sind **NOT VERIFIED**; Vertrag:
-  [API_STATUS_SCHEMA_2026-11-04.md](API_STATUS_SCHEMA_2026-11-04.md).
+- **API-Status-Schema (lokal verifiziert):** `/v1/status` behält Legacy-Felder
+  und ergänzt das exakte Rust-`Status`-Objekt unter `rust` sowie
+  `tip`/`connections`/`chain_type`/`sync_status_rust`; Owner-`get_status` nutzt
+  denselben Builder. Keine Easter Eggs oder fest verdrahteten Statuswerte. Auf
+  gepatchtem `GrinNode ECB1B55E…` akzeptiert Owner Bearer/X-API-Secret, ohne
+  Secret kommt erwartet `-32001`; Foreign `get_version`/`get_tip` funktionieren;
+  Full Suite 280/280. Öffentliche Live-API **NOT VERIFIED**; Evidence
+  [API_CHECK_20261104.md](../../evidence/legacy-build59-20261104/integration-20261104/API_CHECK_20261104.md),
+  Vertrag — [API_STATUS_SCHEMA_2026-11-04.md](API_STATUS_SCHEMA_2026-11-04.md).
 - **Bodyless/NRD:** Build-59 behält den Fail-closed-PASS; vollständiger
   Bodyless-Reorg wird nicht unterstützt. Der Test bleibt in der Gesamtsuite
   sichtbar.
