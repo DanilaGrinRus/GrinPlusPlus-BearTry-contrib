@@ -3,28 +3,102 @@
 #include "Common/MMRHashUtil.h"
 
 #include <Core/Global.h>
-#include <Core/Traits/Lockable.h>
+#include <Core/Exceptions/FileException.h>
+#include <Core/Serialization/ByteBuffer.h>
 #include <Common/Util/StringUtil.h>
 #include <Common/Logger.h>
 
-KernelMMR::KernelMMR(std::shared_ptr<HashFile> pHashFile, std::shared_ptr<DataFile<KERNEL_SIZE>> pDataFile)
-	: m_pHashFile(pHashFile),
-	m_pDataFile(pDataFile)
-{
+#include <limits>
 
+KernelMMR::KernelMMR(
+	std::shared_ptr<HashFile> pHashFile,
+	std::shared_ptr<AppendOnlyFile> pDataFile,
+	const bool fixedV1)
+	: m_pHashFile(pHashFile),
+	m_pDataFile(pDataFile),
+	m_fixedV1(fixedV1)
+{
+}
+
+std::vector<KernelMMR::KernelEntry> KernelMMR::ParseVariableEntries(
+	const std::shared_ptr<AppendOnlyFile>& pDataFile)
+{
+	const uint64_t dataSize = pDataFile->GetSize();
+	std::vector<unsigned char> data;
+	if (dataSize > 0)
+	{
+		if (!pDataFile->Read(0, dataSize, data) || data.size() != dataSize)
+		{
+			throw FILE_EXCEPTION("Kernel MMR: failed to read variable-size data");
+		}
+	}
+
+	std::vector<KernelEntry> entries;
+	uint64_t offset = 0;
+	while (offset < dataSize)
+	{
+		const uint8_t feature = data[offset];
+		uint16_t size = 0;
+		switch (feature)
+		{
+			case 0: size = 106; break; // Plain (v2 fee fields)
+			case 1: size = 98;  break; // Coinbase
+			case 2: size = 114; break; // HeightLocked
+			case 3: size = 108; break; // NoRecentDuplicate
+			default:
+				throw FILE_EXCEPTION(StringUtil::Format(
+					"Kernel MMR: unknown kernel feature {} at data offset {}", feature, offset));
+		}
+
+		if (offset + size > dataSize)
+		{
+			throw FILE_EXCEPTION(StringUtil::Format(
+				"Kernel MMR: truncated kernel record at data offset {}", offset));
+		}
+
+		entries.push_back({ offset, size });
+		offset += size;
+	}
+
+	return entries;
 }
 
 std::shared_ptr<KernelMMR> KernelMMR::Load(const fs::path& txHashSetPath)
 {
 	auto pHashFile = HashFile::Load(txHashSetPath / "kernel" / "pmmr_hash.bin");
-	auto pDataFile = DataFile<KERNEL_SIZE>::Load(txHashSetPath / "kernel" / "pmmr_data.bin");
+	auto pDataFile = std::make_shared<AppendOnlyFile>(txHashSetPath / "kernel" / "pmmr_data.bin");
+	pDataFile->Load();
 
-	auto pKernelMMR =  std::make_shared<KernelMMR>(pHashFile, pDataFile);
+	const uint64_t dataSize = pDataFile->GetSize();
+	const bool fixedV1 = dataSize == 0 || (dataSize % KERNEL_SIZE) == 0;
+	auto pKernelMMR = std::make_shared<KernelMMR>(pHashFile, pDataFile, fixedV1);
 
-	if (pHashFile->GetSize() == 0) {
+	if (dataSize > 0)
+	{
+		if (fixedV1)
+		{
+			const uint64_t count = dataSize / KERNEL_SIZE;
+			pKernelMMR->m_entries.reserve(count);
+			for (uint64_t i = 0; i < count; i++)
+			{
+				pKernelMMR->m_entries.push_back({ i * KERNEL_SIZE, KERNEL_SIZE });
+			}
+		}
+		else
+		{
+			pKernelMMR->m_entries = ParseVariableEntries(pDataFile);
+			LOG_INFO_F(
+				"Kernel MMR: loaded {} variable-size Rust v2 kernels from {} bytes",
+				pKernelMMR->m_entries.size(), dataSize);
+		}
+	}
+
+	if (pHashFile->GetSize() == 0)
+	{
 		pKernelMMR->ApplyKernel(Global::GetGenesisBlock().GetKernels().front());
 	}
 
+	pKernelMMR->m_committedEntries = pKernelMMR->m_entries.size();
 	return pKernelMMR;
 }
 
@@ -35,13 +109,22 @@ Hash KernelMMR::Root(const uint64_t size) const
 
 std::unique_ptr<TransactionKernel> KernelMMR::GetKernelAt(const LeafIndex& leaf_idx) const
 {
-	std::vector<uint8_t> data = m_pDataFile->GetDataAt(leaf_idx.Get());
-	if (data.size() == KERNEL_SIZE) {
-		ByteBuffer byteBuffer(std::move(data));
-		return std::make_unique<TransactionKernel>(TransactionKernel::Deserialize(byteBuffer));
+	if (leaf_idx.Get() >= m_entries.size())
+	{
+		return nullptr;
 	}
 
-	return std::unique_ptr<TransactionKernel>(nullptr);
+	const KernelEntry& entry = m_entries[leaf_idx.Get()];
+	std::vector<unsigned char> data;
+	if (!m_pDataFile->Read(entry.Offset, entry.Size, data) || data.size() != entry.Size)
+	{
+		return nullptr;
+	}
+
+	ByteBuffer byteBuffer(
+		std::move(data),
+		m_fixedV1 ? EProtocolVersion::V1 : EProtocolVersion::V2);
+	return std::make_unique<TransactionKernel>(TransactionKernel::Deserialize(byteBuffer));
 }
 
 std::vector<Hash> KernelMMR::GetLastLeafHashes(const uint64_t numHashes) const
@@ -51,27 +134,63 @@ std::vector<Hash> KernelMMR::GetLastLeafHashes(const uint64_t numHashes) const
 
 bool KernelMMR::Rewind(const uint64_t num_kernels)
 {
+	if (num_kernels > m_entries.size())
+	{
+		throw FILE_EXCEPTION(StringUtil::Format(
+			"Kernel MMR: rewind target {} exceeds {} entries", num_kernels, m_entries.size()));
+	}
+
+	const uint64_t endOffset = num_kernels == 0
+		? 0
+		: m_entries[num_kernels - 1].Offset + m_entries[num_kernels - 1].Size;
+
 	m_pHashFile->Rewind(LeafIndex::At(num_kernels).GetPosition());
-	m_pDataFile->Rewind(num_kernels);
+	if (!m_pDataFile->Rewind(endOffset))
+	{
+		throw FILE_EXCEPTION(StringUtil::Format(
+			"Kernel MMR: failed to rewind data to byte {}", endOffset));
+	}
+
+	m_entries.resize(num_kernels);
 	return true;
 }
 
 void KernelMMR::Commit()
 {
 	m_pHashFile->Commit();
-	m_pDataFile->Commit();
+	if (!m_pDataFile->Flush())
+	{
+		throw FILE_EXCEPTION("Kernel MMR data commit failed");
+	}
+
+	m_committedEntries = m_entries.size();
 }
 
 void KernelMMR::Rollback() noexcept
 {
 	m_pHashFile->Rollback();
-	m_pDataFile->Rollback();
+	m_pDataFile->Discard();
+	m_entries.resize(m_committedEntries);
 }
 
 void KernelMMR::ApplyKernel(const TransactionKernel& kernel)
 {
-	std::vector<uint8_t> serialized = kernel.Serialized();
+	// Rust stores variable-size v2 kernel data but deliberately hashes every
+	// kernel with the original v1 serialization ("hash mode" in
+	// KernelFeatures::write). Storage format and MMR leaf hash are therefore
+	// different concerns; mixing them changes the kernel root.
+	const std::vector<uint8_t> serialized = kernel.Serialized(
+		m_fixedV1 ? EProtocolVersion::V1 : EProtocolVersion::V2);
+	const std::vector<uint8_t> hashBytes = kernel.Serialized(EProtocolVersion::V1);
 
-	m_pDataFile->AddData(serialized);
-	MMRHashUtil::AddHashes(m_pHashFile, serialized, nullptr);
+	if (serialized.size() > (std::numeric_limits<uint16_t>::max)())
+	{
+		throw FILE_EXCEPTION("Kernel MMR: kernel serialization exceeds u16 size");
+	}
+
+	const uint64_t offset = m_pDataFile->GetSize();
+	m_pDataFile->Append(serialized);
+	m_entries.push_back({ offset, (uint16_t)serialized.size() });
+
+	MMRHashUtil::AddHashes(m_pHashFile, hashBytes, nullptr);
 }

@@ -10,14 +10,24 @@ PIHD, UI и тестов остаются в своих разделах, но �
 приёмочной сводкой. При расхождении статуса сверять более свежие первичные
 свидетельства и обновлять этот список; не переписывать прошлые результаты.
 
-**Срез / не переносить на другую сборку:** build-56 `Tests 91465CDE…`,
-`GrinNode E3B38A5B…` — source-bound кандидат с исправлениями
-`TransactionKernel::IsCoinbase`, chain-store writer, reorg-preflight и typed
-`LOCAL_REWIND_DATA_MISSING`. Bodyless **fail-closed PASS**: bodyless-state с
+**Срез / не переносить на другую сборку:** build-59 `Tests 78218F3C…`,
+`GrinNode 60D8DFD0…` — source-bound кандидат с исправлениями
+`TransactionKernel::IsCoinbase`, chain-store writer, reorg-preflight, typed
+`LOCAL_REWIND_DATA_MISSING` и variable-size Rust v2 kernel PMMR (storage V2 /
+MMR hash V1). Bodyless **fail-closed PASS** (build-56/59): bodyless-state с
 отсутствующими телами отклоняет reorg до изменения confirmed state, сохраняет
 tip/NRD-index и переживает restart; в проверенном сценарии candidate height/
 header MMR тоже не изменились. Full bodyless reorg **не поддерживается**.
 Full suite **276/276, 4387 assertions** (bodyless-тест видим, не скрыт).
+Локальный legacy loopback: обычный Rust 5.5.2 → C++ build-59, архив H=3 315 600
+(сохранённый ZIP SHA `D73EBD18…`), body sync до H=3 318 655, **FULLY_SYNCED**,
+restart без повторной полной загрузки state. Скачивание/активация архива были
+выполнены build-58; единый build-59 цикл download→verify→activation не повторён;
+публичный Floonet legacy **NOT VERIFIED**
+([evidence](../../evidence/line3/legacy-local-live-20261104.md)).
+G-49 experimental opt-in: 4w range proofs 3.65× на срезе 300k, full-state 4w
+validate 713 s; **не включено по умолчанию**, нужен review/интеграция
+([отчёт](G49_RANGEPROOF_PARALLEL_2026-11-04.md)).
 Layer A public-Floonet PASS — build-16 `GrinNode 7E3AA29E…`, `Tests 1592F3DF…`:
 FULLY_SYNCED 3 321 243, restart catch-up 3 321 250, 0 state re-download/PIBD
 requests, A3 PASS; public PIBD serving **NOT VERIFIED** (disabled). Public legacy

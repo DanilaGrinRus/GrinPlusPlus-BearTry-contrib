@@ -3,16 +3,36 @@
 Дата сверки: 2026-11-04. **Layer A PASS на build-16**
 (`GrinNode 7E3AA29E…`, `Tests 1592F3DF…`): public Floonet `FULLY_SYNCED`,
 restart resumed without state re-download, owner API protected; public PIBD
-serving DISABLED/NOT VERIFIED. **Build-56** (`Tests 91465CDE…`,
-`GrinNode E3B38A5B…`) — source-bound кандидат с `IsCoinbase`, chain-store writer,
-reorg-preflight, typed `LOCAL_REWIND_DATA_MISSING` и spent-position integration:
-**bodyless safe-refusal PASS**, test visible, full **276/276, 4387 assertions**;
-full bodyless reorg не поддерживается/не заявляется. Public legacy fallback
-**BLOCKED/PARTIAL** (PID 3680 active). Build-13 остаётся full 7B live binding.
-Сводный план — [REMAINING.md](REMAINING.md); Layer A —
+serving DISABLED/NOT VERIFIED. **Build-59** (`Tests 78218F3C…`,
+`GrinNode 60D8DFD0…`) — source-bound кандидат с `IsCoinbase`, chain-store writer,
+reorg-preflight, typed `LOCAL_REWIND_DATA_MISSING`, variable-size Rust v2 kernel
+PMMR (storage V2 / MMR hash V1): **bodyless safe-refusal PASS**, full
+**276/276, 4387 assertions**. Локальный legacy loopback с обычным Rust 5.5.2:
+архив H=3 315 600, body sync до H=3 318 655, **FULLY_SYNCED**, restart без
+повторной полной загрузки; download/activation сделаны build-58, единый
+build-59 цикл не повторён. Public legacy fallback **BLOCKED/PARTIAL** (PID 3680
+active). Build-13 остаётся full 7B live binding. G-49 experimental 4w — отдельный
+opt-in, не default ([отчёт](G49_RANGEPROOF_PARALLEL_2026-11-04.md)). Сводный
+план — [REMAINING.md](REMAINING.md); Layer A —
 [LAYER_A_FLOONET_2026-11-03.md](LAYER_A_FLOONET_2026-11-03.md).
 
 ## Артефакты
+
+### Build-59 — variable-size Rust kernel PMMR + local legacy body sync
+
+- Tests `78218F3C56428CB7FDC483478277D33BC55D23DD2724B57B143ACA16876B8C68`;
+  GrinNode `60D8DFD05C87C8A516696D76ABDDCBF075D2D0CA28B62190181F430254766148`.
+- Full suite **276/276, 4387 assertions PASS**.
+- Rust kernel archive: `kernel/pmmr_data.bin` 329 241 204 B, no
+  `kernel/pmmr_size.bin`; sizes 98/106/108/114. Old fixed-114 path required
+  382 405 932 B and failed rewind.
+- Fix: variable loader + V2 storage + V1 MMR hash; preserved ZIP SHA
+  `D73EBD18…`, local Rust → C++ body sync FULLY_SYNCED; restart no state
+  re-download. Evidence:
+  [kernel format](../../evidence/line3/legacy-local-kernel-format-20261104.md),
+  [local live](../../evidence/line3/legacy-local-live-20261104.md).
+- Caveat: archive download/validation/activation by build-58; single build-59
+  download→activation is NOT VERIFIED; public Floonet NOT VERIFIED.
 
 ### Build-56 — bodyless fail-closed + spent-position integration
 
