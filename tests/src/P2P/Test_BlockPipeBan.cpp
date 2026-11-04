@@ -128,7 +128,7 @@ namespace
 // End-to-end BlockPipe classification (fault-injected, loopback peer object,
 // no production P2P/BlockPipe edits):
 //   LocalNrdHistoryUnavailable is mapped to EBlockChainStatus::UNKNOWN_ERROR by
-//   BlockProcessor/BlockChainImpl; BlockPipe bans only INVALID or an exception.
+//   BlockProcessor/BlockChainImpl; BlockPipe bans only INVALID.
 //   This test drives the real BlockPipe worker threads with a crafted NRD block
 //   and a controlled IBlockChain test double.
 TEST_CASE("BlockPipe does not ban a peer for locally-unverifiable UNKNOWN_ERROR")
@@ -183,7 +183,7 @@ TEST_CASE("BlockPipe still bans a peer for an INVALID block")
 	REQUIRE(pPeer->GetBanReason() == EBanReason::BadBlock);
 }
 
-TEST_CASE("BlockPipe still bans a peer when AddBlock throws")
+TEST_CASE("BlockPipe does not ban a peer when AddBlock throws")
 {
 	const FullBlock block = MakeCraftedNrdBlock();
 	auto pBlockChain = std::make_shared<FakeBlockChain>();
@@ -196,8 +196,8 @@ TEST_CASE("BlockPipe still bans a peer when AddBlock throws")
 	REQUIRE(WaitFor([&] { return pBlockChain->AddCalls.load() == 1 && !pBlockPipe->IsProcessingBlock(block.GetHash()); }));
 
 	REQUIRE(pBlockChain->SawNrdKernel.load());
-	REQUIRE(pPeer->IsBanned());
-	REQUIRE(pPeer->GetBanReason() == EBanReason::BadBlock);
+	REQUIRE_FALSE(pPeer->IsBanned());
+	REQUIRE(pPeer->GetBanReason() == EBanReason::None);
 }
 TEST_CASE("BlockPipe refuses missing spent position as local rewind data missing")
 {

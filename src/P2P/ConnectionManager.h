@@ -9,6 +9,7 @@
 #include <thread>
 #include <optional>
 #include <unordered_map>
+#include <functional>
 
 class ConnectionManager
 {
@@ -34,7 +35,9 @@ public:
 	uint64_t GetMostWork() const;
 	uint64_t GetHighestHeight() const;
 
-	PeerPtr SendMessageToMostWorkPeer(const IMessage& message);
+	PeerPtr SendMessageToMostWorkPeer(
+		const IMessage& message,
+		const std::function<void(const PeerPtr&)>& beforeSend = {});
 	bool SendMessageToPeer(const IMessage& message, PeerConstPtr pPeer);
 	void BroadcastMessage(const IMessage& message, const uint64_t sourceId);
 

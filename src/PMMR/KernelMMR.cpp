@@ -9,6 +9,7 @@
 #include <Common/Logger.h>
 
 #include <limits>
+#include <algorithm>
 
 KernelMMR::KernelMMR(
 	std::shared_ptr<HashFile> pHashFile,
@@ -24,20 +25,22 @@ std::vector<KernelMMR::KernelEntry> KernelMMR::ParseVariableEntries(
 	const std::shared_ptr<AppendOnlyFile>& pDataFile)
 {
 	const uint64_t dataSize = pDataFile->GetSize();
-	std::vector<unsigned char> data;
-	if (dataSize > 0)
-	{
-		if (!pDataFile->Read(0, dataSize, data) || data.size() != dataSize)
-		{
-			throw FILE_EXCEPTION("Kernel MMR: failed to read variable-size data");
-		}
-	}
-
+	constexpr uint64_t WINDOW_SIZE = 4ULL * 1024 * 1024;
+	std::vector<unsigned char> window;
+	uint64_t windowStart = 0;
 	std::vector<KernelEntry> entries;
 	uint64_t offset = 0;
 	while (offset < dataSize)
 	{
-		const uint8_t feature = data[offset];
+		if (window.empty() || offset < windowStart ||
+			offset - windowStart >= window.size()) {
+			windowStart = offset;
+			const uint64_t readSize = (std::min)(WINDOW_SIZE, dataSize - offset);
+			if (!pDataFile->Read(offset, readSize, window) || window.size() != readSize) {
+				throw FILE_EXCEPTION("Kernel MMR: failed to read variable-size data");
+			}
+		}
+		const uint8_t feature = window[static_cast<size_t>(offset - windowStart)];
 		uint16_t size = 0;
 		switch (feature)
 		{
@@ -70,7 +73,28 @@ std::shared_ptr<KernelMMR> KernelMMR::Load(const fs::path& txHashSetPath)
 	pDataFile->Load();
 
 	const uint64_t dataSize = pDataFile->GetSize();
-	const bool fixedV1 = dataSize == 0 || (dataSize % KERNEL_SIZE) == 0;
+	// File length alone is ambiguous: a valid sequence of variable-size kernels
+	// can also be divisible by 114. The hash PMMR gives the expected leaf count.
+	// If both counts match, every v2 record is 114 bytes (height-locked) and has
+	// the same byte layout as its v1 form, so the fixed path is safe and faster.
+	const uint64_t expectedKernels = MMRUtil::GetNumLeaves(pHashFile->GetSize());
+	const bool fixedCountMatches = dataSize % KERNEL_SIZE == 0 &&
+		dataSize / KERNEL_SIZE == expectedKernels;
+	std::vector<KernelEntry> variableEntries;
+	bool variableCountMatches = false;
+	if (!fixedCountMatches) {
+		try {
+			variableEntries = ParseVariableEntries(pDataFile);
+			variableCountMatches = variableEntries.size() == expectedKernels;
+		} catch (const std::exception&) {
+			// A legacy fixed-width record need not be valid v2 serialization.
+		}
+	}
+	if (!fixedCountMatches && !variableCountMatches) {
+		throw FILE_EXCEPTION(StringUtil::Format(
+			"Kernel MMR: data size {} does not match {} hash leaves", dataSize, expectedKernels));
+	}
+	const bool fixedV1 = fixedCountMatches;
 	auto pKernelMMR = std::make_shared<KernelMMR>(pHashFile, pDataFile, fixedV1);
 
 	if (dataSize > 0)
@@ -86,7 +110,7 @@ std::shared_ptr<KernelMMR> KernelMMR::Load(const fs::path& txHashSetPath)
 		}
 		else
 		{
-			pKernelMMR->m_entries = ParseVariableEntries(pDataFile);
+			pKernelMMR->m_entries = std::move(variableEntries);
 			LOG_INFO_F(
 				"Kernel MMR: loaded {} variable-size Rust v2 kernels from {} bytes",
 				pKernelMMR->m_entries.size(), dataSize);

@@ -188,6 +188,18 @@ public:
 			m_currentTxHashSetHash == blockHash;
 	}
 
+	bool IsCurrentTxHashSetRequest(
+		const std::string& peer,
+		const std::string& blockHash,
+		const uint64_t height) const
+	{
+		std::lock_guard<std::mutex> lock(m_txHashSetRequestMutex);
+		return !m_currentTxHashSetHash.empty() &&
+			m_currentTxHashSetPeer == peer &&
+			m_currentTxHashSetHash == blockHash &&
+			m_currentTxHashSetHeight == height;
+	}
+
 	bool WasTxHashSetRequested(
 		const std::string& peer,
 		const std::string& blockHash) const

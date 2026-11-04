@@ -1,0 +1,267 @@
+{
+  "schema": "gpp-line3-test-run/v1",
+  "run_id": "legacy59-full",
+  "status": "PASS",
+  "no_tests_ran": false,
+  "fail_on_no_tests": false,
+  "created_utc": "2026-11-04T02:33:28.3716322Z",
+  "repo": "C:\\DHW\\Gplus\\src\\grinplusplus",
+  "git_head": "9f0302f30b1fba472fcba2c705906aa1658f7176",
+  "git_status_porcelain": [
+    "R  src/API/Node/Handlers/NodeStatus.h -> include/API/Node/NodeStatus.h",
+    " M include/P2P/SyncStatus.h",
+    " M include/PMMR/TxHashSetManager.h",
+    " M include/PMMR/TxHashSetStaging.h",
+    " M src/API/Node/Handlers/GetStatusOwnerHandler.h",
+    " M src/BlockChain/Processors/TxHashSetProcessor.cpp",
+    " M src/Core/File/MappedFile_Win.cpp",
+    " M src/Core/File/MappedFile_Win.h",
+    " M src/P2P/Connection.cpp",
+    " M src/P2P/Connection.h",
+    " M src/P2P/ConnectionManager.cpp",
+    " M src/P2P/ConnectionManager.h",
+    " M src/P2P/Pipeline/BlockPipe.cpp",
+    " M src/P2P/Pipeline/TxHashSetPipe.cpp",
+    " M src/P2P/Pipeline/TxHashSetPipe.h",
+    " M src/P2P/Sync/StateSyncer.cpp",
+    " M src/PMMR/KernelMMR.cpp",
+    " M src/PMMR/TxHashSetManager.cpp",
+    " M src/PMMR/Zip/TxHashSetZip.cpp",
+    " M src/PMMR/Zip/TxHashSetZip.h",
+    " M src/PMMR/Zip/ZipFile.cpp",
+    " M src/PMMR/Zip/ZipFile.h",
+    " M src/PMMR/Zip/Zipper.cpp",
+    " M src/Server/Node/API/ServerAPI.cpp",
+    " M tests/src/P2P/Test_BlockPipeBan.cpp",
+    " M tests/src/PMMR/CMakeLists.txt",
+    " M tests/src/PMMR/Test_TxHashSetStaging.cpp",
+    " M tests/src/PMMR/Test_ZipFile.cpp",
+    "?? evidence/line3/legacy59-focused/",
+    "?? tests/src/PMMR/Test_TxHashSetManagerOpen.cpp"
+  ],
+  "git_diff_stat": "warning: in the working copy of 'src/API/Node/Handlers/GetStatusOwnerHandler.h', LF will be replaced by CRLF the next time Git touches it\r\nwarning: in the working copy of 'src/Server/Node/API/ServerAPI.cpp', LF will be replaced by CRLF the next time Git touches it\r\n include/P2P/SyncStatus.h                         |  14 ++-\r\n include/PMMR/TxHashSetManager.h                  |   4 +-\r\n include/PMMR/TxHashSetStaging.h                  |  68 +++++++++---\r\n src/API/Node/Handlers/GetStatusOwnerHandler.h    |   2 +-\r\n src/BlockChain/Processors/TxHashSetProcessor.cpp |  55 +++++++---\r\n src/Core/File/MappedFile_Win.cpp                 |  34 +++---\r\n src/Core/File/MappedFile_Win.h                   |   6 +-\r\n src/P2P/Connection.cpp                           |  30 +++++-\r\n src/P2P/Connection.h                             |   8 +-\r\n src/P2P/ConnectionManager.cpp                    |  12 ++-\r\n src/P2P/ConnectionManager.h                      |   7 +-\r\n src/P2P/Pipeline/BlockPipe.cpp                   |   5 +-\r\n src/P2P/Pipeline/TxHashSetPipe.cpp               | 126 +++++++++++++++++------\r\n src/P2P/Pipeline/TxHashSetPipe.h                 |  11 +-\r\n src/P2P/Sync/StateSyncer.cpp                     |  13 +--\r\n src/PMMR/KernelMMR.cpp                           |  48 ++++++---\r\n src/PMMR/TxHashSetManager.cpp                    |  68 ++++++------\r\n src/PMMR/Zip/TxHashSetZip.cpp                    |  21 ++--\r\n src/PMMR/Zip/TxHashSetZip.h                      |   8 +-\r\n src/PMMR/Zip/ZipFile.cpp                         |  11 +-\r\n src/PMMR/Zip/ZipFile.h                           |   6 +-\r\n src/PMMR/Zip/Zipper.cpp                          |  59 ++++++-----\r\n src/Server/Node/API/ServerAPI.cpp                |   2 +-\r\n tests/src/P2P/Test_BlockPipeBan.cpp              |   8 +-\r\n tests/src/PMMR/CMakeLists.txt                    |   1 +\r\n tests/src/PMMR/Test_TxHashSetStaging.cpp         |  32 ++++++\r\n tests/src/PMMR/Test_ZipFile.cpp                  |  27 +++++\r\n 27 files changed, 490 insertions(+), 196 deletions(-)",
+  "source_hashes": {
+    "tests/src/TestMain.cpp": "6BAC17446DE696518FD364220569185F43769B813F59A25372037FBC53D8527B",
+    "tests/src/PMMR/CMakeLists.txt": "793AD6B98713174E5403463F0092B16977503E99CB563C67A689A0B6C1040F09",
+    "tests/src/PMMR/Test_ZipFile.cpp": "974BF45DC83C9E5C7FF0D753CAC4F25FA56383E49581EE019D3DD156FADD35E1",
+    "include/P2P/Capabilities.h": "FD3997F591512A83E23DBEC2CFF3DFAC5D247E470D87E2000690F85AAD97665E",
+    "src/PMMR/Zip/ZipFile.cpp": "8A5924477C54FE4F629EF7ED67FD384428EF4D40CD0132B5F10040FF199CC9C2",
+    "include/PMMR/NrdRules.h": "0F63E0CDEF08EAD92A39F9321D92A40019B3AFAC68E65BA28DCE0618C1262A2C",
+    "include/PMMR/KernelIndex.h": "419A037C83F6D3B689950E6EE4D18A64A4690DB13B0CE0A9C04CE89AD1BCDDBA",
+    "src/PMMR/KernelIndex.cpp": "AD0350E991830DCEB062FE3737267E96665B372C8F62DC15363D6434B8B3D4DE",
+    "tests/src/PMMR/Test_NrdRules.cpp": "E5E720584BDBE8AC2A35008C986FE52ED8DCABDBEFAD25BA1C225ABB81267503",
+    "tests/src/PMMR/Test_NrdDifferential.cpp": "5026F63ACB93A884232CB651CCAE116BA76FF87C475AF72FD380A9C26D5831FE",
+    "tests/src/PMMR/Test_NrdIndexRebuild.cpp": "4C47A0B0290F11BC03B3971AE9BDE30DAD71D2A476598BF608D91B2186A9A94E",
+    "tests/src/PMMR/Test_NrdSupport.h": "1AC6059F8958D78EDC18B0564AEFCA47B800C1DCAD9CF881B81823E6F7082B84"
+  },
+  "host": {
+    "os": "Microsoft Windows NT 10.0.26300.0",
+    "pwsh": "7.6.9",
+    "architecture": "AMD64",
+    "user_profile": "C:\\Users\\nurli",
+    "utc_offset_min": 420
+  },
+  "binary": {
+    "source_path": "C:\\DHW\\.tmp\\legacy-build59-shared\\Tests.exe",
+    "source_sha256": "BB165941E0BE2389D518B7906DAE78527BC58EB4AB3F531664067AD58070E5B0",
+    "copy_path": "C:\\DHW\\.tmp\\line3-iso\\legacy59-full\\bin\\Tests.exe",
+    "copy_sha256": "BB165941E0BE2389D518B7906DAE78527BC58EB4AB3F531664067AD58070E5B0",
+    "copy_sha256_after": "BB165941E0BE2389D518B7906DAE78527BC58EB4AB3F531664067AD58070E5B0",
+    "copy_unchanged": true,
+    "bytes": 9688576,
+    "pe_timestamp": {
+      "raw_hex": "0x6AEA9918",
+      "utc": "2026-11-04T02:31:52.0000000Z"
+    },
+    "pe_timestamp_copy": {
+      "raw_hex": "0x6AEA9918",
+      "utc": "2026-11-04T02:31:52.0000000Z"
+    },
+    "copied_asan_runtime": []
+  },
+  "isolation": {
+    "mode": "PerRun",
+    "run_dir": "C:\\DHW\\.tmp\\line3-iso\\legacy59-full",
+    "cwd": "C:\\DHW\\.tmp\\line3-iso\\legacy59-full\\cwd",
+    "home_dir": "C:\\DHW\\.tmp\\line3-iso\\legacy59-full\\home",
+    "tmp_dir": "C:\\DHW\\.tmp\\line3-iso\\legacy59-full\\tmp",
+    "env": {
+      "HOMEDRIVE": "C:",
+      "HOMEPATH": "C:\\DHW\\.tmp\\line3-iso\\legacy59-full\\home",
+      "USERPROFILE": "C:\\DHW\\.tmp\\line3-iso\\legacy59-full\\home",
+      "HOME": "C:\\DHW\\.tmp\\line3-iso\\legacy59-full\\home",
+      "TMP": "C:\\DHW\\.tmp\\line3-iso\\legacy59-full\\tmp",
+      "TEMP": "C:\\DHW\\.tmp\\line3-iso\\legacy59-full\\tmp",
+      "TMPDIR": "C:\\DHW\\.tmp\\line3-iso\\legacy59-full\\tmp"
+    },
+    "env_before": {
+      "HOMEDRIVE": "C:",
+      "HOMEPATH": "\\Users\\nurli",
+      "USERPROFILE": "C:\\Users\\nurli",
+      "HOME": null,
+      "TMP": "C:\\Users\\nurli\\AppData\\Local\\Temp",
+      "TEMP": "C:\\Users\\nurli\\AppData\\Local\\Temp",
+      "TMPDIR": null
+    },
+    "expected_test_data_dir": "C:\\DHW\\.tmp\\line3-iso\\legacy59-full\\home\\.GrinPP\\AUTOMATED_TESTING",
+    "test_data_dir_created": true,
+    "test_log_dir_created": true,
+    "cwd_tree": null,
+    "home_tree_sample": [
+      {
+        "rel": ".GrinPP",
+        "dir": true,
+        "bytes": 1
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING",
+        "dir": true,
+        "bytes": 1
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\LOGS",
+        "dir": true,
+        "bytes": 1
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\LOGS\\Node.log",
+        "dir": false,
+        "bytes": 518858
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\LOGS\\Wallet.log",
+        "dir": false,
+        "bytes": 155689
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE",
+        "dir": true,
+        "bytes": 1
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\CHAIN",
+        "dir": true,
+        "bytes": 1
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\DB",
+        "dir": true,
+        "bytes": 1
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\TXHASHSET",
+        "dir": true,
+        "bytes": 1
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\TXHASHSET\\kernel",
+        "dir": true,
+        "bytes": 1
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\TXHASHSET\\output",
+        "dir": true,
+        "bytes": 1
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\NODE\\TXHASHSET\\rangeproof",
+        "dir": true,
+        "bytes": 1
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\TEMP",
+        "dir": true,
+        "bytes": 1
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\TEMP\\0",
+        "dir": true,
+        "bytes": 1
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\TEMP\\0\\candidate.chain",
+        "dir": false,
+        "bytes": 160
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\TOR",
+        "dir": true,
+        "bytes": 1
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\TOR\\.torrc",
+        "dir": false,
+        "bytes": 0
+      },
+      {
+        "rel": ".GrinPP\\AUTOMATED_TESTING\\WALLET",
+        "dir": true,
+        "bytes": 1
+      }
+    ],
+    "home_tree_entries": 18,
+    "user_profile_before": {
+      "path": "C:\\Users\\nurli\\.GrinPP",
+      "exists": true,
+      "recursive_entries": 17,
+      "total_bytes": 458535,
+      "latest_write_utc": "2026-11-02T14:43:40.7615748Z",
+      "listing_sha256": "889c1f5e0241fcb61cbd6a234cb00af02b5ee017da7f69b5f65b69289cefa6b6"
+    },
+    "user_profile_after": {
+      "path": "C:\\Users\\nurli\\.GrinPP",
+      "exists": true,
+      "recursive_entries": 17,
+      "total_bytes": 458535,
+      "latest_write_utc": "2026-11-02T14:43:40.7615748Z",
+      "listing_sha256": "889c1f5e0241fcb61cbd6a234cb00af02b5ee017da7f69b5f65b69289cefa6b6"
+    },
+    "user_profile_unchanged": true,
+    "reparse_point_check": "passed",
+    "disposable_base": "C:\\DHW\\.tmp\\line3-iso"
+  },
+  "command": {
+    "exe": "C:\\DHW\\.tmp\\line3-iso\\legacy59-full\\bin\\Tests.exe",
+    "args": "",
+    "test_args": [],
+    "raw_exe_args": "",
+    "fail_on_no_tests": false,
+    "working_dir": "C:\\DHW\\.tmp\\line3-iso\\legacy59-full\\cwd",
+    "instances": 1,
+    "timeout_sec": 1800,
+    "started_utc": "2026-11-04T02:32:28.7787948Z",
+    "finished_utc": "2026-11-04T02:33:28.1937663Z",
+    "wall_sec": 59.418
+  },
+  "instances": [
+    {
+      "index": 1,
+      "pid": 6236,
+      "started_utc": "2026-11-04T02:32:28.9810030Z",
+      "duration_sec": 59.229,
+      "exit_code": {
+        "decimal": 0,
+        "hex": "0x00000000"
+      },
+      "status": "PASS",
+      "no_tests_ran": false,
+      "stdout_path": "C:\\DHW\\.tmp\\line3-iso\\legacy59-full\\out\\instance-1.stdout.log",
+      "stdout_sha256": "127AD910CC998713BF4C40D82FBCB66D2EE4C1BEA5BB0267F4DE4F22BBC1446C",
+      "stdout_bytes": 23578,
+      "stderr_path": "C:\\DHW\\.tmp\\line3-iso\\legacy59-full\\out\\instance-1.stderr.log",
+      "stderr_sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "stderr_bytes": 0,
+      "summary_lines": [
+        "Test Runtime Initialized.",
+        "Running Tests...",
+        "All tests passed (4403 assertions in 280 test cases)"
+      ]
+    }
+  ],
+  "windows_application_events": null,
+  "notes": [
+    "Non-instrumented build: no sanitizer. Evidence covers test-run isolation and runtime behavior only.",
+    "stdout redirected to a file is block-buffered; an empty log does not prove the process died before printing.",
+    "Windows Application Error events are matched by the unique copy path inside this run directory."
+  ]
+}

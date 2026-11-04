@@ -27,7 +27,8 @@ std::shared_ptr<ZipFile> ZipFile::Load(const fs::path& zipFilePath)
 	return std::shared_ptr<ZipFile>(new ZipFile(zipFilePath, unzFile));
 }
 
-void ZipFile::ExtractFile(const std::string& path, const fs::path& destination) const
+void ZipFile::ExtractFile(const std::string& path, const fs::path& destination,
+	uint64_t* remainingBytes) const
 {
 	if (unzLocateFile(m_unzFile, path.c_str(), 0) != UNZ_OK)
 	{
@@ -56,6 +57,12 @@ void ZipFile::ExtractFile(const std::string& path, const fs::path& destination) 
 		unsigned char buffer[64 * 1024];
 		int readSize = 0;
 		while ((readSize = unzReadCurrentFile(m_unzFile, buffer, sizeof(buffer))) > 0) {
+			if (remainingBytes != nullptr) {
+				if (static_cast<uint64_t>(readSize) > *remainingBytes) {
+					throw FILE_EXCEPTION("TxHashSet archive exceeds extraction byte budget");
+				}
+				*remainingBytes -= static_cast<uint64_t>(readSize);
+			}
 			destinationFile.write((const char*)buffer, readSize);
 			if (!destinationFile) {
 				throw FILE_EXCEPTION("Failed to write extracted file");

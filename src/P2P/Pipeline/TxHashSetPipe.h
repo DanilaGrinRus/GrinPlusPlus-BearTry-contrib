@@ -10,6 +10,8 @@
 #include <cstdint>
 #include <atomic>
 #include <thread>
+#include <mutex>
+#include <vector>
 
 // Forward Declarations
 class ConnectionManager;
@@ -69,7 +71,12 @@ private:
 	);
 
 	std::thread m_txHashSetThread;
-	std::vector<std::thread> m_sendThreads;
+	struct SendTask {
+		std::thread Worker;
+		std::shared_ptr<std::atomic_bool> Done;
+	};
+	std::mutex m_sendMutex;
+	std::vector<SendTask> m_sendThreads;
 
 	std::atomic_bool m_processing;
 	std::atomic<uint64_t> m_attemptCounter{ 0 };

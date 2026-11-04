@@ -150,7 +150,7 @@ bool StateSyncer::SyncState(SyncStatus& syncStatus)
 	}
 
 	// If state sync is still in progress, return true to delay block sync.
-	if (syncStatus.GetBlockHeight() < (syncStatus.GetHeaderHeight() - Consensus::CUT_THROUGH_HORIZON))
+	if (syncStatus.GetBlockHeight() < Consensus::GetHorizonHeight(syncStatus.GetHeaderHeight()))
 	{
 		return true;
 	}
@@ -265,16 +265,17 @@ bool StateSyncer::RequestState(SyncStatus& syncStatus)
 		const std::string requestedHashHex = HexUtil::ConvertToHex(hash.GetData());
 
 		const TxHashSetRequestMessage txHashSetRequestMessage(std::move(hash), requestedHeight);
-		m_pPeer = m_pConnectionManager.lock()->SendMessageToMostWorkPeer(txHashSetRequestMessage);
+		m_pPeer = m_pConnectionManager.lock()->SendMessageToMostWorkPeer(
+			txHashSetRequestMessage,
+			[&syncStatus, &requestedHashHex, requestedHeight](const PeerPtr& peer) {
+				syncStatus.RecordTxHashSetRequest(
+					peer->GetIPAddress().Format(), requestedHashHex, requestedHeight);
+			});
 
 		if (m_pPeer != nullptr)
 		{
 			m_timeRequested = std::chrono::system_clock::now();
 			m_requestedHeight = requestedHeight;
-			syncStatus.RecordTxHashSetRequest(
-				m_pPeer->GetIPAddress().Format(),
-				requestedHashHex,
-				requestedHeight);
 		}
 	}
 

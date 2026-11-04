@@ -1,5 +1,5 @@
 #include "ServerAPI.h"
-#include <API/Node/Handlers/NodeStatus.h>
+#include <API/Node/NodeStatus.h>
 #include <BlockChain/DbRecovery.h>
 #include "../NodeContext.h"
 

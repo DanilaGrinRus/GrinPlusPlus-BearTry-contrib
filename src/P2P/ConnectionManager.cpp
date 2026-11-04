@@ -163,13 +163,19 @@ uint64_t ConnectionManager::GetHighestHeight() const
 	return 0;
 }
 
-PeerPtr ConnectionManager::SendMessageToMostWorkPeer(const IMessage& message)
+PeerPtr ConnectionManager::SendMessageToMostWorkPeer(
+	const IMessage& message,
+	const std::function<void(const PeerPtr&)>& beforeSend)
 {
 	auto connections = m_connections.Read();
 	ConnectionPtr pConnection = GetMostWorkPeer(*connections);
 	if (pConnection != nullptr) {
+		const PeerPtr peer = pConnection->GetPeer();
+		if (beforeSend) {
+			beforeSend(peer);
+		}
 		pConnection->SendAsync(message);
-		return pConnection->GetPeer();
+		return peer;
 	}
 
 	return nullptr;

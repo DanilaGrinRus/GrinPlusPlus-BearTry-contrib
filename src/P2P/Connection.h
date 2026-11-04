@@ -56,6 +56,9 @@ public:
 
 	void Connect();
 	void Disconnect();
+	// Called from a message handler while m_mutex is already held. The raw
+	// archive body cannot be parsed as a following P2P message.
+	void CloseAfterMessage();
 
 	uint64_t GetId() const { return m_connectionId; }
 	bool IsConnectionActive() const;
@@ -65,6 +68,9 @@ public:
 	bool SendSync(const IMessage& message);
 
 	void DisableReceives(bool disabled) { m_receivingDisabled = disabled; }
+	// Resume framed P2P reads after a synchronous archive transfer has consumed
+	// exactly the advertised number of bytes.
+	void ResumeReceives();
 	bool ReceiveSync(std::vector<uint8_t>& bytes, const size_t num_bytes);
 
 	bool ExceedsRateLimit() const;

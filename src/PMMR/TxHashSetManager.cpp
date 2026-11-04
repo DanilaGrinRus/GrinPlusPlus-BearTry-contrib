@@ -13,39 +13,32 @@
 
 #include <filesystem.h>
 #include <stdexcept>
-#include <thread>
+#include <future>
 
 TxHashSetManager::TxHashSetManager(const Config& config)
 	: m_config(config), m_pTxHashSet(nullptr)
 {
-	// Finish or roll back an interrupted legacy activation (G-21).
-	TxHashSetStaging::Recover(config.GetTxHashSetPath());
+	// Recovery needs the committed chain tip, which is not available here.
 }
 
-std::shared_ptr<ITxHashSet> TxHashSetManager::Open(const BlockHeaderPtr& pConfirmedTip)
+std::shared_ptr<ITxHashSet> TxHashSetManager::Open(const BlockHeaderPtr& pConfirmedTip, bool recover)
 {
 	Close();
-
-	std::shared_ptr<KernelMMR> pKernelMMR;
-	std::shared_ptr<OutputPMMR> pOutputPMMR;
-	std::shared_ptr<RangeProofPMMR> pRangeProofPMMR;
-
-	std::vector<std::thread> threads;
-	threads.emplace_back(std::thread([this, &pKernelMMR] {
-		pKernelMMR = KernelMMR::Load(Global::GetConfig().GetTxHashSetPath());
-	}));
-	threads.emplace_back(std::thread([this, &pOutputPMMR] {
-		pOutputPMMR = OutputPMMR::Load(Global::GetConfig().GetTxHashSetPath());
-	}));
-	threads.emplace_back(std::thread([this, &pRangeProofPMMR] {
-		pRangeProofPMMR = RangeProofPMMR::Load(Global::GetConfig().GetTxHashSetPath());
-	}));
-
-	for (auto& thread : threads) {
-		if (thread.joinable()) {
-			thread.join();
-		}
+	if (recover && pConfirmedTip != nullptr) {
+		TxHashSetStaging::Recover(m_config.GetTxHashSetPath(), pConfirmedTip->GetHash().ToHex());
 	}
+
+	const fs::path txHashSetPath = m_config.GetTxHashSetPath();
+	auto kernelFuture = std::async(std::launch::async,
+		[txHashSetPath] { return KernelMMR::Load(txHashSetPath); });
+	auto outputFuture = std::async(std::launch::async,
+		[txHashSetPath] { return OutputPMMR::Load(txHashSetPath); });
+	auto rangeProofFuture = std::async(std::launch::async,
+		[txHashSetPath] { return RangeProofPMMR::Load(txHashSetPath); });
+
+	std::shared_ptr<KernelMMR> pKernelMMR = kernelFuture.get();
+	std::shared_ptr<OutputPMMR> pOutputPMMR = outputFuture.get();
+	std::shared_ptr<RangeProofPMMR> pRangeProofPMMR = rangeProofFuture.get();
 
 	m_pTxHashSet = std::shared_ptr<TxHashSet>(new TxHashSet(pKernelMMR, pOutputPMMR, pRangeProofPMMR, pConfirmedTip));
 
@@ -125,22 +118,33 @@ std::shared_ptr<ITxHashSet> TxHashSetManager::LoadFromZip(
 	{
 		LOG_ERROR_F("Failed to load: {}", e.what());
 
-		// Keep one bounded copy of the failed archive for diagnosis. The live
-		// TxHashSet is untouched; only the temp archive is renamed, never copied
-		// while it is being written.
+		// Preserve up to four failed archives without ever deleting an earlier
+		// one. Bounded slots prevent repeated invalid archives from filling disk.
 		std::error_code error;
 		if (fs::exists(zipFilePath, error)) {
-			const fs::path failedPath = fs::temp_directory_path() / "txhashset_failed.zip";
-			fs::remove(failedPath, error);
-			fs::rename(zipFilePath, failedPath, error);
-			if (!error) {
+			fs::path failedPath;
+			for (uint64_t suffix = 0; suffix < 4; ++suffix) {
+				failedPath = fs::temp_directory_path() /
+					("txhashset_failed.slot" + std::to_string(suffix) + ".zip");
+				if (!fs::exists(failedPath)) {
+					break;
+				}
+				failedPath.clear();
+			}
+			if (failedPath.empty()) {
+				LOG_WARNING("All four failed TxHashSet archive slots are occupied; preserving existing evidence.");
+			} else {
+				error.clear();
+				fs::rename(zipFilePath, failedPath, error);
+			}
+			if (!failedPath.empty() && !error) {
 				LOG_ERROR_F(
 					"Preserved failed TxHashSet archive {} ({} bytes) for header {} height {}.",
 					failedPath,
 					FileUtil::GetFileSize(failedPath),
 					pHeader != nullptr ? pHeader->GetHash() : ZERO_HASH,
 					pHeader != nullptr ? pHeader->GetHeight() : 0);
-			} else {
+			} else if (!failedPath.empty()) {
 				LOG_ERROR_F("Could not preserve failed TxHashSet archive: {}", error.message());
 			}
 		}

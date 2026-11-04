@@ -37,5 +37,6 @@ list_append_parent(
     "Test_StateSyncerFailClosed.cpp"
     "Test_KernelLookup.cpp"
     "Test_TxHashSetStaging.cpp"
+    "Test_TxHashSetManagerOpen.cpp"
     "LeafSet/Test_LeafSet.cpp"
 )

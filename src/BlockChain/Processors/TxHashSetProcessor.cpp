@@ -3,6 +3,7 @@
 #include <Common/Logger.h>
 #include <Database/BlockDb.h>
 #include <Core/Models/BlockHeader.h>
+#include <Core/Global.h>
 #include <BlockChain/BlockChain.h>
 #include <Common/Util/StringUtil.h>
 #include <Common/Util/HexUtil.h>
@@ -146,7 +147,9 @@ bool TxHashSetProcessor::ProcessTxHashSet(const Hash& blockHash, const fs::path&
 	}
 
 	const fs::path livePath = m_config.GetTxHashSetPath();
-	TxHashSetStaging::Recover(livePath);
+	const auto pOldTip = m_pChainState->Read()->GetChainStore()->GetConfirmedChain()->GetTip();
+	const std::string oldTipHash = pOldTip == nullptr ? "" : pOldTip->GetHash().ToHex();
+	TxHashSetStaging::Recover(livePath, oldTipHash);
 	const fs::path stagingPath = TxHashSetStaging::Staging(livePath);
 	const fs::path backupPath = TxHashSetStaging::Backup(livePath);
 
@@ -213,36 +216,33 @@ bool TxHashSetProcessor::ProcessTxHashSet(const Hash& blockHash, const fs::path&
 
 	// 4. Atomic swap with a marker for crash recovery.
 	fs::remove_all(backupPath, ec);
-	{
-		std::ofstream marker(TxHashSetStaging::Marker(livePath), std::ios::binary | std::ios::trunc);
-		marker << "pending";
+	if (ec) {
+		LOG_ERROR_F("Failed to clear old TxHashSet backup: {}", ec.message());
+		reopenLive();
+		return false;
 	}
+	TxHashSetStaging::Begin(livePath, blockHash.ToHex());
 
 	try {
 		if (fs::exists(livePath, ec)) {
 			fs::rename(livePath, backupPath);
 		}
 		fs::rename(stagingPath, livePath);
-		fs::remove_all(backupPath, ec);
-		fs::remove(TxHashSetStaging::Marker(livePath), ec);
 	}
 	catch (std::exception& e) {
 		LOG_ERROR_F("Failed to activate the staged txhashset: {}", e.what());
-		ec.clear();
-		if (!fs::exists(livePath, ec) && fs::exists(backupPath, ec)) {
-			fs::rename(backupPath, livePath, ec);
-		}
-		ec.clear();
-		fs::remove(TxHashSetStaging::Marker(livePath), ec);
+		TxHashSetStaging::Recover(livePath, oldTipHash);
 		reopenLive();
 		return false;
 	}
 
 	// 5. Open the installed state and publish block sums/output positions.
 	auto pManager = m_pChainState->Write()->GetTxHashSetManager();
-	ITxHashSetPtr pLive = pManager->Open(pHeader);
+	ITxHashSetPtr pLive = pManager->Open(pHeader, false);
 	if (pLive == nullptr) {
 		LOG_ERROR_F("Failed to open the activated txhashset for {}.", path);
+		TxHashSetStaging::Recover(livePath, oldTipHash);
+		reopenLive();
 		return false;
 	}
 
@@ -261,10 +261,35 @@ bool TxHashSetProcessor::ProcessTxHashSet(const Hash& blockHash, const fs::path&
 	{
 		LOG_ERROR_F("Failed to update confirmed chain for {}.", path);
 		pChainStateBatch->GetTxHashSetManager()->Close();
+		pLive.reset();
+		pChainStateBatch.Clear();
+		pManager->Close();
+		TxHashSetStaging::Recover(livePath, oldTipHash);
+		reopenLive();
 		return false;
 	}
 
-	pChainStateBatch->Commit();
+	try {
+		pChainStateBatch->Commit();
+	} catch (const std::exception& e) {
+		LOG_ERROR_F("TxHashSet chain DB commit failed: {}; stopping the node so the checkpoint and backup can be reconciled on restart.", e.what());
+		pChainStateBatch->GetTxHashSetManager()->Close();
+		pLive.reset();
+		pChainStateBatch.Clear();
+		pManager->Close();
+		// A partially completed cross-store commit must not be judged from the
+		// in-memory tip. Startup first loads the durable DB checkpoint and then
+		// chooses old/new files from the pending activation marker.
+		Global::Shutdown();
+		return false;
+	}
+	pChainStateBatch.Clear();
+	try {
+		TxHashSetStaging::Finish(livePath);
+	} catch (const std::exception& e) {
+		// The DB commit already succeeded. Startup recovery can finish cleanup.
+		LOG_WARNING_F("TxHashSet committed but backup cleanup is pending: {}", e.what());
+	}
 	return true;
 }
 bool TxHashSetProcessor::ProcessExistingTxHashSet(const Hash& blockHash, SyncStatus& syncStatus)

@@ -30,6 +30,16 @@ void Connection::Disconnect()
     }
 }
 
+void Connection::CloseAfterMessage()
+{
+    // ProcessMessage runs under HandleReceivedBody's m_mutex. Do not call
+    // Disconnect() here, as that would acquire the same mutex again.
+    m_receivingDisabled = true;
+    m_terminate = true;
+    m_pSocket->CloseSocket();
+    GetPeer()->SetConnected(false);
+}
+
 bool Connection::IsConnectionActive() const
 {
     if (m_terminate) {
@@ -302,6 +312,24 @@ bool Connection::ReceiveSync(std::vector<uint8_t>& bytes, const size_t num_bytes
     m_lastReceived = system_clock::now();
     GetPeer()->UpdateLastContactTime();
     return true;
+}
+
+void Connection::ResumeReceives()
+{
+    std::unique_lock<std::mutex> lock(m_mutex);
+    if (!m_pSocket->IsOpen() || m_terminate) {
+        return;
+    }
+
+    m_receivingDisabled = false;
+	 m_lastReceived = system_clock::now();
+    m_received.clear();
+    m_received.resize(11);
+    asio::async_read(
+        *m_pSocket->GetAsioSocket(),
+        asio::buffer(m_received, m_received.size()),
+        std::bind(&Connection::HandleReceivedHeader, shared_from_this(),
+            std::placeholders::_1, std::placeholders::_2));
 }
 
 void Connection::BanPeer(const EBanReason reason)

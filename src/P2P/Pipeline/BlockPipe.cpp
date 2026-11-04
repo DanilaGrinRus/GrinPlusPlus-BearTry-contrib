@@ -87,8 +87,7 @@ void BlockPipe::ProcessNewBlock(BlockPipe& pipeline, const BlockEntry& blockEntr
 	}
 	catch (std::exception& e)
 	{
-		LOG_ERROR_F("Exception ({}) caught while attempting to add block {}.", e.what(), blockEntry.m_block);
-		blockEntry.m_peer->Ban(EBanReason::BadBlock);
+		LOG_ERROR_F("Exception ({}) caught while attempting to add block {}; peer validity is unknown, no ban.", e.what(), blockEntry.m_block);
 	}
 }
 

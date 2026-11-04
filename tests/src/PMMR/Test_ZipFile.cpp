@@ -1,5 +1,6 @@
 #include <catch.hpp>
 #include <PMMR/Zip/ZipFile.h>
+#include <PMMR/Zip/Zipper.h>
 #include <minizip/zip.h>
 #include <filesystem.h>
 #include <algorithm>
@@ -37,4 +38,30 @@ TEST_CASE("ZipFile rejects a CRC-corrupted snapshot entry")
     REQUIRE_THROWS(ZipFile::Load(damaged)->ExtractFile("entry", root / "damaged"));
     std::error_code ec;
     fs::remove_all(root, ec);
+}
+
+TEST_CASE("Zipper streams a snapshot entry and extraction enforces its byte budget")
+{
+	const fs::path root = fs::temp_directory_path() /
+		("grinpp-zip-stream-" + std::to_string(std::random_device{}()));
+	REQUIRE(fs::create_directory(root));
+	const fs::path sourceDir = root / "data";
+	REQUIRE(fs::create_directory(sourceDir));
+	const fs::path source = sourceDir / "source.bin";
+	const std::string payload(200000, 'x');
+	{
+		std::ofstream file(source, std::ios::binary);
+		file.write(payload.data(), static_cast<std::streamsize>(payload.size()));
+	}
+	const fs::path archive = root / "stream.zip";
+	REQUIRE_NOTHROW(Zipper::CreateZipFile(archive, { sourceDir }));
+	auto zip = ZipFile::Load(archive);
+	uint64_t smallBudget = payload.size() - 1;
+	REQUIRE_THROWS(zip->ExtractFile("data/source.bin", root / "too-large", &smallBudget));
+	uint64_t enoughBudget = payload.size();
+	REQUIRE_NOTHROW(zip->ExtractFile("data/source.bin", root / "restored", &enoughBudget));
+	REQUIRE(enoughBudget == 0);
+	REQUIRE(fs::file_size(root / "restored") == payload.size());
+	std::error_code ec;
+	fs::remove_all(root, ec);
 }

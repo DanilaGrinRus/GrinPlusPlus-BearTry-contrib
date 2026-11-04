@@ -74,3 +74,35 @@ TEST_CASE("TxHashSetStaging::KeepsInstalledLiveState")
 	REQUIRE(!fs::exists(staging));
 	REQUIRE(!fs::exists(TxHashSetStaging::Marker(live)));
 }
+
+TEST_CASE("TxHashSetStaging::RollsBackInstalledStateBeforeDbCommit")
+{
+	const fs::path live = TempRoot() / "TXHASHSET";
+	WriteFile(live / "old.txt");
+	TxHashSetStaging::Begin(live, "new-tip");
+	fs::rename(live, TxHashSetStaging::Backup(live));
+	WriteFile(live / "new.txt");
+
+	TxHashSetStaging::Recover(live, "old-tip");
+
+	REQUIRE(fs::exists(live / "old.txt"));
+	REQUIRE_FALSE(fs::exists(live / "new.txt"));
+	REQUIRE_FALSE(fs::exists(TxHashSetStaging::Backup(live)));
+	REQUIRE_FALSE(fs::exists(TxHashSetStaging::Marker(live)));
+}
+
+TEST_CASE("TxHashSetStaging::KeepsInstalledStateAfterDbCommit")
+{
+	const fs::path live = TempRoot() / "TXHASHSET";
+	WriteFile(live / "old.txt");
+	TxHashSetStaging::Begin(live, "new-tip");
+	fs::rename(live, TxHashSetStaging::Backup(live));
+	WriteFile(live / "new.txt");
+
+	TxHashSetStaging::Recover(live, "new-tip");
+
+	REQUIRE(fs::exists(live / "new.txt"));
+	REQUIRE_FALSE(fs::exists(live / "old.txt"));
+	REQUIRE_FALSE(fs::exists(TxHashSetStaging::Backup(live)));
+	REQUIRE_FALSE(fs::exists(TxHashSetStaging::Marker(live)));
+}

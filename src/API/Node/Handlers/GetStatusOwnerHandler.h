@@ -1,6 +1,6 @@
 #pragma once
 
-#include "NodeStatus.h"
+#include <API/Node/NodeStatus.h>
 
 #include <BlockChain/BlockChain.h>
 #include <P2P/P2PServer.h>

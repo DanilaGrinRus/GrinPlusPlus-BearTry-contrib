@@ -24,15 +24,18 @@ bool TxHashSetZip::Extract(const fs::path& path, const BlockHeader& header, cons
 	try
 	{
 		std::shared_ptr<ZipFile> pZipFile = ZipFile::Load(path);
+		// All ten expected entries share one budget. The wire-size limit alone
+		// cannot bound a maliciously compressed archive after extraction.
+		uint64_t remainingBytes = 16ULL * 1024 * 1024 * 1024;
 
 		// Extract kernel folder.
-		ExtractKernelFolder(*pZipFile, root);
+		ExtractKernelFolder(*pZipFile, root, remainingBytes);
 
 		// Extract output folder.
-		ExtractFolder(*pZipFile, "output", header, root);
+		ExtractFolder(*pZipFile, "output", header, root, remainingBytes);
 
 		// Extract rangeProof folder.
-		ExtractFolder(*pZipFile, "rangeproof", header, root);
+		ExtractFolder(*pZipFile, "rangeproof", header, root, remainingBytes);
 
 		LOG_INFO("Successfully extracted zip file.");
 		return true;
@@ -45,7 +48,8 @@ bool TxHashSetZip::Extract(const fs::path& path, const BlockHeader& header, cons
 	return false;
 }
 
-void TxHashSetZip::ExtractKernelFolder(const ZipFile& zipFile, const fs::path& root) const
+void TxHashSetZip::ExtractKernelFolder(const ZipFile& zipFile, const fs::path& root,
+	uint64_t& remainingBytes) const
 {
 	std::error_code ec;
 
@@ -80,11 +84,12 @@ void TxHashSetZip::ExtractKernelFolder(const ZipFile& zipFile, const fs::path& r
 	const std::vector<std::string> kernelFiles = { "pmmr_data.bin", "pmmr_hash.bin" };
 	for (const std::string& file : kernelFiles)
 	{
-		zipFile.ExtractFile("kernel/" + file, kernelPath / file);
+		zipFile.ExtractFile("kernel/" + file, kernelPath / file, &remainingBytes);
 	}
 }
 
-void TxHashSetZip::ExtractFolder(const ZipFile& zipFile, const std::string& folderName, const BlockHeader& header, const fs::path& root) const
+void TxHashSetZip::ExtractFolder(const ZipFile& zipFile, const std::string& folderName,
+	const BlockHeader& header, const fs::path& root, uint64_t& remainingBytes) const
 {
 	std::error_code ec;
 
@@ -119,7 +124,7 @@ void TxHashSetZip::ExtractFolder(const ZipFile& zipFile, const std::string& fold
 	const std::vector<std::string> files = { "pmmr_data.bin", "pmmr_hash.bin", "pmmr_prun.bin", "pmmr_leaf.bin." + header.ShortHash() };
 	for (const std::string& file : files)
 	{
-		zipFile.ExtractFile(StringUtil::Format("{}/{}", folderName, file), dir / file);
+		zipFile.ExtractFile(StringUtil::Format("{}/{}", folderName, file), dir / file, &remainingBytes);
 	}
 
 	FileUtil::RenameFile(dir / StringUtil::Format("pmmr_leaf.bin.{}", header.ShortHash()), dir / "pmmr_leaf.bin");
