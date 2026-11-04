@@ -1,6 +1,73 @@
 # AUDIT_DELTA (EN) — Grin++ 1.2.9 → Grin v5.5.2 compatibility
 
-## Audit note — public legacy TxHashSet, 2026-11-04 (UTC+07)
+## Update — 2026-11-04, 08:00 (UTC+07)
+
+Snapshot: HEAD `4fd7221` (build-59), plus an uncommitted API contract; build-60
+has not been built. Older dated notes below are retained as history; this section
+wins on conflicts.
+
+- **Rust kernel PMMR: format proven.** The preserved local ZIP
+  `D73EBD1811A40AFC876D4AA5B006D2D2E11B1BE5EDD0E102E8DF7D7FB2036C6C`
+  (3,067,445,011 B) contains `kernel/pmmr_data.bin` 329,241,204 B and no
+  `kernel/pmmr_size.bin`; Rust state has 3,354,613 records sized 98/106/108/114.
+  The old fixed-114 C++ path expected 382,405,932 B and failed rewind. Build-59
+  uses variable-size data, V2 storage and V1 MMR hashing; full suite
+  **276/276, 4,387 assertions PASS** (`Tests 78218F3C…`, `GrinNode 60D8DFD0…`).
+- **Local legacy live:** ordinary Rust 5.5.2 → C++ loopback. Archive H=3,315,600
+  was downloaded/activated by build-58; build-59 body-synced to H=3,318,655,
+  reached `FULLY_SYNCED`, and restarted without a full state re-download. This is
+  not a single-build-59 download→verify→activation cycle; download/activation
+  were build-58. Public Floonet after the local success is **NOT VERIFIED**.
+- **G-49 (experimental, opt-in):** 4 workers on a 300k-proof slice took 32.76 s
+  / 9,157.8 proofs/s vs 119.58 s / 2,508.8 sequential (3.65×); full-state 4w:
+  2,943,034/2,943,034 proofs, 2,944/2,944 batches, range 389.29 s, validate total
+  713.09 s, activation 55.96 s, final confirmed `3315600/3615bb…`. Default remains
+  sequential; code is not merged; independent review, TSan/ASan, repeats and live
+  Floonet are **NOT VERIFIED**. Report:
+  [G49_RANGEPROOF_PARALLEL_2026-11-04.md](G49_RANGEPROOF_PARALLEL_2026-11-04.md).
+- **API status schema (contract, not built):** `/v1/status` keeps legacy fields
+  and adds the exact Rust `Status` object under `rust`, plus `tip`/`connections`/
+  `chain_type`/`sync_status_rust`; owner `get_status` uses the same builder. No
+  easter eggs or canned statuses. Owner 401 on the local profile is explained by
+  the copied `.api_secret` DACL, not by the schema. Build-60/unit/live are
+  **NOT VERIFIED**; contract:
+  [API_STATUS_SCHEMA_2026-11-04.md](API_STATUS_SCHEMA_2026-11-04.md).
+- **Bodyless/NRD:** build-59 retains the fail-closed PASS; a full bodyless reorg
+  is not supported. The test remains visible in the full suite.
+- **Legacy static concerns (code inspection, not reproduced):** activation
+  marker/backup are removed before the chain commit (`TxHashSetProcessor.cpp:214–227`
+  before line 267); early returns in `Thread_SendTxHashSet` leave
+  `DisableSends(true)` set; fixed `txhashset_failed.zip` can collide across
+  processes. Treat as candidates, not demonstrated live defects.
+
+## Historical audit note — public legacy TxHashSet, 2026-11-04 (UTC+07)
+
+**Current Legacy addendum (2026-11-04, 08:10 UTC+07).**
+The reviewed binary is build-59 `GrinNode.exe`, SHA-256 `60D8DFD05C87C8A516696D76ABDDCBF075D2D0CA28B62190181F430254766148`, with a matching snapshot of the affected source files. Build-59 already corrected variable-length kernel storage and V1 hashing; one active download, a no-progress watchdog, no ban for ambiguous archive failures, and ZIP CRC validation were also present. The remaining items are code-confirmed failure paths, not claimed live reproductions. Their fixes are in an isolated patch, **not in build-59 or the working source tree**.
+
+- **P0 · activation versus chain DB:** `TxHashSetProcessor.cpp` removed the backup and marker before `ChainState::Commit`. Fix: retain both through commit, record the target header hash, recover old/new files against the confirmed tip on startup, and stop the node after a partial commit failure. Patch prepared; before/after commit unit tests PASS; power-loss/live NOT VERIFIED.
+- **P0 · false sync success:** `TxHashSetPipe` entered `SYNCING_BLOCKS` for every result except `INVALID`, including `STORE_ERROR`. Fix: require `SUCCESS`, otherwise set `TXHASHSET_SYNC_FAILED`. Patch prepared; live fault injection NOT VERIFIED.
+- **P1 · peer receives:** some responses left ordinary P2P reads disabled after `DisableReceives(true)`; a long ZIP could age out a connection. Fix in v2: close a rejected raw ZIP stream without a ban or reacquiring `m_mutex`, so ZIP bytes cannot reach the P2P parser; restart async reads and contact time after a complete accepted ZIP; close an incomplete transfer. Patch prepared; network test NOT VERIFIED.
+- **P1 · ZIP download writes:** stream open/write/close were not fully checked. Fix: check each operation and never validate a partial file. Patch prepared; disk-full NOT VERIFIED.
+- **P1 · decompression bound:** the 8 GiB limit applied only to the compressed archive. Fix: share a 16 GiB extracted-byte budget across entries, while retaining CRC validation. Patch prepared, unit PASS; real archive at the boundary NOT VERIFIED.
+- **P1 · kernel PMMR:** choosing fixed V1 from `dataSize % 114` misclassified some valid variable records; parsing also held the whole file in RAM. Fix: compare entry count with hash PMMR leaves and parse in 4 MiB windows. Patch prepared, build/basic lookup PASS; complete ZIP rerun NOT VERIFIED.
+- **P1 · MMR open crash:** `TxHashSetManager::Open` ran three loaders in `std::thread`; an exception in any loader called `std::terminate`. Fix: use `std::future` to wait for all tasks and propagate errors to the caller. Patch prepared, failure test PASS; live NOT VERIFIED.
+- **P1 · false block ban:** `BlockPipe` banned on every `AddBlock` exception, including local failure. Fix: ban only explicit `INVALID` and log exceptions as ambiguous. Patch prepared, unit PASS; live NOT VERIFIED.
+- **P1 · legacy serving:** `Zipper` loaded each file into RAM and narrowed size to `unsigned int`, losing data beyond 4 GiB. Fix: stream 64 KiB chunks, enable ZIP64, check read/close. Patch prepared, small-file unit PASS; >4 GiB NOT VERIFIED.
+- **P1 · sends and threads:** early returns kept `DisableSends(true)` and completed threads accumulated until destruction. Fix: restore sends in the worker wrapper and join completed threads on the next request. Patch prepared; load run NOT VERIFIED.
+- **P1 · request race:** async TxHashSetRequest send preceded peer/hash/height bookkeeping, so a fast reply could be treated as unsolicited. Fix: record before send and match response height as well. Patch prepared; network race test NOT VERIFIED.
+- **P2 · horizon arithmetic:** subtracting `CUT_THROUGH_HORIZON` from a low `headerHeight` could underflow `uint64_t`. Fix: use the existing safe `Consensus::GetHorizonHeight`. Patch prepared, build PASS.
+- **P2 · failed ZIP evidence:** the fixed `txhashset_failed.zip` name deleted earlier evidence. Fix: four bounded slots without overwrite, and log when full. Patch prepared; slot-exhaustion test NOT VERIFIED.
+- **P1 · Windows mmap:** `CreateFileMapping` returns `NULL`, but code checked `INVALID_HANDLE_VALUE`; a failed `MapViewOfFile` leaked the handle and the destructor could throw. Fix: check `NULL`, close on failure, keep destructor safe, and verify short writes and `SetEndOfFile`. Patch prepared, build PASS; fault injection NOT VERIFIED.
+
+**Patch v2 checks:** Release `Tests.exe` and `GrinNode.exe` built with `/W4 /WX`; focused set 13 tests / 63 assertions PASS. Full sandbox suite FAIL in the same 16 test locations as v1 (`Invoke`/`connect` and missing `C:\DHW\.tmp\interop\pp-archsrv`); full PASS and rejected-ZIP network test NOT VERIFIED. A single new-SHA download→verify→activate run, public Floonet, and Mainnet remain NOT VERIFIED.
+
+
+> This is the original note from before the local ZIP was captured. The kernel
+> PMMR format is now confirmed and fixed (see the top snapshot); **public legacy
+> itself remains BLOCKED/PARTIAL/NOT VERIFIED**: there is no public ZIP with a
+> known SHA, no repeated public cycle, and no proven cause of the public rewind
+> failure.
 
 Snapshot: HEAD `fdb0606` (build-45); live Floonet used separate build-33. Concurrent uncommitted fixes and tests are NOT VERIFIED. This is a technical note; [REMAINING.md](REMAINING.md) is the single current plan; see [legacy evidence](../../evidence/line3/public-legacy-fallback-20261103.md).
 

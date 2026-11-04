@@ -1,6 +1,78 @@
 # AUDIT_DELTA (DE) — Grin++ 1.2.9 → Kompatibilität mit Grin v5.5.2
 
-## Auditnotiz — öffentliches Legacy-TxHashSet, 04.11.2026 (UTC+07)
+## Aktualisierung — 04.11.2026, 08:00 (UTC+07)
+
+Stand: HEAD `4fd7221` (Build-59) plus uncommitteter API-Vertrag; Build-60 wurde
+nicht gebaut. Ältere datierte Notizen unten bleiben Historie; bei Widersprüchen
+gilt dieser Abschnitt.
+
+- **Rust-Kernel-PMMR: Format belegt.** Das gesicherte lokale ZIP
+  `D73EBD1811A40AFC876D4AA5B006D2D2E11B1BE5EDD0E102E8DF7D7FB2036C6C`
+  (3.067.445.011 B) enthält `kernel/pmmr_data.bin` mit 329.241.204 B und kein
+  `kernel/pmmr_size.bin`; der Rust-State hat 3.354.613 Einträge mit Größen
+  98/106/108/114. Der alte C++-Pfad mit festen 114 B erwartete 382.405.932 B und
+  scheiterte am Rewind. Build-59 nutzt variable Datensätze, V2-Speicherung und
+  V1-MMR-Hash; Gesamtsuite **276/276, 4.387 Assertions PASS**
+  (`Tests 78218F3C…`, `GrinNode 60D8DFD0…`).
+- **Lokales Legacy-Live:** gewöhnliches Rust 5.5.2 → C++-Loopback. Archiv
+  H=3.315.600 wurde von Build-58 geladen/aktiviert; Build-59 machte Body-Sync bis
+  H=3.318.655, erreichte `FULLY_SYNCED` und startete ohne vollständigen
+  State-Neudownload neu. Das ist kein Einzel-Build-59-Zyklus
+  Download→Verify→Activation; Download/Aktivierung waren Build-58. Öffentliches
+  Floonet nach dem lokalen Erfolg ist **NOT VERIFIED**.
+- **G-49 (experimentell, Opt-in):** 4 Worker auf einem 300k-Proof-Slice:
+  32,76 s / 9.157,8 Proofs/s gegen 119,58 s / 2.508,8 sequenziell (3,65×);
+  Full-State 4w: 2.943.034/2.943.034 Proofs, 2.944/2.944 Batches, Range 389,29 s,
+  Validate total 713,09 s, Activation 55,96 s, final bestätigt `3315600/3615bb…`.
+  Default bleibt sequenziell; Code ist nicht gemerged; unabhängiges Review,
+  TSan/ASan, Wiederholungen und Live-Floonet sind **NOT VERIFIED**. Bericht:
+  [G49_RANGEPROOF_PARALLEL_2026-11-04.md](G49_RANGEPROOF_PARALLEL_2026-11-04.md).
+- **API-Status-Schema (Vertrag, nicht gebaut):** `/v1/status` behält Legacy-Felder
+  und ergänzt das exakte Rust-`Status`-Objekt unter `rust` sowie `tip`/
+  `connections`/`chain_type`/`sync_status_rust`; Owner-`get_status` nutzt denselben
+  Builder. Keine Easter Eggs oder fest verdrahteten Statuswerte. Owner-401 im
+  lokalen Profil liegt am DACL der kopierten `.api_secret`, nicht am Schema.
+  Build-60/Unit/Live sind **NOT VERIFIED**; Vertrag:
+  [API_STATUS_SCHEMA_2026-11-04.md](API_STATUS_SCHEMA_2026-11-04.md).
+- **Bodyless/NRD:** Build-59 behält den Fail-closed-PASS; vollständiger
+  Bodyless-Reorg wird nicht unterstützt. Der Test bleibt in der Gesamtsuite
+  sichtbar.
+- **Legacy-Statikbefunde (Code-Prüfung, nicht reproduziert):** Marker/Backup der
+  Aktivierung werden vor dem Chain-Commit entfernt
+  (`TxHashSetProcessor.cpp:214–227` vor Zeile 267); frühe Returns in
+  `Thread_SendTxHashSet` lassen `DisableSends(true)` gesetzt; festes
+  `txhashset_failed.zip` kann zwischen Prozessen kollidieren. Als Kandidaten, nicht
+  als belegte Live-Defekte behandeln.
+
+## Historische Auditnotiz — öffentliches Legacy-TxHashSet, 04.11.2026 (UTC+07)
+
+**Aktuelle Legacy-Ergänzung (04.11.2026, 08:10 UTC+07).**
+Geprüft wurde Build-59 `GrinNode.exe`, SHA-256 `60D8DFD05C87C8A516696D76ABDDCBF075D2D0CA28B62190181F430254766148`, mit einem passenden Stand der betroffenen Quelldateien. Build-59 korrigierte bereits variable Kernel-Datensätze und V1-Hashing; nur ein aktiver Download, ein Stillstands-Watchdog, kein Bann bei uneindeutigen Archivfehlern und ZIP-CRC-Prüfung waren ebenfalls vorhanden. Die übrigen Punkte sind im Code belegte Fehlerpfade, keine behaupteten Live-Reproduktionen. Korrekturen liegen als isolierter Patch vor, **nicht in Build-59 oder im Arbeitsbaum**.
+
+- **P0 · Aktivierung und Chain-DB:** `TxHashSetProcessor.cpp` entfernte Backup und Marker vor `ChainState::Commit`. Lösung: beides bis nach Commit behalten, Ziel-Header-Hash notieren, beim Start anhand des bestätigten Tips alten/neuen Zustand wählen und nach partiellem Commit-Fehler den Knoten stoppen. Patch vorbereitet; Unit-Tests vor/nach Commit PASS; Stromausfall/Live NICHT VERIFIZIERT.
+- **P0 · falscher Sync-Erfolg:** `TxHashSetPipe` wechselte bei jedem Ergebnis außer `INVALID`, auch `STORE_ERROR`, zu `SYNCING_BLOCKS`. Lösung: nur `SUCCESS` zulassen, sonst `TXHASHSET_SYNC_FAILED`. Patch vorbereitet; Live-Fehlerinjektion NICHT VERIFIZIERT.
+- **P1 · Peer-Empfang:** einige Antworten ließen P2P-Reads nach `DisableReceives(true)` ausgeschaltet; langes ZIP konnte die Verbindung inaktiv machen. Lösung v2: abgelehnten rohen ZIP-Strom ohne Bann und ohne erneutes Sperren von `m_mutex` schließen, damit ZIP-Bytes nicht in den P2P-Parser gelangen; nach vollständig angenommenem ZIP async Read und Kontaktzeit neu starten; unvollständige Übertragung schließen. Patch vorbereitet; Netztest NICHT VERIFIZIERT.
+- **P1 · ZIP-Download:** open/write/close des Streams wurden nicht vollständig geprüft. Lösung: jede Operation prüfen und unvollständige Dateien nicht validieren. Patch vorbereitet; voller Datenträger NICHT VERIFIZIERT.
+- **P1 · Entpackgrenze:** 8 GiB begrenzten nur das komprimierte Archiv. Lösung: gemeinsames 16-GiB-Budget für entpackte Einträge; CRC bleibt Pflicht. Patch vorbereitet, Unit PASS; echtes Archiv an der Grenze NICHT VERIFIZIERT.
+- **P1 · Kernel-PMMR:** `dataSize % 114` konnte gültige variable Datensätze als fixed V1 einstufen; der Parser hielt die ganze Datei im RAM. Lösung: Eintragszahl mit Hash-PMMR-Blättern vergleichen und in 4-MiB-Fenstern lesen. Patch vorbereitet, Build/einfacher Lookup PASS; kompletter ZIP-Lauf NICHT VERIFIZIERT.
+- **P1 · MMR-Open-Absturz:** `TxHashSetManager::Open` startete drei Loader in `std::thread`; jede Exception führte zu `std::terminate`. Lösung: mit `std::future` alle Aufgaben abwarten und Fehler an den Aufrufer weitergeben. Patch vorbereitet, Fehlertest PASS; Live NICHT VERIFIZIERT.
+- **P1 · falscher Block-Bann:** `BlockPipe` bannte bei jeder `AddBlock`-Exception, auch bei lokalem Fehler. Lösung: nur explizites `INVALID` bannen, Exception als uneindeutig protokollieren. Patch vorbereitet, Unit PASS; Live NICHT VERIFIZIERT.
+- **P1 · Legacy-Serving:** `Zipper` lud jede Datei vollständig in RAM und kürzte die Größe auf `unsigned int`; ab 4 GiB gingen Daten verloren. Lösung: 64-KiB-Streaming, ZIP64, Lese-/Close-Prüfung. Patch vorbereitet, kleiner Unit-Test PASS; >4 GiB NICHT VERIFIZIERT.
+- **P1 · Senden und Threads:** frühe Returns ließen `DisableSends(true)` gesetzt; fertige Threads blieben bis zur Destruktion liegen. Lösung: Sends im Worker-Wrapper wieder einschalten und fertige Threads bei der nächsten Anfrage joinen. Patch vorbereitet; Lastlauf NICHT VERIFIZIERT.
+- **P1 · Anfrage-Rennen:** asynchrones Senden ging der Speicherung von Peer/Hash/Höhe voraus; schnelle Antworten konnten als unaufgefordert gelten. Lösung: vor dem Senden speichern und auch die Antwort-Höhe abgleichen. Patch vorbereitet; Netzwerk-Race-Test NICHT VERIFIZIERT.
+- **P2 · Horizont-Arithmetik:** `CUT_THROUGH_HORIZON` von kleiner `headerHeight` abzuziehen konnte `uint64_t` unterlaufen lassen. Lösung: vorhandenes sicheres `Consensus::GetHorizonHeight` verwenden. Patch vorbereitet, Build PASS.
+- **P2 · fehlgeschlagenes ZIP:** der feste Name `txhashset_failed.zip` löschte frühere Belege. Lösung: vier begrenzte Slots ohne Überschreiben und Log bei Belegung. Patch vorbereitet; voller Slot-Test NICHT VERIFIZIERT.
+- **P1 · Windows mmap:** `CreateFileMapping` liefert `NULL`, geprüft wurde `INVALID_HANDLE_VALUE`; `MapViewOfFile`-Fehler ließen den Handle offen, der Destruktor konnte werfen. Lösung: `NULL` prüfen, Handle im Fehlerfall schließen, sicheren Destruktor und Short-Write-/`SetEndOfFile`-Prüfung. Patch vorbereitet, Build PASS; Fehlerinjektion NICHT VERIFIZIERT.
+
+**Patch-v2-Prüfung:** Release `Tests.exe` und `GrinNode.exe` mit `/W4 /WX` gebaut; gezielt 13 Tests / 63 Assertions PASS. Gesamtlauf in der Sandbox FAIL an denselben 16 Teststellen wie v1 (`Invoke`/`connect` und fehlender Pfad `C:\DHW\.tmp\interop\pp-archsrv`); vollständiger PASS und Netztest für abgelehntes ZIP NICHT VERIFIZIERT. Ein Download→Verify→Activate-Zyklus mit einem neuen SHA, öffentliches Floonet und Mainnet bleiben NICHT VERIFIZIERT.
+
+
+> Dies ist die ursprüngliche Notiz vor der lokalen ZIP-Sicherung. Das
+> Kernel-PMMR-Format ist inzwischen bestätigt und korrigiert (siehe oberer
+> Stand); **das öffentliche Legacy-Verfahren selbst bleibt
+> BLOCKED/PARTIAL/NOT VERIFIED**: Es gibt kein öffentliches ZIP mit bekannter
+> SHA, keinen wiederholten öffentlichen Zyklus und keine belegte Ursache des
+> öffentlichen Rewind-Fehlers.
 
 Stand: HEAD `fdb0606` (Build-45); der öffentliche Floonet-Lauf nutzte separat Build-33. Parallele uncommittete Änderungen und Tests sind NICHT VERIFIZIERT. Technische Notiz; [REMAINING.md](REMAINING.md) bleibt der einzige aktuelle Plan; siehe [Legacy-Nachweis](../../evidence/line3/public-legacy-fallback-20261103.md).
 

@@ -106,3 +106,12 @@ Do not apply the overlay. Port in this order:
 4. Full build/tests plus PIBD serving regression after each step.
 
 P0 (routes + ApiAccess + protected shutdown) is merged and live-verified.\nP1 config transaction, read-lock and genesis guard are also merged. Remaining:\nstate-epoch/ABBA synchronization and P2 KernelIndex/pagination. G-53 remains\n**PARTIAL**.
+
+## Status schema compatibility (2026-11-04)
+
+- Contract: [API_STATUS_SCHEMA_2026-11-04.md](API_STATUS_SCHEMA_2026-11-04.md).
+- `/v1/status` keeps legacy fields and adds the Rust `Status` object under
+  `rust` plus `tip`/`connections`/`chain_type`/`sync_status_rust` aliases.
+- `/v2/owner get_status` uses the same live builder (`NodeStatus::Build`).
+- Unbuilt in the shared tree at the time of writing: executable/unit/live status
+  **NOT VERIFIED** until build-60 and the contract checks are run.

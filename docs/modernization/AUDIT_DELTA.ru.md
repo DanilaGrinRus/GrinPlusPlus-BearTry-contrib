@@ -1,6 +1,71 @@
 # AUDIT_DELTA (RU) — Grin++ 1.2.9 → совместимость с Grin v5.5.2
 
-## Аудиторская заметка — public legacy TxHashSet, 04.11.2026 (UTC+07)
+## Актуализация — 04.11.2026, 08:00 (UTC+07)
+
+Срез: HEAD `4fd7221` (build-59), плюс незакоммиченный API-контракт; build-60 не
+собран. Более старые датированные заметки ниже сохранены как история; при
+противоречии действует этот раздел.
+
+- **Rust kernel PMMR: формат установлен.** Сохранённый локальный ZIP
+  `D73EBD1811A40AFC876D4AA5B006D2D2E11B1BE5EDD0E102E8DF7D7FB2036C6C`
+  (3 067 445 011 B) содержит `kernel/pmmr_data.bin` 329 241 204 B и не содержит
+  `kernel/pmmr_size.bin`; Rust state — 3 354 613 записей с размерами
+  98/106/108/114. Старый C++ fixed-114 ожидал 382 405 932 B и падал на rewind.
+  Build-59: variable-size data, V2 storage/V1 MMR hash, full suite
+  **276/276, 4387 assertions PASS** (`Tests 78218F3C…`, `GrinNode 60D8DFD0…`).
+- **Локальный legacy live:** обычный Rust 5.5.2 → C++ loopback. Архив H=3 315 600
+  скачан/активирован build-58; build-59 body sync до H=3 318 655, `FULLY_SYNCED`,
+  restart без повторной полной загрузки state. Это не единый build-59 цикл
+  download→verify→activation: скачивание/активация были build-58. Public Floonet
+  после локального успеха **NOT VERIFIED**.
+- **G-49 (experimental, opt-in):** 4 workers на срезе 300k — 32.76 s / 9157.8
+  proofs/s против 119.58 s / 2508.8 sequential (3.65×); full-state 4w:
+  2 943 034/2 943 034 proofs, 2944/2944 batches, range 389.29 s, validate total
+  713.09 s, activation 55.96 s, final confirmed `3315600/3615bb…`. Default
+  остаётся sequential; код не merged; independent review, TSan/ASan, повтор и
+  live Floonet **NOT VERIFIED**. Отчёт
+  [G49_RANGEPROOF_PARALLEL_2026-11-04.md](G49_RANGEPROOF_PARALLEL_2026-11-04.md).
+- **API status schema (контракт, не собран):** `/v1/status` сохраняет legacy-поля
+  и добавляет точный Rust `Status` под `rust` + `tip`/`connections`/`chain_type`/
+  `sync_status_rust`; owner `get_status` использует тот же builder. Пасхалок и
+  зашитых статусов нет. Owner 401 на локальном профиле объясняется DACL
+  скопированного `.api_secret`, а не схемой. Build-60/unit/live **NOT VERIFIED**;
+  контракт — [API_STATUS_SCHEMA_2026-11-04.md](API_STATUS_SCHEMA_2026-11-04.md).
+- **Bodyless/NRD:** build-59 сохраняет fail-closed PASS; full bodyless reorg не
+  поддерживается. Тест видим в full suite.
+- **Legacy static concerns (по коду, не воспроизведены):** marker/backup
+  активации удаляются до chain commit (`TxHashSetProcessor.cpp:214–227` до
+  строки 267); ранние return в `Thread_SendTxHashSet` не снимают
+  `DisableSends(true)`; фиксированный `txhashset_failed.zip` может столкнуться
+  между процессами. Считать кандидатами, не доказанными live-дефектами.
+
+## Историческая аудиторская заметка — public legacy TxHashSet, 04.11.2026 (UTC+07)
+
+**Актуальное дополнение к Legacy (04.11.2026, 08:10 UTC+07).**
+Объект проверки — бинарник build-59 `GrinNode.exe` SHA-256 `60D8DFD05C87C8A516696D76ABDDCBF075D2D0CA28B62190181F430254766148` и совпадающий снимок затронутых исходников. Build-59 уже исправил хранение kernel-записей переменной длины и V1-хеширование; одно активное скачивание, watchdog без прогресса, отказ от бана за неоднозначную ошибку архива и ZIP CRC-проверка также присутствовали. Остальные пункты ниже — статически подтверждённые пути отказа; их live-воспроизведение не заявляется. Исправления подготовлены отдельным патчем, **не входят в build-59 и не установлены в рабочее дерево**.
+
+- **P0 · активация против chain DB:** `TxHashSetProcessor.cpp` удалял backup/marker до `ChainState::Commit`. Метод: сохранять backup и маркер с hash целевого заголовка до коммита; при старте выбирать старое/новое состояние по подтверждённому tip, при ошибке частичного коммита останавливать узел и восстанавливаться после перезапуска. Патч: подготовлен; тесты до/после коммита PASS, power-loss/live NOT VERIFIED.
+- **P0 · ложный успех синхронизации:** `TxHashSetPipe` переводил в `SYNCING_BLOCKS` любой результат кроме `INVALID`, включая `STORE_ERROR`. Метод: переход только при `SUCCESS`; остальное — `TXHASHSET_SYNC_FAILED`. Патч: подготовлен; live fault injection NOT VERIFIED.
+- **P1 · приём от peer:** после `DisableReceives(true)` часть ответов оставляла обычный P2P read отключённым; долгое ZIP также делало соединение неактивным. Метод v2: отклонённый raw ZIP stream закрывает соединение без бана и без повторного захвата `m_mutex`, чтобы ZIP-байты не попали в P2P parser; после полного принятого ZIP async read и время контакта восстанавливаются; при неполном переносе socket закрывается. Патч подготовлен; сетевой тест NOT VERIFIED.
+- **P1 · запись ZIP:** open/write/close потока скачивания не проверялись полностью. Метод: проверять каждую операцию и не передавать неполный файл в валидатор. Патч: подготовлен; disk-full NOT VERIFIED.
+- **P1 · распаковка:** лимит 8 GiB относился только к сжатому архиву. Метод: общий бюджет 16 GiB на извлечённые записи и отказ до превышающей записи; CRC остаётся обязательным. Патч: подготовлен, unit PASS; большой реальный архив на границе лимита NOT VERIFIED.
+- **P1 · kernel PMMR:** выбор fixed V1 по `dataSize % 114` ошибочен для ряда корректных переменных записей; разбор держал весь файл в RAM. Метод: сверять число kernel-листьев с hash PMMR и читать данные окнами по 4 MiB. Патч: подготовлен, сборка и базовый lookup PASS; полный ZIP повторно не проверен.
+- **P1 · авария при открытии MMR:** `TxHashSetManager::Open` запускал три загрузчика в `std::thread`; исключение из любого вело к `std::terminate`. Метод: использовать `std::future`, чтобы дождаться всех задач и передать исключение вызывающему коду. Патч: подготовлен, тест отказа PASS; live NOT VERIFIED.
+- **P1 · ложный бан блока:** `BlockPipe` банил peer при любом исключении `AddBlock`, включая локальные сбои. Метод: банить только явный `INVALID`, исключение логировать как неоднозначное. Патч: подготовлен, unit PASS; live NOT VERIFIED.
+- **P1 · legacy serving:** `Zipper` загружал каждый файл целиком, приводил размер к `unsigned int` и терял хвост после 4 GiB. Метод: потоковая запись окнами 64 KiB, ZIP64 и контроль чтения/закрытия. Патч: подготовлен, малый unit PASS; файл >4 GiB NOT VERIFIED.
+- **P1 · отправка и ресурсы:** ранний выход оставлял `DisableSends(true)`; завершённые `std::thread` накапливались до деструктора. Метод: гарантированно восстанавливать sends в worker-wrapper и присоединять завершённые потоки при следующем запросе. Патч: подготовлен; нагрузочный прогон NOT VERIFIED.
+- **P1 · гонка запроса:** асинхронная отправка TxHashSetRequest предшествовала записи peer/hash/height; быстрый ответ мог считаться незапрошенным. Метод: записывать request до send и проверять высоту ответа вместе с peer/hash. Патч: подготовлен; сетевой race-тест NOT VERIFIED.
+- **P2 · арифметика горизонта:** вычитание `CUT_THROUGH_HORIZON` из малого `headerHeight` могло переполнить `uint64_t`. Метод: использовать существующий безопасный `Consensus::GetHorizonHeight`. Патч: подготовлен, сборка PASS.
+- **P2 · сохранение отказавшего ZIP:** фиксированный `txhashset_failed.zip` удалял предыдущую улику. Метод: четыре ограниченных слота без перезаписи и явный журнал при их заполнении. Патч: подготовлен; тест заполнения слотов NOT VERIFIED.
+- **P1 · Windows mmap:** `CreateFileMapping` возвращает `NULL`, прежняя проверка искала `INVALID_HANDLE_VALUE`; ошибка `MapViewOfFile` оставляла handle открытым, деструктор мог выбросить исключение. Метод: проверять `NULL`, закрывать handle на отказе, делать деструктор безопасным; отдельно проверять short write и `SetEndOfFile`. Патч: подготовлен, сборка PASS; fault injection NOT VERIFIED.
+
+**Проверка патча v2:** Release `Tests.exe` и `GrinNode.exe` собраны с `/W4 /WX`; целевой набор — 13 тестов / 63 assertions PASS. Полный sandbox-набор — FAIL 16 кейсов, те же строки тестов, что у v1 (`Invoke`/`connect` и отсутствующий `C:\DHW\.tmp\interop\pp-archsrv`); полный PASS и сетевой тест rejected ZIP NOT VERIFIED. Единый download→verify→activate на одном новом SHA, публичный Floonet и Mainnet — NOT VERIFIED.
+
+
+> Ниже — исходная заметка до захвата локального ZIP. Формат kernel PMMR уже
+> подтверждён и исправлен (см. верхний срез); **public legacy сам по себе
+> остаётся BLOCKED/PARTIAL/NOT VERIFIED**: публичного ZIP с известным SHA,
+> повторного public-цикла и доказанной причины публичного rewind-отказа нет.
 
 Срез: HEAD `fdb0606` (build-45); live Floonet использовал отдельный build-33. Параллельные незакоммиченные исправления и их тесты NOT VERIFIED. Это техническая заметка; единый текущий план — [REMAINING.md](REMAINING.md), [legacy evidence](../../evidence/line3/public-legacy-fallback-20261103.md).
 
