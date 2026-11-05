@@ -5,12 +5,40 @@
 #include <Common/Logger.h>
 #include <Core/Global.h>
 
+StateSyncer::StateSyncer(Dependencies dependencies)
+	: m_timeRequested(std::chrono::system_clock::now()),
+	m_requestedHeight(0),
+	m_pPeer(nullptr),
+	m_hasExcludedPeer(false),
+	m_dependencies(std::move(dependencies))
+{
+
+}
+
+void StateSyncer::SetLastRequestForTest(const uint64_t requestedHeight, const std::chrono::system_clock::time_point timeRequested)
+{
+	m_requestedHeight = requestedHeight;
+	m_timeRequested = timeRequested;
+}
+
+void StateSyncer::SetPeerForTest(const PeerPtr peer)
+{
+	m_pPeer = peer;
+}
+
 bool StateSyncer::SyncState(SyncStatus& syncStatus)
 {
 	if (IsStateSyncDue(syncStatus))
 	{
-		syncStatus.UpdateStatus(ESyncStatus::SYNCING_TXHASHSET);
-		RequestState(syncStatus);
+		if (RequestState(syncStatus))
+		{
+			syncStatus.UpdateStatus(ESyncStatus::SYNCING_TXHASHSET);
+		}
+		else
+		{
+			// No request went out: do not keep claiming that txhashset sync is in progress.
+			syncStatus.UpdateStatus(ESyncStatus::TXHASHSET_SYNC_FAILED);
+		}
 
 		return true;
 	}
@@ -78,7 +106,7 @@ bool StateSyncer::IsStateSyncDue(const SyncStatus& syncStatus) const
 		}
 	}
 
-	if (m_pPeer != nullptr && !m_pConnectionManager.lock()->IsConnected(m_pPeer->GetIPAddress()))
+	if (m_pPeer != nullptr && !IsConnected(m_pPeer->GetIPAddress()))
 	{
 		LOG_WARNING("Sync peer no longer connected.");
 		return true;
@@ -89,28 +117,89 @@ bool StateSyncer::IsStateSyncDue(const SyncStatus& syncStatus) const
 
 bool StateSyncer::RequestState(const SyncStatus& syncStatus)
 {
-	if (m_pPeer != nullptr)
-	{
-		LOG_WARNING_F("Banning peer: {}", m_pPeer);
-		m_pPeer->Ban(EBanReason::BadTxHashSet);
-		m_pPeer = nullptr;
-	}
-
+	// A slow or unresponsive peer is rotated, never banned: a real bad
+	// txhashset is detected and banned by the txhashset pipeline itself.
 	if (Global::IsRunning())
 	{
+		PeerPtr next = ChooseAlternativePeer(
+			m_pPeer,
+			m_dependencies.has_value() ? m_dependencies->getMostWorkPeers() : m_pConnectionManager.lock()->GetMostWorkPeers()
+		);
+
 		const uint64_t headerHeight = syncStatus.GetHeaderHeight();
 		const uint64_t requestedHeight = headerHeight - Consensus::STATE_SYNC_THRESHOLD;
-		Hash hash = m_pBlockChain->GetBlockHeaderByHeight(requestedHeight, EChainType::CANDIDATE)->GetHash();
+		Hash hash = m_dependencies.has_value()
+			? m_dependencies->getHeaderHash(requestedHeight)
+			: m_pBlockChain->GetBlockHeaderByHeight(requestedHeight, EChainType::CANDIDATE)->GetHash();
 
 		const TxHashSetRequestMessage txHashSetRequestMessage(std::move(hash), requestedHeight);
-		m_pPeer = m_pConnectionManager.lock()->SendMessageToMostWorkPeer(txHashSetRequestMessage);
-
-		if (m_pPeer != nullptr)
+		const bool sent = m_dependencies.has_value()
+			? (next != nullptr && m_dependencies->sendMessageToPeer(txHashSetRequestMessage, next))
+			: (next != nullptr && m_pConnectionManager.lock()->SendMessageToPeer(txHashSetRequestMessage, next));
+		if (sent)
 		{
+			m_pPeer = next;
 			m_timeRequested = std::chrono::system_clock::now();
 			m_requestedHeight = requestedHeight;
+		}
+		else
+		{
+			// No alternative: leave m_pPeer null and retry on the next sync tick.
+			LOG_WARNING("No alternative txhashset peer available; will retry.");
 		}
 	}
 
 	return m_pPeer != nullptr;
+}
+
+void StateSyncer::RotatePeer(PeerPtr& peer)
+{
+	if (peer != nullptr)
+	{
+		LOG_INFO_F("Rotating txhashset sync peer: {}", peer);
+		peer = nullptr;
+	}
+}
+
+PeerPtr StateSyncer::SelectAlternativePeer(const std::vector<PeerPtr>& peers, const IPAddress& previous, const bool hasPrevious)
+{
+	for (const PeerPtr& peer : peers)
+	{
+		if (peer == nullptr || peer->IsBanned())
+		{
+			continue;
+		}
+
+		if (hasPrevious && peer->GetIPAddress() == previous)
+		{
+			continue;
+		}
+
+		return peer;
+	}
+
+	return nullptr;
+}
+
+PeerPtr StateSyncer::ChooseAlternativePeer(PeerPtr& current, const std::vector<PeerPtr>& peers)
+{
+	if (current != nullptr)
+	{
+		m_excludedPeer = current->GetIPAddress();
+		m_hasExcludedPeer = true;
+	}
+
+	RotatePeer(current);
+
+	return SelectAlternativePeer(peers, m_excludedPeer, m_hasExcludedPeer);
+}
+
+bool StateSyncer::IsConnected(const IPAddress& address) const
+{
+	if (m_dependencies.has_value())
+	{
+		return m_dependencies->isConnected(address);
+	}
+
+	return m_pConnectionManager.lock()->IsConnected(address);
 }
