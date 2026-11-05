@@ -40,6 +40,9 @@ public:
 		const Hash& block_hash
 	);
 
+	// An archive is accepted only while the node is waiting for one.
+	static bool IsArchiveRequested(ESyncStatus status);
+
 private:
 	TxHashSetPipe(
 		const std::shared_ptr<ConnectionManager>& pConnectionManager,
