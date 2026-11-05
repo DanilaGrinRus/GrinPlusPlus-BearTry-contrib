@@ -36,11 +36,13 @@ std::shared_ptr<TxHashSetPipe> TxHashSetPipe::Create(
 
 void TxHashSetPipe::ReceiveTxHashSet(const Connection::Ptr& pConnection, const TxHashSetArchiveMessage& archive_msg)
 {
-	if (m_pSyncStatus->GetStatus() != ESyncStatus::SYNCING_TXHASHSET)
+	if (!IsArchiveRequested(m_pSyncStatus->GetStatus()))
 	{
-		LOG_WARNING_F("Received TxHashSet from {} when not requested.", *pConnection);
-		// connection.BanPeer(EBanReason::Abusive);
-		// return;
+		// An archive that we never requested must not be written to disk or
+		// processed: it would let any peer push an arbitrary snapshot at us.
+		LOG_WARNING_F("Received unrequested TxHashSet from {}. Banning.", *pConnection);
+		pConnection->BanPeer(EBanReason::BadTxHashSet);
+		return;
 	}
 
 	const bool processing = m_processing.exchange(true);
@@ -227,4 +229,9 @@ void TxHashSetPipe::Thread_SendTxHashSet(
 
 	file.close();
 	FileUtil::RemoveFile(zipFilePath);
+}
+
+bool TxHashSetPipe::IsArchiveRequested(ESyncStatus status)
+{
+	return status == ESyncStatus::SYNCING_TXHASHSET;
 }
