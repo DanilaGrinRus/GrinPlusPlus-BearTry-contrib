@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Net/Socket.h>
+#include <Crypto/Models/Hash.h>
 #include <P2P/SyncStatus.h>
 #include <P2P/ConnectedPeer.h>
 #include "../Messages/RawMessage.h"
@@ -15,6 +16,9 @@ public:
 		: m_connectionManager(connectionManager), m_pSyncStatus(pSyncStatus) { }
 
 	void PerformHandshake(const Socket::Ptr& pSocket, ConnectedPeer& connectedPeer) const;
+
+	// The peer must be on the same chain: the shake message carries the peer's genesis hash.
+	static bool IsGenesisHashValid(const Hash& peerGenesisHash);
 
 private:
 	void PerformOutboundHandshake(const Socket::Ptr& pSocket, ConnectedPeer& connectedPeer) const;
