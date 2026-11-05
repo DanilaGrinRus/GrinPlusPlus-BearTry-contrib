@@ -208,10 +208,18 @@ void TxHashSetPipe::Thread_SendTxHashSet(
 
 		std::vector<uint8_t> buffer(BUFFER_SIZE, 0);
 			
-		while (file.read((char*)buffer.data(), BUFFER_SIZE)) {
+		// std::istream::read sets failbit on a short read, so `while (read(...))`
+		// silently drops the final partial chunk. Loop on gcount() instead.
+		while (file)
+		{
+			const std::streamsize bytesRead = ReadChunk(file, (char*)buffer.data(), BUFFER_SIZE);
+			if (bytesRead <= 0) {
+				break;
+			}
+
 			std::vector<uint8_t> bytesToSend(
 				buffer.cbegin(),
-				buffer.cbegin() + file.gcount()
+				buffer.cbegin() + bytesRead
 			);
 			bool sent = pConnection->GetSocket()->SendSync(bytesToSend, false);
 			if (!sent || !Global::IsRunning()) {
@@ -227,4 +235,10 @@ void TxHashSetPipe::Thread_SendTxHashSet(
 
 	file.close();
 	FileUtil::RemoveFile(zipFilePath);
+}
+
+std::streamsize TxHashSetPipe::ReadChunk(std::istream& file, char* buffer, std::streamsize size)
+{
+	file.read(buffer, size);
+	return file.gcount();
 }

@@ -7,6 +7,7 @@
 #include <BlockChain/BlockChain.h>
 #include <Common/Util/FileUtil.h>
 #include <string>
+#include <istream>
 #include <cstdint>
 #include <atomic>
 #include <thread>
@@ -39,6 +40,10 @@ public:
 		const std::shared_ptr<Connection>& pConnection,
 		const Hash& block_hash
 	);
+
+	// Reads one chunk from an archive stream and returns gcount(). Exposed for the
+	// regression test of the partial-final-chunk fix.
+	static std::streamsize ReadChunk(std::istream& file, char* buffer, std::streamsize size);
 
 private:
 	TxHashSetPipe(
