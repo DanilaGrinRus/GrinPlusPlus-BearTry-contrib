@@ -46,7 +46,7 @@ void HandShake::PerformOutboundHandshake(const Socket::Ptr& pSocket, ConnectedPe
     ShakeMessage shakeMessage = ShakeMessage::Deserialize(buffer);
 
     // Only peers on the same chain may connect (Grin 5.5.2: BadHandshake).
-    if (shakeMessage.GetHash() != Global::GetGenesisHash()) {
+    if (!IsGenesisHashValid(shakeMessage.GetHash())) {
         throw PROTOCOL_EXCEPTION_F(
             "Shake message genesis block does not match ours. Peer {}",
             *connectedPeer.GetPeer()
@@ -153,4 +153,9 @@ std::unique_ptr<RawMessage> HandShake::RetrieveMessage(const Socket::Ptr& pSocke
 
     peer.UpdateLastContactTime();
     return std::make_unique<RawMessage>(std::move(messageHeader), std::move(payload));
+}
+
+bool HandShake::IsGenesisHashValid(const Hash& peerGenesisHash)
+{
+	return peerGenesisHash == Global::GetGenesisHash();
 }

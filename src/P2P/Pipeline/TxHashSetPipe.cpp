@@ -216,8 +216,7 @@ void TxHashSetPipe::Thread_SendTxHashSet(
 		// BUFFER_SIZE. Loop on gcount() instead.
 		while (file)
 		{
-			file.read((char*)buffer.data(), BUFFER_SIZE);
-			const std::streamsize bytesRead = file.gcount();
+			const std::streamsize bytesRead = ReadChunk(file, (char*)buffer.data(), BUFFER_SIZE);
 			if (bytesRead <= 0) {
 				break;
 			}
@@ -240,4 +239,10 @@ void TxHashSetPipe::Thread_SendTxHashSet(
 
 	file.close();
 	FileUtil::RemoveFile(zipFilePath);
+}
+
+std::streamsize TxHashSetPipe::ReadChunk(std::istream& file, char* buffer, std::streamsize size)
+{
+	file.read(buffer, size);
+	return file.gcount();
 }
