@@ -1,0 +1,6 @@
+file(GLOB P2P_TEST_FILES RELATIVE "${CMAKE_CURRENT_LIST_DIR}" "${CMAKE_CURRENT_LIST_DIR}/Test_*.cpp")
+list_append_parent(
+    test_sources
+    ${CMAKE_CURRENT_LIST_DIR}
+    ${P2P_TEST_FILES}
+)
