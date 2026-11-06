@@ -12,5 +12,5 @@ add_executable(${TARGET_NAME}
 	"Node/API/TxHashSetAPI.cpp"
 	"Wallet/WalletDaemon.cpp"
 )
-target_include_directories(${TARGET_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(${TARGET_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(${TARGET_NAME} Common P2P BlockChain Wallet PoW API)

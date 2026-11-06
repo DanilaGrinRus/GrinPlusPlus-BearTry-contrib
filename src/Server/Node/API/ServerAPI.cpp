@@ -1,6 +1,7 @@
 #include "ServerAPI.h"
 #include "../NodeContext.h"
 
+#include <API/Node/Handlers/NodeStatus.h>
 #include <Net/Util/HTTPUtil.h>
 #include <P2P/Common.h>
 #include <json/json.h>
@@ -92,6 +93,18 @@ int ServerAPI::GetStatus_Handler(struct mg_connection* conn, void* pNodeContext)
 
 	const uint64_t headerHeight = pServer->m_pBlockChain->GetHeight(EChainType::CANDIDATE);
 	statusNode["header_height"] = headerHeight;
+
+	// Compatibility contract: keep all legacy fields above for existing
+	// clients, and expose the exact Rust Status object under "rust". This avoids
+	// two different builders for the same live snapshot.
+	const Json::Value rustStatus = NodeStatus::Build(pServer->m_pBlockChain, pServer->m_pP2PServer);
+	if (!rustStatus.isNull()) {
+		statusNode["rust"] = rustStatus;
+		statusNode["tip"] = rustStatus["tip"];
+		statusNode["connections"] = rustStatus["connections"];
+		statusNode["chain_type"] = rustStatus["chain"];
+		statusNode["sync_status_rust"] = rustStatus["sync_status"];
+	}
 
 	return HTTPUtil::BuildSuccessResponse(conn, statusNode.toStyledString());
 }
