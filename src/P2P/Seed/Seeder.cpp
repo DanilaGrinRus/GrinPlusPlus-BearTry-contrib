@@ -6,6 +6,7 @@
 
 #include <Core/Context.h>
 #include <P2P/Capabilities.h>
+#include <P2P/Seed/DnsRetryPolicy.h>
 #include <Net/SocketAddress.h>
 #include <Net/Socket.h>
 #include <Common/Util/StringUtil.h>
@@ -204,8 +205,13 @@ void Seeder::SeedNewConnection()
         );
         
         pConnection->Connect();
-    } else if (!m_usedDNS.exchange(true)) {
-        std::vector<SocketAddress> peerAddresses = DNSSeeder::GetPeersFromDNS();
-        m_peerManager.Write()->AddFreshPeers(peerAddresses);
+    } else {
+        const auto now = std::chrono::system_clock::now();
+        if (DnsRetryPolicy::IsDue(m_lastDnsAttempt, now)) {
+            m_lastDnsAttempt = now;
+            std::vector<SocketAddress> peerAddresses = DNSSeeder::GetPeersFromDNS();
+            LOG_INFO_F("DNS discovery returned {} peer(s)", peerAddresses.size());
+            m_peerManager.Write()->AddFreshPeers(peerAddresses);
+        }
     }
 }
