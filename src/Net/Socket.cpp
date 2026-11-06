@@ -183,6 +183,7 @@ bool Socket::SendSync(const std::vector<uint8_t>& message, const bool incrementC
 
 void Socket::SendAsync(const std::vector<uint8_t>& message)
 {
+    std::lock_guard<std::mutex> queueLock(m_writeQueueMutex);
     bool first_in_queue = m_writeQueue.empty();
     m_writeQueue.push_back(message);
 
@@ -192,11 +193,12 @@ void Socket::SendAsync(const std::vector<uint8_t>& message)
         return;
     }
 
+    m_activeWrite = message;
     std::shared_lock<std::shared_mutex> socketLock(m_socketMutex);
     if (m_socketOpen) {
         asio::async_write(
             *m_pSocket,
-            asio::buffer(message.data(), message.size()),
+            asio::buffer(m_activeWrite.data(), m_activeWrite.size()),
             std::bind(&Socket::HandleSent, shared_from_this(), std::placeholders::_1, std::placeholders::_2)
         );
     }
@@ -204,6 +206,7 @@ void Socket::SendAsync(const std::vector<uint8_t>& message)
 
 void Socket::HandleSent(const asio::error_code& ec, size_t)
 {
+    std::lock_guard<std::mutex> queueLock(m_writeQueueMutex);
     m_rateCounter.AddMessageSent();
 
     if (!m_writeQueue.empty()) {
@@ -213,13 +216,13 @@ void Socket::HandleSent(const asio::error_code& ec, size_t)
     if (ec) {
         LOG_INFO_F("Failed to send message to {}: {}", *this, ec.message());
     } else if (!m_writeQueue.empty()) {
-        std::vector<uint8_t> message = m_writeQueue.front();
+        m_activeWrite = m_writeQueue.front();
 
         std::shared_lock<std::shared_mutex> socketLock(m_socketMutex);
         if (m_socketOpen) {
             asio::async_write(
                 *m_pSocket,
-                asio::buffer(message.data(), message.size()),
+                asio::buffer(m_activeWrite.data(), m_activeWrite.size()),
                 std::bind(&Socket::HandleSent, shared_from_this(), std::placeholders::_1, std::placeholders::_2)
             );
         }
