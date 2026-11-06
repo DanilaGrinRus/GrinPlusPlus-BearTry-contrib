@@ -3,9 +3,13 @@
 #include "ConfigProps.h"
 
 #include <cstdint>
+#include <string>
+#include <unordered_set>
+#include <vector>
 #include <json/json.h>
 #include <Common/Logger.h>
 #include <Core/Enums/Environment.h>
+#include <Net/IPAddress.h>
 
 #include <Core/Exceptions/FileException.h>
 #include <Core/Global.h>
@@ -65,6 +69,10 @@ public:
 
 		if (p2pJSON.isMember(ConfigProps::P2P::MIN_PEERS)) {
 			m_minConnections = p2pJSON.get(ConfigProps::P2P::MIN_PEERS, 10).asInt();
+		}
+
+		if (p2pJSON.isMember(ConfigProps::P2P::P2P_PORT)) {
+			m_port = (uint16_t)p2pJSON.get(ConfigProps::P2P::P2P_PORT, (int)m_port).asInt();
 		}
 
 		if (p2pJSON.isMember(ConfigProps::P2P::PREFERRED_PEERS)) {

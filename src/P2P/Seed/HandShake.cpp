@@ -91,7 +91,7 @@ void HandShake::TransmitHandMessage(const Socket::Ptr& pSocket) const
     IPAddress localHostIP = IPAddress::CreateV4({ 0x7F, 0x00, 0x00, 0x01 });
     HandMessage hand(
         P2P::PROTOCOL_VERSION,
-        Capabilities::FAST_SYNC_NODE,
+        Capabilities::ADVERTISED,
         SELF_NONCE,
         Global::GetGenesisHash(),
         m_pSyncStatus->GetBlockDifficulty(),
@@ -109,7 +109,7 @@ void HandShake::TransmitShakeMessage(const Socket::Ptr& pSocket, const uint32_t 
 {
     ShakeMessage shakeMessage(
         protocolVersion,
-        Capabilities::FAST_SYNC_NODE,
+        Capabilities::ADVERTISED,
         Global::GetGenesisHash(),
         m_pSyncStatus->GetBlockDifficulty(),
         P2P::USER_AGENT

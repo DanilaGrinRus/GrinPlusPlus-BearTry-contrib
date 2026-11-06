@@ -24,7 +24,12 @@ public:
 
 		FAST_SYNC_NODE = (TXHASHET_HIST | PEER_LIST),
 
-		ARCHIVE_NODE = (FULL_HIST | TXHASHET_HIST | PEER_LIST)
+		ARCHIVE_NODE = (FULL_HIST | TXHASHET_HIST | PEER_LIST),
+
+		// Capabilities this node advertises in the handshake. This base
+		// implements TxHashSet fast sync and the peer list; PIBD/archival
+		// serving bits do not exist here, so they are not advertised.
+		ADVERTISED = FAST_SYNC_NODE
 	};
 
 	Capabilities(const uint32_t value)

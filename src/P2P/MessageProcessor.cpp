@@ -66,6 +66,8 @@ void MessageProcessor::ProcessMessage(const std::shared_ptr<Connection>& pConnec
 {
     const EMessageType messageType = rawMessage.GetMessageHeader().GetMessageType();
 
+    LOG_DEBUG_F("Received {} from {}", MessageTypes::ToString(messageType), pConnection);
+
     try
     {
         return ProcessMessageInternal(pConnection, rawMessage);
