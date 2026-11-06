@@ -37,6 +37,13 @@ bool PoWValidator::IsPoWValid(const BlockHeader& header, const BlockHeader& prev
         return false;
     }
 
+    // Reject unsupported edge-bit sizes before dispatching to a Cuckoo variant;
+    // the primary sizes are 31..63 and the secondary algorithm is exactly 29.
+    if (!IsSupportedEdgeBits(header.GetEdgeBits())) {
+        LOG_WARNING_F("Unsupported PoW edge bits {} for block {}", header.GetEdgeBits(), header);
+        return false;
+    }
+
     uint64_t header_version = header.GetVersion();
     if (header.GetEdgeBits() == 29) {
         if (header_version == 1) {
