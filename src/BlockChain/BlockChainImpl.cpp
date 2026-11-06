@@ -9,6 +9,8 @@
 #include "ChainResyncer.h"
 #include "CoinView.h"
 
+#include <Database/DbBackup.h>
+
 #include <Consensus.h>
 #include <GrinVersion.h>
 #include <Common/Logger.h>
@@ -61,6 +63,20 @@ std::shared_ptr<BlockChain> BlockChain::Create(
 	if (db_version > 3) {
 		LOG_ERROR("Database is from a newer version of Grin++!");
 		std::terminate();
+	}
+
+	if (db_version >= 1 && db_version < 3) {
+		// Keep the previous database before any destructive migration. Abort if
+		// the backup cannot be written: never migrate the only copy (G-22).
+		// A fresh database (version 0) has nothing to preserve.
+		const fs::path backupPath =
+			DbBackup::BackupBeforeMigration(config.GetDatabasePath(), db_version);
+		if (backupPath.empty()) {
+			LOG_ERROR("Failed to back up the database before migration; aborting.");
+			throw std::runtime_error("Database backup failed");
+		}
+
+		LOG_WARNING_F("Database v{} backed up to {}", db_version, backupPath.string());
 	}
 
 	if (db_version < 2) {
