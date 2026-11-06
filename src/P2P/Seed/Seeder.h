@@ -16,6 +16,7 @@
 // Forward Declarations
 class PeerManager;
 class Pipeline;
+class AcceptLoop;
 
 class Seeder
 {
@@ -28,6 +29,10 @@ public:
 		SyncStatusConstPtr pSyncStatus
 	);
 	~Seeder();
+
+	// Pure decision used by Accept; exposed for the regression test.
+	static bool ShouldAcceptPeer(bool hasError, uint64_t activeConnections, uint64_t maxPeers,
+		bool blocked, bool allowed, bool banned);
 
 private:
 	Seeder(
@@ -47,8 +52,9 @@ private:
 	static void Thread_AsioContext(Seeder& seeder);
 	static void Thread_Seed(Seeder& seeder);
 	void StartListener();
+	void StopListener();
 
-	void Accept(const asio::error_code& ec);
+	void OnAccept(asio::ip::tcp::socket socket);
 	void SeedNewConnection();
 
 	ConnectionManager& m_connectionManager;
@@ -60,8 +66,7 @@ private:
 	std::atomic<bool> m_terminate = true;
 
 	std::shared_ptr<asio::io_service> m_pAsioContext;
-	std::shared_ptr<asio::ip::tcp::acceptor> m_pAcceptor;
-	std::shared_ptr<asio::ip::tcp::socket> m_pSocket;
+	std::shared_ptr<AcceptLoop> m_pAcceptLoop;
 
 	std::thread m_asioThread;
 	std::thread m_seedThread;

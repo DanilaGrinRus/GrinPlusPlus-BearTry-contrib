@@ -1,4 +1,5 @@
 #include "Seeder.h"
+#include "AcceptLoop.h"
 #include "DNSSeeder.h"
 #include "PeerManager.h"
 #include "../ConnectionManager.h"
@@ -18,6 +19,7 @@ Seeder::~Seeder()
 {
     LOG_INFO("Shutting down seeder");
     m_terminate = true;
+    StopListener();
 
     m_pAsioContext->stop();
 
@@ -105,61 +107,91 @@ void Seeder::Thread_Seed(Seeder& seeder)
 
 void Seeder::StartListener()
 {
-    try {
-        m_pAcceptor = std::make_shared<asio::ip::tcp::acceptor>(
-            *m_pAsioContext,
-            asio::ip::tcp::endpoint(asio::ip::tcp::v4(), Global::GetConfig().GetP2PPort())
-        );
+    m_pAcceptLoop = std::make_shared<AcceptLoop>(
+        *m_pAsioContext,
+        Global::GetConfig().GetP2PPort()
+    );
 
-        m_pSocket = std::make_shared<asio::ip::tcp::socket>(*m_pAsioContext);
-        m_pAcceptor->async_accept(*m_pSocket, std::bind(&Seeder::Accept, this, std::placeholders::_1));
-    }
-    catch (std::exception& e) {
-        LOG_ERROR_F("Listener failed with error: {}", e.what());
+    if (!m_pAcceptLoop->Start(
+        [this](asio::ip::tcp::socket socket)
+        {
+            OnAccept(std::move(socket));
+        }))
+    {
+        LOG_ERROR("Listener failed to start.");
     }
 }
 
-void Seeder::Accept(const asio::error_code& ec)
+void Seeder::StopListener()
+{
+    if (m_pAcceptLoop != nullptr)
+    {
+        m_pAcceptLoop->Stop();
+        m_pAcceptLoop = nullptr;
+    }
+}
+
+void Seeder::OnAccept(asio::ip::tcp::socket socket)
 {
     std::unique_lock<std::mutex> lock(m_mutex);
-    
-    if (ec) return;
-    
-    if (m_connectionManager.GetNumberOfActiveConnections() < Global::GetConfig().GetMaxPeers()) {
-        SocketAddress socket_address = SocketAddress::FromEndpoint(m_pSocket->remote_endpoint());
-        SocketPtr pSocket(new Socket(SocketAddress::FromEndpoint(m_pSocket->remote_endpoint()), m_pAsioContext, m_pSocket));
-        pSocket->SetOpen(true);
 
-        if (Global::GetConfig().IsPeerBlocked(pSocket->GetIPAddress())) {
-            LOG_TRACE_F("peer is blocked: {}",  pSocket->GetIPAddress());
-            return;
-        }
-
-        if (!Global::GetConfig().IsPeerAllowed(pSocket->GetIPAddress())) {
-            LOG_TRACE_F("peer is not allowed: {}",  pSocket->GetIPAddress());        
-            return;
-        }
-
-        auto pPeer = m_peerManager.Write()->GetPeer( pSocket->GetIPAddress());
-
-        if (!pPeer->IsBanned()) {
-            auto pConnection = std::make_shared<Connection>(
-                pSocket,
-                m_nextId++,
-                m_connectionManager,
-                ConnectedPeer(pPeer, EDirection::INBOUND, pSocket->GetPort()),
-                m_pSyncStatus,
-                m_pMessageProcessor
-            );
-            pConnection->Connect();
-        }
-    } else {
-        asio::error_code ignoreError;
-        m_pSocket->close(ignoreError);
+    asio::error_code endpointError;
+    const auto endpoint = socket.remote_endpoint(endpointError);
+    if (endpointError)
+    {
+        asio::error_code ignored;
+        socket.close(ignored);
+        return;
     }
 
-    m_pSocket = std::make_shared<asio::ip::tcp::socket>(*m_pAsioContext);
-    m_pAcceptor->async_accept(*m_pSocket, std::bind(&Seeder::Accept, this, std::placeholders::_1));
+    SocketPtr pSocket(new Socket(
+        SocketAddress::FromEndpoint(endpoint),
+        m_pAsioContext,
+        std::make_shared<asio::ip::tcp::socket>(std::move(socket))
+    ));
+    pSocket->SetOpen(true);
+
+    const uint64_t activeConnections = m_connectionManager.GetNumberOfActiveConnections();
+    const uint64_t maxPeers = Global::GetConfig().GetMaxPeers();
+    const IPAddress& ipAddress = pSocket->GetIPAddress();
+    const bool blocked = Global::GetConfig().IsPeerBlocked(ipAddress);
+    const bool allowed = !blocked && Global::GetConfig().IsPeerAllowed(ipAddress);
+    PeerPtr pPeer = nullptr;
+    if (allowed)
+    {
+        pPeer = m_peerManager.Write()->GetPeer(ipAddress);
+    }
+    const bool banned = (pPeer != nullptr) && pPeer->IsBanned();
+
+    if (ShouldAcceptPeer(false, activeConnections, maxPeers, blocked, allowed, banned))
+    {
+        auto pConnection = std::make_shared<Connection>(
+            pSocket,
+            m_nextId++,
+            m_connectionManager,
+            ConnectedPeer(pPeer, EDirection::INBOUND, pSocket->GetPort()),
+            m_pSyncStatus,
+            m_pMessageProcessor
+        );
+        pConnection->Connect();
+    }
+    else
+    {
+        if (blocked)
+        {
+            LOG_TRACE_F("peer is blocked: {}", ipAddress);
+        }
+        else if (!allowed)
+        {
+            LOG_TRACE_F("peer is not allowed: {}", ipAddress);
+        }
+        else if (banned)
+        {
+            LOG_TRACE_F("peer is banned: {}", ipAddress);
+        }
+
+        pSocket->CloseSocket();
+    }
 }
 
 void Seeder::SeedNewConnection()
@@ -208,4 +240,15 @@ void Seeder::SeedNewConnection()
         std::vector<SocketAddress> peerAddresses = DNSSeeder::GetPeersFromDNS();
         m_peerManager.Write()->AddFreshPeers(peerAddresses);
     }
+}
+
+bool Seeder::ShouldAcceptPeer(
+	bool hasError,
+	uint64_t activeConnections,
+	uint64_t maxPeers,
+	bool blocked,
+	bool allowed,
+	bool banned)
+{
+	return !hasError && activeConnections < maxPeers && !blocked && allowed && !banned;
 }
