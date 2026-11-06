@@ -104,6 +104,11 @@ public:
             hashes.push_back(byteBuffer.ReadBigInteger<32>());
         }
         const uint64_t numLeaves = byteBuffer.Read<uint64_t>();
+        // Every serialized leaf consumes at least one byte; refuse unreasonable
+        // counts before reserving leaf storage.
+        if (numLeaves > byteBuffer.GetRemainingSize()) {
+            throw DESERIALIZATION_EXCEPTION("Segment leaf list does not fit in the payload");
+        }
         std::vector<uint64_t> leafPos(numLeaves);
         for (uint64_t i = 0; i < numLeaves; ++i) {
             leafPos[i] = byteBuffer.Read<uint64_t>();
