@@ -27,11 +27,11 @@
 #include "Handlers/GetWalletAddressHandler.h"
 #include "Handlers/GetNewWalletAddressHandler.h"
 
-OwnerServer::UPtr OwnerServer::Create(const TorProcess::Ptr& pTorProcess, const IWalletManagerPtr& pWalletManager)
+OwnerServer::UPtr OwnerServer::Create(const TorProcess::Ptr& pTorProcess, const IWalletManagerPtr& pWalletManager, const uint16_t ownerPort)
 {
     RPCServerPtr pServer = RPCServer::Create(
         EServerType::LOCAL,
-        std::make_optional<uint16_t>((uint16_t)3421), // TODO: Read port from config (Use same port as v1 owner)
+        std::make_optional<uint16_t>(ownerPort), // Production default is 3421; tests may isolate.
         "/v2",
         LoggerAPI::LogFile::WALLET
     );

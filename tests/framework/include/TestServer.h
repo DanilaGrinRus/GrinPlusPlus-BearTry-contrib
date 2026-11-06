@@ -66,7 +66,7 @@ public:
 
 	const IWalletManagerPtr& GetWalletManager() const noexcept { return m_pWalletManager; }
 	const OwnerServer::UPtr& GetOwnerServer() const noexcept { return m_pOwnerServer; }
-	uint16_t GetOwnerPort() const noexcept { return 3421; }
+	uint16_t GetOwnerPort() const noexcept { return m_ownerPort; }
 
 	RPC::Response InvokeOwnerRPC(const std::string& method, const Json::Value& paramsJson);
 
@@ -105,6 +105,7 @@ private:
 	OwnerServer::UPtr m_pOwnerServer;
 
 	std::unique_ptr<TestMiner> m_pMiner;
+	uint16_t m_ownerPort;
 	size_t m_tempDirs;
 	size_t m_numUsers;
 };

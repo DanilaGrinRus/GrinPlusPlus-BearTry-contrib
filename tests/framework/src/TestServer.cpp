@@ -8,6 +8,28 @@
 #include <Net/Clients/RPC/RPCClient.h>
 #include <Wallet/Keychain/KeyChain.h>
 
+#include <cstdlib>
+#include <limits>
+
+static uint16_t ReadOwnerPort()
+{
+	const char* configured = std::getenv("GRINPP_TEST_OWNER_PORT");
+	if (configured == nullptr) {
+		return 3421;
+	}
+
+	try {
+		const int port = std::stoi(configured);
+		if (port > 0 && port <= std::numeric_limits<uint16_t>::max()) {
+			return static_cast<uint16_t>(port);
+		}
+	}
+	catch (const std::exception&) {
+	}
+
+	return 3421;
+}
+
 TestServer::TestServer(
 	const std::shared_ptr<IDatabase>& pDatabase,
 	const std::shared_ptr<Locked<TxHashSetManager>>& pTxHashSetManager,
@@ -22,8 +44,9 @@ TestServer::TestServer(
 	m_pWalletManager(nullptr),
 	m_pOwnerServer(nullptr),
 	m_pMiner(nullptr),
-	m_numUsers(0),
-	m_tempDirs(0)
+	m_ownerPort(ReadOwnerPort()),
+	m_tempDirs(0),
+	m_numUsers(0)
 {
 
 }
@@ -98,7 +121,11 @@ TestServer::Ptr TestServer::CreateWithWallet()
 	));
 
 	pServer->m_pWalletManager = WalletAPI::CreateWalletManager(Global::GetConfig(), pNodeClient);
-	pServer->m_pOwnerServer = OwnerServer::Create(TorProcessManager::GetProcess(0), pServer->m_pWalletManager);
+	pServer->m_pOwnerServer = OwnerServer::Create(
+		TorProcessManager::GetProcess(0),
+		pServer->m_pWalletManager,
+		pServer->GetOwnerPort()
+	);
 
 	return pServer;
 }
