@@ -5,5 +5,6 @@ list_append_parent(
     "Test_PruneList.cpp"
     "Test_PruneList_GetLeafShift.cpp"
     "Test_PruneList_GetShift.cpp"
+    "Test_SegmentLeafBound.cpp"
     "LeafSet/Test_LeafSet.cpp"
 )
