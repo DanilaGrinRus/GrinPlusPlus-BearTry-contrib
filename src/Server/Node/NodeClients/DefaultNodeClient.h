@@ -114,9 +114,13 @@ public:
 			return std::unique_ptr<OutputRange>(nullptr);
 		}
 
-		auto pBlockDB = m_pDatabase->GetBlockDB()->Read();
+		std::shared_ptr<const IBlockDB> pBlockDB;
+		{
+			const auto pReader = m_pDatabase->GetBlockDB()->Read();
+			pBlockDB = pReader.GetShared();
+		}
 		return std::make_unique<OutputRange>(
-			pTxHashSet->GetOutputsByLeafIndex(pBlockDB.GetShared(), startIndex, maxNumOutputs)
+			pTxHashSet->GetOutputsByLeafIndex(pBlockDB, startIndex, maxNumOutputs)
 		);
 	}
 
@@ -124,13 +128,17 @@ public:
 	{
 		auto pTipHeader = m_pBlockChain->GetTipBlockHeader(EChainType::CONFIRMED);
 		if (pTipHeader != nullptr) {
-			auto pBlockDB = m_pDatabase->GetBlockDB()->Read();
+			std::shared_ptr<const IBlockDB> pBlockDB;
+			{
+				const auto pReader = m_pDatabase->GetBlockDB()->Read();
+				pBlockDB = pReader.GetShared();
+			}
 			auto pTxHashSet = m_pTxHashSetManager->GetTxHashSet();
 			if (pTxHashSet != nullptr) {
 				try
 				{
 					auto result = m_pTransactionPool->AddTransaction(
-						pBlockDB.GetShared(),
+						pBlockDB,
 						pTxHashSet,
 						pTransaction,
 						poolType,

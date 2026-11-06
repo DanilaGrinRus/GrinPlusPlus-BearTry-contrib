@@ -238,8 +238,12 @@ int TxHashSetAPI::GetOutputs_Handler(struct mg_connection* conn, void* pNodeCont
 		{
 			Json::Value rootNode;
 
-			auto pBlockDB = pServer->m_pDatabase->GetBlockDB()->Read();
-			OutputRange range = pTxHashSet->GetOutputsByLeafIndex(pBlockDB.GetShared(), startIndex, max);
+			std::shared_ptr<const IBlockDB> pBlockDB;
+			{
+				const auto pReader = pServer->m_pDatabase->GetBlockDB()->Read();
+				pBlockDB = pReader.GetShared();
+			}
+			OutputRange range = pTxHashSet->GetOutputsByLeafIndex(pBlockDB, startIndex, max);
 			rootNode["highest_index"] = range.GetHighestIndex();
 			rootNode["last_retrieved_index"] = range.GetLastRetrievedIndex();
 

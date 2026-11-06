@@ -18,9 +18,10 @@ NodeServer::UPtr NodeServer::Create(const ServerPtr& pServer, const IBlockChain:
     pForeignServer->AddMethod("push_transaction", std::make_shared<PushTransactionHandler>(pBlockChain, pP2PServer));
 
     pForeignServer->AddMethod("get_config", std::make_shared<GetConfigHandler>());
-    pForeignServer->AddMethod("update_config", std::make_shared<UpdateConfigHandler>());
 
     RPCServer::Ptr pOwnerServer = RPCServer::Create(pServer, "/v2/owner", LoggerAPI::LogFile::NODE);
+    pOwnerServer->AddMethod("get_config", std::make_shared<GetConfigHandler>());
+    pOwnerServer->AddMethod("update_config", std::make_shared<UpdateConfigHandler>());
 
     return std::make_unique<NodeServer>(pForeignServer, pOwnerServer);
 }

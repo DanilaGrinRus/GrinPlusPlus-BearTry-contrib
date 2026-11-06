@@ -1,7 +1,9 @@
 #include "ServerAPI.h"
 #include "../NodeContext.h"
 
+#include <Core/Global.h>
 #include <Net/Util/HTTPUtil.h>
+#include <Net/Servers/RPC/ApiAccess.h>
 #include <P2P/Common.h>
 #include <json/json.h>
 
@@ -133,6 +135,11 @@ std::string ServerAPI::GetStatusString(const SyncStatus& syncStatus)
 
 int ServerAPI::ResyncChain_Handler(struct mg_connection* conn, void* pNodeContext)
 {
+	if (!ApiAccess::Check(conn, ApiAccess::Level::ADMIN, Global::GetConfig().GetRestAPIPort()))
+	{
+		return HTTPUtil::BuildUnauthorizedResponse(conn, "Unauthorized");
+	}
+
 	NodeContext* pServer = (NodeContext*)pNodeContext;
 
 	pServer->m_pBlockChain->ResyncChain();
