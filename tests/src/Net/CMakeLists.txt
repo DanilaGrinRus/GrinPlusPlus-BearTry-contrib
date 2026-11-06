@@ -4,6 +4,7 @@ list_append_parent(
     "Test_IPAddress.cpp"
     "Test_Socket.cpp"
     "Test_SocketAddress.cpp"
+    "Test_BlockSyncPolicy.cpp"
     "Tor/Test_TorAddressParser.cpp"
     "Tor/Test_TorConnection.cpp"
 )
