@@ -46,7 +46,10 @@ std::shared_ptr<Locked<ChainState>> ChainState::Create(
 {
 	std::shared_ptr<const Chain> pCandidateChain = pChainStore->Read()->GetCandidateChain();
 	const uint64_t candidateHeight = pCandidateChain->GetTip()->GetHeight();
-	if (candidateHeight == 0)
+	// Re-opening an existing genesis-only store must not append genesis to the
+	// header MMR again: the block DB already has it, and a duplicate leaf would
+	// make the MMR grow on every restart (and disagree with the chain index).
+	if (candidateHeight == 0 && pDatabase->Read()->GetBlockHeader(genesisBlock.GetHash()) == nullptr)
 	{
 		auto locked = MultiLocker().Lock(*pDatabase, *pHeaderMMR);
 		std::get<0>(locked)->AddBlockHeader(genesisBlock.GetHeader());

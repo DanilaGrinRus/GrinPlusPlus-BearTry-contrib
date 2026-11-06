@@ -25,6 +25,14 @@ public:
 	virtual void AddHeader(const BlockHeader& header) = 0;
 	virtual Hash Root(const uint64_t nextHeight) const = 0;
 	virtual void Rewind(const uint64_t nextHeight) = 0;
+
+	// Number of headers committed to the MMR. Used to detect a crash between
+	// the MMR commit and the chain-index commit.
+	virtual uint64_t GetLeafCount() const = 0;
+
+	// Raw number of 32-byte nodes in the on-disk MMR file. Used for structural
+	// validation before any heights are trusted.
+	virtual uint64_t GetNodeCount() const = 0;
 };
 
 namespace HeaderMMRAPI

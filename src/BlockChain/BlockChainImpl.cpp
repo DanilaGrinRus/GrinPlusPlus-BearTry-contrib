@@ -8,6 +8,7 @@
 #include "Processors/BlockProcessor.h"
 #include "ChainResyncer.h"
 #include "CoinView.h"
+#include "ChainConsistency.h"
 
 #include <Consensus.h>
 #include <GrinVersion.h>
@@ -18,6 +19,7 @@
 #include <PMMR/TxHashSet.h>
 #include <filesystem.h>
 #include <algorithm>
+#include <stdexcept>
 
 BlockChain::BlockChain(
 	std::shared_ptr<ITransactionPool> pTransactionPool,
@@ -45,6 +47,41 @@ std::shared_ptr<BlockChain> BlockChain::Create(
 	auto pGenesisIndex = std::make_shared<BlockIndex>(genesisBlock.GetHash(), 0);
 
 	auto pChainStore = ChainStore::Load(config, pGenesisIndex);
+
+	// header_mmr.bin and the chain files are committed independently. A crash
+	// between the two commits leaves them at different heights; trusting such a
+	// state used to read a header beyond the MMR (access violation). Validate
+	// the counts before anything opens the stores. This path deliberately does
+	// not repair or truncate anything: on any inconsistency startup is refused
+	// and the original files are left untouched for inspection/recovery.
+	{
+		const uint64_t headerMmrNodes = pHeaderMMR->Read()->GetNodeCount();
+		const uint64_t headerMmrLeaves = MmrStructure::IsValidNodeCount(headerMmrNodes)
+			? pHeaderMMR->Read()->GetLeafCount()
+			: 0;
+		const uint64_t candidateEntries =
+			pChainStore->Read()->GetCandidateChain()->GetHeight() + 1;
+		const uint64_t confirmedEntries =
+			pChainStore->Read()->GetConfirmedChain()->GetHeight() + 1;
+		const bool genesisInDatabase =
+			pDatabase->Read()->GetBlockHeader(genesisBlock.GetHash()) != nullptr;
+
+		const ChainStoreCheck check = CheckChainStores(
+			headerMmrNodes,
+			headerMmrLeaves,
+			candidateEntries,
+			confirmedEntries,
+			genesisInDatabase
+		);
+		if (!check.Consistent) {
+			LOG_ERROR_F("Refusing to start: {}", check.Error);
+			throw std::runtime_error(check.Error);
+		}
+		if (check.Fresh) {
+			LOG_DEBUG("Fresh chain store: genesis header will initialise the header MMR.");
+		}
+	}
+
 	auto pChainState = ChainState::Create(
 		config,
 		pChainStore,

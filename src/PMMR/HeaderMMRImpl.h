@@ -3,6 +3,7 @@
 #include "Common/HashFile.h"
 
 #include <PMMR/HeaderMMR.h>
+#include <PMMR/Common/Index.h>
 #include <Core/Models/BlockHeader.h>
 #include <optional>
 #include <string>
@@ -15,6 +16,16 @@ public:
 	void AddHeader(const BlockHeader& header) final;
 	Hash Root(const uint64_t lastHeight) const final;
 	void Rewind(const uint64_t size) final;
+
+	uint64_t GetLeafCount() const final
+	{
+		return Index::At(m_pLockedHashFile->Read()->GetSize()).GetLeafIndex();
+	}
+
+	uint64_t GetNodeCount() const final
+	{
+		return m_pLockedHashFile->Read()->GetSize();
+	}
 
 	void Commit() final;
 	void Rollback() noexcept final;
