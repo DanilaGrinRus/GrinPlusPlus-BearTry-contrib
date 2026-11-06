@@ -6,6 +6,7 @@
 
 #include <Core/Serialization/Serializer.h>
 #include <Core/Serialization/ByteBuffer.h>
+#include <Core/Exceptions/DeserializationException.h>
 #include <Core/Traits/Serializable.h>
 #include <Crypto/Models/Commitment.h>
 #include <Core/Models/OutputLocation.h>
@@ -92,8 +93,13 @@ public:
 
 	static SpentOutputs Deserialize(ByteBuffer& byteBuffer)
 	{
-		[[maybe_unused]] const uint8_t version = byteBuffer.ReadU8();
-		assert(version == 0);
+		// Consume the version byte in every build and reject an unsupported
+		// version explicitly. Relying on assert() alone silently accepts an
+		// unknown version in Release builds (NDEBUG).
+		const uint8_t version = byteBuffer.ReadU8();
+		if (version != 0) {
+			throw DESERIALIZATION_EXCEPTION_F("Unsupported SpentOutputs version {}", version);
+		}
 
 		const uint16_t numOutputs = byteBuffer.ReadU16();
 
