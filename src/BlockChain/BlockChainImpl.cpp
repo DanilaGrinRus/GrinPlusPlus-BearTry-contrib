@@ -70,7 +70,7 @@ std::shared_ptr<BlockChain> BlockChain::Create(
 		// the backup cannot be written: never migrate the only copy (G-22).
 		// A fresh database (version 0) has nothing to preserve.
 		const fs::path backupPath =
-			DbBackup::BackupBeforeMigration(config.GetDatabasePath(), db_version);
+			DbBackup::BackupBeforeMigration(pDatabase, config.GetDatabasePath(), db_version);
 		if (backupPath.empty()) {
 			LOG_ERROR("Failed to back up the database before migration; aborting.");
 			throw std::runtime_error("Database backup failed");
