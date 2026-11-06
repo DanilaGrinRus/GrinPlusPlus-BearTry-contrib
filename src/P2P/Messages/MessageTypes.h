@@ -29,6 +29,10 @@ namespace MessageTypes
         BanReasonMsg = 18,
         GetTransactionMsg = 19,
         TransactionKernelMsg = 20,
+
+        // PIBD (Grin v5.5.2, RFC-0020/0022). Wire ids must match the reference
+        // implementation exactly; the previous GetKernels/Kernels values occupied
+        // 21/22 and collided with Rust's PIBD messages.
         GetOutputBitmapSegment = 21,
         OutputBitmapSegment = 22,
         GetOutputSegment = 23,
@@ -39,7 +43,7 @@ namespace MessageTypes
         KernelSegment = 28
     };
 
-    static uint64_t GetMaximumSize(const EMessageType messageType)
+    static constexpr uint64_t GetMaximumSize(const EMessageType messageType)
     {
         switch (messageType)
         {
