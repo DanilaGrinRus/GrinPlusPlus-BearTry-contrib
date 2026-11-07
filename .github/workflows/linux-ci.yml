@@ -40,7 +40,8 @@ jobs:
           set -euxo pipefail
           mkdir -p .ci-overlay
           cp -r vcpkg/custom_ports/civetweb vcpkg/custom_ports/roaring vcpkg/custom_ports/rocksdb vcpkg/custom_ports/secp256k1-zkp .ci-overlay/
-\n      - name: vcpkg bootstrap and packages
+
+      - name: vcpkg bootstrap and packages
         shell: bash
         run: |
           set -euxo pipefail
