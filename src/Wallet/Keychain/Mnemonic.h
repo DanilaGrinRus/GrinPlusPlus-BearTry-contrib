@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Common/Secure.h>
+#include <cstdint>
 #include <optional>
 #include <vector>
 
