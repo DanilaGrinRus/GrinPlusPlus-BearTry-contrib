@@ -40,6 +40,8 @@ jobs:
           set -euxo pipefail
           mkdir -p .ci-overlay
           cp -r vcpkg/custom_ports/civetweb vcpkg/custom_ports/roaring vcpkg/custom_ports/rocksdb vcpkg/custom_ports/secp256k1-zkp .ci-overlay/
+          cp -r vcpkg/custom_ports/libsodium .ci-overlay/
+          sed -i 's/727fe50a5fb1df86ec5d807770f408a52609cbeb8510b4f4183b2a35a537905719bdb6348afcb103ff00ce946a8094ac9559b6e3e5b2ccc2a2d0c08f75577eeb/269bda48307db8b7b4bd734704bc49add71f947704109416f9e9d2304bc60a39fa33ae201ccac54721bdce7d521067fc3d75022044557ab6cb37890b03505411/' .ci-overlay/libsodium/portfile.cmake
 
       - name: vcpkg bootstrap and packages
         shell: bash
