@@ -34,7 +34,7 @@ jobs:
           cmake --version | head -1
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
-      - name: vcpkg bootstrap and packages
+      - name: Prepare overlay ports\n        shell: bash\n        run: |\n          set -euxo pipefail\n          mkdir -p .ci-overlay\n          cp -r vcpkg/custom_ports/civetweb vcpkg/custom_ports/roaring vcpkg/custom_ports/rocksdb vcpkg/custom_ports/secp256k1-zkp .ci-overlay/\n\n      - name: vcpkg bootstrap and packages
         shell: bash
         run: |
           set -euxo pipefail
@@ -42,7 +42,7 @@ jobs:
           git -C .ci-vcpkg checkout 6185aa76504a5025f36754324abf307cc776f3da
           ./.ci-vcpkg/bootstrap-vcpkg.sh -disableMetrics
           ./.ci-vcpkg/vcpkg install --triplet x64-linux \
-            --overlay-ports="$GITHUB_WORKSPACE/vcpkg/custom_ports" \
+            --overlay-ports="$GITHUB_WORKSPACE/.ci-overlay" \
             @"$GITHUB_WORKSPACE/vcpkg/packages.txt"
 
       - name: Configure
