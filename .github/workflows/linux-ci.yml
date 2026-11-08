@@ -76,9 +76,13 @@ jobs:
         run: |
           set -uxo pipefail
           mkdir -p ci-evidence
+          # GITHUB_SHA is authoritative for the checkout; the in-container git CLI
+          # may refuse to read the workspace because of dubious-ownership rules.
+          LOCAL_COMMIT="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
           {
-            echo "commit=$(git rev-parse HEAD)"
-            echo "commit_subject=$(git log -1 --pretty=%s)"
+            echo "commit=${GITHUB_SHA}"
+            echo "commit_local=${LOCAL_COMMIT}"
+            echo "commit_subject=$(git log -1 --pretty=%s 2>/dev/null || echo unknown)"
             echo "date_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
             echo "runner_image=$(grep PRETTY_NAME /etc/os-release | head -1)"
             echo "gcc=$(gcc --version | head -1)"
@@ -158,9 +162,17 @@ jobs:
           set -e
           echo "TESTS_EXIT=${code}" | tee -a ci-evidence/tests.log
           echo "tests_exit=${code}" >> "$GITHUB_OUTPUT"
+          # Keep the Catch2 result line as a separate, machine-readable artifact.
+          grep -E 'Passed all [0-9]+ test cases|All tests passed|Failed [0-9]+ test cases' \
+            ci-evidence/tests.log | tail -n 1 > ci-evidence/tests-summary.txt || true
+          if [ ! -s ci-evidence/tests-summary.txt ] && [ "$code" -eq 0 ]; then
+            echo "::error::No Catch2 result line found in ci-evidence/tests.log"
+            code=1
+          fi
           {
             echo "### Tests"
             echo '```'
+            cat ci-evidence/tests-summary.txt 2>/dev/null || true
             tail -n 15 ci-evidence/tests.log || true
             echo '```'
             echo "TESTS_EXIT=${code}"
