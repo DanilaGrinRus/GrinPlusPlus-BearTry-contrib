@@ -78,11 +78,13 @@ jobs:
           mkdir -p ci-evidence
           # GITHUB_SHA is authoritative for the checkout; the in-container git CLI
           # may refuse to read the workspace because of dubious-ownership rules.
+          git config --global --add safe.directory "$GITHUB_WORKSPACE" 2>/dev/null || true
           LOCAL_COMMIT="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
+          COMMIT_SUBJECT="$(git log -1 --pretty=%s 2>/dev/null || echo unknown)"
           {
             echo "commit=${GITHUB_SHA}"
             echo "commit_local=${LOCAL_COMMIT}"
-            echo "commit_subject=$(git log -1 --pretty=%s 2>/dev/null || echo unknown)"
+            echo "commit_subject=${COMMIT_SUBJECT}"
             echo "date_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
             echo "runner_image=$(grep PRETTY_NAME /etc/os-release | head -1)"
             echo "gcc=$(gcc --version | head -1)"
@@ -163,7 +165,9 @@ jobs:
           echo "TESTS_EXIT=${code}" | tee -a ci-evidence/tests.log
           echo "tests_exit=${code}" >> "$GITHUB_OUTPUT"
           # Keep the Catch2 result line as a separate, machine-readable artifact.
-          grep -E 'Passed all [0-9]+ test cases|All tests passed|Failed [0-9]+ test cases' \
+          # -a: the verbose test log can contain non-text bytes, and grep(1) would
+          # otherwise print "Binary file ... matches" instead of the result line.
+          grep -a -E 'Passed all [0-9]+ test cases|All tests passed|Failed [0-9]+ test cases' \
             ci-evidence/tests.log | tail -n 1 > ci-evidence/tests-summary.txt || true
           if [ ! -s ci-evidence/tests-summary.txt ] && [ "$code" -eq 0 ]; then
             echo "::error::No Catch2 result line found in ci-evidence/tests.log"
