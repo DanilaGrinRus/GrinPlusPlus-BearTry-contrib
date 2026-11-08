@@ -43,6 +43,11 @@ public:
 		m_txHashSetDownloaded(0),
 		m_txHashSetTotalSize(0),
 		m_txHashSetProcessingStatus(0),
+		m_blockRequests(0),
+		m_blockTimeouts(0),
+		m_blockReassignments(0),
+		m_bansFraudHeight(0),
+		m_bansInvalidData(0),
 		m_pibdReceived(0),
 		m_pibdRequired(0),
 		m_pibdStarted(0)
