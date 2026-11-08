@@ -92,17 +92,23 @@ void TestListener::OnAccept(CreateConnFunc fn_create_connection, const asio::err
     if (ec) {
         std::cout << "OnAccept error: " << ec.message() << std::endl;
     } else {
-        auto pConnection = fn_create_connection(m_pSocket);
-        pConnection->OnInboundConnection();
-
+        bool accepted = false;
         {
             std::unique_lock<std::mutex> lock(m_asioMutex);
             if (!m_stopping) {
+                auto pConnection = fn_create_connection(m_pSocket);
+                pConnection->OnInboundConnection();
                 m_connections.push_back(pConnection);
+                accepted = true;
             }
         }
 
-        Accept(fn_create_connection);
+        // Do not re-arm the acceptor (and do not create a connection) once teardown
+        // has started: a connection created here could block forever in Disconnect()
+        // because its own completion handler would never be dispatched again.
+        if (accepted) {
+            Accept(fn_create_connection);
+        }
     }
 
     m_tasks--;
