@@ -11,7 +11,7 @@ jobs:
     name: ubuntu-20.04-gcc10-vcpkg2020
     runs-on: ubuntu-24.04
     container: ubuntu:20.04
-    timeout-minutes: 120
+    timeout-minutes: 150
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -70,8 +70,114 @@ jobs:
           set -euxo pipefail
           cmake --build build --parallel 2
 
-      - name: Tests
+      - name: Record build provenance and binary SHA-256
+        if: always()
         shell: bash
         run: |
-          set -euxo pipefail
-          ./bin/Release/Tests --reporter compact
+          set -uxo pipefail
+          mkdir -p ci-evidence
+          {
+            echo "commit=$(git rev-parse HEAD)"
+            echo "commit_subject=$(git log -1 --pretty=%s)"
+            echo "date_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "runner_image=$(grep PRETTY_NAME /etc/os-release | head -1)"
+            echo "gcc=$(gcc --version | head -1)"
+            echo "gxx=$(g++ --version | head -1)"
+            echo "cmake=$(cmake --version | head -1)"
+            echo "vcpkg=$(git -C .ci-vcpkg rev-parse HEAD 2>/dev/null || echo missing)"
+            echo "--- binaries ---"
+            ls -l bin/Release/ 2>&1 || true
+            echo "--- sha256 ---"
+            sha256sum bin/Release/GrinNode bin/Release/Tests 2>&1 || true
+            echo "--- elf headers ---"
+            readelf -h bin/Release/GrinNode 2>&1 | head -20 || true
+          } | tee ci-evidence/build-info.txt
+
+      - name: Node smoke on clean container
+        if: always()
+        shell: bash
+        timeout-minutes: 10
+        run: |
+          set -uxo pipefail
+          mkdir -p ci-evidence/smoke
+          if [ ! -x bin/Release/GrinNode ]; then
+            echo "SMOKE_RESULT=FAIL reason=GrinNode binary missing" | tee ci-evidence/smoke/smoke.txt
+            exit 1
+          fi
+
+          cat > ci-evidence/smoke/config.json <<EOF
+          {
+            "DATA_PATH": "$GITHUB_WORKSPACE/ci-evidence/smoke/data",
+            "LOGGER": { "LOG_LEVEL": "INFO" },
+            "P2P": { "MAX_PEERS": 2, "MIN_PEERS": 0, "P2P_PEER_PORT": 3414, "P2P_PORT": 20514 },
+            "SERVER": { "REST_API_PORT": 20513 }
+          }
+          EOF
+
+          set +e
+          ./bin/Release/GrinNode --headless --no-wallet \
+            --config-path "$GITHUB_WORKSPACE/ci-evidence/smoke/config.json" \
+            > ci-evidence/smoke/node.out 2>&1 &
+          NODE_PID=$!
+
+          HEALTH=""
+          for _ in $(seq 1 120); do
+            if ! kill -0 "$NODE_PID" 2>/dev/null; then break; fi
+            HEALTH=$(curl -fsS --max-time 2 http://127.0.0.1:20513/v1/status 2>/dev/null)
+            if [ -n "$HEALTH" ]; then break; fi
+            sleep 1
+          done
+
+          RESULT=FAIL
+          if [ -n "$HEALTH" ]; then RESULT=PASS; fi
+          printf 'SMOKE_RESULT=%s\nHEALTH=%s\n' "$RESULT" "$HEALTH" | tee ci-evidence/smoke/smoke.txt
+
+          kill -INT "$NODE_PID" 2>/dev/null
+          for _ in $(seq 1 20); do kill -0 "$NODE_PID" 2>/dev/null || break; sleep 1; done
+          kill -9 "$NODE_PID" 2>/dev/null
+          wait "$NODE_PID" 2>/dev/null
+
+          find ci-evidence/smoke/data -name '*.log' -exec cp -f {} ci-evidence/smoke/ \; 2>/dev/null || true
+          cp -f tor/*.log ci-evidence/smoke/ 2>/dev/null || true
+
+          set -e
+          [ "$RESULT" = "PASS" ]
+
+      - name: Tests (hard timeout, full log preserved)
+        if: always()
+        id: tests
+        shell: bash
+        timeout-minutes: 60
+        run: |
+          set -uxo pipefail
+          mkdir -p ci-evidence
+          set +e
+          timeout --signal=INT --kill-after=120s 3000 \
+            ./bin/Release/Tests --reporter compact -s 2>&1 | tee ci-evidence/tests.log
+          code=${PIPESTATUS[0]}
+          set -e
+          echo "TESTS_EXIT=${code}" | tee -a ci-evidence/tests.log
+          echo "tests_exit=${code}" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Tests"
+            echo '```'
+            tail -n 15 ci-evidence/tests.log || true
+            echo '```'
+            echo "TESTS_EXIT=${code}"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$code" -ne 0 ]; then
+            echo "::error::Tests exited with ${code} (124 = hard timeout, 125 = timeout command failure)"
+            exit "$code"
+          fi
+
+      - name: Upload evidence and binaries
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-ci-${{ github.run_id }}
+          path: |
+            ci-evidence/**
+            bin/Release/GrinNode
+            bin/Release/Tests
+          if-no-files-found: warn
+          retention-days: 14
