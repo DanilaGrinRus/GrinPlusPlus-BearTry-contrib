@@ -194,6 +194,31 @@ private:
 	fs::path m_torDataPath;
 	fs::path m_torrcPath;
 
+	// The temporary torrc must live in the same directory as the final file.
+	// Opening a relative "temp.torrc" (current working directory) and renaming it
+	// over the torrc fails with EXDEV ("Invalid cross-device link") whenever the
+	// working directory and the data directory are on different filesystems, which
+	// is the common case in containers (for example GitHub Actions).
+	fs::path GetTorrcTempPath() const
+	{
+		return m_torrcPath.parent_path() / (m_torrcPath.filename().u8string() + ".tmp");
+	}
+
+	void CommitTorrc(const fs::path& tempPath) const noexcept
+	{
+		std::error_code ec;
+		fs::rename(tempPath, m_torrcPath, ec);
+		if (ec)
+		{
+			// Windows refuses to replace an existing file on rename and some
+			// filesystems still refuse cross-device renames; degrade to copy+remove.
+			ec.clear();
+			fs::copy_file(tempPath, m_torrcPath, fs::copy_options::overwrite_existing, ec);
+			std::error_code removeEc;
+			fs::remove(tempPath, removeEc);
+		}
+	}
+
 	void AddObfs4Config() const noexcept
 	{
 		AddRequiredHeadersTorBridges(false);
@@ -212,7 +237,7 @@ private:
 		std::string line;
 		
 		std::ofstream newConfigFile;
-		newConfigFile.open("temp.torrc", std::ofstream::out | std::ofstream::trunc);
+		newConfigFile.open(GetTorrcTempPath(), std::ofstream::out | std::ofstream::trunc);
 		newConfigFile << "UseBridges 1" << "\n";
 		if (snowflake)
 		{
@@ -247,8 +272,7 @@ private:
 		
 		newConfigFile.close();
 		configFile.close();
-		remove(m_torrcPath);
-		rename("temp.torrc", m_torrcPath);
+		CommitTorrc(GetTorrcTempPath());
 		
 		return;
 	}
@@ -259,7 +283,7 @@ private:
 		std::string line;
 
 		std::ofstream newConfigFile;
-		newConfigFile.open("temp.torrc", std::ofstream::out | std::ofstream::trunc);
+		newConfigFile.open(GetTorrcTempPath(), std::ofstream::out | std::ofstream::trunc);
 
 		while (std::getline(configFile, line))
 		{
@@ -276,8 +300,7 @@ private:
 
 		newConfigFile.close();
 		configFile.close();
-		remove(m_torrcPath);
-		rename("temp.torrc", m_torrcPath);
+		CommitTorrc(GetTorrcTempPath());
 
 		return;
 	}
@@ -288,7 +311,7 @@ private:
 		std::string line;
 		
 		std::ofstream newConfigFile;
-		newConfigFile.open("temp.torrc", std::ofstream::out | std::ofstream::trunc);
+		newConfigFile.open(GetTorrcTempPath(), std::ofstream::out | std::ofstream::trunc);
 
 		while (std::getline(configFile, line))
 		{
@@ -306,8 +329,7 @@ private:
 
 		newConfigFile.close();
 		configFile.close();
-		remove(m_torrcPath);
-		rename("temp.torrc", m_torrcPath);
+		CommitTorrc(GetTorrcTempPath());
 
 		return;
 	}
