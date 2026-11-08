@@ -11,6 +11,7 @@
 #include <PMMR/Models/Segment.h>
 
 #include <filesystem.h>
+#include <cstdlib>
 #include <vector>
 
 // Bit ordering in grin's BitVec::to_bytes is MSB-first within each byte. Raw
@@ -61,11 +62,16 @@ TEST_CASE("BitmapBlock::BitOrderMatchesGrin")
 // they are absent (CI, clean checkouts).
 TEST_CASE("PibdOracleVector::BitmapRootsMatchRust")
 {
-	const fs::path dir = "C:/DHW/.tmp/oracle/out";
+	// GRIN_ORACLE_VECTORS overrides the fixture location on Linux/CI; the legacy
+	// Windows path is kept as a fallback so the local developer setup still works.
+	const char* oracleDirEnv = std::getenv("GRIN_ORACLE_VECTORS");
+	const fs::path dir = oracleDirEnv != nullptr
+		? fs::path(oracleDirEnv)
+		: fs::path("C:/DHW/.tmp/oracle/out");
 	const fs::path fullSegmentPath = dir / "seg_h9_i0.bin";
 	const fs::path wholeSegmentPath = dir / "seg_h13_i0.bin";
 	if (!FileUtil::Exists(fullSegmentPath) || !FileUtil::Exists(wholeSegmentPath)) {
-		WARN("Rust oracle vectors are not present; skipping");
+		WARN("Rust oracle vectors are not present at " << dir.string() << "; skipping");
 		return;
 	}
 
